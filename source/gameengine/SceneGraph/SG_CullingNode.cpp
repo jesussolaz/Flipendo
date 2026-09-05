@@ -5,7 +5,7 @@
  *  \ingroup bgesg
  */
 
-#include "SG_CullingNode.h"
+#include "SG_CullingNode.hpp"
 
 SG_CullingNode::SG_CullingNode() : m_culled(true)
 {

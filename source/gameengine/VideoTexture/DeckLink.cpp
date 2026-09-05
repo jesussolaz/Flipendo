@@ -22,10 +22,10 @@
 
 #  include "atomic_ops.h"
 
-#  include "DeckLink.h"
-#  include "EXP_PyObjectPlus.h"
-#  include "KX_Globals.h"
-#  include "KX_KetsjiEngine.h"
+#  include "DeckLink.hpp"
+#  include "EXP_PyObjectPlus.hpp"
+#  include "KX_Globals.hpp"
+#  include "KX_KetsjiEngine.hpp"
 
 #  include <memory.h>
 

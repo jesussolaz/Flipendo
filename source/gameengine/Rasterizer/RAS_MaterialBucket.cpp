@@ -29,10 +29,10 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_MaterialBucket.h"
+#include "RAS_MaterialBucket.hpp"
 
-#include "CM_List.h"
-#include "RAS_IPolygonMaterial.h"
+#include "CM_List.hpp"
+#include "RAS_IPolygonMaterial.hpp"
 
 #ifdef _MSC_VER
 #  pragma warning(disable : 4786)

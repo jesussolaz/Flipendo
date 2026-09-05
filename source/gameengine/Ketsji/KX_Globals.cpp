@@ -24,12 +24,12 @@
  *  \ingroup ketsji
  */
 
-#include "KX_Globals.h"
+#include "KX_Globals.hpp"
 
 #include "BLI_path_utils.hh"
 #include "BLI_string.h"
 
-#include "KX_KetsjiEngine.h"
+#include "KX_KetsjiEngine.hpp"
 
 static KX_KetsjiEngine *g_engine = nullptr;
 static KX_Scene *g_scene = nullptr;

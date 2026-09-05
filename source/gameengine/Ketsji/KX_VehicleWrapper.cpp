@@ -22,13 +22,13 @@
  *  \ingroup ketsji
  */
 
-#include "KX_VehicleWrapper.h"
+#include "KX_VehicleWrapper.hpp"
 
-#include "KX_GameObject.h"
-#include "KX_Globals.h"
-#include "KX_MotionState.h"
-#include "KX_PyMath.h"
-#include "PHY_IVehicle.h"
+#include "KX_GameObject.hpp"
+#include "KX_Globals.hpp"
+#include "KX_MotionState.hpp"
+#include "KX_PyMath.hpp"
+#include "PHY_IVehicle.hpp"
 
 KX_VehicleWrapper::KX_VehicleWrapper(PHY_IVehicle *vehicle) : m_vehicle(vehicle)
 {

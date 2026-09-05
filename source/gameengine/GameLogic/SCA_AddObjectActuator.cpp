@@ -35,9 +35,9 @@
  * \source\gameengine\GameLogic\SCA_AddObjectActuator.cpp
  * Please look here for revision history. */
 
-#include "SCA_AddObjectActuator.h"
+#include "SCA_AddObjectActuator.hpp"
 
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

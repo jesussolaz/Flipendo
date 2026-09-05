@@ -71,31 +71,31 @@ set(SRC
   RAS_Shader.cpp
   RAS_Texture.cpp
 
-  RAS_2DFilterData.h
-  RAS_2DFilter.h
-  RAS_2DFilterManager.h
-  RAS_2DFilterFrameBuffer.h
-  RAS_BucketManager.h
-  RAS_CameraData.h
-  RAS_DebugDraw.h
-  RAS_DisplayArray.h
-  RAS_DisplayArrayBucket.h
-  RAS_FrameBuffer.h
-  RAS_FramingManager.h
-  RAS_ICanvas.h
-  RAS_IDisplayArray.h
-  RAS_IPolygonMaterial.h
-  RAS_Rasterizer.h
-  RAS_IVertex.h
-  RAS_MaterialBucket.h
-  RAS_MaterialShader.h
-  RAS_MeshMaterial.h
-  RAS_MeshObject.h
-  RAS_Polygon.h
-  RAS_Rect.h
-  RAS_Shader.h
-  RAS_Texture.h
-  RAS_Vertex.h
+  RAS_2DFilterData.hpp
+  RAS_2DFilter.hpp
+  RAS_2DFilterManager.hpp
+  RAS_2DFilterFrameBuffer.hpp
+  RAS_BucketManager.hpp
+  RAS_CameraData.hpp
+  RAS_DebugDraw.hpp
+  RAS_DisplayArray.hpp
+  RAS_DisplayArrayBucket.hpp
+  RAS_FrameBuffer.hpp
+  RAS_FramingManager.hpp
+  RAS_ICanvas.hpp
+  RAS_IDisplayArray.hpp
+  RAS_IPolygonMaterial.hpp
+  RAS_Rasterizer.hpp
+  RAS_IVertex.hpp
+  RAS_MaterialBucket.hpp
+  RAS_MaterialShader.hpp
+  RAS_MeshMaterial.hpp
+  RAS_MeshObject.hpp
+  RAS_Polygon.hpp
+  RAS_Rect.hpp
+  RAS_Shader.hpp
+  RAS_Texture.hpp
+  RAS_Vertex.hpp
 )
 
 set(LIB

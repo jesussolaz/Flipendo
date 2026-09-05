@@ -24,9 +24,9 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_PythonJoystick.h"
+#include "SCA_PythonJoystick.hpp"
 
-#include "DEV_Joystick.h"
+#include "DEV_Joystick.hpp"
 
 //#include "GHOST_C-api.h"
 

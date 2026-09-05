@@ -30,7 +30,7 @@
  *  \ingroup ketsjinet
  */
 
-#include "KX_NetworkMessageManager.h"
+#include "KX_NetworkMessageManager.hpp"
 
 KX_NetworkMessageManager::KX_NetworkMessageManager() : m_currentList(0)
 {

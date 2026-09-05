@@ -29,11 +29,11 @@
  *  \ingroup bgeconv
  */
 
-#include "BL_ArmatureActuator.h"
+#include "BL_ArmatureActuator.hpp"
 
 #include "DNA_actuator_types.h"
 
-#include "BL_ArmatureObject.h"
+#include "BL_ArmatureObject.hpp"
 
 /**
  * This class is the conversion of the Pose channel constraint.

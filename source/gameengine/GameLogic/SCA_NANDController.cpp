@@ -32,10 +32,10 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_NANDController.h"
+#include "SCA_NANDController.hpp"
 
-#include "SCA_ISensor.h"
-#include "SCA_LogicManager.h"
+#include "SCA_ISensor.hpp"
+#include "SCA_LogicManager.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

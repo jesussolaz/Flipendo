@@ -35,7 +35,7 @@ set(INC_SYS
 set(SRC
   DummyPhysicsEnvironment.cpp
 
-  DummyPhysicsEnvironment.h
+  DummyPhysicsEnvironment.hpp
 )
 
 set(LIB

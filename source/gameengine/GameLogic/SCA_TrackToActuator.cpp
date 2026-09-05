@@ -35,7 +35,7 @@
  * m_upflag for the up direction
  * normal situation is +y for forward, +z for up */
 
-#include "SCA_TrackToActuator.h"
+#include "SCA_TrackToActuator.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

@@ -38,7 +38,7 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "SCA_AlwaysSensor.h"
+#include "SCA_AlwaysSensor.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

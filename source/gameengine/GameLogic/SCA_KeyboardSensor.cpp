@@ -30,13 +30,13 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_KeyboardSensor.h"
+#include "SCA_KeyboardSensor.hpp"
 
 #include <codecvt>
 #include <locale>
 
-#include "EXP_StringValue.h"
-#include "SCA_KeyboardManager.h"
+#include "EXP_StringValue.hpp"
+#include "SCA_KeyboardManager.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

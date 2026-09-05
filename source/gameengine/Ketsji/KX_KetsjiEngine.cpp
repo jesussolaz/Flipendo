@@ -34,7 +34,7 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "KX_KetsjiEngine.h"
+#include "KX_KetsjiEngine.hpp"
 
 #include <fmt/format.h>
 
@@ -48,18 +48,18 @@
 #include "GPU_matrix.hh"
 #include "WM_api.hh"
 
-#include "BL_Converter.h"
-#include "BL_SceneConverter.h"
-#include "DEV_Joystick.h"  // for DEV_Joystick::HandleEvents
-#include "KX_Camera.h"
-#include "KX_Globals.h"
-#include "KX_NetworkMessageScene.h"
-#include "KX_PyConstraintBinding.h"
-#include "KX_PythonInit.h"  // for updatePythonJoysticks
-#include "PHY_IPhysicsEnvironment.h"
-#include "RAS_FrameBuffer.h"
-#include "RAS_ICanvas.h"
-#include "SCA_IInputDevice.h"
+#include "BL_Converter.hpp"
+#include "BL_SceneConverter.hpp"
+#include "DEV_Joystick.hpp"  // for DEV_Joystick::HandleEvents
+#include "KX_Camera.hpp"
+#include "KX_Globals.hpp"
+#include "KX_NetworkMessageScene.hpp"
+#include "KX_PyConstraintBinding.hpp"
+#include "KX_PythonInit.hpp"  // for updatePythonJoysticks
+#include "PHY_IPhysicsEnvironment.hpp"
+#include "RAS_FrameBuffer.hpp"
+#include "RAS_ICanvas.hpp"
+#include "SCA_IInputDevice.hpp"
 
 #define DEFAULT_LOGIC_TIC_RATE 60.0
 

@@ -5,7 +5,7 @@
  *  \ingroup bgesg
  */
 
-#include "SG_Familly.h"
+#include "SG_Familly.hpp"
 
 CM_ThreadSpinLock &SG_Familly::GetMutex()
 {

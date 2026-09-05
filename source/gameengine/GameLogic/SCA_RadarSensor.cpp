@@ -29,13 +29,13 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_RadarSensor.h"
+#include "SCA_RadarSensor.hpp"
 
 #include "DNA_sensor_types.h"
 
-#include "KX_GameObject.h"
-#include "PHY_IMotionState.h"
-#include "PHY_IPhysicsController.h"
+#include "KX_GameObject.hpp"
+#include "PHY_IMotionState.hpp"
+#include "PHY_IPhysicsController.hpp"
 
 /**
  * 	RadarSensor constructor. Creates a near-sensor derived class, with a cone collision shape.

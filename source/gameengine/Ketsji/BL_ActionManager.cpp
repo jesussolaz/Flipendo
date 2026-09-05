@@ -24,12 +24,12 @@
  *  \ingroup ketsji
  */
 
-#include "BL_ActionManager.h"
+#include "BL_ActionManager.hpp"
 
 #include "BKE_lib_id.hh"
 #include "DNA_ID.h"
 
-#include "BL_Action.h"
+#include "BL_Action.hpp"
 
 
 BL_ActionManager::BL_ActionManager(class KX_GameObject *obj) : m_obj(obj), m_suspended(false)

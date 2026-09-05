@@ -32,10 +32,10 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_XORController.h"
+#include "SCA_XORController.hpp"
 
-#include "SCA_ISensor.h"
-#include "SCA_LogicManager.h"
+#include "SCA_ISensor.hpp"
+#include "SCA_LogicManager.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

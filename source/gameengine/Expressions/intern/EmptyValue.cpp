@@ -16,7 +16,7 @@
  *
  */
 
-#include "EXP_EmptyValue.h"
+#include "EXP_EmptyValue.hpp"
 
 EXP_EmptyValue::EXP_EmptyValue()
 {

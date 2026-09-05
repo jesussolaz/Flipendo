@@ -32,14 +32,14 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_PythonController.h"
+#include "SCA_PythonController.hpp"
 
 #ifdef WITH_PYTHON
 #  include "compile.h"
 #  include "py_capi_utils.hh"
 #endif  // WITH_PYTHON
 
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 
 // initialize static member variables
 SCA_PythonController *SCA_PythonController::m_sCurrentController = nullptr;

@@ -24,13 +24,13 @@
  *  \ingroup device
  */
 
-#include "DEV_EventConsumer.h"
+#include "DEV_EventConsumer.hpp"
 
 #include "BLI_string_utf8.h"
 #include "GHOST_ISystem.hh"
 
-#include "DEV_InputDevice.h"
-#include "RAS_ICanvas.h"
+#include "DEV_InputDevice.hpp"
+#include "RAS_ICanvas.hpp"
 
 DEV_EventConsumer::DEV_EventConsumer(GHOST_ISystem *system,
                                      DEV_InputDevice *device,

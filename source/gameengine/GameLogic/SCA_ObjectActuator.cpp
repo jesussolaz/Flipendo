@@ -32,14 +32,14 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_ObjectActuator.h"
+#include "SCA_ObjectActuator.hpp"
 
-#include "CM_Message.h"
-#include "KX_GameObject.h"
-#include "KX_PyMath.h"  // For PyVecTo - should this include be put in EXP_PyObjectPlus?
-#include "PHY_ICharacter.h"
-#include "PHY_IPhysicsController.h"
-#include "PHY_IPhysicsEnvironment.h"
+#include "CM_Message.hpp"
+#include "KX_GameObject.hpp"
+#include "KX_PyMath.hpp"  // For PyVecTo - should this include be put in EXP_PyObjectPlus?
+#include "PHY_ICharacter.hpp"
+#include "PHY_IPhysicsController.hpp"
+#include "PHY_IPhysicsEnvironment.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

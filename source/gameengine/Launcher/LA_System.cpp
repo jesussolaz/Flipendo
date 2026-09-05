@@ -26,7 +26,7 @@
  *  \ingroup player
  */
 
-#include "LA_System.h"
+#include "LA_System.hpp"
 
 #include "BLI_time.h"
 

@@ -39,9 +39,9 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "SCA_MouseManager.h"
+#include "SCA_MouseManager.hpp"
 
-#include "SCA_MouseSensor.h"
+#include "SCA_MouseSensor.hpp"
 
 SCA_MouseManager::SCA_MouseManager(SCA_LogicManager *logicmgr, SCA_IInputDevice *mousedev)
     : SCA_EventManager(logicmgr, MOUSE_EVENTMGR), m_mousedevice(mousedev)

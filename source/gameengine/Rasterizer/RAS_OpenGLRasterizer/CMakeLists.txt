@@ -48,8 +48,8 @@ set(SRC
   RAS_OpenGLDebugDraw.cpp
   RAS_OpenGLRasterizer.cpp
 
-  RAS_OpenGLDebugDraw.h
-  RAS_OpenGLRasterizer.h
+  RAS_OpenGLDebugDraw.hpp
+  RAS_OpenGLRasterizer.hpp
 )
 
 set(LIB

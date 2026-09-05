@@ -22,16 +22,16 @@
  *  \ingroup ketsji
  */
 
-#include "BL_Shader.h"
+#include "BL_Shader.hpp"
 
 #include <fmt/format.h>
 
-#include "CM_Message.h"
-#include "KX_GameObject.h"
-#include "KX_PyMath.h"
+#include "CM_Message.hpp"
+#include "KX_GameObject.hpp"
+#include "KX_PyMath.hpp"
 
 #ifdef WITH_PYTHON
-#  include "EXP_PythonCallBack.h"
+#  include "EXP_PythonCallBack.hpp"
 #endif  // WITH_PYTHON
 
 BL_Shader::BL_Shader()

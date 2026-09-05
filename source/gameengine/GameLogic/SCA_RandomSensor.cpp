@@ -32,7 +32,7 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_RandomSensor.h"
+#include "SCA_RandomSensor.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

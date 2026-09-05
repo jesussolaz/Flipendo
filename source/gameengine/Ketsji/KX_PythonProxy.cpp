@@ -20,12 +20,12 @@
  * ***** END GPL LICENSE BLOCK *****
  */
 
-#include "KX_PythonProxy.h"
+#include "KX_PythonProxy.hpp"
 
 #include <fmt/format.h>
 
 #include "BKE_python_proxy.hh"
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 #include "DNA_python_proxy_types.h"
 
 KX_PythonProxy::KX_PythonProxy()

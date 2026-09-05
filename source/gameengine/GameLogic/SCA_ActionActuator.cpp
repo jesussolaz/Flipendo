@@ -29,13 +29,13 @@
  *  \ingroup bgeconv
  */
 
-#include "SCA_ActionActuator.h"
+#include "SCA_ActionActuator.hpp"
 
 #include "DNA_scene_types.h"
 
-#include "BL_ActionManager.h"
-#include "BL_ArmatureObject.h"
-#include "EXP_FloatValue.h"
+#include "BL_ActionManager.hpp"
+#include "BL_ArmatureObject.hpp"
+#include "EXP_FloatValue.hpp"
 
 SCA_ActionActuator::SCA_ActionActuator(SCA_IObject *gameobj,
                                        const std::string &propname,

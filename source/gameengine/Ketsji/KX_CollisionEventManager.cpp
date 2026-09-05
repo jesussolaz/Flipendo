@@ -29,11 +29,11 @@
  *  \ingroup ketsji
  */
 
-#include "KX_CollisionEventManager.h"
+#include "KX_CollisionEventManager.hpp"
 
-#include "KX_CollisionContactPoints.h"
-#include "PHY_IPhysicsController.h"
-#include "PHY_IPhysicsEnvironment.h"
+#include "KX_CollisionContactPoints.hpp"
+#include "PHY_IPhysicsController.hpp"
+#include "PHY_IPhysicsEnvironment.hpp"
 
 KX_CollisionEventManager::KX_CollisionEventManager(class SCA_LogicManager *logicmgr,
                                                    PHY_IPhysicsEnvironment *physEnv)

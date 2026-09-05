@@ -29,9 +29,9 @@
  *  \ingroup ketsji
  */
 
-#include "KX_BoneParentNodeRelationship.h"
+#include "KX_BoneParentNodeRelationship.hpp"
 
-#include "BL_ArmatureObject.h"
+#include "BL_ArmatureObject.hpp"
 
 KX_BoneParentRelation::KX_BoneParentRelation(Bone *bone) : m_bone(bone)
 {

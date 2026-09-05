@@ -15,26 +15,26 @@
  *
  */
 
-#include "EXP_InputParser.h"
+#include "EXP_InputParser.hpp"
 
 #include <fmt/format.h>
 
-#include "CM_Message.h"
-#include "EXP_BoolValue.h"
-#include "EXP_ConstExpr.h"
-#include "EXP_EmptyValue.h"
-#include "EXP_ErrorValue.h"
-#include "EXP_FloatValue.h"
-#include "EXP_IdentifierExpr.h"
-#include "EXP_IntValue.h"
-#include "EXP_Operator1Expr.h"
-#include "EXP_Operator2Expr.h"
-#include "EXP_StringValue.h"
+#include "CM_Message.hpp"
+#include "EXP_BoolValue.hpp"
+#include "EXP_ConstExpr.hpp"
+#include "EXP_EmptyValue.hpp"
+#include "EXP_ErrorValue.hpp"
+#include "EXP_FloatValue.hpp"
+#include "EXP_IdentifierExpr.hpp"
+#include "EXP_IntValue.hpp"
+#include "EXP_Operator1Expr.hpp"
+#include "EXP_Operator2Expr.hpp"
+#include "EXP_StringValue.hpp"
 
 // this is disable at the moment, I expected a memleak from it, but the error-cleanup was the
 // reason well, looks we don't need it anyway, until maybe the Curved Surfaces are integrated into
 // CSG cool things like (IF(LOD==1,CCurvedValue,IF(LOD==2,CCurvedValue2)) etc...
-#include "EXP_IfExpr.h"
+#include "EXP_IfExpr.hpp"
 
 #if defined(WIN32) || defined(WIN64)
 #  define strcasecmp _stricmp

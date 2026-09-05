@@ -32,15 +32,15 @@ set(INC_SYS
 )
 
 set(SRC
-  PHY_IConstraint.h
-  PHY_DynamicTypes.h
-  PHY_ICharacter.h
-  PHY_IController.h
-  PHY_IGraphicController.h
-  PHY_IMotionState.h
-  PHY_IPhysicsController.h
-  PHY_IPhysicsEnvironment.h
-  PHY_IVehicle.h
+  PHY_IConstraint.hpp
+  PHY_DynamicTypes.hpp
+  PHY_ICharacter.hpp
+  PHY_IController.hpp
+  PHY_IGraphicController.hpp
+  PHY_IMotionState.hpp
+  PHY_IPhysicsController.hpp
+  PHY_IPhysicsEnvironment.hpp
+  PHY_IVehicle.hpp
 )
 
 set(LIB

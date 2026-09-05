@@ -14,7 +14,7 @@
  * purpose.  It is provided "as is" without express or implied warranty.
  *
  */
-#include "EXP_Expression.h"
+#include "EXP_Expression.hpp"
 
 EXP_Expression::EXP_Expression()
 {

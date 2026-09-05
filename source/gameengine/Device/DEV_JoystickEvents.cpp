@@ -29,9 +29,9 @@
  *  \ingroup device
  */
 
-#include "CM_Message.h"
-#include "DEV_Joystick.h"
-#include "DEV_JoystickPrivate.h"
+#include "CM_Message.hpp"
+#include "DEV_Joystick.hpp"
+#include "DEV_JoystickPrivate.hpp"
 
 #ifdef WITH_SDL
 void DEV_Joystick::OnAxisEvent(SDL_Event *sdl_event)

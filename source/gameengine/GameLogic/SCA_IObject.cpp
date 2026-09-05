@@ -29,11 +29,11 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_IObject.h"
+#include "SCA_IObject.hpp"
 
-#include "CM_List.h"
-#include "SCA_IActuator.h"
-#include "SCA_ISensor.h"
+#include "CM_List.hpp"
+#include "SCA_IActuator.hpp"
+#include "SCA_ISensor.hpp"
 
 SG_QList SCA_IObject::m_activeBookmarkedControllers;
 

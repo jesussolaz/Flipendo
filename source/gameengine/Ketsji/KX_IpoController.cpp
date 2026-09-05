@@ -42,13 +42,13 @@ typedef unsigned long uint_ptr;
 #  pragma warning(disable : 4786)
 #endif
 
-#include "KX_IpoController.h"
+#include "KX_IpoController.hpp"
 
 #include "DNA_ipo_types.h"
 
-#include "KX_GameObject.h"
-#include "KX_ScalarInterpolator.h"
-#include "PHY_IPhysicsController.h"
+#include "KX_GameObject.hpp"
+#include "KX_ScalarInterpolator.hpp"
+#include "PHY_IPhysicsController.hpp"
 
 // All objects should start on frame 1! Will we ever need an object to
 // start on another frame, the 1.0 should change.

@@ -57,11 +57,11 @@ set(SRC
   CcdPhysicsController.cpp
   CcdGraphicController.cpp
 
-  CcdConstraint.h
-  CcdMathUtils.h
-  CcdGraphicController.h
-  CcdPhysicsController.h
-  CcdPhysicsEnvironment.h
+  CcdConstraint.hpp
+  CcdMathUtils.hpp
+  CcdGraphicController.hpp
+  CcdPhysicsController.hpp
+  CcdPhysicsEnvironment.hpp
 )
 
 set(LIB

@@ -29,7 +29,7 @@
  *  \ingroup bgeconv
  */
 
-#include "BL_ArmatureObject.h"
+#include "BL_ArmatureObject.hpp"
 
 #include "ANIM_action.hh"
 #include "BKE_action.hh"
@@ -41,9 +41,9 @@
 #include "DNA_armature_types.h"
 #include "RNA_access.hh"
 
-#include "BL_Action.h"
-#include "BL_SceneConverter.h"
-#include "KX_Globals.h"
+#include "BL_Action.hpp"
+#include "BL_SceneConverter.hpp"
+#include "KX_Globals.hpp"
 
 /**
  * Move here pose function for game engine so that we can mix with GE objects

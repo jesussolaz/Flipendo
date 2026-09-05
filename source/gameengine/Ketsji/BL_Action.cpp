@@ -24,7 +24,7 @@
  *  \ingroup ketsji
  */
 
-#include "BL_Action.h"
+#include "BL_Action.hpp"
 
 #include "ANIM_action.hh"
 #include "BKE_action.hh"
@@ -38,9 +38,9 @@
 #include "DNA_mesh_types.h"
 #include "RNA_access.hh"
 
-#include "BL_ArmatureObject.h"
-#include "BL_IpoConvert.h"
-#include "CM_Message.h"
+#include "BL_ArmatureObject.hpp"
+#include "BL_IpoConvert.hpp"
+#include "CM_Message.hpp"
 
 using namespace blender::animrig;
 

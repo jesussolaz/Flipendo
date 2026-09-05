@@ -36,17 +36,17 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "SCA_MouseFocusSensor.h"
+#include "SCA_MouseFocusSensor.hpp"
 
 #include "DNA_camera_types.h"
 
-#include "CM_Message.h"
-#include "KX_Camera.h"
-#include "KX_ClientObjectInfo.h"
-#include "KX_PyMath.h"
-#include "KX_RayCast.h"
-#include "RAS_ICanvas.h"
-#include "RAS_MeshObject.h"
+#include "CM_Message.hpp"
+#include "KX_Camera.hpp"
+#include "KX_ClientObjectInfo.hpp"
+#include "KX_PyMath.hpp"
+#include "KX_RayCast.hpp"
+#include "RAS_ICanvas.hpp"
+#include "RAS_MeshObject.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

@@ -69,7 +69,7 @@
 #endif
 
 #ifdef WITH_GAMEENGINE
-#  include "LA_SystemCommandLine.h"
+#  include "LA_SystemCommandLine.hpp"
 #endif
 
 #include "GHOST_C-api.h"

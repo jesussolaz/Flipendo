@@ -19,7 +19,7 @@
    3. This notice may not be removed or altered from any source distribution.
  */
 
-#include "CcdPhysicsEnvironment.h"
+#include "CcdPhysicsEnvironment.hpp"
 
 #include "BKE_object.hh"
 #include "BLI_bounds_types.hh"
@@ -33,17 +33,17 @@
 #include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
 #include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
 
-#include "BL_SceneConverter.h"
-#include "CM_List.h"
-#include "CcdConstraint.h"
-#include "CcdGraphicController.h"
-#include "KX_ClientObjectInfo.h"
-#include "KX_GameObject.h"
+#include "BL_SceneConverter.hpp"
+#include "CM_List.hpp"
+#include "CcdConstraint.hpp"
+#include "CcdGraphicController.hpp"
+#include "KX_ClientObjectInfo.hpp"
+#include "KX_GameObject.hpp"
 #include "MT_MinMax.h"
-#include "PHY_IVehicle.h"
-#include "RAS_IVertex.h"
-#include "RAS_MeshObject.h"
-#include "RAS_Polygon.h"
+#include "PHY_IVehicle.hpp"
+#include "RAS_IVertex.hpp"
+#include "RAS_MeshObject.hpp"
+#include "RAS_Polygon.hpp"
 
 #define CCD_CONSTRAINT_DISABLE_LINKED_COLLISION 0x80
 

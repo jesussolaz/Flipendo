@@ -1,10 +1,10 @@
 /* Implementación del manager de componentes nativos. Ver FL_Component.hpp. */
 #include "FL_Component.hpp"
 
-#include "EXP_Value.h"
-#include "KX_GameObject.h"
-#include "KX_Scene.h"
-#include "EXP_ListValue.h"
+#include "EXP_Value.hpp"
+#include "KX_GameObject.hpp"
+#include "KX_Scene.hpp"
+#include "EXP_ListValue.hpp"
 
 namespace flipendo {
 

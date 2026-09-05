@@ -27,9 +27,9 @@
  *  \ingroup GameLogic
  */
 
-#include "SCA_VibrationActuator.h"
+#include "SCA_VibrationActuator.hpp"
 
-#include "SCA_JoystickManager.h"
+#include "SCA_JoystickManager.hpp"
 
 SCA_VibrationActuator::SCA_VibrationActuator(SCA_IObject *gameobj,
                                              short mode,

@@ -24,10 +24,10 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_PythonMouse.h"
+#include "SCA_PythonMouse.hpp"
 
-#include "RAS_ICanvas.h"
-#include "SCA_IInputDevice.h"
+#include "RAS_ICanvas.hpp"
+#include "SCA_IInputDevice.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

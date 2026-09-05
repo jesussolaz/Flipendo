@@ -24,7 +24,7 @@
  *  \ingroup ketsji
  */
 
-#include "KX_PythonMain.h"
+#include "KX_PythonMain.hpp"
 
 #include "BKE_idprop.hh"
 #include "BKE_main.hh"

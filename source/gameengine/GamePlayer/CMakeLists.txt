@@ -59,7 +59,7 @@ set(SRC
   GPG_Canvas.cpp
   GPG_ghost.cpp
 
-  GPG_Canvas.h
+  GPG_Canvas.hpp
 )
 
 set(LIB

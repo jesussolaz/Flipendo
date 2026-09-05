@@ -30,7 +30,7 @@
  *  \ingroup ketsjinet
  */
 
-#include "KX_NetworkMessageScene.h"
+#include "KX_NetworkMessageScene.hpp"
 
 KX_NetworkMessageScene::KX_NetworkMessageScene(KX_NetworkMessageManager *messageManager)
     : m_messageManager(messageManager)

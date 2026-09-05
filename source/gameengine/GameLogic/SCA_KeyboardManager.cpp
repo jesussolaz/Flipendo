@@ -32,9 +32,9 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_KeyboardManager.h"
+#include "SCA_KeyboardManager.hpp"
 
-#include "SCA_KeyboardSensor.h"
+#include "SCA_KeyboardSensor.hpp"
 
 SCA_KeyboardManager::SCA_KeyboardManager(SCA_LogicManager *logicmgr, SCA_IInputDevice *inputdev)
     : SCA_EventManager(logicmgr, KEYBOARD_EVENTMGR), m_inputDevice(inputdev)

@@ -15,10 +15,10 @@
  *
  */
 
-#include "EXP_IfExpr.h"
+#include "EXP_IfExpr.hpp"
 
-#include "EXP_BoolValue.h"
-#include "EXP_ErrorValue.h"
+#include "EXP_BoolValue.hpp"
+#include "EXP_ErrorValue.hpp"
 
 EXP_IfExpr::EXP_IfExpr()
 {

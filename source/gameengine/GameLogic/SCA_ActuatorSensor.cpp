@@ -32,7 +32,7 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_ActuatorSensor.h"
+#include "SCA_ActuatorSensor.hpp"
 
 SCA_ActuatorSensor::SCA_ActuatorSensor(SCA_EventManager *eventmgr,
                                        SCA_IObject *gameobj,

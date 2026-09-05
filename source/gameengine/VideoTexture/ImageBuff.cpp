@@ -7,12 +7,12 @@
 
 // implementation
 
-#include "ImageBuff.h"
+#include "ImageBuff.hpp"
 
 #include "IMB_imbuf.hh"
 
-#include "Exception.h"
-#include "FilterSource.h"
+#include "Exception.hpp"
+#include "FilterSource.hpp"
 
 // default filter
 FilterRGB24 defFilter;

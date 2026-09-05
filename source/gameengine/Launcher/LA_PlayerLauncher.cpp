@@ -34,16 +34,16 @@
 #  include <windows.h>
 #endif
 
-#include "LA_PlayerLauncher.h"
+#include "LA_PlayerLauncher.hpp"
 
 #include "BKE_sound.h"
 #include "BLI_fileops.h"
 #include "MEM_guardedalloc.h"
 
-#include "CM_Message.h"
-#include "DEV_InputDevice.h"
-#include "GPG_Canvas.h"
-#include "KX_PythonInit.h"
+#include "CM_Message.hpp"
+#include "DEV_InputDevice.hpp"
+#include "GPG_Canvas.hpp"
+#include "KX_PythonInit.hpp"
 
 LA_PlayerLauncher::LA_PlayerLauncher(GHOST_ISystem *system,
                                      GHOST_IWindow *window,

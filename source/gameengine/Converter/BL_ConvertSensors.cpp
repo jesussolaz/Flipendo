@@ -35,7 +35,7 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "BL_ConvertSensors.h"
+#include "BL_ConvertSensors.hpp"
 
 #include "DNA_actuator_types.h" /* for SENS_ALL_KEYS ? this define is */
 #include "DNA_controller_types.h"
@@ -48,27 +48,27 @@
 //#  include "BLI_winstuff.h"
 #endif
 
-#include "BL_DataConversion.h"
-#include "BL_SceneConverter.h"
-#include "CM_Utils.h"
-#include "EXP_IntValue.h"
-#include "KX_GameObject.h"
-#include "KX_Globals.h"
-#include "PHY_IPhysicsEnvironment.h"
-#include "RAS_ICanvas.h"
-#include "SCA_ActuatorSensor.h"
-#include "SCA_AlwaysSensor.h"
-#include "SCA_ArmatureSensor.h"
-#include "SCA_DelaySensor.h"
-#include "SCA_JoystickSensor.h"
-#include "SCA_KeyboardSensor.h"
-#include "SCA_MouseFocusSensor.h"
-#include "SCA_MovementSensor.h"
-#include "SCA_NetworkMessageSensor.h"
-#include "SCA_PropertySensor.h"
-#include "SCA_RadarSensor.h"
-#include "SCA_RandomSensor.h"
-#include "SCA_RaySensor.h"
+#include "BL_DataConversion.hpp"
+#include "BL_SceneConverter.hpp"
+#include "CM_Utils.hpp"
+#include "EXP_IntValue.hpp"
+#include "KX_GameObject.hpp"
+#include "KX_Globals.hpp"
+#include "PHY_IPhysicsEnvironment.hpp"
+#include "RAS_ICanvas.hpp"
+#include "SCA_ActuatorSensor.hpp"
+#include "SCA_AlwaysSensor.hpp"
+#include "SCA_ArmatureSensor.hpp"
+#include "SCA_DelaySensor.hpp"
+#include "SCA_JoystickSensor.hpp"
+#include "SCA_KeyboardSensor.hpp"
+#include "SCA_MouseFocusSensor.hpp"
+#include "SCA_MovementSensor.hpp"
+#include "SCA_NetworkMessageSensor.hpp"
+#include "SCA_PropertySensor.hpp"
+#include "SCA_RadarSensor.hpp"
+#include "SCA_RandomSensor.hpp"
+#include "SCA_RaySensor.hpp"
 
 void BL_ConvertSensors(struct Object *blenderobject,
                        class KX_GameObject *gameobj,

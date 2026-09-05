@@ -29,10 +29,10 @@
  *  \ingroup bgeconv
  */
 
-#include "BL_ArmatureConstraint.h"
+#include "BL_ArmatureConstraint.hpp"
 
-#include "BL_ArmatureObject.h"
-#include "KX_Globals.h"
+#include "BL_ArmatureObject.hpp"
+#include "KX_Globals.hpp"
 
 #include "BKE_constraint.h"
 #include "BKE_context.hh"

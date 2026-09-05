@@ -5,11 +5,11 @@
  *  \ingroup bgesg
  */
 
-#include "SG_Node.h"
+#include "SG_Node.hpp"
 
-#include "CM_List.h"
-#include "SG_Controller.h"
-#include "SG_Familly.h"
+#include "CM_List.hpp"
+#include "SG_Controller.hpp"
+#include "SG_Familly.hpp"
 
 static CM_ThreadMutex scheduleMutex;
 static CM_ThreadMutex transformMutex;

@@ -32,9 +32,9 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_ArmatureSensor.h"
+#include "SCA_ArmatureSensor.hpp"
 
-#include "BL_ArmatureObject.h"
+#include "BL_ArmatureObject.hpp"
 
 SCA_ArmatureSensor::SCA_ArmatureSensor(class SCA_EventManager *eventmgr,
                                        SCA_IObject *gameobj,

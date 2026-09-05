@@ -29,7 +29,7 @@
  *  \ingroup bgeconv
  */
 
-#include "BL_ConvertControllers.h"
+#include "BL_ConvertControllers.hpp"
 
 /* This little block needed for linking to Blender... */
 #ifdef WIN32
@@ -41,17 +41,17 @@
 #include "DNA_text_types.h"
 #include "MEM_guardedalloc.h"
 
-#include "BL_SceneConverter.h"
-#include "EXP_IntValue.h"
-#include "KX_GameObject.h"
-#include "SCA_ANDController.h"
-#include "SCA_ExpressionController.h"
-#include "SCA_NANDController.h"
-#include "SCA_NORController.h"
-#include "SCA_ORController.h"
-#include "SCA_PythonController.h"
-#include "SCA_XNORController.h"
-#include "SCA_XORController.h"
+#include "BL_SceneConverter.hpp"
+#include "EXP_IntValue.hpp"
+#include "KX_GameObject.hpp"
+#include "SCA_ANDController.hpp"
+#include "SCA_ExpressionController.hpp"
+#include "SCA_NANDController.hpp"
+#include "SCA_NORController.hpp"
+#include "SCA_ORController.hpp"
+#include "SCA_PythonController.hpp"
+#include "SCA_XNORController.hpp"
+#include "SCA_XORController.hpp"
 
 static void LinkControllerToActuators(SCA_IController *game_controller,
                                       bController *bcontr,

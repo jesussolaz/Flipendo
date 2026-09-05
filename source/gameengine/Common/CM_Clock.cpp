@@ -1,4 +1,4 @@
-#include "CM_Clock.h"
+#include "CM_Clock.hpp"
 
 CM_Clock::CM_Clock()
 {

@@ -18,9 +18,9 @@
    being the original software.
    3. This notice may not be removed or altered from any source distribution.
  */
-#include "CcdGraphicController.h"
+#include "CcdGraphicController.hpp"
 
-#include "CcdPhysicsEnvironment.h"
+#include "CcdPhysicsEnvironment.hpp"
 
 CcdGraphicController::CcdGraphicController(CcdPhysicsEnvironment *phyEnv,
                                            PHY_IMotionState *motionState)

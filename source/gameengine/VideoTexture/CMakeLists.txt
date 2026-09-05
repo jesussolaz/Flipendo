@@ -51,24 +51,24 @@ set(SRC
   VideoDeckLink.cpp
   blendVideoTex.cpp
 
-  Common.h
-  Exception.h
-  FilterBase.h
-  FilterBlueScreen.h
-  FilterColor.h
-  FilterNormal.h
-  FilterSource.h
-  ImageBase.h
-  ImageBuff.h
-  ImageMix.h
-  ImageRender.h
-  ImageViewport.h
-  PyTypeList.h
-  Texture.h
-  DeckLink.h
-  VideoBase.h
-  VideoFFmpeg.h
-  VideoDeckLink.h
+  Common.hpp
+  Exception.hpp
+  FilterBase.hpp
+  FilterBlueScreen.hpp
+  FilterColor.hpp
+  FilterNormal.hpp
+  FilterSource.hpp
+  ImageBase.hpp
+  ImageBuff.hpp
+  ImageMix.hpp
+  ImageRender.hpp
+  ImageViewport.hpp
+  PyTypeList.hpp
+  Texture.hpp
+  DeckLink.hpp
+  VideoBase.hpp
+  VideoFFmpeg.hpp
+  VideoDeckLink.hpp
 )
 
 set(LIB

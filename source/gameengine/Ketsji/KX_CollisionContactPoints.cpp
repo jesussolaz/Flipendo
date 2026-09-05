@@ -24,10 +24,10 @@
  *  \ingroup ketsji
  */
 
-#include "KX_CollisionContactPoints.h"
+#include "KX_CollisionContactPoints.hpp"
 
-#include "KX_PyMath.h"
-#include "PHY_DynamicTypes.h"
+#include "KX_PyMath.hpp"
+#include "PHY_DynamicTypes.hpp"
 
 KX_CollisionContactPoint::KX_CollisionContactPoint(const PHY_ICollData *collData,
                                                    unsigned int index,

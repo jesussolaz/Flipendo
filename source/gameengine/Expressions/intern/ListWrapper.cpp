@@ -26,7 +26,7 @@
 
 #ifdef WITH_PYTHON
 
-#  include "EXP_ListWrapper.h"
+#  include "EXP_ListWrapper.hpp"
 
 EXP_ListWrapper::EXP_ListWrapper(void *client,
                                  PyObject *base,

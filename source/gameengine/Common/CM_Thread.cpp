@@ -24,7 +24,7 @@
  *  \ingroup common
  */
 
-#include "CM_Thread.h"
+#include "CM_Thread.hpp"
 
 CM_ThreadLock::CM_ThreadLock()
 {

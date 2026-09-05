@@ -30,9 +30,9 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_StateActuator.h"
+#include "SCA_StateActuator.hpp"
 
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 SCA_StateActuator::SCA_StateActuator(SCA_IObject *gameobj, int operation, unsigned int mask)
     : SCA_IActuator(gameobj, KX_ACT_STATE), m_operation(operation), m_mask(mask)

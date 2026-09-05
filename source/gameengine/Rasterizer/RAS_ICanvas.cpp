@@ -22,7 +22,7 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_ICanvas.h"
+#include "RAS_ICanvas.hpp"
 
 #include "BKE_image.hh"
 #include "BKE_image_format.hh"
@@ -34,7 +34,7 @@
 #include "IMB_imbuf_types.hh"
 #include "MEM_guardedalloc.h"
 
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 
 // Task data for saving screenshots in a different thread.
 struct ScreenshotTaskData {

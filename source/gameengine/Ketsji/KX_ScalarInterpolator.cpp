@@ -29,9 +29,9 @@
  *  \ingroup ketsji
  */
 
-#include "KX_ScalarInterpolator.h"
+#include "KX_ScalarInterpolator.hpp"
 
-#include "KX_IScalarInterpolator.h"
+#include "KX_IScalarInterpolator.hpp"
 
 void KX_ScalarInterpolator::Execute(float currentTime) const
 {

@@ -39,7 +39,7 @@
 #    undef _XOPEN_SOURCE
 #  endif
 
-#  include "KX_PythonInit.h"
+#  include "KX_PythonInit.hpp"
 
 #  include <Python.h>
 
@@ -99,43 +99,43 @@
 #endif
 
 // python physics binding
-#include "BL_Action.h"
-#include "BL_Converter.h"
-#include "BL_Shader.h"
-#include "CM_Message.h"
-#include "KX_Globals.h"
-#include "KX_LibLoadStatus.h"
-#include "KX_MeshProxy.h" /* for creating a new library of mesh objects */
-#include "KX_NavMeshObject.h"
-#include "KX_NetworkMessageScene.h"  //Needed for sendMessage()
-#include "KX_PyConstraintBinding.h"
-#include "KX_PyMath.h"
-#include "KX_PythonInitTypes.h"
-#include "PHY_IPhysicsEnvironment.h"
-#include "RAS_2DFilterManager.h"
-#include "RAS_ICanvas.h"
-#include "SCA_ActionActuator.h"
-#include "SCA_ArmatureSensor.h"
-#include "SCA_ConstraintActuator.h"
-#include "SCA_DynamicActuator.h"
-#include "SCA_GameActuator.h"
-#include "SCA_IInputDevice.h"
-#include "SCA_JoystickManager.h" /* JOYINDEX_MAX */
-#include "SCA_MouseActuator.h"
-#include "SCA_MovementSensor.h"
-#include "SCA_ParentActuator.h"
-#include "SCA_PropertySensor.h"
-#include "SCA_PythonJoystick.h"
-#include "SCA_PythonKeyboard.h"
-#include "SCA_PythonMouse.h"
-#include "SCA_RadarSensor.h"
-#include "SCA_RandomActuator.h"
-#include "SCA_RaySensor.h"
-#include "SCA_SceneActuator.h"
-#include "SCA_SoundActuator.h"
-#include "SCA_StateActuator.h"
-#include "SCA_SteeringActuator.h"
-#include "SCA_TrackToActuator.h"
+#include "BL_Action.hpp"
+#include "BL_Converter.hpp"
+#include "BL_Shader.hpp"
+#include "CM_Message.hpp"
+#include "KX_Globals.hpp"
+#include "KX_LibLoadStatus.hpp"
+#include "KX_MeshProxy.hpp" /* for creating a new library of mesh objects */
+#include "KX_NavMeshObject.hpp"
+#include "KX_NetworkMessageScene.hpp"  //Needed for sendMessage()
+#include "KX_PyConstraintBinding.hpp"
+#include "KX_PyMath.hpp"
+#include "KX_PythonInitTypes.hpp"
+#include "PHY_IPhysicsEnvironment.hpp"
+#include "RAS_2DFilterManager.hpp"
+#include "RAS_ICanvas.hpp"
+#include "SCA_ActionActuator.hpp"
+#include "SCA_ArmatureSensor.hpp"
+#include "SCA_ConstraintActuator.hpp"
+#include "SCA_DynamicActuator.hpp"
+#include "SCA_GameActuator.hpp"
+#include "SCA_IInputDevice.hpp"
+#include "SCA_JoystickManager.hpp" /* JOYINDEX_MAX */
+#include "SCA_MouseActuator.hpp"
+#include "SCA_MovementSensor.hpp"
+#include "SCA_ParentActuator.hpp"
+#include "SCA_PropertySensor.hpp"
+#include "SCA_PythonJoystick.hpp"
+#include "SCA_PythonKeyboard.hpp"
+#include "SCA_PythonMouse.hpp"
+#include "SCA_RadarSensor.hpp"
+#include "SCA_RandomActuator.hpp"
+#include "SCA_RaySensor.hpp"
+#include "SCA_SceneActuator.hpp"
+#include "SCA_SoundActuator.hpp"
+#include "SCA_StateActuator.hpp"
+#include "SCA_SteeringActuator.hpp"
+#include "SCA_TrackToActuator.hpp"
 
 // 'local' copy of canvas ptr, for window height/width python scripts
 
@@ -167,8 +167,8 @@ static void KX_MACRO_addTypesToDict_fn(PyObject *dict, const char *name, long va
 }
 
 // temporarily python stuff, will be put in another place later !
-#  include "EXP_Python.h"
-#  include "SCA_PythonController.h"
+#  include "EXP_Python.hpp"
+#  include "SCA_PythonController.hpp"
 // List of methods defined in the module
 
 static PyObject *ErrorObject;

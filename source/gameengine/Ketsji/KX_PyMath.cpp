@@ -36,10 +36,10 @@
 
 #ifdef WITH_PYTHON
 
-#  include "KX_PyMath.h"
+#  include "KX_PyMath.hpp"
 
-#  include "EXP_ListValue.h"
-#  include "EXP_Python.h"
+#  include "EXP_ListValue.hpp"
+#  include "EXP_Python.hpp"
 #  include "MT_Matrix4x4.h"
 #  include "MT_Vector2.h"
 #  include "MT_Vector3.h"

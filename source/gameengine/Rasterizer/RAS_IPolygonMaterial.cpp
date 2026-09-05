@@ -29,7 +29,7 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_IPolygonMaterial.h"
+#include "RAS_IPolygonMaterial.hpp"
 
 #include "DNA_material_types.h"
 

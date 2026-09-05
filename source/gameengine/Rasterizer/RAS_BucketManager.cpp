@@ -34,9 +34,9 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "RAS_BucketManager.h"
+#include "RAS_BucketManager.hpp"
 
-#include "RAS_IPolygonMaterial.h"
+#include "RAS_IPolygonMaterial.hpp"
 
 RAS_BucketManager::RAS_BucketManager()
 {

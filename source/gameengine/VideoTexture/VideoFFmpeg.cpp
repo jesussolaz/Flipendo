@@ -7,7 +7,7 @@
 
 #ifdef WITH_FFMPEG
 
-#  include "VideoFFmpeg.h"
+#  include "VideoFFmpeg.hpp"
 
 // INT64_C fix for some linux machines (C99ism)
 #  ifndef __STDC_CONSTANT_MACROS
@@ -21,7 +21,7 @@
 
 #  include "MEM_guardedalloc.h"
 
-#  include "Exception.h"
+#  include "Exception.hpp"
 #  include "BLI_listbase.h"
 #  include "BLI_string.h"
 #  include "BLI_time.h"

@@ -7,7 +7,7 @@
 
 // implementation
 
-#include "ImageRender.h"
+#include "ImageRender.hpp"
 
 #include "BKE_context.hh"
 #include "BKE_scene.hh"
@@ -17,13 +17,13 @@
 #include "GPU_state.hh"
 #include "GPU_viewport.hh"
 
-#include "CM_Message.h"
-#include "EXP_PythonCallBack.h"
-#include "KX_Globals.h"
-#include "RAS_IVertex.h"
-#include "RAS_MeshObject.h"
-#include "RAS_Polygon.h"
-#include "Texture.h"
+#include "CM_Message.hpp"
+#include "EXP_PythonCallBack.hpp"
+#include "KX_Globals.hpp"
+#include "RAS_IVertex.hpp"
+#include "RAS_MeshObject.hpp"
+#include "RAS_Polygon.hpp"
+#include "Texture.hpp"
 
 ExceptionID SceneInvalid, CameraInvalid, ObserverInvalid, FrameBufferInvalid;
 ExceptionID MirrorInvalid, MirrorSizeInvalid, MirrorNormalInvalid, MirrorHorizontal,

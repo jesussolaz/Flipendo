@@ -38,7 +38,7 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "SCA_DelaySensor.h"
+#include "SCA_DelaySensor.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

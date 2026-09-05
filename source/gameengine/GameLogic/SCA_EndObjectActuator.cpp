@@ -37,9 +37,9 @@
 // \source\gameengine\GameLogic\SCA_EndObjectActuator.cpp
 // Please look here for revision history.
 
-#include "SCA_EndObjectActuator.h"
+#include "SCA_EndObjectActuator.hpp"
 
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 SCA_EndObjectActuator::SCA_EndObjectActuator(KX_GameObject *gameobj, KX_Scene *scene)
     : SCA_IActuator(gameobj, KX_ACT_END_OBJECT), m_scene(scene)

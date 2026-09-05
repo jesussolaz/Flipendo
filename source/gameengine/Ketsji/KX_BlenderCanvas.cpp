@@ -29,7 +29,7 @@
  *  \ingroup blroutines
  */
 
-#include "KX_BlenderCanvas.h"
+#include "KX_BlenderCanvas.hpp"
 
 #include "BKE_context.hh"
 #include "BKE_image.hh"
@@ -44,8 +44,8 @@
 #include "WM_api.hh"
 #include "wm_window.hh"
 
-#include "KX_Globals.h"
-#include "KX_KetsjiEngine.h"
+#include "KX_Globals.hpp"
+#include "KX_KetsjiEngine.hpp"
 
 KX_BlenderCanvas::KX_BlenderCanvas(
     RAS_Rasterizer *rasty, wmWindowManager *wm, wmWindow *win, rcti *viewport, struct ARegion *ar, bool useViewportRender)

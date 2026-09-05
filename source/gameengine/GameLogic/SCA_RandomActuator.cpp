@@ -32,11 +32,11 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_RandomActuator.h"
+#include "SCA_RandomActuator.hpp"
 
-#include "CM_Message.h"
-#include "EXP_FloatValue.h"
-#include "EXP_IntValue.h"
+#include "CM_Message.hpp"
+#include "EXP_FloatValue.hpp"
+#include "EXP_IntValue.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

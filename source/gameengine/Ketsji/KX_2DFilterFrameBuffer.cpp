@@ -24,7 +24,7 @@
  *  \ingroup ketsji
  */
 
-#include "KX_2DFilterFrameBuffer.h"
+#include "KX_2DFilterFrameBuffer.hpp"
 
 #ifdef WITH_PYTHON
 #include "../../blender/python/gpu/gpu_py_texture.hh"

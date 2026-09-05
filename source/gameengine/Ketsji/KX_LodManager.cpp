@@ -24,16 +24,16 @@
  *  \ingroup ketsji
  */
 
-#include "KX_LodManager.h"
+#include "KX_LodManager.hpp"
 
 #include "BLI_listbase.h"
 #include "BLI_math_vector.h"
 #include "DNA_object_types.h"
 
-#include "BL_DataConversion.h"
-#include "EXP_ListWrapper.h"
-#include "KX_LodLevel.h"
-#include "KX_Scene.h"
+#include "BL_DataConversion.hpp"
+#include "EXP_ListWrapper.hpp"
+#include "KX_LodLevel.hpp"
+#include "KX_Scene.hpp"
 
 KX_LodManager::LodLevelIterator::LodLevelIterator(const std::vector<KX_LodLevel *> &levels,
                                                   unsigned short index,

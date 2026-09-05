@@ -30,9 +30,9 @@
  *  \ingroup ketsji
  */
 
-#include "KX_RayCast.h"
+#include "KX_RayCast.hpp"
 
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 
 KX_RayCast::KX_RayCast(PHY_IPhysicsController *ignoreController, bool faceNormal, bool faceUV)
     : PHY_IRayCastFilterCallback(ignoreController, faceNormal, faceUV)

@@ -33,9 +33,9 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "RAS_Polygon.h"
+#include "RAS_Polygon.hpp"
 
-#include "RAS_IDisplayArray.h"
+#include "RAS_IDisplayArray.hpp"
 
 RAS_Polygon::RAS_Polygon(RAS_MaterialBucket *bucket, RAS_IDisplayArray *darray, int numvert)
     : m_bucket(bucket), m_darray(darray), m_numvert(numvert), m_polyflags(0)

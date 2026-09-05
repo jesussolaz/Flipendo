@@ -29,7 +29,7 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_IVertex.h"
+#include "RAS_IVertex.hpp"
 
 bool operator==(const RAS_VertexFormat &format1, const RAS_VertexFormat &format2)
 {

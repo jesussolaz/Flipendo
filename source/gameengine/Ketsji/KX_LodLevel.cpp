@@ -24,9 +24,9 @@
  *  \ingroup ketsji
  */
 
-#include "KX_LodLevel.h"
+#include "KX_LodLevel.hpp"
 
-#include "KX_MeshProxy.h"
+#include "KX_MeshProxy.hpp"
 
 KX_LodLevel::KX_LodLevel(float distance,
                          float hysteresis,

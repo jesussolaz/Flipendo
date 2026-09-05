@@ -29,14 +29,14 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_MeshObject.h"
+#include "RAS_MeshObject.hpp"
 
 #include "DNA_mesh_types.h"
 
-#include "CM_Message.h"
-#include "RAS_DisplayArray.h"
-#include "RAS_IPolygonMaterial.h"
-#include "RAS_Polygon.h"
+#include "CM_Message.hpp"
+#include "RAS_DisplayArray.hpp"
+#include "RAS_IPolygonMaterial.hpp"
+#include "RAS_Polygon.hpp"
 
 RAS_MeshObject::RAS_MeshObject(Mesh *mesh,
                                int conversionTotverts,

@@ -24,10 +24,10 @@
  *  \ingroup ketsji
  */
 
-#include "KX_2DFilterManager.h"
+#include "KX_2DFilterManager.hpp"
 
-#include "CM_Message.h"
-#include "KX_2DFilter.h"
+#include "CM_Message.hpp"
+#include "KX_2DFilter.hpp"
 
 KX_2DFilterManager::KX_2DFilterManager()
 {

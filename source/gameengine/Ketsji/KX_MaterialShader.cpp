@@ -1,6 +1,6 @@
-#include "KX_MaterialShader.h"
+#include "KX_MaterialShader.hpp"
 
-#include "BL_Shader.h"
+#include "BL_Shader.hpp"
 
 KX_MaterialShader::KX_MaterialShader() : m_shader(new BL_Shader())
 {

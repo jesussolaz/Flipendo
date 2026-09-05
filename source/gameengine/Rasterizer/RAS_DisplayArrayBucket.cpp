@@ -29,7 +29,7 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_DisplayArrayBucket.h"
+#include "RAS_DisplayArrayBucket.hpp"
 
 #ifdef _MSC_VER
 #  pragma warning(disable : 4786)

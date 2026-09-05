@@ -33,7 +33,7 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "KX_Light.h"
+#include "KX_Light.hpp"
 
 KX_LightObject::KX_LightObject() : KX_GameObject(), m_obLight(nullptr)
 {

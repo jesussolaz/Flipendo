@@ -29,7 +29,7 @@
  *  \ingroup ketsji
  */
 
-#include "KX_TimeLogger.h"
+#include "KX_TimeLogger.hpp"
 
 KX_TimeLogger::KX_TimeLogger(unsigned int maxNumMeasurements)
     : m_maxNumMeasurements(maxNumMeasurements), m_logStart(0), m_logging(false)

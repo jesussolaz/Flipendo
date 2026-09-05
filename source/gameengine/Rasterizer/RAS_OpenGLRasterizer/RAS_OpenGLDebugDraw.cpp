@@ -24,7 +24,7 @@
  *  \ingroup bgerastogl
  */
 
-#include "RAS_DebugDraw.h"
+#include "RAS_DebugDraw.hpp"
 
 #include "BLF_api.hh"
 #include "DNA_scene_types.h"
@@ -33,11 +33,11 @@
 #include "GPU_immediate.hh"
 #include "GPU_matrix.hh"
 
-#include "KX_Camera.h"
-#include "KX_Globals.h"
-#include "KX_KetsjiEngine.h"
-#include "RAS_ICanvas.h"
-#include "RAS_OpenGLDebugDraw.h"
+#include "KX_Camera.hpp"
+#include "KX_Globals.hpp"
+#include "KX_KetsjiEngine.hpp"
+#include "RAS_ICanvas.hpp"
+#include "RAS_OpenGLDebugDraw.hpp"
 
 RAS_OpenGLDebugDraw::RAS_OpenGLDebugDraw()
 {

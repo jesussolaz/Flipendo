@@ -29,9 +29,9 @@
  *  \ingroup bgeconv
  */
 
-#include "BL_SceneConverter.h"
+#include "BL_SceneConverter.hpp"
 
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 BL_SceneConverter::BL_SceneConverter()
 {

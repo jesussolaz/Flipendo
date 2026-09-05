@@ -5,7 +5,7 @@
  *  \ingroup bgevideotex
  */
 
-#include "FilterBlueScreen.h"
+#include "FilterBlueScreen.hpp"
 
 // implementation FilterBlueScreen
 

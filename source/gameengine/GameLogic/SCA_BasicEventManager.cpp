@@ -33,9 +33,9 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_BasicEventManager.h"
+#include "SCA_BasicEventManager.hpp"
 
-#include "SCA_ISensor.h"
+#include "SCA_ISensor.hpp"
 
 SCA_BasicEventManager::SCA_BasicEventManager(class SCA_LogicManager *logicmgr)
     : SCA_EventManager(logicmgr, BASIC_EVENTMGR)

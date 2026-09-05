@@ -7,13 +7,13 @@
 
 // implementation
 
-#include "ImageViewport.h"
+#include "ImageViewport.hpp"
 
-#include "FilterSource.h"
-#include "KX_Globals.h"
-#include "KX_KetsjiEngine.h"
-#include "RAS_ICanvas.h"
-#include "Texture.h"
+#include "FilterSource.hpp"
+#include "KX_Globals.hpp"
+#include "KX_KetsjiEngine.hpp"
+#include "RAS_ICanvas.hpp"
+#include "Texture.hpp"
 
 ImageViewport::ImageViewport() : m_alpha(false), m_texInit(false)
 {

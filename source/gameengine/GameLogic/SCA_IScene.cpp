@@ -29,7 +29,7 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_IScene.h"
+#include "SCA_IScene.hpp"
 
 #define DEBUG_MAX_DISPLAY 100
 

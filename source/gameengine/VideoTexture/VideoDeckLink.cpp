@@ -29,13 +29,13 @@
 
 #  include "atomic_ops.h"
 
-#  include "DeckLink.h"
-#  include "Exception.h"
-#  include "KX_KetsjiEngine.h"
-#  include "KX_PythonInit.h"
+#  include "DeckLink.hpp"
+#  include "Exception.hpp"
+#  include "KX_KetsjiEngine.hpp"
+#  include "KX_PythonInit.hpp"
 #  include "MEM_guardedalloc.h"
 #  include "BLI_time.h"
-#  include "VideoDeckLink.h"
+#  include "VideoDeckLink.hpp"
 
 extern ExceptionID DeckLinkInternalError;
 ExceptionID SourceVideoOnlyCapture, VideoDeckLinkBadFormat, VideoDeckLinkOpenCard,

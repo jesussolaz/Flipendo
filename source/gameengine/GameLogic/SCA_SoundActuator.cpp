@@ -33,7 +33,7 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_SoundActuator.h"
+#include "SCA_SoundActuator.hpp"
 
 #ifdef WITH_AUDASPACE
 typedef float sample_t;
@@ -44,8 +44,8 @@ typedef float sample_t;
 #  include <python/PyAPI.h>
 #endif
 
-#include "KX_Camera.h"
-#include "KX_Globals.h"
+#include "KX_Camera.hpp"
+#include "KX_Globals.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

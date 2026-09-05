@@ -24,11 +24,11 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_PythonKeyboard.h"
+#include "SCA_PythonKeyboard.hpp"
 
 #include "GHOST_C-api.h"
 
-#include "SCA_IInputDevice.h"
+#include "SCA_IInputDevice.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

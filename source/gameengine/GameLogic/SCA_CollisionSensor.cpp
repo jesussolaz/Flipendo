@@ -32,12 +32,12 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_CollisionSensor.h"
+#include "SCA_CollisionSensor.hpp"
 
-#include "KX_CollisionEventManager.h"
-#include "PHY_IPhysicsController.h"
-#include "PHY_IPhysicsEnvironment.h"
-#include "RAS_MeshObject.h"
+#include "KX_CollisionEventManager.hpp"
+#include "PHY_IPhysicsController.hpp"
+#include "PHY_IPhysicsEnvironment.hpp"
+#include "RAS_MeshObject.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

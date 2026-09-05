@@ -24,16 +24,16 @@
  *  \ingroup common
  */
 
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 
 #include "BLI_path_utils.hh"
 #include "termcolor.hpp"
 
-#include "SCA_ILogicBrick.h"
+#include "SCA_ILogicBrick.hpp"
 
 #ifdef WITH_PYTHON
 
-#  include "EXP_Python.h"
+#  include "EXP_Python.hpp"
 #  include "py_capi_utils.hh"  // for PyC_FileAndNum only
 
 #endif  // WITH_PYTHON

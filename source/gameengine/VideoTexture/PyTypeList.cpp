@@ -5,7 +5,7 @@
  *  \ingroup bgevideotex
  */
 
-#include "PyTypeList.h"
+#include "PyTypeList.hpp"
 
 /// destructor
 PyTypeList::~PyTypeList()

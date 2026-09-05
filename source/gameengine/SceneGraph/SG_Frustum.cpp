@@ -5,7 +5,7 @@
  *  \ingroup bgesg
  */
 
-#include "SG_Frustum.h"
+#include "SG_Frustum.hpp"
 
 #include "MT_Frustum.h"
 

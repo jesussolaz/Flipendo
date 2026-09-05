@@ -26,7 +26,7 @@
  *  \ingroup blroutines
  */
 
-#include "LA_SystemCommandLine.h"
+#include "LA_SystemCommandLine.hpp"
 
 #include <map>
 #include <string>

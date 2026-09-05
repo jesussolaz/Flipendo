@@ -30,16 +30,16 @@
  *  \ingroup ketsji
  */
 
-#include "KX_Camera.h"
+#include "KX_Camera.hpp"
 
 #include "GPU_matrix.hh"
 #include "GPU_viewport.hh"
 
 #include "DNA_camera_types.h"
-#include "KX_Globals.h"
-#include "KX_PyMath.h"
-#include "KX_RayCast.h"
-#include "RAS_ICanvas.h"
+#include "KX_Globals.hpp"
+#include "KX_PyMath.hpp"
+#include "KX_RayCast.hpp"
+#include "RAS_ICanvas.hpp"
 
 KX_Camera::KX_Camera()
     : KX_GameObject(),

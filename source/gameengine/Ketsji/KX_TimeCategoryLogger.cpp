@@ -29,7 +29,7 @@
  *  \ingroup ketsji
  */
 
-#include "KX_TimeCategoryLogger.h"
+#include "KX_TimeCategoryLogger.hpp"
 
 KX_TimeCategoryLogger::KX_TimeCategoryLogger(const CM_Clock &clock,
                                              unsigned int maxNumMeasurements)

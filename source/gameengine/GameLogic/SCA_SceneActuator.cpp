@@ -32,10 +32,10 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_SceneActuator.h"
+#include "SCA_SceneActuator.hpp"
 
-#include "KX_Camera.h"
-#include "KX_Globals.h"
+#include "KX_Camera.hpp"
+#include "KX_Globals.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

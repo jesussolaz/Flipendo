@@ -29,10 +29,10 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_JoystickSensor.h"
+#include "SCA_JoystickSensor.hpp"
 
-#include "CM_Message.h"
-#include "SCA_JoystickManager.h"
+#include "CM_Message.hpp"
+#include "SCA_JoystickManager.hpp"
 
 #include "BLI_compiler_attrs.h"
 

@@ -31,9 +31,9 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_CollectionActuator.h"
+#include "SCA_CollectionActuator.hpp"
 
-#include "KX_Camera.h"
+#include "KX_Camera.hpp"
 
 #include "BKE_collection.hh"
 

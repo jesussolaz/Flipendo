@@ -24,7 +24,7 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_FrameBuffer.h"
+#include "RAS_FrameBuffer.hpp"
 
 #include "GPU_framebuffer.hh"
 

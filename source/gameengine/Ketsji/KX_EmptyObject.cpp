@@ -29,7 +29,7 @@
  *  \ingroup ketsji
  */
 
-#include "KX_EmptyObject.h"
+#include "KX_EmptyObject.hpp"
 
 KX_EmptyObject::~KX_EmptyObject()
 {

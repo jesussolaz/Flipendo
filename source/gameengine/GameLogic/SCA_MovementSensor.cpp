@@ -32,10 +32,10 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_MovementSensor.h"
+#include "SCA_MovementSensor.hpp"
 
 #include "DNA_sensor_types.h"
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 SCA_MovementSensor::SCA_MovementSensor(
     SCA_EventManager *eventmgr, SCA_IObject *gameobj, int axis, bool localflag, float threshold)

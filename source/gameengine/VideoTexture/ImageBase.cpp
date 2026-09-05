@@ -5,11 +5,11 @@
  *  \ingroup bgevideotex
  */
 
-#include "ImageBase.h"
+#include "ImageBase.hpp"
 
 #include <epoxy/gl.h>
 
-#include "Exception.h"
+#include "Exception.hpp"
 
 #if (defined(WIN32) || defined(WIN64))
 #  define strcasecmp _stricmp

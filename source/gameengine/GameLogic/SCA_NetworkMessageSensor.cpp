@@ -30,11 +30,11 @@
  *  \ingroup ketsjinet
  */
 
-#include "SCA_NetworkMessageSensor.h"
+#include "SCA_NetworkMessageSensor.hpp"
 
-#include "EXP_ListValue.h"
-#include "EXP_StringValue.h"
-#include "KX_NetworkMessageScene.h"
+#include "EXP_ListValue.hpp"
+#include "EXP_StringValue.hpp"
+#include "KX_NetworkMessageScene.hpp"
 
 #ifdef NAN_NET_DEBUG
 #  include <iostream>

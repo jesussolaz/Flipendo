@@ -24,13 +24,13 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_2DFilterFrameBuffer.h"
+#include "RAS_2DFilterFrameBuffer.hpp"
 
 #include "GPU_framebuffer.hh"
 #include "GPU_state.hh"
 
-#include "RAS_FrameBuffer.h"
-#include "RAS_ICanvas.h"
+#include "RAS_FrameBuffer.hpp"
+#include "RAS_ICanvas.hpp"
 
 RAS_2DFilterFrameBuffer::RAS_2DFilterFrameBuffer(unsigned short colorSlots,
                                                  Flag flag,

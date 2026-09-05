@@ -24,11 +24,11 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_InputEvent.h"
+#include "SCA_InputEvent.hpp"
 
 #include <algorithm>
 
-#include "EXP_ListWrapper.h"
+#include "EXP_ListWrapper.hpp"
 
 SCA_InputEvent::SCA_InputEvent() : m_unicode(0)
 {

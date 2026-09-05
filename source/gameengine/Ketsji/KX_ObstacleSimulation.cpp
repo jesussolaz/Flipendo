@@ -26,14 +26,14 @@
  * Simulation for obstacle avoidance behavior
  */
 
-#include "KX_ObstacleSimulation.h"
+#include "KX_ObstacleSimulation.hpp"
 
 #include "BLI_math_geom.h"
 #include "BLI_math_rotation.h"
 #include "BLI_math_vector.h"
 
-#include "KX_Globals.h"
-#include "KX_NavMeshObject.h"
+#include "KX_Globals.hpp"
+#include "KX_NavMeshObject.hpp"
 
 namespace {
 inline float perp(const MT_Vector2 &a, const MT_Vector2 &b)

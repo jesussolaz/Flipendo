@@ -44,11 +44,11 @@
  *
  * ----------------------------- */
 
-#include "EXP_PyObjectPlus.h"
+#include "EXP_PyObjectPlus.hpp"
 
 #include "MEM_guardedalloc.h"
 
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 
 EXP_PyObjectPlus::EXP_PyObjectPlus()
 {

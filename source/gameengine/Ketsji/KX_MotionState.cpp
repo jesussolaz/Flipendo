@@ -29,9 +29,9 @@
  *  \ingroup ketsji
  */
 
-#include "KX_MotionState.h"
+#include "KX_MotionState.hpp"
 
-#include "SG_Node.h"
+#include "SG_Node.hpp"
 
 KX_MotionState::KX_MotionState(SG_Node *node) : m_node(node)
 {

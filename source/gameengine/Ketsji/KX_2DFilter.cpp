@@ -24,13 +24,13 @@
  *  \ingroup ketsji
  */
 
-#include "KX_2DFilter.h"
+#include "KX_2DFilter.hpp"
 
 #ifdef WITH_PYTHON
 #include "../python/gpu/gpu_py_texture.hh"
 #endif
 
-#include "KX_2DFilterFrameBuffer.h"
+#include "KX_2DFilterFrameBuffer.hpp"
 
 KX_2DFilter::KX_2DFilter(RAS_2DFilterData &data) : RAS_2DFilter(data)
 {

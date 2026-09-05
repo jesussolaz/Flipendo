@@ -24,7 +24,7 @@
  *  \ingroup device
  */
 
-#include "DEV_InputDevice.h"
+#include "DEV_InputDevice.hpp"
 
 #include "GHOST_Types.h"
 

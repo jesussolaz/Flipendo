@@ -33,7 +33,7 @@
 #  pragma warning(disable : 4786)  // suppress stl-MSVC debug info warning
 #endif
 
-#include "BL_Converter.h"
+#include "BL_Converter.hpp"
 
 #include "BKE_context.hh"
 #include "BKE_idtype.hh"
@@ -50,23 +50,23 @@
 #include "DNA_mesh_types.h"
 #include "DNA_scene_types.h"
 
-#include "BL_DataConversion.h"
-#include "BL_SceneConverter.h"
-#include "DummyPhysicsEnvironment.h"
-#include "EXP_StringValue.h"
-#include "KX_GameObject.h"
-#include "KX_LibLoadStatus.h"
-#include "KX_PythonInit.h"  // So we can handle adding new text datablocks for Python to import
-#include "LA_SystemCommandLine.h"
-#include "RAS_BucketManager.h"
-#include "SCA_ActionActuator.h"
+#include "BL_DataConversion.hpp"
+#include "BL_SceneConverter.hpp"
+#include "DummyPhysicsEnvironment.hpp"
+#include "EXP_StringValue.hpp"
+#include "KX_GameObject.hpp"
+#include "KX_LibLoadStatus.hpp"
+#include "KX_PythonInit.hpp"  // So we can handle adding new text datablocks for Python to import
+#include "LA_SystemCommandLine.hpp"
+#include "RAS_BucketManager.hpp"
+#include "SCA_ActionActuator.hpp"
 
 #ifdef WITH_BULLET
-#  include "CcdPhysicsEnvironment.h"
+#  include "CcdPhysicsEnvironment.hpp"
 #endif
 
 #ifdef WITH_PYTHON
-#  include "Texture.h"  // For FreeAllTextures.
+#  include "Texture.hpp"  // For FreeAllTextures.
 #endif                  // WITH_PYTHON
 
 BL_Converter::SceneSlot::SceneSlot() = default;

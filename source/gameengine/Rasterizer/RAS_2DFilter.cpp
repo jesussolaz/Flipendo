@@ -20,17 +20,17 @@
  * ***** END GPL LICENSE BLOCK *****
  */
 
-#include "RAS_2DFilter.h"
+#include "RAS_2DFilter.hpp"
 
 #include "GPU_framebuffer.hh"
 #include "GPU_immediate.hh"
 #include "GPU_state.hh"
 #include "GPU_uniform_buffer.hh"
 
-#include "EXP_Value.h"
-#include "RAS_2DFilterFrameBuffer.h"
-#include "RAS_FrameBuffer.h"
-#include "RAS_ICanvas.h"
+#include "EXP_Value.hpp"
+#include "RAS_2DFilterFrameBuffer.hpp"
+#include "RAS_FrameBuffer.hpp"
+#include "RAS_ICanvas.hpp"
 
 extern "C" {
 extern char datatoc_RAS_VertexShader2DFilter_glsl[];

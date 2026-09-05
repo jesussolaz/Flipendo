@@ -30,9 +30,9 @@
  *  \ingroup ketsjinet
  */
 
-#include "SCA_NetworkMessageActuator.h"
+#include "SCA_NetworkMessageActuator.hpp"
 
-#include "KX_NetworkMessageScene.h"
+#include "KX_NetworkMessageScene.hpp"
 
 SCA_NetworkMessageActuator::SCA_NetworkMessageActuator(
     SCA_IObject *gameobj,                  // the actuator controlling object

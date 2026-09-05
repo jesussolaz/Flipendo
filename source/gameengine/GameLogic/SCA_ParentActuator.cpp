@@ -32,9 +32,9 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_ParentActuator.h"
+#include "SCA_ParentActuator.hpp"
 
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

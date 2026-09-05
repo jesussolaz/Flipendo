@@ -5,7 +5,7 @@
  *  \ingroup bgevideotex
  */
 
-#include "FilterNormal.h"
+#include "FilterNormal.hpp"
 
 // implementation FilterNormal
 

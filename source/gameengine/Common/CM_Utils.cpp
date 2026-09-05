@@ -24,7 +24,7 @@
  *  \ingroup common
  */
 
-#include "CM_Utils.h"
+#include "CM_Utils.hpp"
 
 /* Remove the 3 first chars as the object
  * has a prefix now after commit d6cefef98

@@ -24,13 +24,13 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_2DFilterManager.h"
+#include "RAS_2DFilterManager.hpp"
 
 #include "GPU_framebuffer.hh"
 
-#include "CM_Message.h"
-#include "RAS_2DFilter.h"
-#include "RAS_FrameBuffer.h"
+#include "CM_Message.hpp"
+#include "RAS_2DFilter.hpp"
+#include "RAS_FrameBuffer.hpp"
 
 extern "C" {
 extern char datatoc_RAS_Blur2DFilter_glsl[];

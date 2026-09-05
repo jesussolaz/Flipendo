@@ -5,7 +5,7 @@
  *  \ingroup bgesg
  */
 
-#include "SG_Controller.h"
+#include "SG_Controller.hpp"
 
 void SG_Controller::SetNode(SG_Node *node)
 {

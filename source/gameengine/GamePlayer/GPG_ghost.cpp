@@ -123,11 +123,11 @@
 #include "wm_window.hh"
 #include "windowmanager/intern/wm_window_private.hh"
 
-#include "CM_Message.h"
-#include "KX_Globals.h"
-#include "KX_PythonInit.h"
-#include "LA_PlayerLauncher.h"
-#include "LA_SystemCommandLine.h"
+#include "CM_Message.hpp"
+#include "KX_Globals.hpp"
+#include "KX_PythonInit.hpp"
+#include "LA_PlayerLauncher.hpp"
+#include "LA_SystemCommandLine.hpp"
 
 // keep at the bottom for linking
 #include "ANIM_keyingsets.hh"

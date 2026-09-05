@@ -22,7 +22,7 @@
  *  \ingroup ketsji
  */
 
-#include "RAS_Texture.h"
+#include "RAS_Texture.hpp"
 
 RAS_Texture::RAS_Texture() : m_name("")
 {

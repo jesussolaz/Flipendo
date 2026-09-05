@@ -19,7 +19,7 @@
 
 #include <regex>
 
-#include "EXP_ListValue.h"
+#include "EXP_ListValue.hpp"
 
 EXP_BaseListValue::EXP_BaseListValue() : m_bReleaseContents(true)
 {

@@ -15,15 +15,15 @@
  *
  */
 
-#include "EXP_IntValue.h"
+#include "EXP_IntValue.hpp"
 
 #include <fmt/format.h>
 
-#include "CM_Message.h"
-#include "EXP_BoolValue.h"
-#include "EXP_ErrorValue.h"
-#include "EXP_FloatValue.h"
-#include "EXP_StringValue.h"
+#include "CM_Message.hpp"
+#include "EXP_BoolValue.hpp"
+#include "EXP_ErrorValue.hpp"
+#include "EXP_FloatValue.hpp"
+#include "EXP_StringValue.hpp"
 
 EXP_IntValue::EXP_IntValue()
 {

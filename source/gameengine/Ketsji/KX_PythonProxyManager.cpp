@@ -20,10 +20,10 @@
  * ***** END GPL LICENSE BLOCK *****
  */
 
-#include "KX_PythonProxyManager.h"
+#include "KX_PythonProxyManager.hpp"
 
-#include "CM_List.h"
-#include "KX_GameObject.h"
+#include "CM_List.hpp"
+#include "KX_GameObject.hpp"
 
 static bool compareObjectDepth(KX_GameObject *o1, KX_GameObject *o2)
 {

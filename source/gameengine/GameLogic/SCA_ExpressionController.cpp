@@ -32,12 +32,12 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_ExpressionController.h"
+#include "SCA_ExpressionController.hpp"
 
-#include "CM_Message.h"
-#include "EXP_InputParser.h"
-#include "SCA_ISensor.h"
-#include "SCA_LogicManager.h"
+#include "CM_Message.hpp"
+#include "EXP_InputParser.hpp"
+#include "SCA_ISensor.hpp"
+#include "SCA_LogicManager.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

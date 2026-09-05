@@ -26,11 +26,11 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_2DFilterActuator.h"
+#include "SCA_2DFilterActuator.hpp"
 
-#include "CM_Message.h"
-#include "RAS_2DFilter.h"
-#include "RAS_2DFilterManager.h"
+#include "CM_Message.hpp"
+#include "RAS_2DFilter.hpp"
+#include "RAS_2DFilterManager.hpp"
 
 SCA_2DFilterActuator::SCA_2DFilterActuator(SCA_IObject *gameobj,
                                            int type,

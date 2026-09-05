@@ -32,13 +32,13 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_ConstraintActuator.h"
+#include "SCA_ConstraintActuator.hpp"
 
-#include "CM_Message.h"
-#include "KX_GameObject.h"
-#include "KX_Globals.h"  // KX_GetActiveScene
-#include "KX_RayCast.h"
-#include "RAS_MeshObject.h"
+#include "CM_Message.hpp"
+#include "KX_GameObject.hpp"
+#include "KX_Globals.hpp"  // KX_GetActiveScene
+#include "KX_RayCast.hpp"
+#include "RAS_MeshObject.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

@@ -69,21 +69,21 @@ set(SRC
   BL_DataConversion.cpp
   BL_ScalarInterpolator.cpp
   BL_SceneConverter.cpp
-  #BL_IpoConvert.cpp (everything inside BL_IpoConvert.h)
+  #BL_IpoConvert.cpp (everything inside BL_IpoConvert.hpp)
 
-  BL_ArmatureActuator.h
-  BL_ArmatureChannel.h
-  BL_ArmatureConstraint.h
-  BL_ArmatureObject.h
-  BL_Converter.h
-  BL_ConvertActuators.h
-  BL_ConvertControllers.h
-  BL_ConvertProperties.h
-  BL_ConvertSensors.h
-  BL_DataConversion.h
-  BL_IpoConvert.h
-  BL_ScalarInterpolator.h
-  BL_SceneConverter.h
+  BL_ArmatureActuator.hpp
+  BL_ArmatureChannel.hpp
+  BL_ArmatureConstraint.hpp
+  BL_ArmatureObject.hpp
+  BL_Converter.hpp
+  BL_ConvertActuators.hpp
+  BL_ConvertControllers.hpp
+  BL_ConvertProperties.hpp
+  BL_ConvertSensors.hpp
+  BL_DataConversion.hpp
+  BL_IpoConvert.hpp
+  BL_ScalarInterpolator.hpp
+  BL_SceneConverter.hpp
 )
 
 set(LIB

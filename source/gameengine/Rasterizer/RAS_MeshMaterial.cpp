@@ -20,10 +20,10 @@
  * ***** END GPL LICENSE BLOCK *****
  */
 
-#include "RAS_MeshMaterial.h"
+#include "RAS_MeshMaterial.hpp"
 
-#include "RAS_IDisplayArray.h"
-#include "RAS_MaterialBucket.h"
+#include "RAS_IDisplayArray.hpp"
+#include "RAS_MaterialBucket.hpp"
 
 RAS_MeshMaterial::RAS_MeshMaterial(RAS_MeshObject *mesh,
                                    RAS_MaterialBucket *bucket,

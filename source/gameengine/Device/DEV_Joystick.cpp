@@ -29,7 +29,7 @@
  *  \ingroup device
  */
 
-#include "DEV_Joystick.h"
+#include "DEV_Joystick.hpp"
 
 #ifdef WITH_SDL
 #  include <SDL.h>
@@ -38,8 +38,8 @@
 #include "BKE_appdir.hh"
 #include "BLI_path_utils.hh"
 
-#include "CM_Message.h"
-#include "DEV_JoystickPrivate.h"
+#include "CM_Message.hpp"
+#include "DEV_JoystickPrivate.hpp"
 
 DEV_Joystick::DEV_Joystick(short index)
     : m_joyindex(index),

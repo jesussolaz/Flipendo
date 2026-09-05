@@ -36,7 +36,7 @@
 /* When you use this, send an email to: matumoto@math.keio.ac.jp   */
 /* with an appropriate reference to your work.                     */
 
-#include "SCA_RandomNumberGenerator.h"
+#include "SCA_RandomNumberGenerator.hpp"
 
 /* Period parameters */
 #define N 624

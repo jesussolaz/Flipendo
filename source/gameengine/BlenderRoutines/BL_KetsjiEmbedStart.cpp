@@ -48,10 +48,10 @@
 #include "WM_api.hh"
 #include "wm_window.hh"
 
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 #include "GHOST_ISystem.hh"
-#include "KX_Globals.h"
-#include "LA_BlenderLauncher.h"
+#include "KX_Globals.hpp"
+#include "LA_BlenderLauncher.hpp"
 
 extern "C" {
 

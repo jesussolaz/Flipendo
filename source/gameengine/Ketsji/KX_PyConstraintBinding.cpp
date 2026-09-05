@@ -29,15 +29,15 @@
  *  \ingroup ketsji
  */
 
-#include "KX_PyConstraintBinding.h"
+#include "KX_PyConstraintBinding.hpp"
 
-#include "KX_CharacterWrapper.h"
-#include "KX_ConstraintWrapper.h"
-#include "KX_GameObject.h"  // ConvertPythonToGameObject()
-#include "KX_Globals.h"
-#include "KX_VehicleWrapper.h"
-#include "PHY_IConstraint.h"
-#include "PHY_IPhysicsEnvironment.h"
+#include "KX_CharacterWrapper.hpp"
+#include "KX_ConstraintWrapper.hpp"
+#include "KX_GameObject.hpp"  // ConvertPythonToGameObject()
+#include "KX_Globals.hpp"
+#include "KX_VehicleWrapper.hpp"
+#include "PHY_IConstraint.hpp"
+#include "PHY_IPhysicsEnvironment.hpp"
 
 #ifdef WITH_BULLET
 #  include "LinearMath/btIDebugDraw.h"

@@ -24,10 +24,10 @@
  *  \ingroup bgerastogl
  */
 
-#include "RAS_DebugDraw.h"
+#include "RAS_DebugDraw.hpp"
 
 #include "MT_Frustum.h"
-#include "RAS_OpenGLDebugDraw.h"
+#include "RAS_OpenGLDebugDraw.hpp"
 
 RAS_DebugDraw::RAS_DebugDraw()
 {

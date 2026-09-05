@@ -29,7 +29,7 @@
  *  \ingroup bgeconv
  */
 
-#include "BL_ScalarInterpolator.h"
+#include "BL_ScalarInterpolator.hpp"
 
 #include "ANIM_action.hh"
 #include "BKE_fcurve.hh"

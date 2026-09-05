@@ -15,7 +15,7 @@
  *
  */
 
-#include "EXP_ErrorValue.h"
+#include "EXP_ErrorValue.hpp"
 
 EXP_ErrorValue::EXP_ErrorValue() : m_strErrorText("Error")
 {

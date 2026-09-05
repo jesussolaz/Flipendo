@@ -26,9 +26,9 @@
 
 #include <memory>  // We have to include that on Windows to make memset available
 
-#include "CM_Message.h"
-#include "DEV_Joystick.h"
-#include "DEV_JoystickPrivate.h"
+#include "CM_Message.hpp"
+#include "DEV_Joystick.hpp"
+#include "DEV_JoystickPrivate.hpp"
 #include "BLI_time.h"  // Module to get real time in Game Engine
 
 bool DEV_Joystick::RumblePlay(float strengthLeft, float strengthRight, unsigned int duration)

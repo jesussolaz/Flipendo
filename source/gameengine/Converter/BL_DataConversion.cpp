@@ -49,7 +49,7 @@
 /* TODO: Disabled for now, because of eval_ctx. */
 #define THREADED_DAG_WORKAROUND
 
-#include "BL_DataConversion.h"
+#include "BL_DataConversion.hpp"
 
 #include <fmt/format.h>
 
@@ -81,30 +81,30 @@
 
 /* end of blender include block */
 
-#include "BL_ArmatureObject.h"
-#include "BL_SceneConverter.h"
-#include "BL_ConvertActuators.h"
-#include "BL_ConvertControllers.h"
-#include "BL_ConvertProperties.h"
-#include "BL_ConvertSensors.h"
-#include "KX_BlenderMaterial.h"
-#include "KX_BoneParentNodeRelationship.h"
-#include "KX_Camera.h"
-#include "KX_ClientObjectInfo.h"
-#include "KX_EmptyObject.h"
-#include "KX_FontObject.h"
-#include "KX_Light.h"
-#include "KX_LodManager.h"
-#include "KX_MotionState.h"
-#include "KX_NavMeshObject.h"
-#include "KX_NodeRelationships.h"
-#include "KX_ObstacleSimulation.h"
-#include "KX_PyConstraintBinding.h"
-#include "KX_PythonComponent.h"
-#include "RAS_ICanvas.h"
-#include "RAS_Vertex.h"
+#include "BL_ArmatureObject.hpp"
+#include "BL_SceneConverter.hpp"
+#include "BL_ConvertActuators.hpp"
+#include "BL_ConvertControllers.hpp"
+#include "BL_ConvertProperties.hpp"
+#include "BL_ConvertSensors.hpp"
+#include "KX_BlenderMaterial.hpp"
+#include "KX_BoneParentNodeRelationship.hpp"
+#include "KX_Camera.hpp"
+#include "KX_ClientObjectInfo.hpp"
+#include "KX_EmptyObject.hpp"
+#include "KX_FontObject.hpp"
+#include "KX_Light.hpp"
+#include "KX_LodManager.hpp"
+#include "KX_MotionState.hpp"
+#include "KX_NavMeshObject.hpp"
+#include "KX_NodeRelationships.hpp"
+#include "KX_ObstacleSimulation.hpp"
+#include "KX_PyConstraintBinding.hpp"
+#include "KX_PythonComponent.hpp"
+#include "RAS_ICanvas.hpp"
+#include "RAS_Vertex.hpp"
 #ifdef WITH_BULLET
-#  include "CcdPhysicsEnvironment.h"
+#  include "CcdPhysicsEnvironment.hpp"
 #endif
 
 using namespace blender;

@@ -33,9 +33,9 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_MouseSensor.h"
+#include "SCA_MouseSensor.hpp"
 
-#include "SCA_MouseManager.h"
+#include "SCA_MouseManager.hpp"
 
 #include "BLI_compiler_attrs.h"
 

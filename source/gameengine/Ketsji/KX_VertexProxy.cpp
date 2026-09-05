@@ -31,15 +31,15 @@
 
 #ifdef WITH_PYTHON
 
-#  include "KX_VertexProxy.h"
+#  include "KX_VertexProxy.hpp"
 
 #include <fmt/format.h>
 
-#  include "EXP_ListWrapper.h"
-#  include "KX_MeshProxy.h"
-#  include "KX_PyMath.h"
-#  include "RAS_IDisplayArray.h"
-#  include "RAS_IVertex.h"
+#  include "EXP_ListWrapper.hpp"
+#  include "KX_MeshProxy.hpp"
+#  include "KX_PyMath.hpp"
+#  include "RAS_IDisplayArray.hpp"
+#  include "RAS_IVertex.hpp"
 
 PyTypeObject KX_VertexProxy::Type = {PyVarObject_HEAD_INIT(nullptr, 0) "KX_VertexProxy",
                                      sizeof(EXP_PyObjectPlus_Proxy),

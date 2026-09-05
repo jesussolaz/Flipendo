@@ -43,13 +43,13 @@ set(SRC
   CM_Thread.cpp
   CM_Utils.cpp
 
-  CM_Clock.h
-  CM_Format.h
-  CM_List.h
-  CM_Message.h
-  CM_RefCount.h
-  CM_Thread.h
-  CM_Utils.h
+  CM_Clock.hpp
+  CM_Format.hpp
+  CM_List.hpp
+  CM_Message.hpp
+  CM_RefCount.hpp
+  CM_Thread.hpp
+  CM_Utils.hpp
 )
 
 set(LIB

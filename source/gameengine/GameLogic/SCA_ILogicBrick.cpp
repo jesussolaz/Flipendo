@@ -29,7 +29,7 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_ILogicBrick.h"
+#include "SCA_ILogicBrick.hpp"
 
 SCA_ILogicBrick::SCA_ILogicBrick(SCA_IObject *gameobj)
     : EXP_Value(),

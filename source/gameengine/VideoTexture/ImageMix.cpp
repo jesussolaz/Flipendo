@@ -7,9 +7,9 @@
 
 // implementation
 
-#include "ImageMix.h"
+#include "ImageMix.hpp"
 
-#include "Exception.h"
+#include "Exception.hpp"
 
 // cast ImageSource pointer to ImageSourceMix
 inline ImageSourceMix *getImageSourceMix(ImageSource *src)

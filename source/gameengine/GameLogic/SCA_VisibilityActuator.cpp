@@ -30,9 +30,9 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_VisibilityActuator.h"
+#include "SCA_VisibilityActuator.hpp"
 
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 SCA_VisibilityActuator::SCA_VisibilityActuator(SCA_IObject *gameobj,
                                                bool visible,

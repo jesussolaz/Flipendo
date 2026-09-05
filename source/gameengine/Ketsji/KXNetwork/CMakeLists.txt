@@ -40,8 +40,8 @@ set(SRC
   KX_NetworkMessageManager.cpp
   KX_NetworkMessageScene.cpp
 
-  KX_NetworkMessageManager.h
-  KX_NetworkMessageScene.h
+  KX_NetworkMessageManager.hpp
+  KX_NetworkMessageScene.hpp
 )
 
 set(LIB

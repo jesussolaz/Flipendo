@@ -29,7 +29,7 @@
  *  \ingroup ketsji
  */
 
-#include "KX_NodeRelationships.h"
+#include "KX_NodeRelationships.hpp"
 
 #include "MT_Matrix4x4.h"
 

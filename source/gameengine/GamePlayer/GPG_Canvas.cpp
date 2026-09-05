@@ -29,7 +29,7 @@
  *  \ingroup player
  */
 
-#include "GPG_Canvas.h"
+#include "GPG_Canvas.hpp"
 
 #include "BKE_context.hh"
 #include "BKE_image.hh"
@@ -44,7 +44,7 @@
 #include "MEM_guardedalloc.h"
 #include "wm_window.hh"
 
-#include "KX_Globals.h"
+#include "KX_Globals.hpp"
 
 GPG_Canvas::GPG_Canvas(bContext *C, RAS_Rasterizer *rasty, GHOST_IWindow *window, bool useViewportRender)
     : RAS_ICanvas(rasty), m_context(C), m_window(window), m_width(0), m_height(0), m_useViewportRender(useViewportRender), m_nativePixelSize(1)

@@ -34,9 +34,9 @@
  * \source\gameengine\GameLogic\SCA_DynamicActuator.cpp
  * Please look here for revision history. */
 
-#include "SCA_DynamicActuator.h"
+#include "SCA_DynamicActuator.hpp"
 
-#include "PHY_IPhysicsController.h"
+#include "PHY_IPhysicsController.hpp"
 
 #ifdef WITH_PYTHON
 

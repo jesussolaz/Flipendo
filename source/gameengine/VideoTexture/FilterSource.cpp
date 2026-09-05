@@ -7,7 +7,7 @@
 
 // implementation
 
-#include "FilterSource.h"
+#include "FilterSource.hpp"
 
 // FilterRGB24
 

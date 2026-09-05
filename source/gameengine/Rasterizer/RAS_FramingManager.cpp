@@ -29,9 +29,9 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_FramingManager.h"
+#include "RAS_FramingManager.hpp"
 
-#include "RAS_Rect.h"
+#include "RAS_Rect.hpp"
 
 void RAS_FramingManager::ComputeDefaultFrustum(const float camnear,
                                                const float camfar,

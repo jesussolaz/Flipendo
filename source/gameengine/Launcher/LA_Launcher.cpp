@@ -28,7 +28,7 @@
 #  include <Windows.h>
 #endif
 
-#include "LA_Launcher.h"
+#include "LA_Launcher.hpp"
 
 #include "BKE_context.hh"
 #include "BKE_main.hh"
@@ -36,25 +36,25 @@
 #include "DNA_scene_types.h"
 #include "wm_event_types.hh"
 
-#include "BL_Converter.h"
-#include "BL_DataConversion.h"
-#include "CM_Message.h"
-#include "DEV_EventConsumer.h"
-#include "DEV_InputDevice.h"
-#include "DEV_Joystick.h"
+#include "BL_Converter.hpp"
+#include "BL_DataConversion.hpp"
+#include "CM_Message.hpp"
+#include "DEV_EventConsumer.hpp"
+#include "DEV_InputDevice.hpp"
+#include "DEV_Joystick.hpp"
 #include "GHOST_C-api.h"
 #include "GHOST_ISystem.hh"
-#include "GPG_Canvas.h"
-#include "KX_Globals.h"
-#include "KX_NetworkMessageManager.h"
-#include "KX_PyConstraintBinding.h"
-#include "KX_PythonInit.h"
-#include "KX_PythonMain.h"
-#include "LA_System.h"
-#include "LA_SystemCommandLine.h"
+#include "GPG_Canvas.hpp"
+#include "KX_Globals.hpp"
+#include "KX_NetworkMessageManager.hpp"
+#include "KX_PyConstraintBinding.hpp"
+#include "KX_PythonInit.hpp"
+#include "KX_PythonMain.hpp"
+#include "LA_System.hpp"
+#include "LA_SystemCommandLine.hpp"
 
 #ifdef WITH_PYTHON
-#  include "Texture.h"  // For FreeAllTextures.
+#  include "Texture.hpp"  // For FreeAllTextures.
 #endif                  // WITH_PYTHON
 
 LA_Launcher::LA_Launcher(GHOST_ISystem *system,

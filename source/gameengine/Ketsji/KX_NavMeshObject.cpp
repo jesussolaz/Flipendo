@@ -25,7 +25,7 @@
  * ***** END GPL LICENSE BLOCK *****
  */
 
-#include "KX_NavMeshObject.h"
+#include "KX_NavMeshObject.hpp"
 
 #include "BKE_context.hh"
 #include "BKE_mesh.hh"
@@ -35,14 +35,14 @@
 #include "DNA_meshdata_types.h"
 #include "MEM_guardedalloc.h"
 
-#include "BL_Converter.h"
-#include "CM_Message.h"
+#include "BL_Converter.hpp"
+#include "CM_Message.hpp"
 #include "DetourStatNavMeshBuilder.h"
-#include "KX_Globals.h"
-#include "KX_ObstacleSimulation.h"
-#include "KX_PyMath.h"
-#include "RAS_IVertex.h"
-#include "RAS_Polygon.h"
+#include "KX_Globals.hpp"
+#include "KX_ObstacleSimulation.hpp"
+#include "KX_PyMath.hpp"
+#include "RAS_IVertex.hpp"
+#include "RAS_Polygon.hpp"
 #include "Recast.h"
 
 #define MAX_PATH_LEN 256

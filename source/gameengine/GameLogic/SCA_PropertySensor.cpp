@@ -32,10 +32,10 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_PropertySensor.h"
+#include "SCA_PropertySensor.hpp"
 
-#include "CM_Format.h"
-#include "EXP_FloatValue.h"
+#include "CM_Format.hpp"
+#include "EXP_FloatValue.hpp"
 
 #include "BLI_compiler_attrs.h"
 

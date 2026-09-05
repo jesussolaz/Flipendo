@@ -24,7 +24,7 @@
  *  \ingroup launcher
  */
 
-#include "LA_BlenderLauncher.h"
+#include "LA_BlenderLauncher.hpp"
 
 #include "BKE_screen.hh"
 #include "BLI_rect.h"
@@ -36,10 +36,10 @@
 #include "wm_event_system.hh"
 #include "wm_window.hh"
 
-#include "CM_Message.h"
-#include "KX_BlenderCanvas.h"
-#include "KX_Globals.h"
-#include "KX_PythonInit.h"
+#include "CM_Message.hpp"
+#include "KX_BlenderCanvas.hpp"
+#include "KX_Globals.hpp"
+#include "KX_PythonInit.hpp"
 
 LA_BlenderLauncher::LA_BlenderLauncher(GHOST_ISystem *system,
                                        Main *maggie,

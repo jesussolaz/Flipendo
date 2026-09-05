@@ -32,11 +32,11 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_NearSensor.h"
+#include "SCA_NearSensor.hpp"
 
-#include "KX_CollisionEventManager.h"
-#include "PHY_IMotionState.h"
-#include "PHY_IPhysicsController.h"
+#include "KX_CollisionEventManager.hpp"
+#include "PHY_IMotionState.hpp"
+#include "PHY_IPhysicsController.hpp"
 
 SCA_NearSensor::SCA_NearSensor(SCA_EventManager *eventmgr,
                                KX_GameObject *gameobj,

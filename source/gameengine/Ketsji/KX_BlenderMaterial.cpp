@@ -22,19 +22,19 @@
  *  \ingroup ketsji
  */
 
-#include "KX_BlenderMaterial.h"
+#include "KX_BlenderMaterial.hpp"
 
 #include "BKE_node.hh"
 #include "BKE_node_legacy_types.hh"
 #include "BLI_listbase.h"
 #include "DNA_material_types.h"
 
-#include "BL_Shader.h"
-#include "BL_Texture.h"
-#include "EXP_ListWrapper.h"
-#include "KX_KetsjiEngine.h"
-#include "KX_MaterialShader.h"
-#include "RAS_BucketManager.h"
+#include "BL_Shader.hpp"
+#include "BL_Texture.hpp"
+#include "EXP_ListWrapper.hpp"
+#include "KX_KetsjiEngine.hpp"
+#include "KX_MaterialShader.hpp"
+#include "RAS_BucketManager.hpp"
 
 #ifdef WITH_PYTHON
 #  include "bpy_rna.hh"

@@ -24,7 +24,7 @@
  *  \ingroup bgeconv
  */
 
-#include "KX_LibLoadStatus.h"
+#include "KX_LibLoadStatus.hpp"
 
 #include "BLI_time.h"
 

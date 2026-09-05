@@ -22,7 +22,7 @@
  *  \ingroup bgerast
  */
 
-#include "RAS_Shader.h"
+#include "RAS_Shader.hpp"
 
 #include <set>
 #include <sstream>
@@ -30,7 +30,7 @@
 #include "GPU_immediate.hh"
 #include "GPU_uniform_buffer.hh"
 
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 
 using namespace blender::gpu::shader;
 

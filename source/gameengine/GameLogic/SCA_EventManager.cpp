@@ -29,10 +29,10 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_EventManager.h"
+#include "SCA_EventManager.hpp"
 
-#include "CM_List.h"
-#include "SCA_ISensor.h"
+#include "CM_List.hpp"
+#include "SCA_ISensor.hpp"
 
 SCA_EventManager::SCA_EventManager(SCA_LogicManager *logicmgr, EVENT_MANAGER_TYPE mgrtype)
     : m_logicmgr(logicmgr), m_mgrtype(mgrtype)

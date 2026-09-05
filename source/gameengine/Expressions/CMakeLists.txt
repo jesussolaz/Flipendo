@@ -54,24 +54,24 @@ set(SRC
   intern/Value.cpp
   intern/ListWrapper.cpp
 
-  EXP_BaseListValue.h
-  EXP_BoolValue.h
-  EXP_ConstExpr.h
-  EXP_EmptyValue.h
-  EXP_ErrorValue.h
-  EXP_Expression.h
-  EXP_FloatValue.h
-  EXP_IdentifierExpr.h
-  EXP_IfExpr.h
-  EXP_InputParser.h
-  EXP_IntValue.h
-  EXP_Operator1Expr.h
-  EXP_Operator2Expr.h
-  EXP_PyObjectPlus.h
-  EXP_Python.h
-  EXP_StringValue.h
-  EXP_Value.h
-  EXP_ListWrapper.h
+  EXP_BaseListValue.hpp
+  EXP_BoolValue.hpp
+  EXP_ConstExpr.hpp
+  EXP_EmptyValue.hpp
+  EXP_ErrorValue.hpp
+  EXP_Expression.hpp
+  EXP_FloatValue.hpp
+  EXP_IdentifierExpr.hpp
+  EXP_IfExpr.hpp
+  EXP_InputParser.hpp
+  EXP_IntValue.hpp
+  EXP_Operator1Expr.hpp
+  EXP_Operator2Expr.hpp
+  EXP_PyObjectPlus.hpp
+  EXP_Python.hpp
+  EXP_StringValue.hpp
+  EXP_Value.hpp
+  EXP_ListWrapper.hpp
 )
 
 set(LIB
@@ -84,7 +84,7 @@ if(WITH_PYTHON)
   list(APPEND SRC
     intern/PythonCallBack.cpp
 
-    EXP_PythonCallBack.h
+    EXP_PythonCallBack.hpp
   )
 endif()
 

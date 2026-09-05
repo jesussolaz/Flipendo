@@ -29,9 +29,9 @@
  *  \ingroup ketsji
  */
 
-#include "KX_ConstraintWrapper.h"
+#include "KX_ConstraintWrapper.hpp"
 
-#include "PHY_IConstraint.h"
+#include "PHY_IConstraint.hpp"
 
 KX_ConstraintWrapper::KX_ConstraintWrapper(PHY_IConstraint *constraint,
                                            PHY_ConstraintType ctype,

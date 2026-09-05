@@ -5,7 +5,7 @@
  *  \ingroup bgesg
  */
 
-#include "SG_BBox.h"
+#include "SG_BBox.hpp"
 
 
 SG_BBox::SG_BBox()

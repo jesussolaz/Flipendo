@@ -33,11 +33,11 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_CameraActuator.h"
+#include "SCA_CameraActuator.hpp"
 
 #include "BLI_math_vector.h"
 
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 /* ------------------------------------------------------------------------- */
 /* Native functions                                                          */

@@ -18,15 +18,15 @@ set(SRC
   SG_Frustum.cpp
   SG_Node.cpp
 
-  SG_BBox.h
-  SG_Controller.h
-  SG_CullingNode.h
-  SG_DList.h
-  SG_Familly.h
-  SG_Frustum.h
-  SG_Node.h
-  SG_ParentRelation.h
-  SG_QList.h
+  SG_BBox.hpp
+  SG_Controller.hpp
+  SG_CullingNode.hpp
+  SG_DList.hpp
+  SG_Familly.hpp
+  SG_Frustum.hpp
+  SG_Node.hpp
+  SG_ParentRelation.hpp
+  SG_QList.hpp
 )
 
 set(LIB

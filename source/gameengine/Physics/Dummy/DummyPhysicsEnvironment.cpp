@@ -29,7 +29,7 @@
  *  \ingroup physdummy
  */
 
-#include "DummyPhysicsEnvironment.h"
+#include "DummyPhysicsEnvironment.hpp"
 
 DummyPhysicsEnvironment::DummyPhysicsEnvironment()
 {

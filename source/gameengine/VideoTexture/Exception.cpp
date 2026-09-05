@@ -5,12 +5,12 @@
  *  \ingroup bgevideotex
  */
 
-#include "Exception.h"
+#include "Exception.hpp"
 
 #include <fstream>
 #include <sstream>
 
-#include "EXP_PyObjectPlus.h"
+#include "EXP_PyObjectPlus.hpp"
 
 // exception identificators
 ExceptionID ErrGeneral, ErrNotFound;

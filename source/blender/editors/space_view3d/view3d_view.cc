@@ -58,7 +58,7 @@
 #  include "BKE_image.hh"
 #  include "BLI_listbase.h"
 
-#  include "LA_SystemCommandLine.h"
+#  include "LA_SystemCommandLine.hpp"
 #endif
 
 /* -------------------------------------------------------------------- */

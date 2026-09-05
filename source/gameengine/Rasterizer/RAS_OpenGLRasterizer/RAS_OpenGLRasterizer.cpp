@@ -29,14 +29,14 @@
  *  \ingroup bgerastogl
  */
 
-#include "RAS_OpenGLRasterizer.h"
+#include "RAS_OpenGLRasterizer.hpp"
 
 #include <epoxy/gl.h>
 
 #include "GPU_context.hh"
 #include "GPU_framebuffer.hh"
 
-#include "CM_Message.h"
+#include "CM_Message.hpp"
 
 RAS_OpenGLRasterizer::ScreenPlane::ScreenPlane()
 {

@@ -23,7 +23,7 @@
 #  include <stdint.h>
 #endif
 
-#include "CcdPhysicsController.h"
+#include "CcdPhysicsController.hpp"
 
 #include "BKE_context.hh"
 #include "BKE_mesh.hh"
@@ -37,11 +37,11 @@
 #include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
 #include "LinearMath/btConvexHull.h"
 
-#include "CcdPhysicsEnvironment.h"
-#include "KX_GameObject.h"
-#include "RAS_DisplayArray.h"
-#include "RAS_MeshObject.h"
-#include "RAS_Polygon.h"
+#include "CcdPhysicsEnvironment.hpp"
+#include "KX_GameObject.hpp"
+#include "RAS_DisplayArray.hpp"
+#include "RAS_MeshObject.hpp"
+#include "RAS_Polygon.hpp"
 
 
 /// todo: fill all the empty CcdPhysicsController methods, hook them up to the btRigidBody class

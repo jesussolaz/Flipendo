@@ -31,16 +31,16 @@
 
 #ifdef WITH_PYTHON
 
-#  include "KX_PolyProxy.h"
+#  include "KX_PolyProxy.hpp"
 
-#  include "EXP_ListWrapper.h"
-#  include "KX_BlenderMaterial.h"
-#  include "KX_MeshProxy.h"
-#  include "KX_PyMath.h"
-#  include "KX_VertexProxy.h"
-#  include "RAS_IDisplayArray.h"
-#  include "RAS_MeshObject.h"
-#  include "RAS_Polygon.h"
+#  include "EXP_ListWrapper.hpp"
+#  include "KX_BlenderMaterial.hpp"
+#  include "KX_MeshProxy.hpp"
+#  include "KX_PyMath.hpp"
+#  include "KX_VertexProxy.hpp"
+#  include "RAS_IDisplayArray.hpp"
+#  include "RAS_MeshObject.hpp"
+#  include "RAS_Polygon.hpp"
 
 RAS_Polygon *KX_PolyProxy::GetPolygon()
 {

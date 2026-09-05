@@ -29,7 +29,7 @@
  *  \ingroup ketsji
  */
 
-#include "KX_FontObject.h"
+#include "KX_FontObject.hpp"
 
 #include "BLI_string_utf8.h"
 #include "DNA_curve_types.h"

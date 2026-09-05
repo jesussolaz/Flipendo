@@ -54,11 +54,11 @@ set(SRC
   LA_SystemCommandLine.cpp
   LA_System.cpp
 
-  LA_BlenderLauncher.h
-  LA_Launcher.h
-  LA_PlayerLauncher.h
-  LA_SystemCommandLine.h
-  LA_System.h
+  LA_BlenderLauncher.hpp
+  LA_Launcher.hpp
+  LA_PlayerLauncher.hpp
+  LA_SystemCommandLine.hpp
+  LA_System.hpp
 )
 
 set(LIB

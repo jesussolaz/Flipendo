@@ -24,7 +24,7 @@
 
 #include "BKE_image.hh"
 
-#include "BL_Texture.h"
+#include "BL_Texture.hpp"
 
 #include "GPU_texture.hh"
 

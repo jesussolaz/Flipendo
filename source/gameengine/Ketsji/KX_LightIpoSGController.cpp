@@ -29,14 +29,14 @@
  *  \ingroup ketsji
  */
 
-#include "KX_LightIpoSGController.h"
+#include "KX_LightIpoSGController.hpp"
 
 #include "DEG_depsgraph_query.hh"
 #include "DNA_light_types.h"
 #include "WM_api.hh"
 
-#include "KX_Light.h"
-#include "KX_ScalarInterpolator.h"
+#include "KX_Light.hpp"
+#include "KX_ScalarInterpolator.hpp"
 
 #if defined(_WIN64)
 typedef unsigned __int64 uint_ptr;

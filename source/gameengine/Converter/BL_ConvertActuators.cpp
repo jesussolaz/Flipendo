@@ -34,7 +34,7 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "BL_ConvertActuators.h"
+#include "BL_ConvertActuators.hpp"
 
 #ifdef WITH_AUDASPACE
 #  include <AUD_Sound.h>
@@ -52,34 +52,34 @@
 
 // Actuators
 // SCA logiclibrary native logicbricks
-#include "BL_ArmatureActuator.h"
-#include "BL_SceneConverter.h"
-#include "CM_Utils.h"
-#include "EXP_IntValue.h"
-#include "KX_Globals.h"
-#include "RAS_2DFilterManager.h"  // for filter type.
-#include "SCA_2DFilterActuator.h"
-#include "SCA_ActionActuator.h"
-#include "SCA_AddObjectActuator.h"
-#include "SCA_CameraActuator.h"
-#include "SCA_CollectionActuator.h"
-#include "SCA_ConstraintActuator.h"
-#include "SCA_DynamicActuator.h"
-#include "SCA_EndObjectActuator.h"
-#include "SCA_GameActuator.h"
-#include "SCA_MouseActuator.h"
-#include "SCA_NetworkMessageActuator.h"
-#include "SCA_ObjectActuator.h"
-#include "SCA_ParentActuator.h"
-#include "SCA_RandomActuator.h"
-#include "SCA_ReplaceMeshActuator.h"
-#include "SCA_SceneActuator.h"
-#include "SCA_SoundActuator.h"
-#include "SCA_StateActuator.h"
-#include "SCA_SteeringActuator.h"
-#include "SCA_TrackToActuator.h"
-#include "SCA_VibrationActuator.h"
-#include "SCA_VisibilityActuator.h"
+#include "BL_ArmatureActuator.hpp"
+#include "BL_SceneConverter.hpp"
+#include "CM_Utils.hpp"
+#include "EXP_IntValue.hpp"
+#include "KX_Globals.hpp"
+#include "RAS_2DFilterManager.hpp"  // for filter type.
+#include "SCA_2DFilterActuator.hpp"
+#include "SCA_ActionActuator.hpp"
+#include "SCA_AddObjectActuator.hpp"
+#include "SCA_CameraActuator.hpp"
+#include "SCA_CollectionActuator.hpp"
+#include "SCA_ConstraintActuator.hpp"
+#include "SCA_DynamicActuator.hpp"
+#include "SCA_EndObjectActuator.hpp"
+#include "SCA_GameActuator.hpp"
+#include "SCA_MouseActuator.hpp"
+#include "SCA_NetworkMessageActuator.hpp"
+#include "SCA_ObjectActuator.hpp"
+#include "SCA_ParentActuator.hpp"
+#include "SCA_RandomActuator.hpp"
+#include "SCA_ReplaceMeshActuator.hpp"
+#include "SCA_SceneActuator.hpp"
+#include "SCA_SoundActuator.hpp"
+#include "SCA_StateActuator.hpp"
+#include "SCA_SteeringActuator.hpp"
+#include "SCA_TrackToActuator.hpp"
+#include "SCA_VibrationActuator.hpp"
+#include "SCA_VisibilityActuator.hpp"
 
 /**
  * KX_flt_trunc needed to round 'almost' zero values to zero, else velocities etc. are incorrectly

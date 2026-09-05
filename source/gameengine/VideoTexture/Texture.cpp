@@ -7,7 +7,7 @@
 
 // implementation
 
-#include "Texture.h"
+#include "Texture.hpp"
 
 #include "BKE_image.hh"
 #include "DEG_depsgraph_query.hh"
@@ -19,10 +19,10 @@
 #include "../python/gpu/gpu_py_texture.hh"
 #endif
 
-#include "ImageRender.h"
-#include "KX_GameObject.h"
-#include "KX_Globals.h"
-#include "RAS_IPolygonMaterial.h"
+#include "ImageRender.hpp"
+#include "KX_GameObject.hpp"
+#include "KX_Globals.hpp"
+#include "RAS_IPolygonMaterial.hpp"
 
 #ifdef WITH_FFMPEG
 extern PyTypeObject VideoFFmpegType;

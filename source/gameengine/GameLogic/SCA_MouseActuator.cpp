@@ -20,14 +20,14 @@
  * ***** END GPL LICENSE BLOCK *****
  */
 
-#include "SCA_MouseActuator.h"
+#include "SCA_MouseActuator.hpp"
 
 #include "BLI_math_rotation.h"
 
-#include "KX_GameObject.h"
-#include "KX_PyMath.h"
-#include "RAS_ICanvas.h"
-#include "SCA_MouseManager.h"
+#include "KX_GameObject.hpp"
+#include "KX_PyMath.hpp"
+#include "RAS_ICanvas.hpp"
+#include "SCA_MouseManager.hpp"
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>

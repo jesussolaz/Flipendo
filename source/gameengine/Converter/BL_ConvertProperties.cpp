@@ -29,19 +29,19 @@
  *  \ingroup bgeconv
  */
 
-#include "BL_ConvertProperties.h"
+#include "BL_ConvertProperties.hpp"
 
 #include <sstream>
 
 #include "BKE_property.hh"
 #include "DNA_curve_types.h"
 
-#include "CM_Message.h"
-#include "EXP_FloatValue.h"
-#include "EXP_IntValue.h"
-#include "EXP_StringValue.h"
-#include "KX_FontObject.h"
-#include "SCA_TimeEventManager.h"
+#include "CM_Message.hpp"
+#include "EXP_FloatValue.hpp"
+#include "EXP_IntValue.hpp"
+#include "EXP_StringValue.hpp"
+#include "KX_FontObject.hpp"
+#include "SCA_TimeEventManager.hpp"
 
 /* prototype */
 void BL_ConvertTextProperty(Object *object,

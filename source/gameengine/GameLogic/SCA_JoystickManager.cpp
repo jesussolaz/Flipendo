@@ -29,9 +29,9 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_JoystickManager.h"
+#include "SCA_JoystickManager.hpp"
 
-#include "SCA_ISensor.h"
+#include "SCA_ISensor.hpp"
 
 SCA_JoystickManager::SCA_JoystickManager(class SCA_LogicManager *logicmgr)
     : SCA_EventManager(logicmgr, JOY_EVENTMGR)

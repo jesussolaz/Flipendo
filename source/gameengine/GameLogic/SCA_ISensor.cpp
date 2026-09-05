@@ -32,11 +32,11 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_ISensor.h"
+#include "SCA_ISensor.hpp"
 
-#include "CM_List.h"
-#include "CM_Message.h"
-#include "SCA_PythonController.h"
+#include "CM_List.hpp"
+#include "CM_Message.hpp"
+#include "SCA_PythonController.hpp"
 
 void SCA_ISensor::ReParent(SCA_IObject *parent)
 {

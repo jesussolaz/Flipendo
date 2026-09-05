@@ -29,13 +29,13 @@
  *  \ingroup gamelogic
  */
 
-#include "SCA_IController.h"
+#include "SCA_IController.hpp"
 
-#include "CM_List.h"
-#include "CM_Message.h"
-#include "EXP_ListWrapper.h"
-#include "SCA_IActuator.h"
-#include "SCA_ISensor.h"
+#include "CM_List.hpp"
+#include "CM_Message.hpp"
+#include "EXP_ListWrapper.hpp"
+#include "SCA_IActuator.hpp"
+#include "SCA_ISensor.hpp"
 
 SCA_IController::SCA_IController(SCA_IObject *gameobj)
     : SCA_ILogicBrick(gameobj), m_statemask(0), m_justActivated(false)

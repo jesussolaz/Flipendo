@@ -10,11 +10,11 @@
 #  include <windows.h>
 #endif
 
-#include "VideoBase.h"
+#include "VideoBase.hpp"
 
 #include <epoxy/gl.h>
 
-#include "FilterSource.h"
+#include "FilterSource.hpp"
 
 // VideoBase implementation
 

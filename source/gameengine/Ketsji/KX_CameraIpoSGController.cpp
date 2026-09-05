@@ -29,10 +29,10 @@
  *  \ingroup ketsji
  */
 
-#include "KX_CameraIpoSGController.h"
+#include "KX_CameraIpoSGController.hpp"
 
-#include "KX_Camera.h"
-#include "KX_ScalarInterpolator.h"
+#include "KX_Camera.hpp"
+#include "KX_ScalarInterpolator.hpp"
 
 #if defined(_WIN64)
 typedef unsigned __int64 uint_ptr;

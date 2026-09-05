@@ -36,7 +36,7 @@
 #  pragma warning(disable : 4786)
 #endif
 
-#include "KX_GameObject.h"
+#include "KX_GameObject.hpp"
 
 #include "BKE_context.hh"
 #include "BKE_layer.hh"
@@ -51,26 +51,26 @@
 #include "DNA_scene_types.h"
 #include "WM_api.hh"
 
-#include "BL_Action.h"
-#include "BL_ActionManager.h"
-#include "BL_SceneConverter.h"
-#include "KX_ClientObjectInfo.h"
-#include "KX_CollisionContactPoints.h"
-#include "KX_Globals.h"
-#include "KX_LodLevel.h"
-#include "KX_LodManager.h"
-#include "KX_MeshProxy.h"
-#include "KX_NetworkMessageScene.h"  //Needed for sendMessage()
-#include "KX_NodeRelationships.h"
-#include "KX_PolyProxy.h"
-#include "KX_PyMath.h"
-#include "KX_PythonComponent.h"
-#include "KX_RayCast.h"
-#include "SCA_ISensor.h"
-#include "SG_Controller.h"
+#include "BL_Action.hpp"
+#include "BL_ActionManager.hpp"
+#include "BL_SceneConverter.hpp"
+#include "KX_ClientObjectInfo.hpp"
+#include "KX_CollisionContactPoints.hpp"
+#include "KX_Globals.hpp"
+#include "KX_LodLevel.hpp"
+#include "KX_LodManager.hpp"
+#include "KX_MeshProxy.hpp"
+#include "KX_NetworkMessageScene.hpp"  //Needed for sendMessage()
+#include "KX_NodeRelationships.hpp"
+#include "KX_PolyProxy.hpp"
+#include "KX_PyMath.hpp"
+#include "KX_PythonComponent.hpp"
+#include "KX_RayCast.hpp"
+#include "SCA_ISensor.hpp"
+#include "SG_Controller.hpp"
 
 #ifdef WITH_PYTHON
-#  include "EXP_PythonCallBack.h"
+#  include "EXP_PythonCallBack.hpp"
 #  include "bpy_rna.hh"
 #  include "python_utildefines.hh"
 #endif

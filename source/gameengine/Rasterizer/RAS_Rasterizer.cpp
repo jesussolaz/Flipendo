@@ -29,15 +29,15 @@
  *  \ingroup bgerastogl
  */
 
-#include "RAS_Rasterizer.h"
+#include "RAS_Rasterizer.hpp"
 
-#include "KX_GameObject.h"
-#include "KX_RayCast.h"
-#include "RAS_FrameBuffer.h"
-#include "RAS_ICanvas.h"
-#include "RAS_IPolygonMaterial.h"
-#include "RAS_OpenGLRasterizer.h"
-#include "RAS_Polygon.h"
+#include "KX_GameObject.hpp"
+#include "KX_RayCast.hpp"
+#include "RAS_FrameBuffer.hpp"
+#include "RAS_ICanvas.hpp"
+#include "RAS_IPolygonMaterial.hpp"
+#include "RAS_OpenGLRasterizer.hpp"
+#include "RAS_Polygon.hpp"
 
 #include "BLI_math_geom.h"
 #include "BLI_math_matrix.h"

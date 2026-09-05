@@ -16,10 +16,10 @@
  *
  */
 
-#include "EXP_BoolValue.h"
+#include "EXP_BoolValue.hpp"
 
-#include "EXP_ErrorValue.h"
-#include "EXP_StringValue.h"
+#include "EXP_ErrorValue.hpp"
+#include "EXP_StringValue.hpp"
 
 const std::string EXP_BoolValue::sTrueString = "TRUE";
 const std::string EXP_BoolValue::sFalseString = "FALSE";

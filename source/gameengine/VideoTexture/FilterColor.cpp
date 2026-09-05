@@ -5,7 +5,7 @@
  *  \ingroup bgevideotex
  */
 
-#include "FilterColor.h"
+#include "FilterColor.hpp"
 
 // implementation FilterGray
 

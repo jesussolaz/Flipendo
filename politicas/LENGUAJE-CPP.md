@@ -48,6 +48,14 @@
 - Solo se permite como **wrapper mínimo y aislado** de APIs del sistema (Cocoa/Metal)
   que no se pueden llamar desde C++ puro. No forma parte de la lógica del motor.
 
+## Estrategia: divergencia total (actualizada 2026-09-05)
+
+Flipendo **ya no persigue mantener sincronía con Blender/UPBGE**. El objetivo es
+la propiedad total del código en C++, aunque eso implique divergir del upstream.
+Por tanto: los headers heredados pueden renombrarse a `.hpp`, el C heredado puede
+reescribirse a C++, y el editor puede migrarse por fases. `externo/` queda como
+**registro histórico de procedencia**, no como compromiso de sincronización.
+
 ## Condición final
 
 La migración no está completa mientras exista código estructural propio de Flipendo

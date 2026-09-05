@@ -66,7 +66,7 @@
 
 /* for passing information between creator and gameengine */
 #  ifdef WITH_GAMEENGINE
-#    include "LA_SystemCommandLine.h"
+#    include "LA_SystemCommandLine.hpp"
 #  else /* dummy */
 #    define SYS_SystemHandle int
 #  endif

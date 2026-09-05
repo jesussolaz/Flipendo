@@ -5,7 +5,7 @@
  *  \ingroup bgevideotex
  */
 
-#include "FilterBase.h"
+#include "FilterBase.hpp"
 
 // FilterBase class implementation
 

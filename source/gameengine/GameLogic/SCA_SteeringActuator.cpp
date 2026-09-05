@@ -28,15 +28,15 @@
  * ***** END GPL LICENSE BLOCK *****
  */
 
-#include "SCA_SteeringActuator.h"
+#include "SCA_SteeringActuator.hpp"
 
 #include "BLI_math_rotation.h"
 
-#include "EXP_ListWrapper.h"
-#include "KX_Globals.h"
-#include "KX_NavMeshObject.h"
-#include "KX_ObstacleSimulation.h"
-#include "KX_PyMath.h"
+#include "EXP_ListWrapper.hpp"
+#include "KX_Globals.hpp"
+#include "KX_NavMeshObject.hpp"
+#include "KX_ObstacleSimulation.hpp"
+#include "KX_PyMath.hpp"
 #include "Recast.h"
 
 /* ------------------------------------------------------------------------- */

@@ -32,15 +32,15 @@
  *  \ingroup ketsji
  */
 
-#include "SCA_RaySensor.h"
+#include "SCA_RaySensor.hpp"
 
 #include "DNA_sensor_types.h"
 
-#include "CM_Message.h"
-#include "KX_ClientObjectInfo.h"
-#include "KX_GameObject.h"
-#include "KX_RayCast.h"
-#include "RAS_MeshObject.h"
+#include "CM_Message.hpp"
+#include "KX_ClientObjectInfo.hpp"
+#include "KX_GameObject.hpp"
+#include "KX_RayCast.hpp"
+#include "RAS_MeshObject.hpp"
 
 SCA_RaySensor::SCA_RaySensor(class SCA_EventManager *eventmgr,
                              SCA_IObject *gameobj,

@@ -22,10 +22,10 @@
  *  \ingroup ketsji
  */
 
-#include "KX_CharacterWrapper.h"
+#include "KX_CharacterWrapper.hpp"
 
-#include "KX_PyMath.h"
-#include "PHY_ICharacter.h"
+#include "KX_PyMath.hpp"
+#include "PHY_ICharacter.hpp"
 
 #include "BLI_math_base.h"
 #include "BLI_math_rotation.hh"
