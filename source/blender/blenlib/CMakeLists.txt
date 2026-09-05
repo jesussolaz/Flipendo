@@ -467,25 +467,6 @@ if(WITH_FFTW3)
   add_definitions(-DWITH_FFTW3)
 endif()
 
-if(WIN32)
-  if(WITH_BLENDER_THUMBNAILER)
-    # Needed for querying the `thumbnailer .dll` in `winstuff.c`.
-    add_definitions(-DWITH_BLENDER_THUMBNAILER)
-  endif()
-  list(APPEND INC
-    ../../../intern/uriconvert
-    ../../../intern/utfconv
-  )
-  list(APPEND LIB
-    bf_intern_uriconvert
-    bf_intern_utfconv
-    dxgi
-  )
-  list(APPEND SRC
-  )
-endif()
-
-
 if(APPLE)
   list(APPEND SRC
     intern/fileops_apple.cpp
@@ -497,11 +478,7 @@ if(APPLE)
   )
 endif()
 
-if(UNIX AND NOT APPLE)
-  list(APPEND LIB
-    bf_intern_libc_compat
-  )
-endif()
+
 
 # no need to compile object files for inline headers.
 set_source_files_properties(

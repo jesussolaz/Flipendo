@@ -153,24 +153,6 @@ list(APPEND SRC
 
 if(WITH_HEADLESS)
   add_definitions(-DWITH_HEADLESS)
-elseif(WITH_GHOST_SDL)
-  list(APPEND SRC
-    intern/GHOST_ContextSDL.cc
-    intern/GHOST_SystemSDL.cc
-    intern/GHOST_WindowSDL.cc
-
-    intern/GHOST_ContextSDL.hh
-    intern/GHOST_SystemSDL.hh
-    intern/GHOST_WindowSDL.hh
-  )
-  add_definitions(-DWITH_GHOST_SDL)
-
-  list(APPEND INC_SYS
-    ${SDL_INCLUDE_DIR}
-  )
-  list(APPEND LIB
-    ${SDL_LIBRARY}
-  )
 elseif(APPLE AND NOT WITH_GHOST_X11)
   list(APPEND SRC
     intern/GHOST_SystemCocoa.mm
