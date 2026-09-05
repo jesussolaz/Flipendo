@@ -164,9 +164,6 @@ set(SRC
   intern/vector.cc
   intern/virtual_array.cc
   intern/voxel.cc
-  intern/winstuff.cc
-  intern/winstuff_dir.cc
-  intern/winstuff_registration.cc
   # Private headers.
   intern/BLI_mempool_private.h
 
@@ -414,8 +411,6 @@ set(SRC
   BLI_virtual_array_fwd.hh
   BLI_virtual_vector_array.hh
   BLI_voxel.h
-  BLI_winstuff.h
-  BLI_winstuff_com.hh
 
   ../../../extern/wcwidth/wcwidth.h
 
