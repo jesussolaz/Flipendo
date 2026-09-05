@@ -30,6 +30,32 @@ bibliotecas del sistema. Todo esto lo mantiene Blender; nosotros lo heredamos.
 Contiene Python 3.11, FFmpeg, OpenVDB, Embree, USD, OpenImageIO, etc. **compilados
 para Mac Intel**. Es la última rama con soporte x86_64 (Blender 5.0 lo eliminó).
 
+## Librerías que YA vienen dentro de Blender (no necesitan ficha)
+
+Antes de traer una librería nueva, mira si la capacidad ya está aquí. Versiones
+fijadas en `build_files/build_environment/cmake/versions.cmake`; compiladas para
+Mac Intel en `lib/macos_x64/`.
+
+| Librería | Versión | Capacidad (qué buscar) |
+|----------|---------|------------------------|
+| Python | 3.11.11 | scripting del juego (`bge`, `bpy`) |
+| FFmpeg | 7.1.1 | vídeo y audio (VideoTexture) |
+| OpenAL | 1.23.1 | audio 3D del juego |
+| SDL | 2.28.2 | ventana, entrada, joystick |
+| Bullet | (con Blender) | física, colisiones, rigidbody |
+| OpenImageIO | 3.0.6.1 | leer/escribir imágenes |
+| OpenColorIO | 2.4.1 | gestión de color |
+| OpenEXR | 3.3.2 | imágenes HDR |
+| OpenVDB | 12.0.0 | volúmenes (humo, nubes) |
+| Embree | 4.4.0 | trazado de rayos (render) |
+| USD | 25.02 | intercambio de escenas |
+| Alembic | 1.8.3 | intercambio de geometría animada |
+| OpenSubdiv | 3.6.0 | subdivisión de superficies |
+| FreeType | 2.13.0 | fuentes / texto |
+
+Si la capacidad que necesitas está en esta tabla, **úsala directamente** — no hay
+que importar ni crear ficha.
+
 ## Cómo aprovechar una actualización de Blender
 
 1. Ver qué versión de Blender queremos (p. ej. 4.5.x LTS con parches).
