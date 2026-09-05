@@ -1611,11 +1611,8 @@ endif()
 # - WIN32
 # - APPLE
 
-if(UNIX AND NOT APPLE)
-  include(platform_unix)
-elseif(WIN32)
-  include(platform_win32)
-elseif(APPLE)
+# Flipendo: Mac-only. Win32/Unix(Linux) platform includes eliminados.
+if(APPLE)
   include(platform_apple)
 endif()
 
