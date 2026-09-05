@@ -96,3 +96,10 @@ Motor propio compilado desde fuente en este Mac (rama `key-fase3-filtros`, base 
 ## key-2.1 — 2026-09-05
 - Filtros 2D custom aceptan la sintaxis GLSL antigua (`gl_FragColor`, `texture2D()`, `gl_TexCoord[0]` con `.st`/`.xy`): los tutoriales pre-0.50 funcionan tal cual.
 - Arreglado el segfault al cerrar el player con `ImageRender` activo (use-after-free en el GC final de Python). 3/3 cierres limpios.
+
+## flipendo-2.1 — 2026-09-05 (Rebautizo integral)
+Capa de identidad renombrada de "UPBGE Key" a **Flipendo**:
+- Apps: `Flipendo.app` y `Flipendo Player.app` (bundle `org.flipendo.flipendo` / `org.flipendo.player`).
+- Carpeta de trabajo: `~/Flipendo` (antes `~/UPBGE-Key`); todas las rutas absolutas corregidas (symlink de libs, build cache, .zshrc, .active).
+- Gestor de versiones: comando `flipendo` (antes `upbge-key`).
+- Motor interno (ejecutable, `--version`, config) sigue siendo Blender/UPBGE: es funcional y lo exige la GPL. Pendiente opcional: título de ventana y splash propios (requiere recompilar).
