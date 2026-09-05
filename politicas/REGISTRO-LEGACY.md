@@ -12,6 +12,7 @@
 | `~/Flipendo/game/template/*.py` (1.822 líneas) | Gameplay ARPG, addons, tests — código propio en Python. | A |
 | ~~`flipfx.py` (132 líneas)~~ ✅ **MIGRADO** | Look KH → filtro nativo `FILTER_FLIPENDOKH` (C++/GLSL integrado). | ✅ Fase A |
 | ~~`arpg_core.py` (150 líneas)~~ ✅ **MIGRADO** | Lógica pura (combos/salud/lock-on/IA) → `FL_ArpgCore.hpp` C++ + test C++. | ✅ Fase A |
+| ~~`arpg.py` (303 líneas)~~ ✅ **MIGRADO** | Componentes (Player/Cámara/Enemy) → sistema de componentes C++ nativo (`FL_Component` + `FL_ArpgComponents`). | ✅ Fase A |
 
 ## `PLATFORM` (wrapper de plataforma inevitable — permitido, no es deuda)
 

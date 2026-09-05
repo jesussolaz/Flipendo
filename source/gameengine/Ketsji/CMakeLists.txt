@@ -102,6 +102,10 @@ set(SRC
   KX_NodeRelationships.cpp
   KX_ScalarInterpolator.cpp
   KX_Scene.cpp
+  ../Flipendo/FL_Component.cpp
+  ../Flipendo/FL_ArpgComponents.cpp
+  ../Flipendo/FL_Component.hpp
+  ../Flipendo/FL_ArpgCore.hpp
   KX_TimeCategoryLogger.cpp
   KX_TimeLogger.cpp
   KX_VehicleWrapper.cpp

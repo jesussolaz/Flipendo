@@ -35,6 +35,7 @@
 #endif
 
 #include "KX_Scene.h"
+#include "../Flipendo/FL_Component.hpp"
 
 #include "BKE_duplilist.hh"
 #include "BKE_layer.hh"
@@ -2441,6 +2442,12 @@ void KX_Scene::UpdateAnimations(double curtime)
 void KX_Scene::LogicUpdateFrame(double curtime)
 {
   m_proxyManager.Update();
+
+  /* Flipendo: tick de los componentes NATIVOS C++ (doctrina C++). */
+  {
+    const double r = KX_GetActiveEngine() ? KX_GetActiveEngine()->GetTicRate() : 60.0;
+    flipendo::FL_ComponentManager::Get().Tick(this, 1.0f / (float)(r > 0 ? r : 60.0));
+  }
 
   m_logicmgr->UpdateFrame(curtime);
 }
