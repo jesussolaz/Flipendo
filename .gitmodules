@@ -1,0 +1,37 @@
+[submodule "lib/linux_x64"]
+	update = none
+	path = lib/linux_x64
+	url = https://projects.blender.org/blender/lib-linux_x64.git
+	branch = main
+[submodule "lib/macos_arm64"]
+	update = none
+	path = lib/macos_arm64
+	url = https://projects.blender.org/blender/lib-macos_arm64.git
+	branch = main
+[submodule "lib/macos_x64"]
+	update = none
+	path = lib/macos_x64
+	url = https://projects.blender.org/blender/lib-macos_x64.git
+	branch = main
+[submodule "lib/windows_x64"]
+	update = none
+	path = lib/windows_x64
+	url = https://projects.blender.org/blender/lib-windows_x64.git
+	branch = main
+[submodule "lib/windows_arm64"]
+    update = none
+	path = lib/windows_arm64
+	url = https://projects.blender.org/blender/lib-windows_arm64.git
+	branch = main
+[submodule "scripts/addons_core/bge_netlogic"]
+	path = scripts/addons_core/bge_netlogic
+	url = https://github.com/UPBGE/UPBGE-logicnodes.git
+[submodule "scripts/addons_core/bge_bricknodes"]
+	path = scripts/addons_core/bge_bricknodes
+	url = https://github.com/IzaZed/bricky-nodes.git
+[submodule "scripts/addons_core/bge_easyonline"]
+	path = scripts/addons_core/bge_easyonline
+	url = https://github.com/lordloki/EasyOnline.git
+[submodule "scripts/addons_core/bge_thelightmapper"]
+	path = scripts/addons_core/bge_thelightmapper
+	url = https://github.com/lordloki/The_Lightmapper.git
