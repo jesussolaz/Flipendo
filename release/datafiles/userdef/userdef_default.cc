@@ -5,6 +5,9 @@
 /* Preferences Data File 'U_default'. */
 
 /* For constants. */
+/* Flipendo: structs DNA como agregados en esta TU de datos (C++). */
+#define DNA_DEFAULTS_SKIP_CXX_METHODS
+
 #include "BLI_math_constants.h"
 
 #include "DNA_anim_enums.h"

@@ -120,7 +120,7 @@ add_custom_command(
 # -----------------------------------------------------------------------------
 # Build bf_dna library
 set(SRC
-  dna_defaults.c
+  dna_defaults.cc
   dna_genfile.cc
   dna_utils.cc
   ${CMAKE_CURRENT_BINARY_DIR}/dna.cc
@@ -170,3 +170,5 @@ set(LIB
 )
 
 blender_add_lib(bf_dna_blenlib "${SRC}" "${INC}" "${INC_SYS}" "${LIB}")
+
+set_source_files_properties(dna_defaults.cc PROPERTIES COMPILE_FLAGS "-Wno-c++11-narrowing")

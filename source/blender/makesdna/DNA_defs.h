@@ -91,6 +91,12 @@ class ShallowZeroInitializeTag {};
 
 }  // namespace blender::dna::internal
 
+#  ifdef DNA_DEFAULTS_SKIP_CXX_METHODS
+/* Flipendo: en las TUs de datos (dna_defaults/userdef_default) los structs deben
+ * ser agregados para permitir inicializacion designada en C++. Los metodos no
+ * anaden campos -> layout identico; los defaults cruzan como void* (memcpy). */
+#    define DNA_DEFINE_CXX_METHODS(class_name)
+#  else
 #  define DNA_DEFINE_CXX_METHODS(class_name) \
     class_name() = default; \
     ~class_name() = default; \
@@ -122,6 +128,7 @@ class ShallowZeroInitializeTag {};
       _DNA_internal_memzero(this, sizeof(class_name)); \
       return *this; \
     }
+#  endif  /* DNA_DEFAULTS_SKIP_CXX_METHODS */
 
 namespace blender::dna {
 

@@ -33,7 +33,7 @@ set(INC_SYS
 )
 
 set(SRC
-  ${CMAKE_SOURCE_DIR}/release/datafiles/userdef/userdef_default.c
+  ${CMAKE_SOURCE_DIR}/release/datafiles/userdef/userdef_default.cc
   intern/CCGSubSurf.cc
   intern/CCGSubSurf_legacy.cc
   intern/CCGSubSurf_util.cc
@@ -881,3 +881,8 @@ if(WITH_GTESTS)
   )
   blender_add_test_suite_lib(blenkernel "${TEST_SRC}" "${INC};${TEST_INC}" "${INC_SYS}" "${TEST_LIB}")
 endif()
+
+set_source_files_properties(
+  ../../../release/datafiles/userdef/userdef_default.cc
+  ../../../release/datafiles/userdef/userdef_default_theme.cc
+  PROPERTIES COMPILE_FLAGS "-Wno-c++11-narrowing")

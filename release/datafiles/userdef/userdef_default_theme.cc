@@ -8,6 +8,9 @@
  * Do not hand edit this file!
  */
 
+/* Flipendo: structs DNA como agregados en esta TU de datos (C++). */
+#define DNA_DEFAULTS_SKIP_CXX_METHODS
+
 #include "DNA_userdef_types.h"
 
 #include "BLO_userdef_default.h"

@@ -61,6 +61,9 @@
 
 #define DNA_DEPRECATED_ALLOW
 
+/* Flipendo: structs DNA como agregados en esta TU de datos (C++). */
+#define DNA_DEFAULTS_SKIP_CXX_METHODS
+
 #include <float.h>
 #include <limits.h>
 #include <stdio.h>
@@ -156,7 +159,10 @@ SDNA_DEFAULT_DECL_STRUCT(ActionLayer);
 SDNA_DEFAULT_DECL_STRUCT(ActionStrip);
 
 /* DNA_asset_defaults.h */
-SDNA_DEFAULT_DECL_STRUCT(AssetMetaData);
+/* Flipendo: AssetMetaData tiene ctor/dtor propios (non-aggregate, dtor out-of-line
+ * no enlazado en bf_dna). Su default es todo ceros -> buffer de bytes en vez de
+ * objeto tipado; se lee via void* (memcpy), layout identico. */
+alignas(AssetMetaData) static const unsigned char DNA_DEFAULT_AssetMetaData[sizeof(AssetMetaData)] = {};
 SDNA_DEFAULT_DECL_STRUCT(AssetLibraryReference);
 
 /* DNA_armature_defaults.h */
@@ -671,7 +677,7 @@ uint8_t *_DNA_struct_default_alloc_impl(const uint8_t *data_src,
                                         size_t size,
                                         const char *alloc_str)
 {
-  uint8_t *data_dst = MEM_mallocN(size, alloc_str);
+  uint8_t *data_dst = (uint8_t *)MEM_mallocN(size, alloc_str);
   memcpy(data_dst, data_src, size);
   return data_dst;
 }
