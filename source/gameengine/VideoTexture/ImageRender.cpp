@@ -83,9 +83,17 @@ ImageRender::~ImageRender(void)
   Py_CLEAR(m_postDrawCallbacks);
   m_postDrawCallbacks = nullptr;
 #endif
-  m_scene->RemoveImageRenderCamera(m_camera);
+  /* UPBGE Key: the Python GC can run this destructor during Py_FinalizeEx,
+   * long after the engine and scenes were torn down. Touching m_scene or
+   * m_camera then is use-after-free (crash in RemoveImageRenderCamera). Only
+   * unregister if the engine is alive and still owns this scene. */
+  KX_KetsjiEngine *engine = KX_GetActiveEngine();
+  const bool scene_alive = engine && m_scene && engine->CurrentScenes()->SearchValue(m_scene);
+  if (scene_alive) {
+    m_scene->RemoveImageRenderCamera(m_camera);
+  }
 
-  if (m_owncamera) {
+  if (m_owncamera && scene_alive) {
     m_camera->Release();
   }
 

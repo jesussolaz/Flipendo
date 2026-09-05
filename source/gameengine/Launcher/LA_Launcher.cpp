@@ -324,6 +324,10 @@ void LA_Launcher::ExitEngine()
   if (m_ketsjiEngine) {
     delete m_ketsjiEngine;
     m_ketsjiEngine = nullptr;
+    /* UPBGE Key: never leave the global engine pointer dangling; objects owned
+     * by Python (e.g. ImageRender) can outlive the engine until Py_FinalizeEx
+     * and must be able to detect that the engine is already gone. */
+    KX_SetActiveEngine(nullptr);
   }
   if (m_kxsystem) {
     delete m_kxsystem;
