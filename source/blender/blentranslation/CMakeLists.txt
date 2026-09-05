@@ -26,7 +26,10 @@ if(WITH_INTERNATIONAL)
 
   if(APPLE)
     list(APPEND SRC
-      intern/messages_apple.mm
+      intern/messages_apple.cpp
+    )
+    list(APPEND LIB
+      "-framework CoreFoundation"
     )
   endif()
 endif()

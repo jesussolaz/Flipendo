@@ -297,11 +297,11 @@ if(WITH_BUILDINFO)
   # -------------- done with header values.
 
   list(APPEND SRC
-    buildinfo.c
+    buildinfo.cc
   )
 
   # make an object library so can load with it in tests
-  add_library(buildinfoobj OBJECT buildinfo.c)
+  add_library(buildinfoobj OBJECT buildinfo.cc)
   add_dependencies(buildinfoobj buildinfo)
 endif()
 
