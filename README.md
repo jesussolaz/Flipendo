@@ -1,18 +1,38 @@
-![](doc/readme/GitHub_Readme1.png)
+# Flipendo
 
-UPBGE (**Uchronia Project Blender Game Engine**) is a fork of Blender created by Porteries Tristan (a Blender Game Engine developer) and some of his friends in September 2015.
+**Motor de juego derivado de [UPBGE](https://github.com/UPBGE/upbge), mantenido para macOS Intel (x86_64) con backend Metal funcional.**
 
-It's an independent branch, and it aims to clean up and improve current Blender Game Engine (BGE) code, experiment with new features, and implement forgotten features that currently exist but have not been merged with the official Blender trunk.
+Blender eliminó el soporte de macOS Intel en la versión 5.0, y con él murió la línea de UPBGE para estos equipos (el último binario oficial es UPBGE 0.44, con el backend Metal a medias). Flipendo continúa esa línea por su cuenta: base moderna de Blender 4.5 + game engine, compilado y probado en hardware real (MacBook Pro 2019, Radeon Pro 5300M).
 
-Currently, after the Blender Foundation's decision to delete BGE from next 2.8 release UPBGE becomes, de facto, the only one to follow the development of the Game Engine. This gives us even more freedom, if possible, to make certain decisions, since we will never, in any way, come into conflict with the official version.
+## Qué arregla Flipendo respecto a UPBGE 0.44 en macOS
 
-Regularly, the UPBGE merges the official Blender new patches, to stay up-to-date with the latest Blender evolutions.
+| Capacidad | UPBGE 0.44 oficial | Flipendo |
+|---|---|---|
+| Filtros 2D (post-proceso) | ❌ el shader ni compila en Metal | ✅ presets y custom |
+| Filtros custom con sintaxis GLSL antigua (`gl_FragColor`, `texture2D`) | ❌ | ✅ traductor integrado |
+| `bge.texture` / VideoTexture (render-to-texture) | ❌ `Texture is not available` | ✅ ImageRender vía GPUViewport |
+| Cierre del player con `ImageRender` activo | — | ✅ (use-after-free corregido) |
 
-The UPBGE team is composed of volunteers; BGE users who are interested in the game engine development, a web developer, and a communication manager.
+Todo verificado con capturas de pantalla y tests de píxel en Metal — ver los mensajes de commit, que documentan cada verificación.
 
-## What's new?
-You can take a look at the release notes to see all the new features:
-[UPBGE **Release Notes**](https://github.com/UPBGE/blender/wiki/Release-notes)
+## Estructura
 
-## From The Team
-We hope that new users will join the project, to help us test new features, report bugs, provide feedback and ideas to improve UPBGE (https://github.com/UPBGE/blender/issues) and that new developers will join the team to help us develop shiny new features for the game engine.
+- Árbol base: snapshot de UPBGE en el commit upstream `3c7b891a` (Blender 4.5.0 alpha).
+- Cada mejora es un commit encima, con la explicación técnica en el mensaje.
+
+## Compilar (macOS Intel)
+
+```
+git clone https://github.com/jesussolaz/Flipendo.git
+cd Flipendo
+# librerías precompiladas de Blender (rama blender-v4.5-release):
+git clone --depth 1 --branch blender-v4.5-release \
+  https://projects.blender.org/blender/lib-macos_x64.git lib/macos_x64
+cmake -S . -B ../build -G Ninja -C build_files/cmake/config/blender_release.cmake \
+  -DWITH_GAMEENGINE=ON -DWITH_PLAYER=ON -DWITH_CYCLES=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build ../build --target install
+```
+
+## Licencia
+
+GPL-2.0-or-later, heredada de Blender/UPBGE.
