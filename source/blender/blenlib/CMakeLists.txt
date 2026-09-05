@@ -494,8 +494,12 @@ endif()
 
 if(APPLE)
   list(APPEND SRC
-    intern/fileops_apple.mm
-    intern/storage_apple.mm
+    intern/fileops_apple.cpp
+    intern/storage_apple.cpp
+  )
+  list(APPEND LIB
+    "-framework CoreFoundation"
+    "-framework Foundation"
   )
 endif()
 
