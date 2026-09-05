@@ -190,3 +190,47 @@ Honestidad primero: **la parte PROPIA y las reglas del punto 5 son corto plazo (
 ---
 
 *Resumen de una línea: lo PROPIO de Flipendo y las reglas de código nuevo son de hoy; el motor heredado converge por fases a lo largo de años; el editor Blender se mantiene EXTERNAL y su erradicación total no se promete. Todo lo verificado procede del árbol real; el código propio en `~/Flipendo/` se auditó en disco (1.954 líneas no-C++).*
+---
+
+## Actualización Fase B (2026-09-05): el game engine ya es C++
+
+Auditoría de `source/gameengine/` (el núcleo del motor que Flipendo mantiene):
+
+| Tipo | Ficheros | Líneas |
+|------|---------:|-------:|
+| `.cpp` | 220 | 83.705 |
+| `.h` (headers) | 246 | 28.013 |
+| `.hpp` (nuestros) | 2 | 321 |
+| `.glsl` (filtros 2D) | 12 | 183 |
+| `.c` / `.py` / `.mm` | **0** | **0** |
+
+**El game engine no tiene nada de C, Python ni Objective-C.** Es C++ íntegro.
+Lo único no-C++ son 183 líneas de GLSL (11 filtros integrados + el KH nativo), y
+**ya cross-compilan a Metal y Vulkan desde una sola fuente** vía `ShaderCreateInfo`
+(integrado en la Fase 3, `RAS_Shader::LinkProgram`). Es la meta de shaders de la
+doctrina: una fuente lógica, salida generada por backend.
+
+### Shaders: estado real
+- Fuente única: el cuerpo GLSL de cada filtro (autor humano) → `ShaderCreateInfo`.
+- Salida generada: MSL (Metal) y SPIR-V (Vulkan) por el pipeline de Blender.
+- **No** hay triple mantenimiento GLSL+MSL+HLSL a mano.
+- Deuda restante acotada: el parser de texto para filtros GLSL *de usuario en runtime*
+  (`RAS_Shader.cpp:296-481`, marcado LEGACY). Solo afecta a filtros que el juego
+  suministra en caliente; los integrados no lo necesitan.
+
+### Headers .h → .hpp: decisión estratégica
+- **Nuestros** headers nuevos ya son `.hpp` (`FL_*.hpp`).
+- Los 246 `.h` de `source/gameengine/` son de **UPBGE** (heredados). Renombrarlos a
+  `.hpp` rompería miles de `#include` y, sobre todo, **la sincronización con UPBGE**
+  (la estrategia de `externo/` para aprovechar sus mejoras). Se convierten solo
+  cuando se reescriba su subsistema, no en masa. Es coherente con la doctrina
+  (heredado = EXTERNAL hasta reescritura).
+
+## Frontera honesta de "todo a C++"
+
+- **Todo lo que Flipendo escribe y el game engine entero: C++.** ✔
+- **Shaders propios: fuente única C++/create-info → Metal/Vulkan.** ✔
+- **Frontera:** el editor de Blender (≈293k líneas Python) y sus shaders/headers
+  heredados. Migrarlos = forkear Blender entero y **perder** la capacidad de
+  incorporar sus actualizaciones. Se mantienen EXTERNAL por diseño. No es una
+  limitación de esfuerzo, es la decisión de arquitectura que hace viable el fork.
