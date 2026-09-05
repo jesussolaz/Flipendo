@@ -56,8 +56,8 @@ class RAS_2DFilterFrameBuffer {
   unsigned int m_height;
 
   RAS_FrameBuffer *m_frameBuffer;
-  blender::gpu::Texture *m_colorTextures[NUM_COLOR_SLOTS];
-  blender::gpu::Texture *m_depthTexture;
+  GPUTexture *m_colorTextures[NUM_COLOR_SLOTS];
+  GPUTexture *m_depthTexture;
 
   /// Construct the frame buffer and the textures with the current settings.
   void Construct();
@@ -82,8 +82,8 @@ class RAS_2DFilterFrameBuffer {
   /// Return true of the off screen is valid from the OpenGL rules for frame buffers.
   bool GetValid() const;
 
-  blender::gpu::Texture *GetColorTexture(int slot = 0);
-  blender::gpu::Texture *GetDepthTexture();
+  GPUTexture *GetColorTexture(int slot = 0);
+  GPUTexture *GetDepthTexture();
 
   unsigned int GetWidth() const;
   unsigned int GetHeight() const;

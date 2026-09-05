@@ -109,7 +109,7 @@ class RAS_Shader {
   typedef std::vector<RAS_Uniform *> RAS_UniformVec;
   typedef std::vector<RAS_DefUniform *> RAS_UniformVecDef;
 
-  blender::gpu::Shader *m_shader;
+  GPUShader *m_shader;
   bool m_use;
   std::string m_progs[MAX_PROGRAM];
   bool m_error;
@@ -125,7 +125,7 @@ class RAS_Shader {
     float coo_offset[9][4];
   };
   bgl_Data m_uboData;
-  blender::gpu::UniformBuf *m_ubo;
+  GPUUniformBuf *m_ubo;
 
   std::vector<UniformConstant> m_constantUniforms;
   std::vector<std::pair<int, std::string>> m_samplerUniforms;
@@ -153,7 +153,7 @@ class RAS_Shader {
 
   bool GetError();
   bool Ok() const;
-  blender::gpu::Shader *GetGPUShader();
+  GPUShader *GetGPUShader();
 
   unsigned int GetProg();
   virtual void SetProg(bool enable);

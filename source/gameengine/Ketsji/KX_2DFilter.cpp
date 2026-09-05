@@ -26,7 +26,9 @@
 
 #include "KX_2DFilter.h"
 
+#ifdef WITH_PYTHON
 #include "../python/gpu/gpu_py_texture.hh"
+#endif
 
 #include "KX_2DFilterFrameBuffer.h"
 
@@ -155,33 +157,37 @@ EXP_PYMETHODDEF_DOC(KX_2DFilter, setTexture, "setTexture(samplerName, gputexture
   char *samplerName = nullptr;
 
   if (!PyArg_ParseTuple(args, "sO!:setTexture", &samplerName, &BPyGPUTexture_Type, &py_texture)) {
+    PyErr_SetString(PyExc_TypeError,
+                  "filter.setTexture(samplerName, gputexture): KX_2DFilter, expected a "
+                  "sampler name and a GPUTexture.");
     return nullptr;
   }
 
   if (!SetTextureUniform(py_texture, samplerName)) {
+    PyErr_Format(PyExc_RuntimeError,
+               "filter.setTexture(samplerName, gputexture): KX_2DFilter, "
+               "failed to set texture uniform '%s'.",
+               samplerName);
     return nullptr;
   }
 
   Py_RETURN_NONE;
 }
 
-EXP_PYMETHODDEF_DOC(KX_2DFilter, addOffScreen, " addOffScreen(slots, width, height, mipmap)")
+EXP_PYMETHODDEF_DOC(KX_2DFilter, addOffScreen, " addOffScreen(width, height, mipmap)")
 {
-  int slots;
   int width = -1;
   int height = -1;
   int mipmap = 0;
   int flag = 0;
-  flag |=
-      RAS_2DFilterFrameBuffer::RAS_VIEWPORT_SIZE;  // tmp: not viewport size not supported for now
+  flag |= RAS_2DFilterFrameBuffer::RAS_VIEWPORT_SIZE;  // not viewport size not supported for now
 
-  static const char *kwlist[] = {"slots", "width", "height", "mipmap", nullptr};
+  static const char *kwlist[] = {"width", "height", "mipmap", nullptr};
 
   if (!PyArg_ParseTupleAndKeywords(args,
                                    kwds,
-                                   "i|iii:addOffScreen",
+                                   "|iii:addOffScreen",
                                    const_cast<char **>(kwlist),
-                                   &slots,
                                    &width,
                                    &height,
                                    &mipmap)) {
@@ -191,13 +197,6 @@ EXP_PYMETHODDEF_DOC(KX_2DFilter, addOffScreen, " addOffScreen(slots, width, heig
   if (GetFrameBuffer()) {
     PyErr_SetString(PyExc_TypeError,
                     "filter.addOffScreen(...): KX_2DFilter, custom off screen already exists.");
-    return nullptr;
-  }
-
-  if (slots < 0 || slots >= 8) {
-    PyErr_SetString(
-        PyExc_TypeError,
-        "filter.addOffScreen(...): KX_2DFilter, slots must be between 0 and 8 excluded.");
     return nullptr;
   }
 
@@ -216,7 +215,7 @@ EXP_PYMETHODDEF_DOC(KX_2DFilter, addOffScreen, " addOffScreen(slots, width, heig
   }
 
   KX_2DFilterFrameBuffer *kxFrameBuffer = new KX_2DFilterFrameBuffer(
-      slots, (RAS_2DFilterFrameBuffer::Flag)flag, width, height);
+      1, (RAS_2DFilterFrameBuffer::Flag)flag, width, height);
 
   SetOffScreen(kxFrameBuffer);
 

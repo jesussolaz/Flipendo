@@ -61,7 +61,7 @@ void RAS_Shader::RAS_Uniform::Apply(RAS_Shader *shader)
     return;
   }
 
-  blender::gpu::Shader *gpushader = shader->GetGPUShader();
+  GPUShader *gpushader = shader->GetGPUShader();
   switch (m_type) {
     case UNI_FLOAT: {
       float *f = (float *)m_data;
@@ -618,7 +618,7 @@ bool RAS_Shader::GetError()
   return m_error;
 }
 
-blender::gpu::Shader *RAS_Shader::GetGPUShader()
+GPUShader *RAS_Shader::GetGPUShader()
 {
   return m_shader;
 }
