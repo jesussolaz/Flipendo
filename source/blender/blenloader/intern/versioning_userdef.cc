@@ -929,7 +929,6 @@ void blo_do_versions_userdef(UserDef *userdef)
 
   if (!USER_VERSION_ATLEAST(280, 33)) {
     /* Enable GLTF addon by default. */
-    BKE_addon_ensure(&userdef->addons, "io_scene_gltf2");
 
     userdef->pressure_threshold_max = 1.0f;
   }
@@ -1153,7 +1152,6 @@ void blo_do_versions_userdef(UserDef *userdef)
   }
 
   if (!USER_VERSION_ATLEAST(293, 13)) {
-    BKE_addon_ensure(&userdef->addons, "pose_library");
   }
 
   if (!USER_VERSION_ATLEAST(300, 21)) {
