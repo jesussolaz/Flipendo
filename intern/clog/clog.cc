@@ -141,11 +141,11 @@ static void clg_str_reserve(CLogStringBuf *cstr, const uint len)
     }
 
     if (cstr->is_alloc) {
-      cstr->data = MEM_reallocN(cstr->data, cstr->len_alloc);
+      cstr->data = (char *)MEM_reallocN(cstr->data, cstr->len_alloc);
     }
     else {
       /* Copy the static buffer. */
-      char *data = MEM_mallocN(cstr->len_alloc, __func__);
+      char *data = (char *)MEM_mallocN(cstr->len_alloc, __func__);
       memcpy(data, cstr->data, cstr->len);
       cstr->data = data;
       cstr->is_alloc = true;
@@ -306,7 +306,7 @@ static bool clg_ctx_filter_check(CLogContext *ctx, const char *identifier)
         return (bool)i;
       }
       if (flt->match[0] == '*' && flt->match[len - 1] == '*') {
-        char *match = MEM_callocN(sizeof(char) * len - 1, __func__);
+        char *match = (char *)MEM_callocN(sizeof(char) * len - 1, __func__);
         memcpy(match, flt->match + 1, len - 2);
         const bool success = (strstr(identifier, match) != NULL);
         MEM_freeN(match);
@@ -344,7 +344,7 @@ static CLG_LogType *clg_ctx_type_find_by_name(CLogContext *ctx, const char *iden
 static CLG_LogType *clg_ctx_type_register(CLogContext *ctx, const char *identifier)
 {
   assert(clg_ctx_type_find_by_name(ctx, identifier) == NULL);
-  CLG_LogType *ty = MEM_callocN(sizeof(*ty), __func__);
+  CLG_LogType *ty = (CLG_LogType *)MEM_callocN(sizeof(*ty), __func__);
   ty->next = ctx->types;
   ctx->types = ty;
   strncpy(ty->identifier, identifier, sizeof(ty->identifier) - 1);
@@ -352,7 +352,7 @@ static CLG_LogType *clg_ctx_type_register(CLogContext *ctx, const char *identifi
   ty->level = ctx->default_type.level;
 
   if (clg_ctx_filter_check(ctx, ty->identifier)) {
-    ty->flag |= CLG_FLAG_USE;
+    ty->flag = (enum CLG_LogFlag)(ty->flag | CLG_FLAG_USE);
   }
   return ty;
 }
@@ -551,7 +551,7 @@ void CLG_logf(const CLG_LogType *lg,
 
 static void CLG_ctx_output_set(CLogContext *ctx, void *file_handle)
 {
-  ctx->output_file = file_handle;
+  ctx->output_file = (FILE *)file_handle;
   ctx->output = fileno(ctx->output_file);
 #if defined(__unix__) || defined(__APPLE__)
   ctx->use_color = isatty(ctx->output);
@@ -612,7 +612,7 @@ static void clg_ctx_type_filter_append(CLG_IDFilter **flt_list,
   if (type_match_len == 0) {
     return;
   }
-  CLG_IDFilter *flt = MEM_callocN(sizeof(*flt) + (type_match_len + 1), __func__);
+  CLG_IDFilter *flt = (CLG_IDFilter *)MEM_callocN(sizeof(*flt) + (type_match_len + 1), __func__);
   flt->next = *flt_list;
   *flt_list = flt;
   memcpy(flt->match, type_match, type_match_len);
@@ -643,7 +643,7 @@ static void CLG_ctx_level_set(CLogContext *ctx, int level)
 
 static CLogContext *CLG_ctx_init(void)
 {
-  CLogContext *ctx = MEM_callocN(sizeof(*ctx), __func__);
+  CLogContext *ctx = (CLogContext *)MEM_callocN(sizeof(*ctx), __func__);
 #ifdef WITH_CLOG_PTHREADS
   pthread_mutex_init(&ctx->types_lock, NULL);
 #endif

@@ -49,3 +49,10 @@ por diseño de la plataforma no puede ser C++:
 
 Ninguna de las tres es código estructural del motor. La "condición final" de la
 doctrina (cero Python/C en el código estructural propio) **se cumple**.
+
+## C heredado de Blender migrado a C++ (divergencia)
+
+| Fichero | Líneas | Estado |
+|---|---:|---|
+| `source/blender/blenkernel/intern/bullet.c` | 95 | ✅ → `bullet.cc` |
+| `intern/clog/clog.c` | 796 | ✅ → `clog.cc` (logging; linkage C preservado) |
