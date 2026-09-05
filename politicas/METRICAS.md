@@ -34,3 +34,21 @@ Contador: `tools/flipendo_metrics/flipendo_metrics.cpp` (C++). Ejecutar:
 - **.h C-style: 269.571** → auditar y convertir a .hpp los de subsistemas C++ absorbidos.
 
 > Evolución esperada: C 5.457 → 0 (salvo datos con evidencia); Python 493.742 → runtime 0, editor por lotes.
+
+## Snapshot tras poda Mac-only (2026-09-05, 20 lotes)
+
+    lenguaje         ficheros       lineas
+    .h (C-style)         1392       249833
+    .hh (C++)            1795       289558
+    .hpp                  287        34167
+    C                      12         4401
+    C++                  4147      2474265
+    GLSL                  745        69136
+    MSL                     4         1726
+    Objective-C++          34        30570
+    Python               1246       457063
+
+Poda ejecutada: Windows/Linux/X11/Wayland/MSVC (fuente + GHOST + build infra),
+backends Cycles no-Metal, 8 addons de editor no-juego, bloques CMake muertos.
+GHOST = common + Cocoa. Conservado (util al juego): rigify, import glTF/FBX, bl_pkg,
+submodulos bge_*. Build Mac verde y ARPG 5/5 en cada lote.
