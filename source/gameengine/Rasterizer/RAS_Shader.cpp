@@ -293,6 +293,10 @@ void RAS_Shader::AppendUniformInfos(std::string type, std::string name)
   }
 }
 
+/* LEGACY - PENDING C++/IR MIGRATION (Flipendo)
+ * Parser de texto GLSL (compat GL2 por regex). Reducir a la ruta runtime
+ * solo para filtros suministrados por el usuario; los integrados pasan a
+ * ShaderCreateInfo estatico. Ver politicas/REGISTRO-LEGACY.md (Fase B). */
 std::string RAS_Shader::GetParsedProgram(ProgramType type)
 {
   // List of built-in uniforms to ignore (already handled by the engine).
