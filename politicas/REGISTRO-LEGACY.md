@@ -56,3 +56,6 @@ doctrina (cero Python/C en el código estructural propio) **se cumple**.
 |---|---:|---|
 | `source/blender/blenkernel/intern/bullet.c` | 95 | ✅ → `bullet.cc` |
 | `intern/clog/clog.c` | 796 | ✅ → `clog.cc` (logging; linkage C preservado) |
+| `source/blender/makesdna/intern/dna_defaults.c` | 677 | ⛔ **HOLD (C)**: sistema de defaults del formato .blend; usa init designados C99 de cientos de headers DNA. Convertir arriesga el formato. Único .c de Blender compilado en Mac que queda. |
+
+**C de Blender compilado en Mac: 2/3 migrados** (bullet, clog). El resto de `.c` del árbol es de terceros en `extern/` (ufbx, lzma, lzo...): EXTERNAL, no se reescriben a mano.
