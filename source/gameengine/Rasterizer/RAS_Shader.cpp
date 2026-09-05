@@ -461,6 +461,18 @@ std::string RAS_Shader::GetParsedProgram(ProgramType type)
       line.replace(pos2, strlen("bgl_RenderedTextureHeight"), "g_data.height");
     }
 
+    /* Legacy GL2-era GLSL compatibility (UPBGE Key): translate the old 2D filter
+     * syntax so pre-0.50 scripts and tutorials keep working on Metal/Vulkan. */
+    while ((pos2 = line.find("gl_TexCoord[0]")) != std::string::npos) {
+      line.replace(pos2, strlen("gl_TexCoord[0]"), "bgl_TexCoord");
+    }
+    while ((pos2 = line.find("gl_FragColor")) != std::string::npos) {
+      line.replace(pos2, strlen("gl_FragColor"), "fragColor");
+    }
+    while ((pos2 = line.find("texture2D(")) != std::string::npos) {
+      line.replace(pos2, strlen("texture2D("), "texture(");
+    }
+
     // Normal line, just copy (with replacements)
     output += line + "\n";
   }
