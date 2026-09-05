@@ -2054,19 +2054,9 @@ void setupGamePython(KX_KetsjiEngine *ketsjiengine,
                          "globalDict",
                          pyGlobalDict);  // Same as importing the module.z
 
-  Scene *startscene = CTX_data_scene(C);
-
-  PyObject *logger = PyImport_ImportModule("bge_extras.logger");
-
-  if (logger) {
-    PyObject_CallMethod(logger, "setup", "n", startscene->gm.logLevel);
-  }
-
-  if (PyErr_Occurred()) {
-    PyErr_Print();
-  }
-
-  Py_XDECREF(logger);
+  /* Flipendo: eliminado el setup de logging Python (bge_extras.logger), que era
+   * configuracion de consola del editor y no la necesita el runtime del Player.
+   * Paso hacia el Player sin CPython. */
 }
 
 void createPythonConsole()
