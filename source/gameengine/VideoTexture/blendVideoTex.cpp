@@ -5,14 +5,13 @@
  *  \ingroup bgevideotex
  */
 
-#include <RAS_IPolygonMaterial.h>
 
 #include "Texture.h"
+#include "KX_PythonInit.h"
 #include "VideoBase.h"
 
 #include "IMB_imbuf.hh"
 
-#include "KX_PythonInit.h" // to find PyMODINIT_FUNC initVideoTexturePythonBinding(void) declaration
 
 // get material id
 static PyObject *getMaterialID(PyObject *self, PyObject *args)
@@ -27,7 +26,7 @@ static PyObject *getMaterialID(PyObject *self, PyObject *args)
     return nullptr;
   // get material id
   short matID = getMaterialID(obj, matName);
-  // if material was not found, report errot
+  // if material was not found, report error
   if (matID < 0) {
     PyErr_SetString(
         PyExc_RuntimeError,
@@ -62,7 +61,7 @@ static PyObject *imageToArray(PyObject *self, PyObject *args)
   char *mode = nullptr;
   if (!PyArg_ParseTuple(args, "O|s:imageToArray", &pyImg, &mode) ||
       !pyImageTypes.in(Py_TYPE(pyImg))) {
-    // if object is incorect, report error
+    // if object is incorrect, report error
     PyErr_SetString(PyExc_TypeError,
                     "VideoTexture.imageToArray(image): The value must be a image source object");
     return nullptr;
@@ -146,9 +145,6 @@ static struct PyModuleDef VideoTexture_module_def = {
 PyMODINIT_FUNC initVideoTexturePythonBinding(void)
 {
   PyObject *m;
-
-  // initialize GL extensions
-  // bgl::InitExtensions(0);
 
   // prepare classes
   registerAllTypes();

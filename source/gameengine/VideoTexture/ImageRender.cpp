@@ -14,7 +14,6 @@
 #include "BLI_math_geom.h"
 #include "BLI_math_matrix.h"
 #include "DEG_depsgraph_query.hh"
-#include "GPU_framebuffer.hh"
 #include "GPU_state.hh"
 #include "GPU_viewport.hh"
 
@@ -67,7 +66,7 @@ ImageRender::ImageRender(KX_Scene *scene,
   m_rasterizer = m_engine->GetRasterizer();
   m_canvas = m_engine->GetCanvas();
 
-  m_internalFormat = GL_RGBA16F_ARB;
+  m_internalFormat = blender::gpu::TextureFormat::UNORM_8_8_8_8;
 
   m_targetfb = GPU_framebuffer_create("game_fb");
 
@@ -94,16 +93,18 @@ ImageRender::~ImageRender(void)
   m_targetfb = nullptr;
 }
 
-int ImageRender::GetColorBindCode() const
+KX_Camera* ImageRender::GetCamera()
 {
-  if (m_camera->GetGPUViewport()) {
-    return GPU_texture_opengl_bindcode(GPU_viewport_color_texture(m_camera->GetGPUViewport(), 0));
-  }
-  return -1;
+  return m_camera;
+}
+
+void ImageRender::SetTexture(Texture* tex)
+{
+  m_texture = tex;
 }
 
 // capture image from viewport
-void ImageRender::calcViewport(unsigned int texId, double ts, unsigned int format)
+void ImageRender::calcViewport(unsigned int texId, double ts)
 {
   // render the scene from the camera
   if (!m_done) {
@@ -121,16 +122,22 @@ void ImageRender::calcViewport(unsigned int texId, double ts, unsigned int forma
       viewport->GetLeft(), viewport->GetBottom(), viewport->GetWidth(), viewport->GetHeight());
   GPU_apply_state();
 
-  GPUAttachment config[] = {
-      GPU_ATTACHMENT_TEXTURE(GPU_viewport_depth_texture(m_camera->GetGPUViewport())),
-      GPU_ATTACHMENT_TEXTURE(GPU_viewport_color_texture(m_camera->GetGPUViewport(), 0))};
+  GPU_framebuffer_texture_attach(
+      m_targetfb, GPU_viewport_color_texture(m_camera->GetGPUViewport(), 0), 0, 0);
+  GPU_framebuffer_texture_attach(
+      m_targetfb, GPU_viewport_depth_texture(m_camera->GetGPUViewport()), 0, 0);
 
-  GPU_framebuffer_config_array(m_targetfb, config, sizeof(config) / sizeof(GPUAttachment));
-
+  /* We want color and depth textures to be available in calcViewport
+   * to be abled to apply filters */
   GPU_framebuffer_bind(m_targetfb);
 
   // get image from viewport (or FBO)
-  ImageViewport::calcViewport(texId, ts, format);
+  ImageViewport::calcViewport(0, ts);
+
+  GPU_framebuffer_texture_detach(m_targetfb,
+                                 GPU_viewport_color_texture(m_camera->GetGPUViewport(), 0));
+  GPU_framebuffer_texture_detach(m_targetfb,
+                                 GPU_viewport_depth_texture(m_camera->GetGPUViewport()));
 
   GPU_framebuffer_restore();
 }
@@ -243,12 +250,15 @@ bool ImageRender::Render()
   GPU_scissor(viewport[0], viewport[1], viewport[2], viewport[3]);
   GPU_apply_state();
 
-  // GPU_clear_depth(1.0f);
-
   m_rasterizer->SetAuxilaryClientInfo(m_scene);
 
   // matrix calculation, don't apply any of the stereo mode
   m_rasterizer->SetStereoMode(RAS_Rasterizer::RAS_STEREO_NOSTEREO);
+
+  /* Ensure animations are up-to-date before computing projection/modelview matrices.
+   * Animations may modify camera parameters (lens, shift, orthographic) or transform.
+   */
+  m_engine->UpdateAnimations(m_scene);
 
   if (m_mirror) {
     // frustum was computed above
@@ -326,16 +336,6 @@ bool ImageRender::Render()
   // restore the stereo mode now that the matrix is computed
   m_rasterizer->SetStereoMode(stereomode);
 
-  if (m_rasterizer->Stereo()) {
-    // stereo mode change render settings that disturb this render, cancel them all
-    // we don't need to restore them as they are set before each frame render.
-    glDrawBuffer(GL_BACK_LEFT);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glDisable(GL_POLYGON_STIPPLE);
-  }
-
-  m_engine->UpdateAnimations(m_scene);
-
   bContext *C = KX_GetActiveEngine()->GetContext();
   Main *bmain = CTX_data_main(C);
   Depsgraph *depsgraph = CTX_data_depsgraph_on_load(C);
@@ -346,11 +346,9 @@ bool ImageRender::Render()
 
   m_scene->SetCurrentGPUViewport(m_camera->GetGPUViewport());
 
-  if (m_scene->SomethingIsMoving()) {
-    /* Add a depsgraph notifier to trigger
-     * update on next draw loop. */
-    DEG_id_tag_update(&m_camera->GetBlenderObject()->id, ID_RECALC_TRANSFORM);
-  }
+  /* Add a depsgraph notifier to trigger
+   * update on next draw loop. */
+  DEG_id_tag_update(&m_camera->GetBlenderObject()->id, ID_RECALC_TRANSFORM);
 
   m_scene->TagForExtraIdsUpdate(bmain, m_camera);
   /* We need the changes to be flushed before each draw loop! */
@@ -533,11 +531,6 @@ static PyObject *ImageRender_render(PyImage *self)
   Py_RETURN_TRUE;
 }
 
-static PyObject *getColorBindCode(PyImage *self, void *closure)
-{
-  return PyLong_FromLong(getImageRender(self)->GetColorBindCode());
-}
-
 static PyObject *getPreDrawCallbacks(PyImage *self, void *closure)
 {
   ImageRender *imageRender = getImageRender(self);
@@ -658,11 +651,6 @@ static PyGetSetDef imageRenderGetSets[] = {
      (getter)Image_getFilter,
      (setter)Image_setFilter,
      (char *)"pixel filter",
-     nullptr},
-    {(char *)"colorBindCode",
-     (getter)getColorBindCode,
-     nullptr,
-     (char *)"Off-screen color texture bind code",
      nullptr},
     {(char *)"pre_draw",
      (getter)getPreDrawCallbacks,
@@ -901,7 +889,7 @@ ImageRender::ImageRender(KX_Scene *scene,
   m_rasterizer = m_engine->GetRasterizer();
   m_canvas = m_engine->GetCanvas();
 
-  m_internalFormat = GL_RGBA16F_ARB;
+  m_internalFormat = blender::gpu::TextureFormat::UNORM_8_8_8_8;
 
   // this constructor is used for automatic planar mirror
   // create a camera, take all data by default, in any case we will recompute the frustum on each

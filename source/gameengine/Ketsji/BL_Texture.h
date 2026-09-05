@@ -30,21 +30,17 @@
 #include "RAS_Texture.h"
 
 struct GPUMaterialTexture;
+struct GPUTexture;
+
 
 class BL_Texture : public EXP_Value, public RAS_Texture {
   Py_Header private : bool m_isCubeMap;
-  GPUMaterialTexture *m_gpuMatTex;
+  Image *m_ima;
   GPUTexture *m_gpuTex;
   eGPUTextureTarget m_textarget;
 
-  int m_bindCode;
-
-  struct {
-    unsigned int bindcode;
-  } m_savedData;
-
  public:
-  BL_Texture(GPUMaterialTexture *gpumattex, eGPUTextureTarget textarget);
+  BL_Texture(Image *ima);
   virtual ~BL_Texture();
 
   // stuff for cvalue related things
@@ -60,19 +56,7 @@ class BL_Texture : public EXP_Value, public RAS_Texture {
 
   enum { MaxUnits = 32 };
 
-  virtual void CheckValidTexture();
-  virtual void ActivateTexture(int unit);
-  virtual void DisableTexture();
-
-  virtual int GetBindCode() const;
-  virtual void SetBindCode(int bindcode);
-
 #ifdef WITH_PYTHON
-  static PyObject *pyattr_get_bind_code(EXP_PyObjectPlus *self_v,
-                                        const EXP_PYATTRIBUTE_DEF *attrdef);
-  static int pyattr_set_bind_code(EXP_PyObjectPlus *self_v,
-                                  const EXP_PYATTRIBUTE_DEF *attrdef,
-                                  PyObject *value);
 
 #endif  // WITH_PYTHON
 };
