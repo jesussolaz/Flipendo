@@ -11,6 +11,7 @@
 | `source/gameengine/Rasterizer/RAS_OpenGLFilters/*.glsl` (11) | Cuerpos de filtro 2D ensamblados por texto en runtime. Convertir a `*_info.hh` estático. | B |
 | `~/Flipendo/game/template/*.py` (1.822 líneas) | Gameplay ARPG, addons, tests — código propio en Python. | A |
 | ~~`flipfx.py` (132 líneas)~~ ✅ **MIGRADO** | Look KH → filtro nativo `FILTER_FLIPENDOKH` (C++/GLSL integrado). | ✅ Fase A |
+| ~~`arpg_core.py` (150 líneas)~~ ✅ **MIGRADO** | Lógica pura (combos/salud/lock-on/IA) → `FL_ArpgCore.hpp` C++ + test C++. | ✅ Fase A |
 
 ## `PLATFORM` (wrapper de plataforma inevitable — permitido, no es deuda)
 
