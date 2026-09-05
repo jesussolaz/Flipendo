@@ -55,7 +55,6 @@ if(WITH_CYCLES_NATIVE_ONLY)
         arch_run_result
         arch_compile_result
         ${CMAKE_CURRENT_BINARY_DIR}/
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/msvc_arch_flags.c
         COMPILE_OUTPUT_VARIABLE arch_compile_output
         RUN_OUTPUT_VARIABLE arch_run_output
       )

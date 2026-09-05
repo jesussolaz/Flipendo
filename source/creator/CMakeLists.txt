@@ -360,7 +360,6 @@ else()
   endif()
   if(WIN32)
     add_executable(blender-launcher WIN32
-      blender_launcher_win32.c
       ${CMAKE_SOURCE_DIR}/release/windows/icons/winblender.rc
     )
     if(NOT WITH_WINDOWS_EXTERNAL_MANIFEST)

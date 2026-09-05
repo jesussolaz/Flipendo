@@ -37,7 +37,6 @@ set(LIB
 
 if(WIN32)
   list(APPEND SRC
-    intern/blf_font_win32_compat.cc
   )
 endif()
 

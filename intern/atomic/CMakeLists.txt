@@ -24,7 +24,6 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.19")
   set(SRC
     atomic_ops.h
     intern/atomic_ops_ext.h
-    intern/atomic_ops_msvc.h
     intern/atomic_ops_unix.h
     intern/atomic_ops_utils.h
   )

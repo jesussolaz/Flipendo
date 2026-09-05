@@ -34,10 +34,7 @@ if(WIN32)
   # Build `BlendThumb.dll`
 
   set(SRC_WIN32
-    src/blendthumb_win32.cc
     src/blendthumb_win32.def
-    src/blendthumb_win32.rc
-    src/blendthumb_win32_dll.cc
   )
 
   add_definitions(-DNOMINMAX)
