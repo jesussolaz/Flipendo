@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "BLI_math_vector_types.hh"
 #include "../gpu/intern/gpu_shader_create_info.hh"
 
 #include "MT_Matrix4x4.h"
@@ -19,7 +20,6 @@
 using namespace blender::gpu::shader;
 
 class RAS_Rasterizer;
-struct GPUShader;
 
 typedef struct UniformConstant {
   Type type;
@@ -109,7 +109,7 @@ class RAS_Shader {
   typedef std::vector<RAS_Uniform *> RAS_UniformVec;
   typedef std::vector<RAS_DefUniform *> RAS_UniformVecDef;
 
-  GPUShader *m_shader;
+  blender::gpu::Shader *m_shader;
   bool m_use;
   std::string m_progs[MAX_PROGRAM];
   bool m_error;
@@ -118,6 +118,14 @@ class RAS_Shader {
   // Stored uniform variables
   RAS_UniformVec m_uniforms;
   RAS_UniformVecDef m_preDef;
+  struct bgl_Data {
+    float width;
+    float height;
+    float _pad[2];
+    float coo_offset[9][4];
+  };
+  bgl_Data m_uboData;
+  blender::gpu::UniformBuf *m_ubo;
 
   std::vector<UniformConstant> m_constantUniforms;
   std::vector<std::pair<int, std::string>> m_samplerUniforms;
@@ -145,7 +153,7 @@ class RAS_Shader {
 
   bool GetError();
   bool Ok() const;
-  GPUShader *GetGPUShader();
+  blender::gpu::Shader *GetGPUShader();
 
   unsigned int GetProg();
   virtual void SetProg(bool enable);
@@ -153,7 +161,7 @@ class RAS_Shader {
   void SetEnabled(bool enabled);
   bool GetEnabled() const;
 
-  // Apply methods : sets colected uniforms
+  // Apply methods : sets collected uniforms
   void ApplyShader();
   void UnloadShader();
   void DeleteShader();
@@ -172,7 +180,7 @@ class RAS_Shader {
 
   /** Return uniform location in the shader.
    * \param name The uniform name.
-   * \param debug Print message for unfound coresponding uniform name.
+   * \param debug Print message for unfound corresponding uniform name.
    */
   int GetUniformLocation(const std::string &name, bool debug = true);
 

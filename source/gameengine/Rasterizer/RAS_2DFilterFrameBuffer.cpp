@@ -62,7 +62,7 @@ RAS_2DFilterFrameBuffer::~RAS_2DFilterFrameBuffer()
     GPU_framebuffer_free(m_frameBuffer->GetFrameBuffer());
   }
   for (unsigned short i = 0; i < NUM_COLOR_SLOTS; ++i) {
-    GPUTexture *texture = m_colorTextures[i];
+    blender::gpu::Texture *texture = m_colorTextures[i];
     if (texture) {
       GPU_texture_free(texture);
       GPU_texture_free(m_depthTexture);
@@ -72,6 +72,10 @@ RAS_2DFilterFrameBuffer::~RAS_2DFilterFrameBuffer()
 
 void RAS_2DFilterFrameBuffer::Construct()
 {
+  if (m_frameBuffer) {
+    delete m_frameBuffer;
+    m_frameBuffer = nullptr;
+  }
   m_frameBuffer = new RAS_FrameBuffer(m_width, m_height, RAS_Rasterizer::RAS_FRAMEBUFFER_CUSTOM);
   /* TODO: RESTORE SUPPORT OF MULTIPLE COLOR ATTACHEMENTS IF NEEDED */
   m_colorTextures[0] = m_frameBuffer->GetColorAttachment();
@@ -81,7 +85,7 @@ void RAS_2DFilterFrameBuffer::Construct()
 void RAS_2DFilterFrameBuffer::MipmapTexture()
 {
   for (unsigned short i = 0; i < m_colorSlots; ++i) {
-    GPUTexture *texture = m_colorTextures[i];
+    blender::gpu::Texture *texture = m_colorTextures[i];
     GPU_texture_bind(texture, 0);
     GPU_apply_state();
     GPU_texture_filter_mode(texture, true);
@@ -137,39 +141,21 @@ bool RAS_2DFilterFrameBuffer::GetValid() const
   return GPU_framebuffer_check_valid(m_frameBuffer->GetFrameBuffer(), nullptr);
 }
 
-int RAS_2DFilterFrameBuffer::GetColorBindCode(unsigned short index) const
-{
-  if (!m_colorTextures[index]) {
-    return -1;
-  }
-
-  return GPU_texture_opengl_bindcode(m_colorTextures[index]);
-}
-
-int RAS_2DFilterFrameBuffer::GetDepthBindCode() const
-{
-  if (!m_depthTexture) {
-    return -1;
-  }
-
-  return GPU_texture_opengl_bindcode(m_depthTexture);
-}
-
-GPUTexture *RAS_2DFilterFrameBuffer::GetColorTexture(int slot)
+blender::gpu::Texture *RAS_2DFilterFrameBuffer::GetColorTexture(int slot)
 {
   if (!m_colorTextures[slot]) {
     return nullptr;
   }
-  GPUTexture *texture = m_colorTextures[slot];
+  blender::gpu::Texture *texture = m_colorTextures[slot];
   return texture;
 }
 
-GPUTexture *RAS_2DFilterFrameBuffer::GetDepthTexture()
+blender::gpu::Texture *RAS_2DFilterFrameBuffer::GetDepthTexture()
 {
   if (!m_depthTexture) {
     return nullptr;
   }
-  GPUTexture *texture = m_depthTexture;
+  blender::gpu::Texture *texture = m_depthTexture;
   return texture;
 }
 
