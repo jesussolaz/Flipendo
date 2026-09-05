@@ -1,31 +1,29 @@
-# Look "Kingdom Hearts" — post-proceso nativo de Flipendo
+# Look "Kingdom Hearts" — filtro 2D NATIVO de Flipendo
 
-`flipfx.py` es un filtro 2D en un solo pase que da el aspecto característico
-del estilo Kingdom Hearts: colores vivos, glow (bloom) en las zonas brillantes,
-contraste y viñeta. Corre en Metal/macOS gracias a los filtros 2D arreglados
-en Flipendo (imposible en UPBGE 0.44 oficial).
+El aspecto Kingdom Hearts (bloom + color grading + viñeta) es un **filtro 2D
+integrado en el motor**, escrito en C++/GLSL como Sobel o Blur. No hay Python.
 
 ## Uso
 
-Como componente sobre la cámara del juego (Object Properties > Game > Components):
-`flipfx.PostFX`
+Desde logic bricks (actuador 2D Filter) o desde el runtime:
 
-O por script, una vez al arrancar:
 ```python
-import flipfx
-flipfx.install(scene)
+scene.filterManager.addFilter(0, bge.logic.RAS_2DFILTER_FLIPENDOKH)
 ```
 
-## Antes / después (escena de la plantilla ARPG)
+Es un modo integrado (`RAS_2DFilterManager::FILTER_FLIPENDOKH`); el cuerpo del
+shader vive en `source/gameengine/Rasterizer/RAS_OpenGLFilters/RAS_FlipendoKH2DFilter.glsl`
+y cross-compila a Metal/Vulkan por el pipeline del motor.
 
-| Sin filtro | Con look KH |
+## Antes / después (plantilla ARPG)
+
+| Sin filtro | Con look KH (nativo) |
 |---|---|
 | ![antes](antes.png) | ![después](despues.png) |
 
-## Verificado (Radeon Pro 5300M, Metal)
+## Historia (doctrina C++)
 
-- Saturación media +20 %, esquinas 11 % más oscuras (viñeta).
-- Bloom: brillo del halo alrededor de una fuente emisiva ×7 en el anillo
-  cercano, ×18 en el medio; muestreo radial de 100 taps (20 direcciones ×
-  5 anillos, rotados para no dejar artefactos de estrella).
-- Coste en GPU por debajo del ruido de medición (~0,5 ms a 1080p): 60 fps intactos.
+Nació como `flipfx.py` (Python, Fase 3). **Migrado a filtro nativo en la Fase A**
+de la doctrina C++ (ver `politicas/MIGRACION-CPP.md`): el Python se eliminó, el
+look es ahora código del motor. Verificado sobre la escena ARPG (saturación +20%,
+viñeta, bloom) con coste GPU por debajo del ruido de medición.

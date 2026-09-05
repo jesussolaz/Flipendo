@@ -34,6 +34,15 @@
   DX. El MSL/SPIR-V/HLSL es **salida generada**, no código mantenido a mano.
 - Shaders heredados aún en GLSL/MSL a mano → marcar `LEGACY — PENDING C++/IR MIGRATION`.
 
+## Convención de ficheros
+
+- **Headers nuevos de Flipendo: extensión `.hpp`** (C++ explícito). Nada de `.h`
+  nuevos, que pueden esconder API de C.
+- Implementación nueva: `.cpp`.
+- Los `.h` **heredados** de Blender/UPBGE son `EXTERNAL`: no se renombran en masa
+  (romperían miles de `#include` y el build); convergen solo cuando se reescribe
+  su subsistema, y entonces pasan a `.hpp`.
+
 ## Plataforma (Objective-C++ en macOS)
 
 - Solo se permite como **wrapper mínimo y aislado** de APIs del sistema (Cocoa/Metal)

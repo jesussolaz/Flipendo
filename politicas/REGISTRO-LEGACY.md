@@ -9,7 +9,8 @@
 |-----------|--------|------|
 | `source/gameengine/Rasterizer/RAS_Shader.cpp:296-481` | `GetParsedProgram`: parser de texto GLSL (compat GL2 por regex). Frágil. Reducir a la ruta runtime solo para filtros del usuario. | B |
 | `source/gameengine/Rasterizer/RAS_OpenGLFilters/*.glsl` (11) | Cuerpos de filtro 2D ensamblados por texto en runtime. Convertir a `*_info.hh` estático. | B |
-| `~/Flipendo/game/template/*.py` (1.954 líneas) | Gameplay ARPG, post-proceso `flipfx`, addons, tests — código propio en Python. | A |
+| `~/Flipendo/game/template/*.py` (1.822 líneas) | Gameplay ARPG, addons, tests — código propio en Python. | A |
+| ~~`flipfx.py` (132 líneas)~~ ✅ **MIGRADO** | Look KH → filtro nativo `FILTER_FLIPENDOKH` (C++/GLSL integrado). | ✅ Fase A |
 
 ## `PLATFORM` (wrapper de plataforma inevitable — permitido, no es deuda)
 
