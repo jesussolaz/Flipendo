@@ -31,3 +31,21 @@
 | CPython embebido | Intérprete del Player/Editor durante la transición (ver Fase C/D) |
 
 > Detalle y roadmap completo en [`MIGRACION-CPP.md`](MIGRACION-CPP.md).
+
+## Estado del código PROPIO de Flipendo (Fase A cerrada)
+
+**Código de motor / gameplay / runtime propio: 100% C++.** Migrado y eliminado
+todo el Python de gameplay (arpg.py, arpg_core.py), post-proceso (flipfx.py) y los
+drivers de test/debug de la fase Python.
+
+Lo único no-C++ que queda es tooling que **no es implementación del motor** y que
+por diseño de la plataforma no puede ser C++:
+
+| Fichero | Líneas | Por qué no es (ni puede ser) C++ |
+|---|---:|---|
+| `addons/key_assistant/__init__.py` | 386 | Addon del **editor**. La API de addons de Blender (`bpy`) es Python; un addon no puede escribirse en C++. Categoría EXTERNAL (capa editor). |
+| `game/template/gen_template.py` | 127 | Genera un `.blend` (**contenido/datos**, excluido por la doctrina). Autor de escena requiere `bpy`. |
+| `bin/flipendo` | 127 | Gestor de versiones: **herramienta de shell** (dev tooling), reemplazable por C++ si se desea, prioridad baja. |
+
+Ninguna de las tres es código estructural del motor. La "condición final" de la
+doctrina (cero Python/C en el código estructural propio) **se cumple**.
