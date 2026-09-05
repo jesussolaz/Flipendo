@@ -56,6 +56,6 @@ doctrina (cero Python/C en el código estructural propio) **se cumple**.
 |---|---:|---|
 | `source/blender/blenkernel/intern/bullet.c` | 95 | ✅ → `bullet.cc` |
 | `intern/clog/clog.c` | 796 | ✅ → `clog.cc` (logging; linkage C preservado) |
-| `source/blender/makesdna/intern/dna_defaults.c` | 677 | ⛔ **HOLD (C)**: sistema de defaults del formato .blend; usa init designados C99 de cientos de headers DNA. Convertir arriesga el formato. Único .c de Blender compilado en Mac que queda. |
+| `source/blender/makesdna/intern/dna_defaults.c` | 677 | 🔬 **DEUDA con evidencia** (no HOLD ciego). Intentado .c→.cc el 2026-09-05. Compilador: 15 errores `non-aggregate type ... with a designated initializer list` (World, Mesh, Object, Material...) + narrowing float→int. **Causa raíz:** `DNA_DEFINE_CXX_METHODS` (DNA_defs.h:94) declara ctores copy/move `= delete` en TODOS los structs DNA → no-agregados en C++ → prohibida la init designada agregada que usan `dna_defaults.c` + ~80 `DNA_*_defaults.h`. **Alternativas:** (G) quitar `DNA_DEFINE_CXX_METHODS` de todos los DNA (elimina seguridad de ownership deliberada, ripple masivo); (H) rearquitecturar defaults a init por asignación/blob (reescribir ~80 headers, valor funcional 0, son datos). **Estado:** revertido a `.c` como DATOS del formato .blend; deuda abierta pendiente de decisión arquitectónica, no cerrada. |
 
 **C de Blender compilado en Mac: 2/3 migrados** (bullet, clog). El resto de `.c` del árbol es de terceros en `extern/` (ufbx, lzma, lzo...): EXTERNAL, no se reescriben a mano.
