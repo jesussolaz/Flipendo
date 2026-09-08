@@ -39,8 +39,8 @@ El macizo Python del editor es **~292.753 líneas en 882 ficheros `.py` (17 MB)*
 
 | # | Módulo | Ruta | Líneas | Acción |
 |---|---|---|---:|---|
-| 1.1 | **KX_PythonComponent** | `source/gameengine/Ketsji/KX_PythonComponent.cpp/.hpp` | 203 (+46 refs) | **ELIMINAR.** `FL_Component` ya lo cubre y tickea. |
-| 1.2 | **bge_extras/logger** | `scripts/modules/bge_extras/` | 158 | Reemplazar por logger nativo (`clog` ya en C++); quitar `PyImport_ImportModule` de `KX_PythonInit.cpp:2059`. |
+| 1.1 | **KX_PythonComponent** | `source/gameengine/Ketsji/KX_PythonComponent.cpp/.hpp` | 203 (+46 refs) | ✅ **HECHO (2026-09-08).** Eliminado; `FL_Component` es el único sistema de componentes. |
+| 1.2 | **bge_extras/logger** | `scripts/modules/bge_extras/` | 158 | ✅ **HECHO.** El Player ya no importa ningún módulo Python al arrancar. |
 | 1.3 | **wm.py — familia `WM_OT_context_*`** | `scripts/startup/bl_operators/wm.py` (18 clases) | ~900 | Glue RNA puro (get/set/toggle sobre data-path). Cada uno = `wmOperatorType` con `exec()` de 10-40 líneas. Mismo `idname`. |
 | 1.4 | Operadores mate simples | `object_align.py` (407), `object_randomize_transform.py` (181), `add_mesh_torus.py` (262) | ~850 | Álgebra/geometría pura sobre BMesh + `BLI_math`. Buen ejercicio de patrón de migración. |
 
@@ -97,9 +97,24 @@ Operadores con lógica acotada sobre APIs C ya disponibles (BMesh, depsgraph, co
 
 ---
 
-## 3. PRIMER OBJETIVO CONCRETO — para ejecutar YA
+## 3. PRIMER OBJETIVO CONCRETO — ✅ COMPLETADO 2026-09-08
 
-### Retirar `KX_PythonComponent` (el reemplazo nativo ya existe y ya tickea)
+> **Estado:** `KX_PythonComponent` eliminado del motor (−373 líneas netas).
+> `BL_ConvertComponentsObject` (la conversión `Object.components` → instancias
+> Python) ya no existe; el registro de tipo, el `EXP_ListValue<KX_PythonComponent>`
+> de `KX_GameObject` y el atributo Python `obj.components` han caído con él.
+> `FL_Component` (nativo, atado por la propiedad de juego `fl_component`) es el
+> **único** sistema de componentes del motor.
+>
+> **Verificado:** build Mac verde · `test_arpg_core` 15/15 · Player sobre
+> `ArpgNative.blend` ata 5/5 componentes nativos · Player sobre
+> `game/anima/T1_LaMancha.blend` ata 5/5 · editor arranca (4.5.0 Alpha).
+>
+> **Pendiente relacionado (editor, no runtime):** `source/blender/blenkernel/intern/python_proxy.cc`
+> mantiene el tipo falso `FT_KX_PythonComponent` para el panel de componentes del
+> editor y el DNA `Object.components`. Es Python de editor: cae con el Lote 3.
+
+### Registro de lo hecho: retirar `KX_PythonComponent`
 
 **Rutas:**
 - Eliminar: `source/gameengine/Ketsji/KX_PythonComponent.cpp` (146) + `.hpp` (57).

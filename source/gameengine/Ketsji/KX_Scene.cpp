@@ -1629,8 +1629,8 @@ KX_GameObject *KX_Scene::AddNodeReplicaObject(SG_Node *node, KX_GameObject *game
     m_obstacleSimulation->AddObstacleForObj(newobj);
   }
 
-  // Register object for component update.
-  if (gameobj->GetPrototype() || gameobj->GetComponents()) {
+  // Register object for proxy update.
+  if (gameobj->GetPrototype()) {
     m_proxyManager.Register(newobj);
   }
 

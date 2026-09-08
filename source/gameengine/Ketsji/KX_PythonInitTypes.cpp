@@ -58,7 +58,6 @@
 #  include "KX_MeshProxy.hpp"
 #  include "KX_NavMeshObject.hpp"
 #  include "KX_PolyProxy.hpp"
-#  include "KX_PythonComponent.hpp"
 #  include "KX_VehicleWrapper.hpp"
 #  include "KX_VertexProxy.hpp"
 #  include "SCA_2DFilterActuator.hpp"
@@ -247,7 +246,6 @@ PyMODINIT_FUNC initGameTypesPythonBinding(void)
     PyType_Ready_Attr(dict, SCA_ObjectActuator, init_getset);
     PyType_Ready_Attr(dict, SCA_ParentActuator, init_getset);
     PyType_Ready_Attr(dict, KX_PolyProxy, init_getset);
-    PyType_Ready_Attr(dict, KX_PythonComponent, init_getset);
     PyType_Ready_Attr(dict, SCA_RadarSensor, init_getset);
     PyType_Ready_Attr(dict, SCA_RaySensor, init_getset);
     PyType_Ready_Attr(dict, SCA_AddObjectActuator, init_getset);

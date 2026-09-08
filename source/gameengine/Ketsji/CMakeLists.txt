@@ -91,7 +91,6 @@ set(SRC
   KX_PolyProxy.cpp
   KX_PyConstraintBinding.cpp
   KX_PyMath.cpp
-  KX_PythonComponent.cpp
   KX_PythonProxyManager.cpp
   KX_PythonInit.cpp
   KX_PythonInitTypes.cpp
@@ -151,7 +150,6 @@ set(SRC
   KX_PolyProxy.hpp
   KX_PyConstraintBinding.hpp
   KX_PyMath.hpp
-  KX_PythonComponent.hpp
   KX_PythonProxyManager.hpp
   KX_PythonInit.hpp
   KX_PythonInitTypes.hpp

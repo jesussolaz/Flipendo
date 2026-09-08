@@ -1,7 +1,7 @@
 /* FL_Component — sistema de componentes de juego NATIVO en C++ para Flipendo.
  *
- * El motor heredado solo tiene KX_PythonComponent (Python, bajo #ifdef WITH_PYTHON).
- * Esta es la alternativa nativa exigida por la doctrina C++: componentes con
+ * Es el UNICO sistema de componentes del motor: el heredado de UPBGE
+ * (KX_PythonComponent, Python) fue eliminado. Componentes con
  * Start()/Update() en C++ puro, atados a los objetos por una propiedad de juego
  * "fl_component" y tickeados desde KX_Scene::LogicUpdateFrame.
  *

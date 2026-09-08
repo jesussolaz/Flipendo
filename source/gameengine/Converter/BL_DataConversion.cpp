@@ -100,7 +100,6 @@
 #include "KX_NodeRelationships.hpp"
 #include "KX_ObstacleSimulation.hpp"
 #include "KX_PyConstraintBinding.hpp"
-#include "KX_PythonComponent.hpp"
 #include "RAS_ICanvas.hpp"
 #include "RAS_Vertex.hpp"
 #ifdef WITH_BULLET
@@ -997,90 +996,9 @@ static ListBase *BL_GetActiveConstraint(Object *ob)
   return &ob->constraints;
 }
 
-static void BL_ConvertComponentsObject(KX_GameObject *gameobj, Object *blenderobj)
-{
-#ifdef WITH_PYTHON
-  PythonProxy *pp = (PythonProxy *)blenderobj->components.first;
-  PyObject *arg_dict = NULL, *args = NULL, *mod = NULL, *cls = NULL, *pycomp = NULL, *ret = NULL;
-
-  if (!pp) {
-    return;
-  }
-
-  EXP_ListValue<KX_PythonComponent> *components = new EXP_ListValue<KX_PythonComponent>();
-
-  while (pp) {
-    // Make sure to clean out anything from previous loops
-    Py_XDECREF(args);
-    Py_XDECREF(arg_dict);
-    Py_XDECREF(mod);
-    Py_XDECREF(cls);
-    Py_XDECREF(ret);
-    Py_XDECREF(pycomp);
-    args = arg_dict = mod = cls = pycomp = ret = NULL;
-
-    // Grab the module
-    mod = PyImport_ImportModule(pp->module);
-
-    if (mod == NULL) {
-      std::string msg = fmt::format("Failed to import the module {}", pp->module);
-      gameobj->LogError(msg);
-
-      pp = pp->next;
-      continue;
-    }
-
-    // Grab the class object
-    cls = PyObject_GetAttrString(mod, pp->name);
-    if (cls == NULL) {
-      std::string msg =
-          fmt::format("Python module found, but failed to find the component {}", pp->name);
-      gameobj->LogError(msg);
-
-      pp = pp->next;
-      continue;
-    }
-
-    // Lastly make sure we have a class and it's an appropriate sub type
-    if (!PyType_Check(cls) || !PyObject_IsSubclass(cls, (PyObject *)&KX_PythonComponent::Type)) {
-      std::string msg = fmt::format("{}.{} is not a KX_PythonComponent subclass", pp->module, pp->name);
-
-      gameobj->LogError(msg);
-
-      pp = pp->next;
-      continue;
-    }
-
-    // Every thing checks out, now generate the args dictionary and init the component
-    args = PyTuple_Pack(1, gameobj->GetProxy());
-
-    pycomp = PyObject_Call(cls, args, NULL);
-
-    if (PyErr_Occurred()) {
-      std::string msg = fmt::format("Failed to instantiate the class {}", pp->name);
-      gameobj->LogError(msg);
-    }
-    else {
-      KX_PythonComponent *comp = static_cast<KX_PythonComponent *>(EXP_PROXY_REF(pycomp));
-      comp->SetPrototype(pp);
-      comp->SetGameObject(gameobj);
-      components->Add(comp);
-    }
-
-    pp = pp->next;
-  }
-
-  Py_XDECREF(args);
-  Py_XDECREF(mod);
-  Py_XDECREF(cls);
-  Py_XDECREF(pycomp);
-
-  gameobj->SetComponents(components);
-#else
-  (void)gameobj;
-  (void)blenderobj;
-#endif
-}
+/* Flipendo: los componentes de juego son nativos (FL_Component, atados por la
+ * propiedad de juego "fl_component" y tickeados por FL_ComponentManager).
+ * La conversion de componentes Python (KX_PythonComponent) se ha eliminado. */
 
 static std::vector<Object *> lod_level_object_list(ViewLayer *view_layer)
 {
@@ -1785,16 +1703,8 @@ void BL_ConvertBlenderObjects(struct Main *maggie,
     gameobj->ResetState();
   }
 
-  // Convert the python components of each object.
-  for (KX_GameObject *gameobj : sumolist) {
-    Object *blenderobj = gameobj->GetBlenderObject();
-    if (single_object && !converting_instance_col_at_runtime) {
-      if (blenderobj != single_object) {
-        continue;
-      }
-    }
-    BL_ConvertComponentsObject(gameobj, blenderobj);
-  }
+  /* Flipendo: sin paso de conversion de componentes. Los componentes nativos
+   * (FL_Component) los ata FL_ComponentManager al arrancar la escena. */
 
   for (KX_GameObject *gameobj : objectlist) {
     Object *blenderobj = gameobj->GetBlenderObject();
@@ -1803,8 +1713,8 @@ void BL_ConvertBlenderObjects(struct Main *maggie,
         continue;
       }
     }
-    if (gameobj->GetPrototype() || gameobj->GetComponents()) {
-      // Register object for component update.
+    if (gameobj->GetPrototype()) {
+      // Register object for proxy update.
       kxscene->GetPythonProxyManager().Register(gameobj);
     }
   }

@@ -64,7 +64,6 @@
 #include "KX_NodeRelationships.hpp"
 #include "KX_PolyProxy.hpp"
 #include "KX_PyMath.hpp"
-#include "KX_PythonComponent.hpp"
 #include "KX_RayCast.hpp"
 #include "SCA_ISensor.hpp"
 #include "SG_Controller.hpp"
@@ -106,7 +105,6 @@ KX_GameObject::KX_GameObject()
       m_actionManager(nullptr)
 #ifdef WITH_PYTHON
       ,
-      m_components(NULL),
       m_attr_dict(nullptr),
       m_collisionCallbacks(nullptr),
       m_removeCallbacks(nullptr)
@@ -135,10 +133,6 @@ KX_GameObject::~KX_GameObject()
   if (m_collisionCallbacks) {
     UnregisterCollisionCallbacks();
     Py_CLEAR(m_collisionCallbacks);
-  }
-
-  if (m_components) {
-    m_components->Release();
   }
 #endif  // WITH_PYTHON
 
@@ -408,13 +402,6 @@ void KX_GameObject::RemoveOrHideBlenderObject()
 
 void KX_GameObject::Dispose()
 {
-#ifdef WITH_PYTHON
-  if (m_components) {
-    for (KX_PythonComponent *comp : m_components) {
-      comp->Dispose();
-    }
-  }
-#endif
   SCA_IObject::Dispose();
 }
 
@@ -909,13 +896,6 @@ void KX_GameObject::ProcessReplica()
 
   if (m_attr_dict)
     m_attr_dict = PyDict_Copy(m_attr_dict);
-
-  if (m_components) {
-    m_components = (EXP_ListValue<KX_PythonComponent> *)m_components->GetReplica();
-    for (KX_PythonComponent *component : m_components) {
-      component->SetGameObject(this);
-    }
-  }
 
 #endif
 }
@@ -1836,32 +1816,10 @@ std::vector<KX_GameObject *> KX_GameObject::GetChildrenRecursive() const
   return list;
 }
 
-EXP_ListValue<KX_PythonComponent> *KX_GameObject::GetComponents() const
-{
-#ifdef WITH_PYTHON
-  return m_components;
-#else
-  return nullptr;
-#endif
-}
-
-void KX_GameObject::SetComponents(EXP_ListValue<KX_PythonComponent> *components)
-{
-#ifdef WITH_PYTHON
-  m_components = components;
-#endif
-}
-
 void KX_GameObject::Update()
 {
 #ifdef WITH_PYTHON
   if (!m_logicSuspended) {
-    if (m_components) {
-      for (KX_PythonComponent *comp : m_components) {
-        comp->Update();
-      }
-    }
-
     KX_PythonProxy::Update();
   }
 #endif  // WITH_PYTHON
@@ -2322,7 +2280,6 @@ PyAttributeDef KX_GameObject::Attributes[] = {
     EXP_PYATTRIBUTE_RO_FUNCTION("sensors", KX_GameObject, pyattr_get_sensors),
     EXP_PYATTRIBUTE_RO_FUNCTION("controllers", KX_GameObject, pyattr_get_controllers),
     EXP_PYATTRIBUTE_RO_FUNCTION("actuators", KX_GameObject, pyattr_get_actuators),
-    EXP_PYATTRIBUTE_RO_FUNCTION("components", KX_GameObject, pyattr_get_components),
     EXP_PYATTRIBUTE_RO_FUNCTION("logger", KX_GameObject, KX_PythonProxy::pyattr_get_logger),
     EXP_PYATTRIBUTE_RO_FUNCTION(
         "loggerName", KX_GameObject, KX_PythonProxy::pyattr_get_logger_name),
@@ -3778,15 +3735,6 @@ int KX_GameObject::pyattr_set_obcolor(EXP_PyObjectPlus *self_v,
     return PY_SET_ATTR_FAIL;
   self->SetObjectColor(obcolor);
   return PY_SET_ATTR_SUCCESS;
-}
-
-PyObject *KX_GameObject::pyattr_get_components(EXP_PyObjectPlus *self_v,
-                                               const EXP_PYATTRIBUTE_DEF *attrdef)
-{
-  KX_GameObject *self = static_cast<KX_GameObject *>(self_v);
-  EXP_ListValue<KX_PythonComponent> *components = self->GetComponents();
-  return components ? components->GetProxy() :
-                      (new EXP_ListValue<KX_PythonComponent>())->NewProxy(true);
 }
 
 static int kx_game_object_get_sensors_size_cb(void *self_v)

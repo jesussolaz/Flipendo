@@ -55,7 +55,6 @@
 struct KX_ClientObjectInfo;
 class KX_RayCast;
 class KX_LodManager;
-class KX_PythonComponent;
 class RAS_MeshObject;
 class PHY_IPhysicsController;
 class BL_ActionManager;
@@ -140,10 +139,6 @@ class KX_GameObject : public SCA_IObject {
   BL_ActionManager *m_actionManager;
 
   BL_ActionManager *GetActionManager();
-
-#ifdef WITH_PYTHON
-  EXP_ListValue<KX_PythonComponent> *m_components;
-#endif
 
   std::vector<bRigidBodyJointConstraint *> m_constraints;
 
@@ -763,11 +758,6 @@ class KX_GameObject : public SCA_IObject {
   std::vector<KX_GameObject *> GetChildren() const;
   std::vector<KX_GameObject *> GetChildrenRecursive() const;
 
-  /// Returns the component list.
-  EXP_ListValue<KX_PythonComponent> *GetComponents() const;
-  /// Add a components.
-  void SetComponents(EXP_ListValue<KX_PythonComponent> *components);
-
   KX_Scene *GetScene();
 
   virtual void SetScene(KX_Scene *scene);
@@ -1010,8 +1000,6 @@ class KX_GameObject : public SCA_IObject {
   static int pyattr_set_obcolor(EXP_PyObjectPlus *self_v,
                                 const EXP_PYATTRIBUTE_DEF *attrdef,
                                 PyObject *value);
-  static PyObject *pyattr_get_components(EXP_PyObjectPlus *selv_v,
-                                         const EXP_PYATTRIBUTE_DEF *attrdef);
   static PyObject *pyattr_get_collisionCallbacks(EXP_PyObjectPlus *self_v,
                                                  const EXP_PYATTRIBUTE_DEF *attrdef);
   static int pyattr_set_collisionCallbacks(EXP_PyObjectPlus *self_v,
