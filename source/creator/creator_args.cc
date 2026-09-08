@@ -2504,6 +2504,22 @@ static int arg_handle_fl_dump_keymap(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_dump_keymap_native_doc[] =
+    "<filepath>\n"
+    "\tVuelca el mapa de teclado NATIVO (C++) a un fichero y sale.\n"
+    "\tSe compara con --fl-dump-keymap para verificar la migracion.";
+static int arg_handle_fl_dump_keymap_native(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_keyconfig_dump_native(CTX_wm_manager(C), argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_python_expr_run_doc[] =
     "<expression>\n"
     "\tRun the given expression as a Python script.";
@@ -3036,6 +3052,7 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--python-text", CB(arg_handle_python_text_run), C);
   BLI_args_add(ba, nullptr, "--python-expr", CB(arg_handle_python_expr_run), C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap", CB(arg_handle_fl_dump_keymap), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-keymap-native", CB(arg_handle_fl_dump_keymap_native), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

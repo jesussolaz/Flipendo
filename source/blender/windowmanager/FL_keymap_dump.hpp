@@ -31,4 +31,13 @@ struct wmWindowManager;
  */
 bool FL_keyconfig_dump(const wmWindowManager *wm, const char *filepath);
 
+/**
+ * Construye el keymap NATIVO en una configuracion aparte y lo vuelca.
+ *
+ * Existe para poder transliterar `blender_default.py` funcion a funcion sin tocar el
+ * arranque: se compara este volcado contra el de la configuracion que genera Python
+ * hasta que coincidan.
+ */
+bool FL_keyconfig_dump_native(wmWindowManager *wm, const char *filepath);
+
 #endif /* __FL_KEYMAP_DUMP_HPP__ */

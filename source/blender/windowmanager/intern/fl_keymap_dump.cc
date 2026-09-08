@@ -20,6 +20,11 @@
 
 #include "BLI_listbase.h"
 
+#include "WM_api.hh"
+#include "WM_keymap.hh"
+
+#include "keymap/FL_keymap_default.hpp"
+
 #include "DNA_ID.h"
 
 
@@ -163,6 +168,7 @@ std::string properties_to_text(const IDProperty *properties)
   return out;
 }
 
+void write_keymap(FILE *fp, const wmKeyMap *km);
 void write_keymap(FILE *fp, const wmKeyMap *km)
 {
   std::fprintf(fp,
@@ -261,5 +267,52 @@ bool FL_keyconfig_dump(const wmWindowManager *wm, const char *filepath)
   }
 
   std::fclose(fp);
+  return true;
+}
+
+bool FL_keyconfig_dump_native(wmWindowManager *wm, const char *filepath)
+{
+  if (wm == nullptr) {
+    std::fprintf(stderr, "FL_keyconfig_dump_native: no hay gestor de ventanas\n");
+    return false;
+  }
+
+  /* Configuracion temporal, para no tocar la que usa el editor. */
+  wmKeyConfig *kc = WM_keyconfig_new(wm, "Flipendo Native (temporal)", false);
+  flipendo::keymap::register_default(kc);
+
+  FILE *fp = std::fopen(filepath, "w");
+  if (fp == nullptr) {
+    std::fprintf(stderr, "FL_keyconfig_dump_native: no se pudo escribir %s\n", filepath);
+    WM_keyconfig_remove(wm, kc);
+    return false;
+  }
+
+  std::vector<const wmKeyMap *> keymaps;
+  LISTBASE_FOREACH (const wmKeyMap *, km, &kc->keymaps) {
+    keymaps.push_back(km);
+  }
+  std::sort(keymaps.begin(), keymaps.end(), [](const wmKeyMap *a, const wmKeyMap *b) {
+    const int c = std::strcmp(a->idname, b->idname);
+    if (c != 0) {
+      return c < 0;
+    }
+    if (a->spaceid != b->spaceid) {
+      return a->spaceid < b->spaceid;
+    }
+    return a->regionid < b->regionid;
+  });
+
+  size_t items = 0;
+  for (const wmKeyMap *km : keymaps) {
+    items += size_t(BLI_listbase_count(&km->items));
+  }
+  std::fprintf(fp, "CONFIG default keymaps=%zu items=%zu\n", keymaps.size(), items);
+  for (const wmKeyMap *km : keymaps) {
+    write_keymap(fp, km);
+  }
+
+  std::fclose(fp);
+  WM_keyconfig_remove(wm, kc);
   return true;
 }
