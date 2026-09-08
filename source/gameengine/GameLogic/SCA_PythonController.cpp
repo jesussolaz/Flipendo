@@ -502,7 +502,15 @@ int SCA_PythonController::pyattr_set_script(EXP_PyObjectPlus *self_v,
 
 void SCA_PythonController::Trigger(SCA_LogicManager *logicmgr)
 {
-  /* intentionally blank */
+  /* Flipendo: sin CPython no hay controlador Python que ejecutar. Antes esto era
+   * un no-op mudo, asi que un .blend con bricks de Python se quedaba sin logica
+   * y no lo decia. Ahora avisa una vez por controlador y sigue. */
+  if (!m_reportedNoPython) {
+    m_reportedNoPython = true;
+    CM_Error("controlador Python '" << GetName()
+                                    << "': este build no lleva CPython. Portalo a un "
+                                       "componente nativo (propiedad de juego 'fl_component').");
+  }
 }
 
 #endif  // WITH_PYTHON

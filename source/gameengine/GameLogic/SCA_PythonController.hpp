@@ -49,6 +49,10 @@ class SCA_PythonController : public SCA_IController {
   bool m_bModified;
   bool m_debug; /* use with SCA_PYEXEC_MODULE for reloading every logic run */
   int m_mode;
+#ifndef WITH_PYTHON
+  /* Flipendo: para avisar una sola vez de que este build no ejecuta bricks Python. */
+  bool m_reportedNoPython = false;
+#endif
 
  protected:
   std::string m_scriptText;
