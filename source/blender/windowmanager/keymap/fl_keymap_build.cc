@@ -402,4 +402,80 @@ Item &Item::number_array(const char *name, std::initializer_list<float> values)
 
 /** \} */
 
+/* -------------------------------------------------------------------- */
+/** \name Propiedades anidadas de macros
+ * \{ */
+
+Props Item::sub(const char *name)
+{
+  PointerRNA a = PointerRNA_NULL;
+  PointerRNA b = PointerRNA_NULL;
+  if (kmi_[0]) {
+    a = RNA_pointer_get(kmi_[0]->ptr, name);
+  }
+  if (kmi_[1]) {
+    b = RNA_pointer_get(kmi_[1]->ptr, name);
+  }
+  return Props(a, b);
+}
+
+Props Props::sub(const char *name)
+{
+  PointerRNA a = ptr_[0].data ? RNA_pointer_get(&ptr_[0], name) : PointerRNA_NULL;
+  PointerRNA b = ptr_[1].data ? RNA_pointer_get(&ptr_[1], name) : PointerRNA_NULL;
+  return Props(a, b);
+}
+
+Props &Props::boolean(const char *name, const bool value)
+{
+  for (PointerRNA &p : ptr_) {
+    if (p.data) {
+      RNA_boolean_set(&p, name, value);
+    }
+  }
+  return *this;
+}
+
+Props &Props::integer(const char *name, const int value)
+{
+  for (PointerRNA &p : ptr_) {
+    if (p.data) {
+      RNA_int_set(&p, name, value);
+    }
+  }
+  return *this;
+}
+
+Props &Props::number(const char *name, const float value)
+{
+  for (PointerRNA &p : ptr_) {
+    if (p.data) {
+      RNA_float_set(&p, name, value);
+    }
+  }
+  return *this;
+}
+
+Props &Props::string(const char *name, const char *value)
+{
+  for (PointerRNA &p : ptr_) {
+    if (p.data) {
+      RNA_string_set(&p, name, value);
+    }
+  }
+  return *this;
+}
+
+Props &Props::enum_(const char *name, const char *identifier)
+{
+  for (PointerRNA &p : ptr_) {
+    if (p.data) {
+      RNA_enum_set_identifier(nullptr, &p, name, identifier);
+    }
+  }
+  return *this;
+}
+
+/** \} */
+
 }  // namespace flipendo::keymap

@@ -36,6 +36,8 @@
 
 #include <initializer_list>
 
+#include "RNA_types.hh"
+
 struct wmKeyConfig;
 struct wmKeyMap;
 struct wmKeyMapItem;
@@ -90,6 +92,35 @@ inline Event ev(const char *type, const char *value = "PRESS")
 }
 
 /**
+ * Las propiedades de una sub-operacion de una macro.
+ *
+ * Un operador macro guarda las propiedades de cada paso en un puntero con el nombre
+ * de ese paso, y pueden anidarse:
+ *
+ *     {"properties": [("NODE_OT_translate_attach",
+ *                       [("TRANSFORM_OT_translate", [("view2d_edge_pan", True)])])]}
+ *     .sub("NODE_OT_translate_attach").sub("TRANSFORM_OT_translate")
+ *         .boolean("view2d_edge_pan", true)
+ */
+class Props {
+ public:
+  Props(const PointerRNA &a, const PointerRNA &b) : ptr_{a, b} {}
+
+  Props &boolean(const char *name, bool value);
+  Props &integer(const char *name, int value);
+  Props &number(const char *name, float value);
+  Props &string(const char *name, const char *value);
+  Props &enum_(const char *name, const char *identifier);
+
+  /** Baja otro nivel, al paso indicado de la macro. */
+  Props sub(const char *name);
+
+ private:
+  /* Dos, por el gemelo con Cmd de macOS; el segundo puede estar vacio. */
+  PointerRNA ptr_[2];
+};
+
+/**
  * Un atajo recien anadido, sobre el que encadenar sus propiedades.
  *
  * Los metodos devuelven `*this` para poder escribir la lista de propiedades en una
@@ -110,6 +141,8 @@ class Item {
   Item &enum_flag(const char *name, std::initializer_list<const char *> identifiers);
   Item &boolean_array(const char *name, std::initializer_list<bool> values);
   Item &number_array(const char *name, std::initializer_list<float> values);
+  /** Propiedades de un paso de una macro. Ver Props. */
+  Props sub(const char *name);
 
   wmKeyMapItem *raw() const { return kmi_[0]; }
 
