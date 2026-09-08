@@ -2,7 +2,11 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-set(DISCOVER_NODES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/intern/discover_nodes.py)
+# Flipendo: el descubridor de nodos es una herramienta C++ propia, no un script de
+# Python. Era lo ultimo que el build ejecutaba con el interprete; ahora el arbol se
+# compila sin Python instalado. Ver intern/discover_nodes.cpp.
+add_executable(discover_nodes ${CMAKE_CURRENT_SOURCE_DIR}/intern/discover_nodes.cpp)
+optimize_debug_target(discover_nodes)
 
 # Creates a library with the given name that exposes one function which calls
 # the register functions of all nodes in the provided source files.
@@ -24,8 +28,7 @@ function(add_node_discovery
     OUTPUT
       ${output_file}
     COMMAND
-      ${PYTHON_EXECUTABLE}
-        ${DISCOVER_NODES_PATH}
+      discover_nodes
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${output_file}
         ${output_function}
@@ -33,7 +36,7 @@ function(add_node_discovery
         ${extra_args}
     DEPENDS
       ${SRC}
-      ${DISCOVER_NODES_PATH}
+      discover_nodes
   )
   set_source_files_properties(${output_file} PROPERTIES GENERATED TRUE)
   add_library(${lib_name} ${output_file})
