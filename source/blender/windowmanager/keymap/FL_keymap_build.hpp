@@ -164,6 +164,20 @@ wmKeyMap *keymap(wmKeyConfig *keyconf,
                  const char *space_type = nullptr,
                  const char *region_type = "WINDOW");
 
+/**
+ * Keymap de una HERRAMIENTA del sistema de herramientas.
+ *
+ * Igual que `keymap()` pero marcando `KEYMAP_TOOL`. Esa marca no viene de los datos
+ * del keymap: en el camino de Python la pone el sistema de herramientas al registrar
+ * cada una (`bl_ui/space_toolsystem_common.py:498`, con `tool=True`). Mientras ese
+ * subsistema siga en Python hay que ponerla aqui, o los ~99 keymaps de herramienta
+ * salen sin ella y el motor no los trata como tales.
+ */
+wmKeyMap *keymap_tool(wmKeyConfig *keyconf,
+                      const char *idname,
+                      const char *space_type = nullptr,
+                      const char *region_type = "WINDOW");
+
 /** Keymap modal: sus elementos llevan un valor de enumeracion, no un operador. */
 wmKeyMap *keymap_modal(wmKeyConfig *keyconf, const char *idname);
 

@@ -16,8 +16,18 @@
  * borraria opciones que hoy existen. Los `km_*` conservan sus condicionales sobre
  * esta estructura, igual que el Python.
  *
- * Los valores por defecto son los del Python, que son los que produjeron
- * `tests/flipendo/keymap/baseline-python.txt`.
+ * OJO con los valores por defecto: NO son los del `__init__` de `Params`. El keymap
+ * real no lo construye `blender_default.py` con sus propios defectos, sino
+ * `presets/keyconfig/Blender.py:343-372`, que le pasa los valores derivados de las
+ * preferencias de fabrica del usuario -- y algunos no coinciden. Los que importan:
+ *
+ *   - seleccion con el boton IZQUIERDO (`select_mouse` por defecto es 'LEFT'),
+ *     no el derecho como dice el `__init__`;
+ *   - `use_fallback_tool` va fijo a true, no es preferencia;
+ *   - `use_gizmo_drag` = (seleccion izquierda Y gizmo_action == 'DRAG');
+ *   - `spacebar_action` por defecto es 'PLAY', no 'TOOL'.
+ *
+ * Estos son los valores que produjeron `tests/flipendo/keymap/baseline-python.txt`.
  */
 
 #ifndef __FL_KEYMAP_PARAMS_HPP__
@@ -38,17 +48,17 @@ struct Params {
   /* --- Opciones de entrada --- */
   bool legacy = false;
   /** true = raton derecho selecciona (por defecto); false = izquierdo. */
-  bool select_mouse_right = true;
+  bool select_mouse_right = false;
   bool use_mouse_emulate_3_button = false;
   bool use_alt_tool_or_cursor = false;
 
   /* --- Preferencias del usuario --- */
-  SpacebarAction spacebar_action = SpacebarAction::Tool;
+  SpacebarAction spacebar_action = SpacebarAction::Play;
   bool use_key_activate_tools = false;
   bool use_region_toggle_pie = false;
   bool use_select_all_toggle = false;
   bool use_gizmo_drag = true;
-  bool use_fallback_tool = false;
+  bool use_fallback_tool = true;
   bool use_fallback_tool_select_handled = true;
   bool use_v3d_tab_menu = false;
   bool use_v3d_shade_ex_pie = false;

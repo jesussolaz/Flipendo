@@ -23,6 +23,34 @@ set(SRC
   keymap/fl_keymap_build.cc
   keymap/fl_keymap_params.cc
   keymap/fl_keymap_default.cc
+  keymap/fl_keymap_g28.cc
+  keymap/fl_keymap_g27.cc
+  keymap/fl_keymap_g26.cc
+  keymap/fl_keymap_g25.cc
+  keymap/fl_keymap_g24.cc
+  keymap/fl_keymap_g23.cc
+  keymap/fl_keymap_g22.cc
+  keymap/fl_keymap_g21.cc
+  keymap/fl_keymap_g20.cc
+  keymap/fl_keymap_g19.cc
+  keymap/fl_keymap_g18.cc
+  keymap/fl_keymap_g17.cc
+  keymap/fl_keymap_g16.cc
+  keymap/fl_keymap_g15.cc
+  keymap/fl_keymap_g14.cc
+  keymap/fl_keymap_g13.cc
+  keymap/fl_keymap_g12.cc
+  keymap/fl_keymap_g11.cc
+  keymap/fl_keymap_g10.cc
+  keymap/fl_keymap_g09.cc
+  keymap/fl_keymap_g08.cc
+  keymap/fl_keymap_g07.cc
+  keymap/fl_keymap_g06.cc
+  keymap/fl_keymap_g05.cc
+  keymap/fl_keymap_g04.cc
+  keymap/fl_keymap_g03.cc
+  keymap/fl_keymap_g02.cc
+  keymap/fl_keymap_g01.cc
   intern/wm.cc
   intern/wm_cursors.cc
   intern/wm_dragdrop.cc

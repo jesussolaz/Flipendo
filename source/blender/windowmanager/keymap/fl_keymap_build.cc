@@ -103,6 +103,18 @@ wmKeyMap *keymap(wmKeyConfig *keyconf,
       keyconf, idname, space_type_value(space_type), region_type_value(region_type));
 }
 
+wmKeyMap *keymap_tool(wmKeyConfig *keyconf,
+                      const char *idname,
+                      const char *space_type,
+                      const char *region_type)
+{
+  wmKeyMap *km = keymap(keyconf, idname, space_type, region_type);
+  if (km) {
+    km->flag |= KEYMAP_TOOL;
+  }
+  return km;
+}
+
 wmKeyMap *keymap_modal(wmKeyConfig *keyconf, const char *idname)
 {
   return WM_modalkeymap_ensure(keyconf, idname, nullptr);
@@ -265,7 +277,12 @@ Item item_menu_pie(wmKeyMap *km, const char *menu_idname, const Event &event)
 
 Item item_panel(wmKeyMap *km, const char *panel_idname, const Event &event)
 {
-  return item_wrapper(km, WM_keymap_add_panel, panel_idname, event);
+  /* NO se usa WM_keymap_add_panel: ademas del nombre fija keep_open=false, y el
+   * `op_panel` del Python solo pone el nombre. Esa propiedad de mas aparecia en el
+   * volcado y hacia que el keymap "Window" no coincidiera. */
+  Item it = item(km, "wm.call_panel", event);
+  it.string("name", panel_idname);
+  return it;
 }
 
 Item item_tool(wmKeyMap *km, const char *tool_idname, const Event &event)
@@ -322,9 +339,25 @@ Item &Item::string(const char *name, const char *value)
 Item &Item::enum_(const char *name, const char *identifier)
 {
   for (wmKeyMapItem *kmi : kmi_) {
-    if (kmi) {
-      RNA_enum_set_identifier(nullptr, kmi->ptr, name, identifier);
+    if (kmi == nullptr) {
+      continue;
     }
+    /* RNA_enum_set_identifier no dice nada si la propiedad no es una enumeracion, y
+     * varias propiedades de operador que en el Python se escriben con comillas
+     * simples son en realidad cadenas (wm.context_toggle_enum.value_1, por ejemplo).
+     * Sin este aviso el valor se perdia sin dejar rastro. */
+    PropertyRNA *prop = RNA_struct_find_property(kmi->ptr, name);
+    if (prop == nullptr) {
+      std::fprintf(stderr, "FL_keymap: propiedad desconocida: '%s'\n", name);
+      continue;
+    }
+    if (RNA_property_type(prop) != PROP_ENUM) {
+      std::fprintf(stderr,
+                   "FL_keymap: '%s' no es una enumeracion; usa .string() en su lugar\n",
+                   name);
+      continue;
+    }
+    RNA_enum_set_identifier(nullptr, kmi->ptr, name, identifier);
   }
   return *this;
 }
@@ -406,23 +439,37 @@ Item &Item::number_array(const char *name, std::initializer_list<float> values)
 /** \name Propiedades anidadas de macros
  * \{ */
 
+/* Baja a la sub-operacion `name` de una macro.
+ *
+ * El `property_unset` previo no es opcional: sin el, RNA_pointer_get materializa
+ * TODOS los pasos de la macro anidada y aparecen grupos vacios que el keymap de
+ * Python no tiene. El camino de Python hace exactamente esto
+ * (bl_keymap_utils/io.py:236-238: property_unset y luego getattr). */
+static PointerRNA sub_pointer(PointerRNA *ptr, const char *name)
+{
+  if (ptr == nullptr || ptr->data == nullptr) {
+    return PointerRNA_NULL;
+  }
+  PropertyRNA *prop = RNA_struct_find_property(ptr, name);
+  if (prop == nullptr) {
+    std::fprintf(stderr, "FL_keymap: paso de macro desconocido: '%s'\n", name);
+    return PointerRNA_NULL;
+  }
+  RNA_property_unset(ptr, prop);
+  return RNA_pointer_get(ptr, name);
+}
+
 Props Item::sub(const char *name)
 {
-  PointerRNA a = PointerRNA_NULL;
-  PointerRNA b = PointerRNA_NULL;
-  if (kmi_[0]) {
-    a = RNA_pointer_get(kmi_[0]->ptr, name);
-  }
-  if (kmi_[1]) {
-    b = RNA_pointer_get(kmi_[1]->ptr, name);
-  }
+  PointerRNA a = kmi_[0] ? sub_pointer(kmi_[0]->ptr, name) : PointerRNA_NULL;
+  PointerRNA b = kmi_[1] ? sub_pointer(kmi_[1]->ptr, name) : PointerRNA_NULL;
   return Props(a, b);
 }
 
 Props Props::sub(const char *name)
 {
-  PointerRNA a = ptr_[0].data ? RNA_pointer_get(&ptr_[0], name) : PointerRNA_NULL;
-  PointerRNA b = ptr_[1].data ? RNA_pointer_get(&ptr_[1], name) : PointerRNA_NULL;
+  PointerRNA a = sub_pointer(&ptr_[0], name);
+  PointerRNA b = sub_pointer(&ptr_[1], name);
   return Props(a, b);
 }
 
