@@ -22,15 +22,8 @@ namespace flipendo::keymap {
  *
  * Sale en casi todos los keymaps de este grupo, por eso esta en un sitio unico.
  *
- * TODO(keymap): `params.tool_modifier` vale `{"alt": -1}` cuando se selecciona con el
- * boton izquierdo Y esta activa la preferencia "Alt para herramienta o cursor"
- * (`params.tool_modifier_alt_any`); es decir, Alt en CUALQUIER estado. `Event` solo
- * sabe "modificador pulsado" o `.any()` (TODOS los modificadores en cualquier
- * estado), no un modificador suelto en KM_ANY. El API de abajo si lo soporta
- * (`KMI_PARAMS_MOD_TO_ANY` en WM_keymap.hh); lo que falta es exponerlo en el
- * andamiaje. Mientras tanto el evento se emite tal cual, sin Alt: con los parametros
- * por defecto `tool_modifier` esta vacio y el resultado es identico al baseline; con
- * esa preferencia activa, el atajo no respondera con Alt pulsado.
+ * `params.tool_modifier` se aplica con `with_tool_modifier()` (FL_keymap_params.hpp),
+ * que pone Alt en KM_ANY cuando la preferencia lo pide.
  */
 /* Se delega en el ayudante compartido de FL_keymap_params. */
 

@@ -157,12 +157,11 @@ static void km_sequencer_slip_modal_map(wmKeyConfig *kc, const Params & /*params
  * \{ */
 
 /*
- * TODO(keymap): `Event` no sabe expresar `any_except(...)` del Python, que pone
- * "cualquier estado" en unos modificadores y "sin pulsar" en otros; solo tiene
- * `.any()`, que los pone todos. Falta algo como `.ctrl_any()` / `.shift_any()` en
- * FL_keymap_build.hpp (el DNA ya lo admite: cada modificador guarda KM_ANY,
- * KM_NOTHING o KM_MOD_HELD por separado). Mientras tanto, esta plantilla ajusta el
- * atajo recien creado a mano, que es lo unico que reproduce el baseline.
+ * Estos atajos se escriben a mano, en pareja, a proposito. El evento del Python
+ * declara "ctrl" en cualquier estado, y el pase de macOS le antepone un gemelo que
+ * mueve ese valor a Cmd. `oskey_twin_wanted()` no puede generarlo solo porque mira
+ * si el evento pide Ctrl PULSADO, y aqui esta en "cualquiera": por eso se emiten los
+ * dos, primero el gemelo y despues el original, que es el orden del Python.
  */
 
 /**

@@ -22,13 +22,8 @@ namespace flipendo::keymap {
  * que se invoca casi toda herramienta de este grupo. Se hace funcion porque se repite
  * doce veces dentro del fichero, no porque el Python tenga nada parecido.
  *
- * TODO(keymap): `params.tool_modifier` vale `{"alt": -1}` (o sea, Alt pulsado o no)
- * cuando se selecciona con el boton izquierdo y `use_alt_tool_or_cursor` esta activo
- * (`Params.__init__`, blender_default.py:178). `Event` solo sabe poner TODOS los
- * modificadores en "cualquiera" (`.any()`), no uno solo, asi que ese caso no se aplica
- * y con esa preferencia la herramienta no respondera con Alt pulsado. Con los
- * parametros por defecto `tool_modifier` es `{}` y el resultado es exacto, por eso no
- * afecta al baseline. La bandera equivalente en C++ es `params.tool_modifier_alt_any`.
+ * `params.tool_modifier` se aplica con `with_tool_modifier()` (FL_keymap_params.hpp),
+ * que pone Alt en KM_ANY cuando la preferencia lo pide.
  */
 static Event tool_maybe_tweak(const Params &params)
 {

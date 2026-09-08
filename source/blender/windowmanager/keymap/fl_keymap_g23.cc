@@ -34,14 +34,7 @@ static bool streq(const char *a, const char *b)
  */
 static Event tool_modifier(const Params &params, Event event)
 {
-  if (params.tool_modifier_alt_any) {
-    /* TODO(keymap): falta `{"alt": -1}`: el atajo deberia casar tanto con Alt
-     * pulsado como sin pulsar, dejando el resto de modificadores exactos. `Event`
-     * solo tiene `.any()`, que pone KM_ANY en TODOS los modificadores, asi que no
-     * es equivalente y escribirlo cambiaria otros atajos. Con los parametros por
-     * defecto `tool_modifier_alt_any` es false y el baseline no se ve afectado. */
-  }
-  return event;
+  return with_tool_modifier(params, event);
 }
 
 /**
