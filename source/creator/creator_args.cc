@@ -2520,6 +2520,21 @@ static int arg_handle_fl_dump_keymap_native(int argc, const char **argv, void *d
   return 0;
 }
 
+static const char arg_handle_fl_check_keymap_doc[] =
+    "<baseline>\n"
+    "\tCompara el keymap nativo (C++) contra una linea base y sale.";
+static int arg_handle_fl_check_keymap(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_keyconfig_check_native(CTX_wm_manager(C), argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_python_expr_run_doc[] =
     "<expression>\n"
     "\tRun the given expression as a Python script.";
@@ -3053,6 +3068,7 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--python-expr", CB(arg_handle_python_expr_run), C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap", CB(arg_handle_fl_dump_keymap), C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap-native", CB(arg_handle_fl_dump_keymap_native), C);
+  BLI_args_add(ba, nullptr, "--fl-check-keymap", CB(arg_handle_fl_check_keymap), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

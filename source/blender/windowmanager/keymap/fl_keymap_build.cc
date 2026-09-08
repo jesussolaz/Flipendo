@@ -233,6 +233,26 @@ static Item item_wrapper(wmKeyMap *km,
   return Item(kmi, kmi_oskey);
 }
 
+Item item_modal(wmKeyMap *km, const char *value, const Event &event)
+{
+  /* El valor se resuelve contra la enumeracion que declara el propio keymap modal,
+   * que define el codigo nativo del operador. Si el keymap aun no la tiene, se
+   * guarda el identificador como texto y el motor lo resuelve al enlazar. */
+  const KeyMapItem_Params params = to_params(event);
+  wmKeyMapItem *kmi = nullptr;
+
+  const EnumPropertyItem *items = static_cast<const EnumPropertyItem *>(km->modal_items);
+  int propvalue = 0;
+  if (items != nullptr && RNA_enum_value_from_id(items, value, &propvalue)) {
+    kmi = WM_modalkeymap_add_item(km, &params, propvalue);
+  }
+  else {
+    kmi = WM_modalkeymap_add_item_str(km, &params, value);
+  }
+  apply_repeat(kmi, event);
+  return Item(kmi);
+}
+
 Item item_menu(wmKeyMap *km, const char *menu_idname, const Event &event)
 {
   return item_wrapper(km, WM_keymap_add_menu, menu_idname, event);

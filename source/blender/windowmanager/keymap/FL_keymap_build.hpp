@@ -137,6 +137,12 @@ wmKeyMap *keymap_modal(wmKeyConfig *keyconf, const char *idname);
 /** Anade un atajo que invoca un operador. `op` va en notacion Python: "logic.properties". */
 Item item(wmKeyMap *km, const char *op, const Event &event);
 
+/**
+ * Anade un atajo a un keymap MODAL. `value` es el identificador de la enumeracion
+ * del propio keymap ('CANCEL', 'CONFIRM'...), igual que en el Python.
+ */
+Item item_modal(wmKeyMap *km, const char *value, const Event &event);
+
 /** `op_menu(...)` del Python: abre un menu. */
 Item item_menu(wmKeyMap *km, const char *menu_idname, const Event &event);
 /** `op_menu_pie(...)`. */

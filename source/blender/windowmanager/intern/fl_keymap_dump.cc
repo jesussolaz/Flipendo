@@ -13,6 +13,9 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -316,3 +319,110 @@ bool FL_keyconfig_dump_native(wmWindowManager *wm, const char *filepath)
   WM_keyconfig_remove(wm, kc);
   return true;
 }
+
+/* -------------------------------------------------------------------- */
+/** \name Comprobacion contra la linea base
+ * \{ */
+
+namespace {
+
+/* Trocea un volcado en {nombre de keymap -> sus lineas}, quedandose solo con la
+ * seccion "CONFIG default". */
+std::map<std::string, std::string> parse_dump(std::istream &in)
+{
+  std::map<std::string, std::string> out;
+  std::string line;
+  std::string current;
+  bool in_default = false;
+
+  while (std::getline(in, line)) {
+    if (line.rfind("CONFIG ", 0) == 0) {
+      in_default = (line.rfind("CONFIG default", 0) == 0);
+      current.clear();
+      continue;
+    }
+    if (!in_default) {
+      continue;
+    }
+    if (line.rfind("KEYMAP ", 0) == 0) {
+      /* El nombre llega hasta " space=". */
+      const size_t start = 7;
+      const size_t end = line.find(" space=", start);
+      current = (end == std::string::npos) ? line.substr(start) : line.substr(start, end - start);
+      out[current] = line + "\n";
+      continue;
+    }
+    if (!current.empty()) {
+      out[current] += line + "\n";
+    }
+  }
+  return out;
+}
+
+}  // namespace
+
+bool FL_keyconfig_check_native(wmWindowManager *wm, const char *baseline_filepath)
+{
+  std::ifstream baseline_file(baseline_filepath);
+  if (!baseline_file) {
+    std::fprintf(stderr, "FL_keyconfig_check_native: no se pudo leer %s\n", baseline_filepath);
+    return false;
+  }
+  const std::map<std::string, std::string> baseline = parse_dump(baseline_file);
+
+  /* El keymap nativo se construye en memoria y se serializa al mismo formato. */
+  wmKeyConfig *kc = WM_keyconfig_new(wm, "Flipendo Native (comprobacion)", false);
+  flipendo::keymap::register_default(kc);
+
+  std::ostringstream native_text;
+  {
+    /* Se reutiliza el mismo escritor, volcando a un fichero temporal en memoria no
+     * es posible con FILE*, asi que se recorre directamente. */
+    std::vector<const wmKeyMap *> keymaps;
+    LISTBASE_FOREACH (const wmKeyMap *, km, &kc->keymaps) {
+      keymaps.push_back(km);
+    }
+    native_text << "CONFIG default keymaps=" << keymaps.size() << " items=0\n";
+    for (const wmKeyMap *km : keymaps) {
+      char *buf = nullptr;
+      size_t size = 0;
+      FILE *mem = open_memstream(&buf, &size);
+      if (mem) {
+        write_keymap(mem, km);
+        std::fclose(mem);
+        native_text << buf;
+        free(buf);
+      }
+    }
+  }
+  std::istringstream native_stream(native_text.str());
+  const std::map<std::string, std::string> native = parse_dump(native_stream);
+
+  size_t ok = 0, bad = 0;
+  for (const auto &kv : native) {
+    const auto it = baseline.find(kv.first);
+    if (it == baseline.end()) {
+      std::printf("  SOBRA    %s (no existe en la linea base)\n", kv.first.c_str());
+      bad++;
+      continue;
+    }
+    if (it->second == kv.second) {
+      ok++;
+    }
+    else {
+      std::printf("  DIFIERE  %s\n", kv.first.c_str());
+      bad++;
+    }
+  }
+
+  std::printf("\nkeymaps transliterados: %zu  |  identicos: %zu  |  con diferencias: %zu\n",
+              native.size(), ok, bad);
+  std::printf("linea base: %zu keymaps  |  quedan por transliterar: %zu\n",
+              baseline.size(),
+              baseline.size() > native.size() ? baseline.size() - native.size() : 0);
+
+  WM_keyconfig_remove(wm, kc);
+  return bad == 0;
+}
+
+/** \} */

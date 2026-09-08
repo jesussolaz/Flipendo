@@ -40,4 +40,13 @@ bool FL_keyconfig_dump(const wmWindowManager *wm, const char *filepath);
  */
 bool FL_keyconfig_dump_native(wmWindowManager *wm, const char *filepath);
 
+/**
+ * Compara el keymap NATIVO contra una linea base y escribe el informe por salida
+ * estandar: por cada keymap ya transliterado dice si coincide con lo que generaba
+ * Python, y al final cuantos quedan por hacer.
+ *
+ * Devuelve true si todos los transliterados coinciden.
+ */
+bool FL_keyconfig_check_native(wmWindowManager *wm, const char *baseline_filepath);
+
 #endif /* __FL_KEYMAP_DUMP_HPP__ */
