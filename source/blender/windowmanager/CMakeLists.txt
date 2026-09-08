@@ -21,6 +21,7 @@ set(INC_SYS
 set(SRC
   intern/fl_keymap_dump.cc
   keymap/fl_keymap_build.cc
+  keymap/fl_keymap_params.cc
   keymap/fl_keymap_default.cc
   intern/wm.cc
   intern/wm_cursors.cc
@@ -66,6 +67,7 @@ set(SRC
 
   FL_keymap_dump.hpp
   keymap/FL_keymap_build.hpp
+  keymap/FL_keymap_params.hpp
   keymap/FL_keymap_default.hpp
   WM_api.hh
   WM_keymap.hh
