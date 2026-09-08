@@ -74,7 +74,7 @@ static Event tool_maybe_tweak_with_modifier(const Params &params)
 
 static void km_generic_tool_annotate(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Generic Tool: Annotate", "EMPTY", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Generic Tool: Annotate", "EMPTY", "WINDOW");
 
   item(km, "gpencil.annotate", ev(params.tool_mouse, "PRESS"))
       .enum_("mode", "DRAW")
@@ -86,7 +86,7 @@ static void km_generic_tool_annotate(wmKeyConfig *kc, const Params &params)
 
 static void km_generic_tool_annotate_line(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Generic Tool: Annotate Line", "EMPTY", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Generic Tool: Annotate Line", "EMPTY", "WINDOW");
 
   item(km, "gpencil.annotate", params.tool_maybe_tweak_event)
       .enum_("mode", "DRAW_STRAIGHT")
@@ -98,7 +98,7 @@ static void km_generic_tool_annotate_line(wmKeyConfig *kc, const Params &params)
 
 static void km_generic_tool_annotate_polygon(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Generic Tool: Annotate Polygon", "EMPTY", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Generic Tool: Annotate Polygon", "EMPTY", "WINDOW");
 
   item(km, "gpencil.annotate", ev(params.tool_mouse, "PRESS"))
       .enum_("mode", "DRAW_POLY")
@@ -110,7 +110,7 @@ static void km_generic_tool_annotate_polygon(wmKeyConfig *kc, const Params &para
 
 static void km_generic_tool_annotate_eraser(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Generic Tool: Annotate Eraser", "EMPTY", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Generic Tool: Annotate Eraser", "EMPTY", "WINDOW");
 
   item(km, "gpencil.annotate", ev(params.tool_mouse, "PRESS"))
       .enum_("mode", "ERASER")
@@ -128,7 +128,7 @@ static void km_generic_tool_annotate_eraser(wmKeyConfig *kc, const Params &param
 
 static void km_image_editor_tool_generic_sample(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Sample", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Sample", "IMAGE_EDITOR", "WINDOW");
 
   item(km, "image.sample", ev(params.tool_mouse, "PRESS"));
 }
@@ -141,7 +141,7 @@ static void km_image_editor_tool_generic_sample(wmKeyConfig *kc, const Params &p
 
 static void km_image_editor_tool_uv_cursor(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Uv, Cursor", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Uv, Cursor", "IMAGE_EDITOR", "WINDOW");
 
   item(km, "uv.cursor_set", ev(params.tool_mouse, "PRESS"));
   /* No se usa `tool_maybe_tweak_event`: chocaria con el PRESS que coloca el cursor. */
@@ -317,7 +317,7 @@ static void km_image_editor_tool_uv_select_lasso(wmKeyConfig *kc,
 
 static void km_image_editor_tool_uv_rip_region(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Uv, Rip Region", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Uv, Rip Region", "IMAGE_EDITOR", "WINDOW");
 
   Item kmi = item(km, "uv.rip_move", tool_maybe_tweak_with_modifier(params));
   kmi.sub("TRANSFORM_OT_translate").boolean("release_confirm", true);
@@ -325,7 +325,7 @@ static void km_image_editor_tool_uv_rip_region(wmKeyConfig *kc, const Params &pa
 
 static void km_image_editor_tool_uv_grab(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Uv, Grab", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Uv, Grab", "IMAGE_EDITOR", "WINDOW");
 
   item(km, "sculpt.uv_sculpt_grab", ev(params.tool_mouse, "PRESS"));
   item(km, "sculpt.uv_sculpt_grab", ev(params.tool_mouse, "PRESS").ctrl())
@@ -339,7 +339,7 @@ static void km_image_editor_tool_uv_grab(wmKeyConfig *kc, const Params &params)
 
 static void km_image_editor_tool_uv_relax(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Uv, Relax", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Uv, Relax", "IMAGE_EDITOR", "WINDOW");
 
   item(km, "sculpt.uv_sculpt_relax", ev(params.tool_mouse, "PRESS"));
   item(km, "sculpt.uv_sculpt_relax", ev(params.tool_mouse, "PRESS").ctrl())
@@ -353,7 +353,7 @@ static void km_image_editor_tool_uv_relax(wmKeyConfig *kc, const Params &params)
 
 static void km_image_editor_tool_uv_pinch(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Uv, Pinch", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Uv, Pinch", "IMAGE_EDITOR", "WINDOW");
 
   item(km, "sculpt.uv_sculpt_pinch", ev(params.tool_mouse, "PRESS"));
   item(km, "sculpt.uv_sculpt_pinch", ev(params.tool_mouse, "PRESS").ctrl())
@@ -367,7 +367,7 @@ static void km_image_editor_tool_uv_pinch(wmKeyConfig *kc, const Params &params)
 
 static void km_image_editor_tool_uv_move(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Uv, Move", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Uv, Move", "IMAGE_EDITOR", "WINDOW");
 
   item(km, "transform.translate", tool_maybe_tweak_with_modifier(params))
       .boolean("release_confirm", true);
@@ -375,7 +375,7 @@ static void km_image_editor_tool_uv_move(wmKeyConfig *kc, const Params &params)
 
 static void km_image_editor_tool_uv_rotate(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Uv, Rotate", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Uv, Rotate", "IMAGE_EDITOR", "WINDOW");
 
   item(km, "transform.rotate", tool_maybe_tweak_with_modifier(params))
       .boolean("release_confirm", true);
@@ -383,7 +383,7 @@ static void km_image_editor_tool_uv_rotate(wmKeyConfig *kc, const Params &params
 
 static void km_image_editor_tool_uv_scale(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Image Editor Tool: Uv, Scale", "IMAGE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Image Editor Tool: Uv, Scale", "IMAGE_EDITOR", "WINDOW");
 
   item(km, "transform.resize", tool_maybe_tweak_with_modifier(params))
       .boolean("release_confirm", true);

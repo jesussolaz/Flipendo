@@ -58,12 +58,22 @@ class Event {
   /** `type`: 'N', 'RIGHTMOUSE', 'WHEELUPMOUSE'... `value`: 'PRESS', 'CLICK_DRAG', 'ANY'... */
   Event(const char *type, const char *value = "PRESS") : type_(type), value_(value) {}
 
-  Event &shift() { shift_ = true; return *this; }
-  Event &ctrl() { ctrl_ = true; return *this; }
-  Event &alt() { alt_ = true; return *this; }
-  Event &oskey() { oskey_ = true; return *this; }
-  Event &hyper() { hyper_ = true; return *this; }
-  /** `"any": True` — cualquier combinacion de modificadores. */
+  /* Cada modificador tiene TRES estados, como en el Python: sin pulsar (0),
+   * pulsado (True) y cualquiera (-1). El tercero lo produce `any_except()`. */
+  Event &shift() { shift_ = kHeld; return *this; }
+  Event &ctrl() { ctrl_ = kHeld; return *this; }
+  Event &alt() { alt_ = kHeld; return *this; }
+  Event &oskey() { oskey_ = kHeld; return *this; }
+  Event &hyper() { hyper_ = kHeld; return *this; }
+
+  /** El modificador da igual: `{"shift": -1}` del Python. */
+  Event &shift_any() { shift_ = kAny; return *this; }
+  Event &ctrl_any() { ctrl_ = kAny; return *this; }
+  Event &alt_any() { alt_ = kAny; return *this; }
+  Event &oskey_any() { oskey_ = kAny; return *this; }
+  Event &hyper_any() { hyper_ = kAny; return *this; }
+
+  /** `"any": True` — todos los modificadores dan igual. */
   Event &any() { any_ = true; return *this; }
   /** `"direction"`: 'NORTH', 'SOUTH'... solo tiene sentido con value 'CLICK_DRAG'. */
   Event &direction(const char *d) { direction_ = d; return *this; }
@@ -72,13 +82,16 @@ class Event {
   /** `"repeat": True` — el atajo se repite al mantener la tecla. */
   Event &repeat() { repeat_ = true; return *this; }
 
+  /** Estados de un modificador. */
+  enum : int8_t { kOff = 0, kHeld = 1, kAny = -1 };
+
   const char *type_ = nullptr;
   const char *value_ = "PRESS";
-  bool shift_ = false;
-  bool ctrl_ = false;
-  bool alt_ = false;
-  bool oskey_ = false;
-  bool hyper_ = false;
+  int8_t shift_ = kOff;
+  int8_t ctrl_ = kOff;
+  int8_t alt_ = kOff;
+  int8_t oskey_ = kOff;
+  int8_t hyper_ = kOff;
   bool any_ = false;
   const char *direction_ = nullptr;
   const char *key_modifier_ = nullptr;
@@ -90,6 +103,15 @@ inline Event ev(const char *type, const char *value = "PRESS")
 {
   return Event(type, value);
 }
+
+/**
+ * `any_except(...)` del Python: todos los modificadores dan igual menos los que se
+ * nombren, que quedan sin pulsar. Se encadena sobre un evento ya creado:
+ *
+ *     {**params.tool_maybe_tweak_event, **any_except("alt")}
+ *     any_except(ev(...), {"alt"})
+ */
+Event &any_except(Event &e, std::initializer_list<const char *> except);
 
 /**
  * Las propiedades de una sub-operacion de una macro.
@@ -111,6 +133,8 @@ class Props {
   Props &number(const char *name, float value);
   Props &string(const char *name, const char *value);
   Props &enum_(const char *name, const char *identifier);
+  Props &boolean_array(const char *name, std::initializer_list<bool> values);
+  Props &number_array(const char *name, std::initializer_list<float> values);
 
   /** Baja otro nivel, al paso indicado de la macro. */
   Props sub(const char *name);

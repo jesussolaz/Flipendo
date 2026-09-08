@@ -94,20 +94,18 @@ static void km_edit_mesh(wmKeyConfig *kc, const Params &params)
     item_tool(km, "builtin.loop_cut", ev("R", "PRESS").ctrl()).boolean("cycle", true);
   }
   else {
-    /* TODO(keymap): falta la propiedad anidada de macro
-     * MESH_OT_loopcut_slide.TRANSFORM_OT_edge_slide.release_confirm = False.
-     * El andamiaje solo sabe escribir propiedades planas sobre el operador del atajo;
-     * no hay forma de bajar a la sub-operacion de una macro. */
-    item(km, "mesh.loopcut_slide", ev("R", "PRESS").ctrl());
+    item(km, "mesh.loopcut_slide", ev("R", "PRESS").ctrl())
+        .sub("TRANSFORM_OT_edge_slide")
+        .boolean("release_confirm", false);
   }
   if (params.use_key_activate_tools) {
     item_tool(km, "builtin.offset_edge_loop_cut", ev("R", "PRESS").shift().ctrl())
         .boolean("cycle", true);
   }
   else {
-    /* TODO(keymap): igual que el anterior, falta
-     * MESH_OT_offset_edge_loops_slide.TRANSFORM_OT_edge_slide.release_confirm = False. */
-    item(km, "mesh.offset_edge_loops_slide", ev("R", "PRESS").shift().ctrl());
+    item(km, "mesh.offset_edge_loops_slide", ev("R", "PRESS").shift().ctrl())
+        .sub("TRANSFORM_OT_edge_slide")
+        .boolean("release_confirm", false);
   }
   tool_optional(km, params, "mesh.inset", "builtin.inset_faces", ev("I", "PRESS"));
   if (params.use_key_activate_tools) {
@@ -230,15 +228,11 @@ static void km_edit_mesh(wmKeyConfig *kc, const Params &params)
     item_tool(km, "builtin.rip_region", ev("V", "PRESS")).boolean("cycle", true);
   }
   else {
-    /* TODO(keymap): falta la propiedad anidada de macro
-     * MESH_OT_rip_move.MESH_OT_rip.use_fill = False (misma limitacion de arriba). */
-    item(km, "mesh.rip_move", ev("V", "PRESS"));
+    item(km, "mesh.rip_move", ev("V", "PRESS")).sub("MESH_OT_rip").boolean("use_fill", false);
   }
-  /* Para esto no hay herramienta equivalente. */
-  /* TODO(keymap): falta la propiedad anidada de macro
-   * MESH_OT_rip_move.MESH_OT_rip.use_fill = True. Sin ella este atajo queda igual que
-   * el anterior, que es justo lo que lo distinguia. */
-  item(km, "mesh.rip_move", ev("V", "PRESS").alt());
+  /* Para esto no hay herramienta equivalente. `use_fill` es justo lo que distingue
+   * este atajo del anterior. */
+  item(km, "mesh.rip_move", ev("V", "PRESS").alt()).sub("MESH_OT_rip").boolean("use_fill", true);
   item(km, "mesh.rip_edge_move", ev("D", "PRESS").alt());
   item_menu(km, "VIEW3D_MT_edit_mesh_merge", ev("M", "PRESS"));
   item_menu(km, "VIEW3D_MT_edit_mesh_split", ev("M", "PRESS").alt());

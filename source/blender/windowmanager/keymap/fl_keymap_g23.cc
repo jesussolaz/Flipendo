@@ -132,7 +132,7 @@ static void km_node_editor_tool_select_circle(wmKeyConfig *kc,
 
 static void km_node_editor_tool_links_cut(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Node Tool: Links Cut", "NODE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Node Tool: Links Cut", "NODE_EDITOR", "WINDOW");
 
   item(km, "node.links_cut", ev(params.tool_mouse, "PRESS"));
 }
@@ -145,7 +145,7 @@ static void km_node_editor_tool_links_cut(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_cursor(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Cursor", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Cursor", "VIEW_3D", "WINDOW");
 
   item(km, "view3d.cursor3d", ev(params.tool_mouse, "PRESS"));
   /* No se usa `tool_maybe_tweak_event` porque chocaria con el 'PRESS' que coloca el
@@ -157,7 +157,7 @@ static void km_3d_view_tool_cursor(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_text_select(wmKeyConfig *kc, const Params & /*params*/)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Edit Text, Select Text", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Edit Text, Select Text", "VIEW_3D", "WINDOW");
 
   item(km, "font.selection_set", ev("LEFTMOUSE", "PRESS"));
   item(km, "font.select_word", ev("LEFTMOUSE", "DOUBLE_CLICK"));
@@ -346,7 +346,7 @@ static void km_3d_view_tool_select_lasso(wmKeyConfig *kc,
 
 static void km_3d_view_tool_transform(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Transform", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Transform", "VIEW_3D", "WINDOW");
 
   item(km,
        "transform.from_gizmo",
@@ -355,7 +355,7 @@ static void km_3d_view_tool_transform(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_move(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Move", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Move", "VIEW_3D", "WINDOW");
 
   item(km,
        "transform.translate",
@@ -365,7 +365,7 @@ static void km_3d_view_tool_move(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_rotate(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Rotate", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Rotate", "VIEW_3D", "WINDOW");
 
   item(km,
        "transform.rotate",
@@ -375,7 +375,7 @@ static void km_3d_view_tool_rotate(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_scale(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Scale", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Scale", "VIEW_3D", "WINDOW");
 
   item(km,
        "transform.resize",
@@ -385,7 +385,7 @@ static void km_3d_view_tool_scale(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_shear(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Shear", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Shear", "VIEW_3D", "WINDOW");
 
   /* No se usa `tool_maybe_tweak_value` porque se perderia el soporte de direccion del
    * arrastre. */
@@ -408,7 +408,7 @@ static void km_3d_view_tool_shear(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_bend(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Bend", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Bend", "VIEW_3D", "WINDOW");
 
   /* Sin `tool_modifier`: esta herramienta se queda con toda la entrada. */
   item(km, "transform.bend", ev(params.tool_mouse, params.tool_maybe_tweak_value))
@@ -417,7 +417,7 @@ static void km_3d_view_tool_bend(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_measure(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Measure", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Measure", "VIEW_3D", "WINDOW");
 
   item(km, "view3d.ruler_add", ev(params.tool_mouse, params.tool_maybe_tweak_value));
   item(km, "view3d.ruler_remove", ev("X", "PRESS"));
@@ -432,7 +432,7 @@ static void km_3d_view_tool_measure(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_pose_breakdowner(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Pose, Breakdowner", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Pose, Breakdowner", "VIEW_3D", "WINDOW");
 
   item(km,
        "pose.breakdown",
@@ -441,7 +441,7 @@ static void km_3d_view_tool_pose_breakdowner(wmKeyConfig *kc, const Params &para
 
 static void km_3d_view_tool_pose_push(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Pose, Push", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Pose, Push", "VIEW_3D", "WINDOW");
 
   item(km,
        "pose.push",
@@ -450,7 +450,7 @@ static void km_3d_view_tool_pose_push(wmKeyConfig *kc, const Params &params)
 
 static void km_3d_view_tool_pose_relax(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Pose, Relax", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Pose, Relax", "VIEW_3D", "WINDOW");
 
   item(km,
        "pose.relax",

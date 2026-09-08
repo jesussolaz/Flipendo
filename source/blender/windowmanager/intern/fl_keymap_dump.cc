@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -349,6 +350,20 @@ std::map<std::string, std::string> parse_dump(std::istream &in)
       const size_t start = 7;
       const size_t end = line.find(" space=", start);
       current = (end == std::string::npos) ? line.substr(start) : line.substr(start, end - start);
+
+      /* KEYMAP_TOOL (128) se descuenta de la comparacion. No es un dato del keymap:
+       * lo pone el sistema de herramientas al registrar cada herramienta
+       * (bl_ui/space_toolsystem_common.py:498, tool=True), y ese subsistema sigue en
+       * Python. La linea base se volco de un editor donde ya habia corrido; el
+       * keymap nativo se construye aislado, sin el. Compararlo seria medir si el
+       * sistema de herramientas ha pasado por ahi, no si el keymap es correcto.
+       * Cuando el sistema de herramientas se migre, esta normalizacion se retira. */
+      const size_t flag_pos = line.find(" flag=");
+      if (flag_pos != std::string::npos) {
+        const int flag = std::atoi(line.c_str() + flag_pos + 6);
+        line = line.substr(0, flag_pos) + " flag=" + std::to_string(flag & ~(1 << 7));
+      }
+
       out[current] = line + "\n";
       continue;
     }

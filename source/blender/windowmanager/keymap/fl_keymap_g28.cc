@@ -27,14 +27,14 @@ namespace flipendo::keymap {
 
 static void km_sequencer_preview_tool_sample(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Preview Tool: Sample", "SEQUENCE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Preview Tool: Sample", "SEQUENCE_EDITOR", "WINDOW");
 
   item(km, "sequencer.sample", ev(params.tool_mouse, "PRESS"));
 }
 
 static void km_sequencer_preview_tool_move(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Preview Tool: Move", "SEQUENCE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Preview Tool: Move", "SEQUENCE_EDITOR", "WINDOW");
 
   /* TODO(keymap): falta `params.tool_modifier`. Cuando `params.tool_modifier_alt_any`
    * es true el Python fusiona `{"alt": -1}` en el evento, o sea Alt en estado KM_ANY;
@@ -47,7 +47,7 @@ static void km_sequencer_preview_tool_move(wmKeyConfig *kc, const Params &params
 
 static void km_sequencer_preview_tool_rotate(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Preview Tool: Rotate", "SEQUENCE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Preview Tool: Rotate", "SEQUENCE_EDITOR", "WINDOW");
 
   /* TODO(keymap): falta `params.tool_modifier` (`{"alt": -1}` cuando
    * `params.tool_modifier_alt_any`), igual que en km_sequencer_preview_tool_move. */
@@ -57,7 +57,7 @@ static void km_sequencer_preview_tool_rotate(wmKeyConfig *kc, const Params &para
 
 static void km_sequencer_preview_tool_scale(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Preview Tool: Scale", "SEQUENCE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Preview Tool: Scale", "SEQUENCE_EDITOR", "WINDOW");
 
   /* TODO(keymap): falta `params.tool_modifier` (`{"alt": -1}` cuando
    * `params.tool_modifier_alt_any`), igual que en km_sequencer_preview_tool_move. */

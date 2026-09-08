@@ -25,7 +25,7 @@ namespace flipendo::keymap {
 static void km_3d_view_tool_paint_grease_pencil_primitive_polyline(wmKeyConfig *kc,
                                                                    const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Grease Pencil, Polyline", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Grease Pencil, Polyline", "VIEW_3D", "WINDOW");
 
   /* El Python trae `{"properties": []}`: lista vacia, o sea ninguna propiedad. */
   item(km, "grease_pencil.primitive_polyline", ev("LEFTMOUSE", "PRESS"));
@@ -37,7 +37,7 @@ static void km_3d_view_tool_paint_grease_pencil_primitive_polyline(wmKeyConfig *
 static void km_3d_view_tool_paint_grease_pencil_primitive_box(wmKeyConfig *kc,
                                                               const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Grease Pencil, Box", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Grease Pencil, Box", "VIEW_3D", "WINDOW");
 
   item(km, "grease_pencil.primitive_box", ev("LEFTMOUSE", "PRESS"));
   item(km, "grease_pencil.primitive_box", ev("LEFTMOUSE", "PRESS").shift());
@@ -49,7 +49,7 @@ static void km_3d_view_tool_paint_grease_pencil_primitive_box(wmKeyConfig *kc,
 static void km_3d_view_tool_paint_grease_pencil_primitive_circle(wmKeyConfig *kc,
                                                                  const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Grease Pencil, Circle", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Grease Pencil, Circle", "VIEW_3D", "WINDOW");
 
   item(km, "grease_pencil.primitive_circle", ev("LEFTMOUSE", "PRESS"));
   item(km, "grease_pencil.primitive_circle", ev("LEFTMOUSE", "PRESS").shift());
@@ -61,7 +61,7 @@ static void km_3d_view_tool_paint_grease_pencil_primitive_circle(wmKeyConfig *kc
 static void km_3d_view_tool_paint_grease_pencil_primitive_arc(wmKeyConfig *kc,
                                                               const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Grease Pencil, Arc", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Grease Pencil, Arc", "VIEW_3D", "WINDOW");
 
   item(km, "grease_pencil.primitive_arc", ev("LEFTMOUSE", "PRESS"));
   item(km, "grease_pencil.primitive_arc", ev("LEFTMOUSE", "PRESS").shift());
@@ -73,7 +73,7 @@ static void km_3d_view_tool_paint_grease_pencil_primitive_arc(wmKeyConfig *kc,
 static void km_3d_view_tool_paint_grease_pencil_primitive_curve(wmKeyConfig *kc,
                                                                 const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Grease Pencil, Curve", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Grease Pencil, Curve", "VIEW_3D", "WINDOW");
 
   item(km, "grease_pencil.primitive_curve", ev("LEFTMOUSE", "PRESS"));
   /* Seleccion con lazo. */
@@ -82,7 +82,7 @@ static void km_3d_view_tool_paint_grease_pencil_primitive_curve(wmKeyConfig *kc,
 
 static void km_3d_view_tool_paint_grease_pencil_eyedropper(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Grease Pencil, Eyedropper", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Grease Pencil, Eyedropper", "VIEW_3D", "WINDOW");
 
   item(km, "ui.eyedropper_grease_pencil_color", ev(params.tool_mouse, "PRESS"));
   item(km, "ui.eyedropper_grease_pencil_color", ev(params.tool_mouse, "PRESS").shift());
@@ -113,7 +113,7 @@ static void km_grease_pencil_interpolate_tool_modal_map(wmKeyConfig *kc,
 static void km_3d_view_tool_edit_grease_pencil_texture_gradient(wmKeyConfig *kc,
                                                                 const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Edit Grease Pencil, Gradient", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Edit Grease Pencil, Gradient", "VIEW_3D", "WINDOW");
 
   item(km, "grease_pencil.texture_gradient", params.tool_maybe_tweak_event);
 }
@@ -193,7 +193,7 @@ static void km_sequencer_tool_generic_select_box(wmKeyConfig *kc,
 
 static void km_sequencer_tool_blade(wmKeyConfig *kc, const Params & /*params*/)
 {
-  wmKeyMap *km = keymap_tool(kc, "Sequencer Tool: Blade", "SEQUENCE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Sequencer Tool: Blade", "SEQUENCE_EDITOR", "WINDOW");
 
   item(km, "sequencer.split", ev("LEFTMOUSE", "PRESS"))
       .enum_("type", "SOFT")
@@ -328,7 +328,7 @@ static void km_sequencer_preview_tool_generic_select_box(wmKeyConfig *kc,
 
 static void km_sequencer_preview_tool_generic_cursor(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "Preview Tool: Cursor", "SEQUENCE_EDITOR", "WINDOW");
+  wmKeyMap *km = keymap(kc, "Preview Tool: Cursor", "SEQUENCE_EDITOR", "WINDOW");
 
   item(km, "sequencer.cursor_set", ev(params.tool_mouse, "PRESS"));
   /* No se usa `tool_maybe_tweak_event`: chocaria con el 'PRESS' que coloca el cursor. */

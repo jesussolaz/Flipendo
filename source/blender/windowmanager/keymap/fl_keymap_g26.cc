@@ -24,7 +24,7 @@ namespace flipendo::keymap {
 
 static void km_3d_view_tool_sculpt_lasso_hide(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Lasso Hide", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Lasso Hide", "VIEW_3D", "WINDOW");
 
   item(km, "paint.hide_show_lasso_gesture", params.tool_maybe_tweak_event)
       .enum_("action", "HIDE");
@@ -38,7 +38,7 @@ static void km_3d_view_tool_sculpt_lasso_hide(wmKeyConfig *kc, const Params &par
 
 static void km_3d_view_tool_sculpt_line_hide(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Line Hide", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Line Hide", "VIEW_3D", "WINDOW");
 
   item(km, "paint.hide_show_line_gesture", params.tool_maybe_tweak_event)
       .enum_("action", "HIDE");
@@ -50,7 +50,7 @@ static void km_3d_view_tool_sculpt_line_hide(wmKeyConfig *kc, const Params &para
 
 static void km_3d_view_tool_sculpt_polyline_hide(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Polyline Hide", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Polyline Hide", "VIEW_3D", "WINDOW");
 
   item(km, "paint.hide_show_polyline_gesture", ev(params.tool_mouse, "PRESS"))
       .enum_("action", "HIDE");
@@ -66,28 +66,28 @@ static void km_3d_view_tool_sculpt_polyline_hide(wmKeyConfig *kc, const Params &
 
 static void km_3d_view_tool_sculpt_box_face_set(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Box Face Set", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Box Face Set", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.face_set_box_gesture", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_lasso_face_set(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Lasso Face Set", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Lasso Face Set", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.face_set_lasso_gesture", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_line_face_set(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Line Face Set", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Line Face Set", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.face_set_line_gesture", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_polyline_face_set(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Polyline Face Set", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Polyline Face Set", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.face_set_polyline_gesture", ev(params.tool_mouse, "PRESS"));
 }
@@ -100,35 +100,35 @@ static void km_3d_view_tool_sculpt_polyline_face_set(wmKeyConfig *kc, const Para
 
 static void km_3d_view_tool_sculpt_box_trim(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Box Trim", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Box Trim", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.trim_box_gesture", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_lasso_trim(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Lasso Trim", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Lasso Trim", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.trim_lasso_gesture", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_line_trim(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Line Trim", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Line Trim", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.trim_line_gesture", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_polyline_trim(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Polyline Trim", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Polyline Trim", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.trim_polyline_gesture", ev(params.tool_mouse, "PRESS"));
 }
 
 static void km_3d_view_tool_sculpt_line_project(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Line Project", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Line Project", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.project_line_gesture", params.tool_maybe_tweak_event);
 }
@@ -141,35 +141,35 @@ static void km_3d_view_tool_sculpt_line_project(wmKeyConfig *kc, const Params &p
 
 static void km_3d_view_tool_sculpt_mesh_filter(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Mesh Filter", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Mesh Filter", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.mesh_filter", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_cloth_filter(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Cloth Filter", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Cloth Filter", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.cloth_filter", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_color_filter(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Color Filter", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Color Filter", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.color_filter", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_sculpt_mask_by_color(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Mask by Color", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Mask by Color", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.mask_by_color", ev(params.tool_mouse, "PRESS"));
 }
 
 static void km_3d_view_tool_sculpt_face_set_edit(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Sculpt, Face Set Edit", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Sculpt, Face Set Edit", "VIEW_3D", "WINDOW");
 
   item(km, "sculpt.face_set_edit", ev(params.tool_mouse, "PRESS"));
 }
@@ -182,7 +182,7 @@ static void km_3d_view_tool_sculpt_face_set_edit(wmKeyConfig *kc, const Params &
 
 static void km_3d_view_tool_paint_weight_sample_weight(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Weight, Sample Weight", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Weight, Sample Weight", "VIEW_3D", "WINDOW");
 
   item(km, "paint.weight_sample", ev(params.tool_mouse, "PRESS"));
   item(km, "grease_pencil.weight_sample", ev(params.tool_mouse, "PRESS"));
@@ -198,14 +198,14 @@ static void km_3d_view_tool_paint_weight_sample_vertex_group(wmKeyConfig *kc, co
 
 static void km_3d_view_tool_paint_weight_gradient(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Weight, Gradient", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Weight, Gradient", "VIEW_3D", "WINDOW");
 
   item(km, "paint.weight_gradient", params.tool_maybe_tweak_event);
 }
 
 static void km_3d_view_tool_paint_grease_pencil_trim(wmKeyConfig *kc, const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Grease Pencil, Trim", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Grease Pencil, Trim", "VIEW_3D", "WINDOW");
 
   item(km, "grease_pencil.stroke_trim", ev(params.tool_mouse, "PRESS"));
 }
@@ -240,7 +240,7 @@ static void km_grease_pencil_primitive_tool_modal_map(wmKeyConfig *kc,
 static void km_3d_view_tool_paint_grease_pencil_primitive_line(wmKeyConfig *kc,
                                                                const Params &params)
 {
-  wmKeyMap *km = keymap_tool(kc, "3D View Tool: Paint Grease Pencil, Line", "VIEW_3D", "WINDOW");
+  wmKeyMap *km = keymap(kc, "3D View Tool: Paint Grease Pencil, Line", "VIEW_3D", "WINDOW");
 
   /* Las tres variantes llevan `{"properties": []}` en el Python: reservan la lista de
    * propiedades pero no fijan ninguna, o sea que equivalen a no pasar propiedades. */

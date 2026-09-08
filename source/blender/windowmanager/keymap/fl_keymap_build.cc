@@ -139,13 +139,29 @@ static KeyMapItem_Params to_params(const Event &e)
     p.modifier = KM_ANY;
   }
   else {
-    int modifier = 0;
-    if (e.shift_) modifier |= KM_SHIFT;
-    if (e.ctrl_) modifier |= KM_CTRL;
-    if (e.alt_) modifier |= KM_ALT;
-    if (e.oskey_) modifier |= KM_OSKEY;
-    if (e.hyper_) modifier |= KM_HYPER;
-    p.modifier = modifier;
+    /* Un modificador "pulsado" va en el campo directo; uno "cualquiera" va
+     * desplazado con KMI_PARAMS_MOD_TO_ANY, que es como KeyMapItem_Params
+     * distingue los dos casos (WM_keymap.hh:60-70). */
+    int held = 0, any = 0;
+    const struct {
+      int8_t state;
+      int bit;
+    } mods[] = {
+        {e.shift_, KM_SHIFT},
+        {e.ctrl_, KM_CTRL},
+        {e.alt_, KM_ALT},
+        {e.oskey_, KM_OSKEY},
+        {e.hyper_, KM_HYPER},
+    };
+    for (const auto &m : mods) {
+      if (m.state == Event::kHeld) {
+        held |= m.bit;
+      }
+      else if (m.state == Event::kAny) {
+        any |= m.bit;
+      }
+    }
+    p.modifier = held | KMI_PARAMS_MOD_TO_ANY(any);
   }
   return p;
 }
@@ -181,12 +197,14 @@ static void apply_repeat(wmKeyMapItem *kmi, const Event &e)
  * mismo orden y no puede olvidarse. */
 static bool oskey_twin_wanted(const Event &e)
 {
-  if (!e.ctrl_) {
+  /* El Python comprueba `if "ctrl" in item_event` y luego `item_event.get("ctrl")`,
+   * asi que tanto Ctrl pulsado como Ctrl-cualquiera (-1) generan gemelo. */
+  if (e.ctrl_ == Event::kOff) {
     return false;
   }
   const char *t = e.type_ ? e.type_ : "";
   /* Ctrl-{tecla} sin Alt ni Shift. */
-  if (!e.alt_ && !e.shift_) {
+  if (e.alt_ == Event::kOff && e.shift_ == Event::kOff) {
     if (STREQ(t, "H") || STREQ(t, "M") || STREQ(t, "SPACE") || STREQ(t, "W") ||
         STREQ(t, "ACCENT_GRAVE") || STREQ(t, "PERIOD") || STREQ(t, "TAB"))
     {
@@ -194,7 +212,7 @@ static bool oskey_twin_wanted(const Event &e)
     }
   }
   /* Ctrl-Alt-Q sin Shift. */
-  if (e.alt_ && !e.shift_ && STREQ(t, "Q")) {
+  if (e.alt_ != Event::kOff && e.shift_ == Event::kOff && STREQ(t, "Q")) {
     return false;
   }
   return true;
@@ -202,11 +220,13 @@ static bool oskey_twin_wanted(const Event &e)
 
 static KeyMapItem_Params to_params_oskey(const Event &e)
 {
-  KeyMapItem_Params p = to_params(e);
-  /* El gemelo cambia Ctrl por Cmd; el resto del evento es identico. */
-  p.modifier &= ~KM_CTRL;
-  p.modifier |= KM_OSKEY;
-  return p;
+  /* El gemelo traslada el valor de Ctrl a Cmd y deja Ctrl sin pulsar
+   * (`item_event["oskey"] = item_event["ctrl"]; del item_event["ctrl"]`).
+   * Traslada el VALOR, no solo el hecho: un Ctrl-cualquiera da un Cmd-cualquiera. */
+  Event twin = e;
+  twin.oskey_ = e.ctrl_;
+  twin.ctrl_ = Event::kOff;
+  return to_params(twin);
 }
 
 Item item(wmKeyMap *km, const char *op, const Event &event)
@@ -250,19 +270,28 @@ Item item_modal(wmKeyMap *km, const char *value, const Event &event)
   /* El valor se resuelve contra la enumeracion que declara el propio keymap modal,
    * que define el codigo nativo del operador. Si el keymap aun no la tiene, se
    * guarda el identificador como texto y el motor lo resuelve al enlazar. */
-  const KeyMapItem_Params params = to_params(event);
-  wmKeyMapItem *kmi = nullptr;
-
   const EnumPropertyItem *items = static_cast<const EnumPropertyItem *>(km->modal_items);
   int propvalue = 0;
-  if (items != nullptr && RNA_enum_value_from_id(items, value, &propvalue)) {
-    kmi = WM_modalkeymap_add_item(km, &params, propvalue);
+  const bool resolved = (items != nullptr && RNA_enum_value_from_id(items, value, &propvalue));
+
+  auto add = [&](const KeyMapItem_Params &p) {
+    return resolved ? WM_modalkeymap_add_item(km, &p, propvalue) :
+                      WM_modalkeymap_add_item_str(km, &p, value);
+  };
+
+  /* El pase de macOS tambien alcanza a los keymaps modales: el Python lo aplica
+   * sobre la configuracion entera, no solo sobre los keymaps de operador. */
+  wmKeyMapItem *kmi_oskey = nullptr;
+  if (oskey_twin_wanted(event)) {
+    const KeyMapItem_Params params_oskey = to_params_oskey(event);
+    kmi_oskey = add(params_oskey);
+    apply_repeat(kmi_oskey, event);
   }
-  else {
-    kmi = WM_modalkeymap_add_item_str(km, &params, value);
-  }
+
+  const KeyMapItem_Params params = to_params(event);
+  wmKeyMapItem *kmi = add(params);
   apply_repeat(kmi, event);
-  return Item(kmi);
+  return Item(kmi, kmi_oskey);
 }
 
 Item item_menu(wmKeyMap *km, const char *menu_idname, const Event &event)
@@ -513,6 +542,44 @@ Props &Props::string(const char *name, const char *value)
   return *this;
 }
 
+Props &Props::boolean_array(const char *name, std::initializer_list<bool> values)
+{
+  for (PointerRNA &p : ptr_) {
+    if (p.data == nullptr) {
+      continue;
+    }
+    PropertyRNA *prop = RNA_struct_find_property(&p, name);
+    if (prop == nullptr) {
+      std::fprintf(stderr, "FL_keymap: propiedad desconocida: '%s'\n", name);
+      continue;
+    }
+    int i = 0;
+    for (const bool value : values) {
+      RNA_property_boolean_set_index(&p, prop, i++, value);
+    }
+  }
+  return *this;
+}
+
+Props &Props::number_array(const char *name, std::initializer_list<float> values)
+{
+  for (PointerRNA &p : ptr_) {
+    if (p.data == nullptr) {
+      continue;
+    }
+    PropertyRNA *prop = RNA_struct_find_property(&p, name);
+    if (prop == nullptr) {
+      std::fprintf(stderr, "FL_keymap: propiedad desconocida: '%s'\n", name);
+      continue;
+    }
+    int i = 0;
+    for (const float value : values) {
+      RNA_property_float_set_index(&p, prop, i++, value);
+    }
+  }
+  return *this;
+}
+
 Props &Props::enum_(const char *name, const char *identifier)
 {
   for (PointerRNA &p : ptr_) {
@@ -524,5 +591,22 @@ Props &Props::enum_(const char *name, const char *identifier)
 }
 
 /** \} */
+
+Event &any_except(Event &e, std::initializer_list<const char *> except)
+{
+  e.shift_ = Event::kAny;
+  e.ctrl_ = Event::kAny;
+  e.alt_ = Event::kAny;
+  e.oskey_ = Event::kAny;
+  e.hyper_ = Event::kAny;
+  for (const char *name : except) {
+    if (STREQ(name, "shift")) e.shift_ = Event::kOff;
+    else if (STREQ(name, "ctrl")) e.ctrl_ = Event::kOff;
+    else if (STREQ(name, "alt")) e.alt_ = Event::kOff;
+    else if (STREQ(name, "oskey")) e.oskey_ = Event::kOff;
+    else if (STREQ(name, "hyper")) e.hyper_ = Event::kOff;
+  }
+  return e;
+}
 
 }  // namespace flipendo::keymap
