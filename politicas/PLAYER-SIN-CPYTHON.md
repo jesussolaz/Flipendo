@@ -117,15 +117,38 @@ python-free no tiene sistema de interfaz de serie.
 
 ---
 
-## 5. Estado
+## 5. Estado — CONSEGUIDO (2026-09-08)
 
-- **Configura** sin errores (`dev/build-nopy`).
-- **Compila con reparaciones**: apagar `WITH_PYTHON` activa ramas `#else` que en un
-  build normal no se compilan nunca y que por eso se han podrido en upstream. La
-  primera encontrada:
-  `source/blender/editors/interface/regions/interface_region_tooltip.cc:800`,
-  cuyo `UNUSED_VARS(is_label, ...)` nombraba una variable que upstream renombró a
-  `is_quick_tip`. Arreglada. Es de esperar que aparezcan más según avance el build;
-  cada una es una línea, pero hay que ir destapándolas compilando.
-- Deuda inmediata para que el Player de distribución sea utilizable de verdad:
-  **fachada C++ de VideoTexture** (§3.1) y **UI nativa** (§3.3).
+**El Player sin CPython existe, compila y juega.**
+
+| Medida | Player con Python | Player sin CPython |
+|---|---:|---:|
+| Símbolos `_Py` en el binario | 1.089 | **0** |
+| `libpython` enlazada | — (estático) | **no** |
+| Librería estándar en el bundle | 193 MB | **no se instala** |
+| Bundle completo | 771 MB | **536 MB** |
+
+Verificado ejecutando el Player sin CPython sobre dos escenas reales: ata y tickea
+5/5 componentes nativos en `game/template/ArpgNative.blend` (PlayerController, 3×
+EnemyAI, ThirdPersonCamera) y 5/5 en `game/anima/T1_LaMancha.blend` (el mapa de
+ÁNIMA), sin un solo error. El gameplay entero corre en C++.
+
+### Las tres reparaciones que exigió compilar sin Python
+
+Apagar `WITH_PYTHON` activa ramas `#else` que en un build normal no se compilan
+jamás, y que por eso llevaban tiempo podridas:
+
+1. `source/blender/editors/interface/regions/interface_region_tooltip.cc:800` —
+   `UNUSED_VARS(is_label, ...)` nombraba una variable que upstream renombró a
+   `is_quick_tip`.
+2. `source/gameengine/Ketsji/KX_PythonProxy.cpp:33` — la lista de inicialización
+   terminaba en coma justo antes del `#ifdef WITH_PYTHON`, así que sin Python
+   quedaba una coma colgante.
+3. `source/gameengine/Ketsji/CMakeLists.txt` — enlazaba `ge_videotexture`
+   incondicionalmente, pero ese subdirectorio solo se construye con Python.
+   `Launcher/CMakeLists.txt:88` ya lo guardaba bien; ahora Ketsji también.
+
+### Deuda pendiente
+
+Para que este Player sea el que se envíe de verdad: **fachada C++ de VideoTexture**
+(§3.1) y **UI nativa de juego** (§3.3).

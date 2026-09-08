@@ -193,8 +193,15 @@ set(LIB
   ge_device
   extern_recastnavigation
   ge_rasterizer
-  ge_videotexture
 )
+
+# VideoTexture solo se construye con Python (source/gameengine/CMakeLists.txt), asi que
+# enlazarlo incondicionalmente rompia el build sin CPython. Launcher ya lo guardaba asi.
+if(WITH_PYTHON)
+  list(APPEND LIB
+    ge_videotexture
+  )
+endif()
 
 add_definitions(${GL_DEFINITIONS})
 
