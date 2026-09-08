@@ -5636,7 +5636,7 @@ static wmWindow *wm_event_cursor_other_windows(wmWindowManager *wm, wmWindow *wi
   {
     /* Let's skip windows having modal handlers now. */
     /* Potential XXX ugly... I wouldn't have added a `modalhandlers` list
-     * (introduced in rev 23331, ton). */
+     * (introduced in rev 23331 = 854ea35a2498cb35e7cce26e396fab775692196e, ton). */
     LISTBASE_FOREACH (wmEventHandler *, handler, &win->modalhandlers) {
       if (ELEM(handler->type, WM_HANDLER_TYPE_UI, WM_HANDLER_TYPE_OP)) {
         return nullptr;

@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include "../svn_rev_map/svn_rev_map.hpp"
+
 namespace fs = std::filesystem;
 
 static const char *C_B = "\033[1m", *C_G = "\033[32m", *C_Y = "\033[33m",
@@ -223,9 +225,34 @@ static void help() {
               "  flipendo snapshot <n> [-m msg]   congela el estado actual\n"
               "  flipendo activate <n>            instala esa version en /Applications\n"
               "  flipendo info [n]                metadatos de una version\n"
-              "  flipendo status                  version activa\n\n"
+              "  flipendo status                  version activa\n"
+              "  flipendo svn <rev|sha1>          revision SVN historica <-> commit\n\n"
               "Snapshots por clones APFS: ~0 bytes hasta que los ficheros difieren.\n",
               C_B, C_0);
+}
+
+/* Traduce entre revision SVN de la era historica de Blender y SHA1 de git.
+ * Los datos son un asset binario (tools/svn_rev_map/svn_rev_map.bin); antes eran
+ * dos ficheros .py de 2,7 MB con un diccionario literal. */
+static int cmd_svn(const std::string &arg) {
+  if (arg.empty())
+    return die("uso: flipendo svn <revision|sha1>   (p.ej. 23331 o 854ea35a...)");
+
+  const std::string bin = g_root + "/dev/upbge/tools/svn_rev_map/svn_rev_map.bin";
+  flipendo::SvnRevMap map;
+  std::string err;
+  if (!map.load(bin, &err)) return die(err);
+
+  const bool looks_like_sha1 =
+      arg.size() == 40 && arg.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos;
+
+  const flipendo::SvnRevEntry *e =
+      looks_like_sha1 ? map.find_by_sha1(arg) : map.find_by_rev(arg);
+  if (!e)
+    return die(std::string(looks_like_sha1 ? "sha1" : "revision") + " no encontrada: " + arg);
+
+  std::printf("%sr%s%s  %s\n", C_B, e->rev_text().c_str(), C_0, e->sha1_text().c_str());
+  return 0;
 }
 
 int main(int argc, char **argv) {
@@ -247,6 +274,7 @@ int main(int argc, char **argv) {
     return cmd_snapshot(name, msg);
   }
   if (cmd == "activate" || cmd == "use") return cmd_activate(a.size() > 1 ? a[1] : "");
+  if (cmd == "svn") return cmd_svn(a.size() > 1 ? a[1] : "");
   help();
   return 0;
 }

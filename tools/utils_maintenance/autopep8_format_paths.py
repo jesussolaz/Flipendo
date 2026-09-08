@@ -47,8 +47,6 @@ extensions = (
 
 ignore_files = {
     "scripts/modules/rna_manual_reference.py",  # Large generated file, don't format.
-    "tools/svn_rev_map/rev_to_sha1.py",
-    "tools/svn_rev_map/sha1_to_rev.py",
 }
 
 

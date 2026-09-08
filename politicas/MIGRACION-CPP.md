@@ -44,7 +44,7 @@ Composición medida del árbol (`source/ intern/ extern/ release/ scripts/ tests
 
 **% no-C++ del código real:** si se suman Python + GLSL + C + ObjC++ + MSL + Shell frente al total, el no-C++ parece grande, pero **casi todo es heredado o no-código**:
 
-- De los 479.178 de Python, **~108.736 son datos generados** (`tools/svn_rev_map/rev_to_sha1.py` + `sha1_to_rev.py`), y ~195.000 más son tests/doc/build que **no se distribuyen**. El Python estructural real ronda **292.753 líneas en `scripts/`** — y es **100% editor heredado de Blender**.
+- Los **108.736 de `tools/svn_rev_map`** ya no existen: eran datos, y son un asset binario con lector C++ desde 2026-09-08 (ver `tools/svn_rev_map/README.md`). Otras ~195.000 líneas son tests/doc/build que **no se distribuyen**. El Python estructural real ronda **292.753 líneas en `scripts/`** — y es **100% editor heredado de Blender**.
 - De los 64.514 de C, **~58.187 son terceros en `extern/`**.
 - Objective-C++ y MSL son **plataforma** (Metal/Cocoa).
 
@@ -179,7 +179,7 @@ Honestidad primero: **la parte PROPIA y las reglas del punto 5 son corto plazo (
 ## 7. Qué NO se migra
 
 - **Assets y datos**: `.blend`, texturas, mallas, audio.
-- **Datos disfrazados de código**: `scripts/presets/` (~14.323, solo asignan propiedades → convertibles a JSON/TOML, baja prioridad), `tools/svn_rev_map/*.py` (108.736 líneas de diccionarios generados).
+- **Datos disfrazados de código**: `scripts/presets/` (~14.323, solo asignan propiedades → convertibles a JSON/TOML, baja prioridad), `tools/svn_rev_map/*.py` (108.736 líneas — HECHO: asset binario + lector C++).
 - **Formatos de serialización**: sistema DNA (`dna_defaults.c`, layout de `.blend`) mientras se conserve el formato.
 - **Salidas de compilador/codegen**: MSL y SPIR-V generados en runtime, cadenas C embebidas por `glsl_preprocess`.
 - **Terceros aislados** en `extern/` (ufbx, lzma, lzo, cuew/hipew, etc.): EXTERNAL, actualizar desde upstream.

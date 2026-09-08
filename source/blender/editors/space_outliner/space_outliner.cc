@@ -542,8 +542,8 @@ static void outliner_space_blend_read_data(BlendDataReader *reader, SpaceLink *s
 
   /* use #BLO_read_get_new_data_address_no_us and do not free old memory avoiding double
    * frees and use of freed memory. this could happen because of a
-   * bug fixed in revision 58959 where the treestore memory address
-   * was not unique */
+   * bug fixed in revision 58959 = bff75bafbd7608d5c9c79f51d2941a3c1b9d51bf where the
+   * treestore memory address was not unique */
   TreeStore *ts = static_cast<TreeStore *>(
       BLO_read_get_new_data_address_no_us(reader, space_outliner->treestore, sizeof(TreeStore)));
   space_outliner->treestore = nullptr;

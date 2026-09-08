@@ -37,9 +37,6 @@ PATHS_EXCLUDE: set[str] = set(
     os.path.join(SOURCE_DIR, p.replace("/", os.sep))
     for p in
     (
-        "tools/svn_rev_map/sha1_to_rev.py",
-        "tools/svn_rev_map/rev_to_sha1.py",
-        "tools/svn_rev_map/rev_to_sha1.py",
         "scripts/modules/rna_manual_reference.py",
     )
 )
