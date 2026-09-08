@@ -35,6 +35,7 @@ struct bContext;
 struct ARegion;
 struct ScrArea;
 struct wmOperatorType;
+struct ARegionType;
 
 /* space_logic.c */
 struct ARegion *logic_has_buttons_region(ScrArea *sa);
@@ -44,6 +45,11 @@ struct ARegion *logic_has_buttons_region(ScrArea *sa);
 /* logic_buttons.c */
 void LOGIC_OT_properties(wmOperatorType *ot);
 void LOGIC_OT_links_cut(wmOperatorType *ot);
+
+/* logic_ui.cc — UI nativa (sustituye a bl_ui/space_logic.py) */
+void logic_buttons_register(ARegionType *art);
+void logic_header_register(ARegionType *art);
+void logic_menus_register();
 
 /* logic_window.c */
 void logic_buttons(bContext *C, ARegion *region);

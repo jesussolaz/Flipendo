@@ -364,6 +364,7 @@ void ED_spacetype_logic()
   art->listener = logic_listener;
   art->init = logic_buttons_region_init;
   art->draw = logic_buttons_region_draw;
+  logic_buttons_register(art);
   BLI_addhead(&st->regiontypes, art);
 
   /* regions: header */
@@ -373,8 +374,11 @@ void ED_spacetype_logic()
   art->keymapflag = ED_KEYMAP_UI | ED_KEYMAP_VIEW2D | ED_KEYMAP_FRAMES | ED_KEYMAP_HEADER;
   art->init = logic_header_region_init;
   art->draw = logic_header_region_draw;
+  logic_header_register(art);
 
   BLI_addhead(&st->regiontypes, art);
+
+  logic_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }
