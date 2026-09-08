@@ -52,3 +52,26 @@ Poda ejecutada: Windows/Linux/X11/Wayland/MSVC (fuente + GHOST + build infra),
 backends Cycles no-Metal, 8 addons de editor no-juego, bloques CMake muertos.
 GHOST = common + Cocoa. Conservado (util al juego): rigify, import glTF/FBX, bl_pkg,
 submodulos bge_*. Build Mac verde y ARPG 5/5 en cada lote.
+
+## Snapshot 2026-09-08 (tras eliminar KX_PythonComponent)
+
+    lenguaje         ficheros       lineas
+    .h (C-style)         1386       249747
+    .hh (C++)            1795       289558
+    .hpp                  286        34097
+    C++                  4148      2475483
+    GLSL                  745        69136
+    MSL                     4         1726
+    Objective-C++          34        30570
+    Python               1008       358088
+
+**C mantenido no-extern: 0 ficheros.** El objetivo "C -> 0" esta cumplido: ya no
+aparece la fila de C fuera de extern/.
+
+Python sigue en 358.088 porque lo que queda es el editor Blender, que no se borra:
+se sustituye por UI nativa (horizonte) o se deja fuera del Player. La via corta al
+"0 Python del juego" no es borrar mas ficheros sino compilar el Player sin CPython
+-- ver `PLAYER-SIN-CPYTHON.md`.
+backends Cycles no-Metal, 8 addons de editor no-juego, bloques CMake muertos.
+GHOST = common + Cocoa. Conservado (util al juego): rigify, import glTF/FBX, bl_pkg,
+submodulos bge_*. Build Mac verde y ARPG 5/5 en cada lote.

@@ -51,6 +51,22 @@ cmake -S . -B ../build -G Ninja -C build_files/cmake/config/blender_release.cmak
 cmake --build ../build --target install
 ```
 
+### Dos configuraciones: editor y Player de distribución
+
+El árbol se compila de dos maneras distintas según para qué sea el binario:
+
+| | Editor | Player de distribución |
+|---|---|---|
+| Flags extra | *(los de arriba)* | `-DWITH_PYTHON=OFF -DWITH_USD=OFF -DWITH_HYDRA=OFF -DWITH_MATERIALX=OFF` |
+| Lleva CPython | sí | **no** |
+| Para qué | modelar, montar la escena, pulsar P | empaquetar el juego |
+
+El juego se **hace** con el editor y se **envía** con el Player sin CPython. El
+`.blend` es el mismo; solo tiene que no depender de Python (gameplay como
+componentes nativos atados con la propiedad de juego `fl_component`, no como
+scripts). Qué se gana y qué se pierde exactamente:
+[`politicas/PLAYER-SIN-CPYTHON.md`](politicas/PLAYER-SIN-CPYTHON.md).
+
 ## Licencia
 
 GPL-2.0-or-later, heredada de Blender/UPBGE.
