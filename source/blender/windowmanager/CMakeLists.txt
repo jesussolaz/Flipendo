@@ -19,6 +19,7 @@ set(INC_SYS
 )
 
 set(SRC
+  intern/fl_keymap_dump.cc
   intern/wm.cc
   intern/wm_cursors.cc
   intern/wm_dragdrop.cc
@@ -61,6 +62,7 @@ set(SRC
   message_bus/intern/wm_message_bus_rna.cc
   message_bus/intern/wm_message_bus_static.cc
 
+  FL_keymap_dump.hpp
   WM_api.hh
   WM_keymap.hh
   WM_message.hh
