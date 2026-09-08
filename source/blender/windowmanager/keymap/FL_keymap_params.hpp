@@ -95,6 +95,12 @@ struct Params {
   void finalize();
 };
 
+/**
+ * Aplica `params.tool_modifier` a un evento, como el `**params.tool_modifier` del
+ * Python. Hoy solo puede pedir "Alt pulsado o no", que es distinto de exigir Alt.
+ */
+Event with_tool_modifier(const Params &params, Event event);
+
 /** Los parametros con los que se construye el keymap por defecto. */
 const Params &default_params();
 

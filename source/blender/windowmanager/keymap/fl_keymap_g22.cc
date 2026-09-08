@@ -55,15 +55,7 @@ static void template_node_select(wmKeyMap *km,
  */
 static Event tool_maybe_tweak_with_modifier(const Params &params)
 {
-  Event e = params.tool_maybe_tweak_event;
-  if (params.tool_modifier_alt_any) {
-    /* TODO(keymap): falta `"alt": -1` (Alt pulsado o no). `Event` solo sabe pedir Alt
-     * PULSADO (`.alt()`) o TODOS los modificadores en cualquier estado (`.any()`);
-     * el equivalente exacto seria `KMI_PARAMS_MOD_TO_ANY(KM_ALT)` en el andamiaje.
-     * No se pone `.alt()` a proposito: exigiria Alt en vez de dejarlo indiferente,
-     * que es un atajo distinto. */
-  }
-  return e;
+  return with_tool_modifier(params, params.tool_maybe_tweak_event);
 }
 
 /** \} */

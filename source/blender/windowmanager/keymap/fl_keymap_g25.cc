@@ -32,7 +32,7 @@ namespace flipendo::keymap {
  */
 static Event tool_maybe_tweak(const Params &params)
 {
-  return params.tool_maybe_tweak_event;
+  return with_tool_modifier(params, params.tool_maybe_tweak_event);
 }
 
 /* -------------------------------------------------------------------- */

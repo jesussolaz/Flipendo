@@ -32,10 +32,7 @@ namespace flipendo::keymap {
  * por defecto `tool_modifier` esta vacio y el resultado es identico al baseline; con
  * esa preferencia activa, el atajo no respondera con Alt pulsado.
  */
-static Event with_tool_modifier(const Params & /*params*/, const Event &event)
-{
-  return event;
-}
+/* Se delega en el ayudante compartido de FL_keymap_params. */
 
 /* -------------------------------------------------------------------- */
 /** \name Herramientas: edicion de armature

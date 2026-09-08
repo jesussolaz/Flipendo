@@ -36,12 +36,7 @@ static void km_sequencer_preview_tool_move(wmKeyConfig *kc, const Params &params
 {
   wmKeyMap *km = keymap(kc, "Preview Tool: Move", "SEQUENCE_EDITOR", "WINDOW");
 
-  /* TODO(keymap): falta `params.tool_modifier`. Cuando `params.tool_modifier_alt_any`
-   * es true el Python fusiona `{"alt": -1}` en el evento, o sea Alt en estado KM_ANY;
-   * Event solo tiene modificadores booleanos y un `.any()` global que afectaria a
-   * todos, asi que ese caso no se puede escribir hoy. Con los valores por defecto
-   * (tool_modifier_alt_any == false) el atajo resultante es exactamente este. */
-  item(km, "transform.translate", params.tool_maybe_tweak_event)
+  item(km, "transform.translate", with_tool_modifier(params, params.tool_maybe_tweak_event))
       .boolean("release_confirm", true);
 }
 
@@ -49,9 +44,7 @@ static void km_sequencer_preview_tool_rotate(wmKeyConfig *kc, const Params &para
 {
   wmKeyMap *km = keymap(kc, "Preview Tool: Rotate", "SEQUENCE_EDITOR", "WINDOW");
 
-  /* TODO(keymap): falta `params.tool_modifier` (`{"alt": -1}` cuando
-   * `params.tool_modifier_alt_any`), igual que en km_sequencer_preview_tool_move. */
-  item(km, "transform.rotate", params.tool_maybe_tweak_event)
+  item(km, "transform.rotate", with_tool_modifier(params, params.tool_maybe_tweak_event))
       .boolean("release_confirm", true);
 }
 
@@ -59,9 +52,7 @@ static void km_sequencer_preview_tool_scale(wmKeyConfig *kc, const Params &param
 {
   wmKeyMap *km = keymap(kc, "Preview Tool: Scale", "SEQUENCE_EDITOR", "WINDOW");
 
-  /* TODO(keymap): falta `params.tool_modifier` (`{"alt": -1}` cuando
-   * `params.tool_modifier_alt_any`), igual que en km_sequencer_preview_tool_move. */
-  item(km, "transform.resize", params.tool_maybe_tweak_event)
+  item(km, "transform.resize", with_tool_modifier(params, params.tool_maybe_tweak_event))
       .boolean("release_confirm", true);
 }
 

@@ -75,6 +75,14 @@ void Params::finalize()
   tool_maybe_tweak_event = Event(tool_mouse, tool_maybe_tweak_value);
 }
 
+Event with_tool_modifier(const Params &params, Event event)
+{
+  if (params.tool_modifier_alt_any) {
+    event.alt_any();
+  }
+  return event;
+}
+
 const Params &default_params()
 {
   static Params params = [] {
