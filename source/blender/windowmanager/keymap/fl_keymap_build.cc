@@ -22,6 +22,8 @@
 
 #include "BLI_string.h"
 
+#include "BKE_idprop.hh"
+
 #include "RNA_access.hh"
 #include "RNA_enum_types.hh"
 
@@ -294,14 +296,27 @@ Item item_modal(wmKeyMap *km, const char *value, const Event &event)
   return Item(kmi, kmi_oskey);
 }
 
+/* Los envoltorios WM_keymap_add_menu y companeros ponen el nombre con
+ * RNA_string_set directo, que no hace nada si el operador todavia no esta
+ * registrado. Se construyen aqui con `string()`, que tiene respaldo a IDProperty. */
+static Item item_named_op(wmKeyMap *km,
+                          const char *op,
+                          const char *name_value,
+                          const Event &event)
+{
+  Item it = item(km, op, event);
+  it.string("name", name_value);
+  return it;
+}
+
 Item item_menu(wmKeyMap *km, const char *menu_idname, const Event &event)
 {
-  return item_wrapper(km, WM_keymap_add_menu, menu_idname, event);
+  return item_named_op(km, "wm.call_menu", menu_idname, event);
 }
 
 Item item_menu_pie(wmKeyMap *km, const char *menu_idname, const Event &event)
 {
-  return item_wrapper(km, WM_keymap_add_menu_pie, menu_idname, event);
+  return item_named_op(km, "wm.call_menu_pie", menu_idname, event);
 }
 
 Item item_panel(wmKeyMap *km, const char *panel_idname, const Event &event)
@@ -309,14 +324,12 @@ Item item_panel(wmKeyMap *km, const char *panel_idname, const Event &event)
   /* NO se usa WM_keymap_add_panel: ademas del nombre fija keep_open=false, y el
    * `op_panel` del Python solo pone el nombre. Esa propiedad de mas aparecia en el
    * volcado y hacia que el keymap "Window" no coincidiera. */
-  Item it = item(km, "wm.call_panel", event);
-  it.string("name", panel_idname);
-  return it;
+  return item_named_op(km, "wm.call_panel", panel_idname, event);
 }
 
 Item item_tool(wmKeyMap *km, const char *tool_idname, const Event &event)
 {
-  return item_wrapper(km, WM_keymap_add_tool, tool_idname, event);
+  return item_named_op(km, "wm.tool_set_by_id", tool_idname, event);
 }
 
 /** \} */
@@ -325,11 +338,53 @@ Item item_tool(wmKeyMap *km, const char *tool_idname, const Event &event)
 /** \name Propiedades del operador
  * \{ */
 
+/* -------------------------------------------------------------------- */
+/** \name Escritura de propiedades con respaldo
+ *
+ * Un atajo puede referirse a un operador que TODAVIA no esta registrado. Pasa hoy
+ * con la familia `wm.context_*`, que sigue viviendo en Python y no existe cuando el
+ * keymap se construye al arrancar.
+ *
+ * En ese caso `kmi->ptr` no tiene RNA y `RNA_string_set` y companeros no hacen nada,
+ * en silencio. El camino de Python no perdia el valor porque `setattr` sobre un grupo
+ * de IDProperty crea la propiedad al vuelo (bl_keymap_utils/io.py:241). Aqui se
+ * reproduce: si la propiedad no esta en RNA, se escribe como IDProperty cruda. El
+ * motor la resuelve cuando el operador aparece.
+ *
+ * Este respaldo se puede quitar el dia que no queden operadores en Python.
+ * \{ */
+
+static bool rna_has_property(PointerRNA *ptr, const char *name)
+{
+  return ptr != nullptr && ptr->data != nullptr &&
+         RNA_struct_find_property(ptr, name) != nullptr;
+}
+
+static void idprop_set(wmKeyMapItem *kmi, IDProperty *prop)
+{
+  if (kmi->properties == nullptr || prop == nullptr) {
+    return;
+  }
+  IDP_ReplaceInGroup(kmi->properties, prop);
+}
+
 Item &Item::boolean(const char *name, const bool value)
 {
   for (wmKeyMapItem *kmi : kmi_) {
-    if (kmi) {
+    if (kmi == nullptr) {
+      continue;
+    }
+    if (rna_has_property(kmi->ptr, name)) {
       RNA_boolean_set(kmi->ptr, name, value);
+    }
+    else {
+      /* Un booleano de operador se guarda como entero, que es lo que produce
+       * RNA_boolean_set cuando el operador SI esta registrado. Usar IDP_BOOLEAN
+       * daria un tipo distinto para el mismo atajo segun el momento en que se
+       * construya. */
+      IDPropertyTemplate val = {};
+      val.i = value ? 1 : 0;
+      idprop_set(kmi, IDP_New(IDP_INT, &val, name));
     }
   }
   return *this;
@@ -338,8 +393,16 @@ Item &Item::boolean(const char *name, const bool value)
 Item &Item::integer(const char *name, const int value)
 {
   for (wmKeyMapItem *kmi : kmi_) {
-    if (kmi) {
+    if (kmi == nullptr) {
+      continue;
+    }
+    if (rna_has_property(kmi->ptr, name)) {
       RNA_int_set(kmi->ptr, name, value);
+    }
+    else {
+      IDPropertyTemplate val = {};
+      val.i = value;
+      idprop_set(kmi, IDP_New(IDP_INT, &val, name));
     }
   }
   return *this;
@@ -348,8 +411,16 @@ Item &Item::integer(const char *name, const int value)
 Item &Item::number(const char *name, const float value)
 {
   for (wmKeyMapItem *kmi : kmi_) {
-    if (kmi) {
+    if (kmi == nullptr) {
+      continue;
+    }
+    if (rna_has_property(kmi->ptr, name)) {
       RNA_float_set(kmi->ptr, name, value);
+    }
+    else {
+      IDPropertyTemplate val = {};
+      val.f = value;
+      idprop_set(kmi, IDP_New(IDP_FLOAT, &val, name));
     }
   }
   return *this;
@@ -358,8 +429,14 @@ Item &Item::number(const char *name, const float value)
 Item &Item::string(const char *name, const char *value)
 {
   for (wmKeyMapItem *kmi : kmi_) {
-    if (kmi) {
+    if (kmi == nullptr) {
+      continue;
+    }
+    if (rna_has_property(kmi->ptr, name)) {
       RNA_string_set(kmi->ptr, name, value);
+    }
+    else {
+      idprop_set(kmi, IDP_NewString(value, name));
     }
   }
   return *this;
@@ -488,25 +565,51 @@ static PointerRNA sub_pointer(PointerRNA *ptr, const char *name)
   return RNA_pointer_get(ptr, name);
 }
 
+/* Grupo de IDProperty anidado, creandolo si hace falta. Es el respaldo para cuando
+ * el operador macro aun no esta registrado y por tanto no hay RNA que recorrer. */
+static IDProperty *sub_group(IDProperty *parent, const char *name)
+{
+  if (parent == nullptr) {
+    return nullptr;
+  }
+  IDProperty *existing = IDP_GetPropertyFromGroup(parent, name);
+  if (existing != nullptr && existing->type == IDP_GROUP) {
+    return existing;
+  }
+  IDPropertyTemplate val = {};
+  IDProperty *group = IDP_New(IDP_GROUP, &val, name);
+  IDP_ReplaceInGroup(parent, group);
+  return group;
+}
+
 Props Item::sub(const char *name)
 {
   PointerRNA a = kmi_[0] ? sub_pointer(kmi_[0]->ptr, name) : PointerRNA_NULL;
   PointerRNA b = kmi_[1] ? sub_pointer(kmi_[1]->ptr, name) : PointerRNA_NULL;
-  return Props(a, b);
+  IDProperty *ga = (a.data == nullptr && kmi_[0]) ? sub_group(kmi_[0]->properties, name) : nullptr;
+  IDProperty *gb = (b.data == nullptr && kmi_[1]) ? sub_group(kmi_[1]->properties, name) : nullptr;
+  return Props(a, b, ga, gb);
 }
 
 Props Props::sub(const char *name)
 {
   PointerRNA a = sub_pointer(&ptr_[0], name);
   PointerRNA b = sub_pointer(&ptr_[1], name);
-  return Props(a, b);
+  IDProperty *ga = (a.data == nullptr) ? sub_group(group_[0], name) : nullptr;
+  IDProperty *gb = (b.data == nullptr) ? sub_group(group_[1], name) : nullptr;
+  return Props(a, b, ga, gb);
 }
 
 Props &Props::boolean(const char *name, const bool value)
 {
-  for (PointerRNA &p : ptr_) {
-    if (p.data) {
-      RNA_boolean_set(&p, name, value);
+  for (int i = 0; i < 2; i++) {
+    if (ptr_[i].data) {
+      RNA_boolean_set(&ptr_[i], name, value);
+    }
+    else if (group_[i]) {
+      IDPropertyTemplate val = {};
+      val.i = value ? 1 : 0;
+      IDP_ReplaceInGroup(group_[i], IDP_New(IDP_INT, &val, name));
     }
   }
   return *this;
@@ -514,9 +617,14 @@ Props &Props::boolean(const char *name, const bool value)
 
 Props &Props::integer(const char *name, const int value)
 {
-  for (PointerRNA &p : ptr_) {
-    if (p.data) {
-      RNA_int_set(&p, name, value);
+  for (int i = 0; i < 2; i++) {
+    if (ptr_[i].data) {
+      RNA_int_set(&ptr_[i], name, value);
+    }
+    else if (group_[i]) {
+      IDPropertyTemplate val = {};
+      val.i = value;
+      IDP_ReplaceInGroup(group_[i], IDP_New(IDP_INT, &val, name));
     }
   }
   return *this;
@@ -524,9 +632,14 @@ Props &Props::integer(const char *name, const int value)
 
 Props &Props::number(const char *name, const float value)
 {
-  for (PointerRNA &p : ptr_) {
-    if (p.data) {
-      RNA_float_set(&p, name, value);
+  for (int i = 0; i < 2; i++) {
+    if (ptr_[i].data) {
+      RNA_float_set(&ptr_[i], name, value);
+    }
+    else if (group_[i]) {
+      IDPropertyTemplate val = {};
+      val.f = value;
+      IDP_ReplaceInGroup(group_[i], IDP_New(IDP_FLOAT, &val, name));
     }
   }
   return *this;
@@ -534,9 +647,12 @@ Props &Props::number(const char *name, const float value)
 
 Props &Props::string(const char *name, const char *value)
 {
-  for (PointerRNA &p : ptr_) {
-    if (p.data) {
-      RNA_string_set(&p, name, value);
+  for (int i = 0; i < 2; i++) {
+    if (ptr_[i].data) {
+      RNA_string_set(&ptr_[i], name, value);
+    }
+    else if (group_[i]) {
+      IDP_ReplaceInGroup(group_[i], IDP_NewString(value, name));
     }
   }
   return *this;

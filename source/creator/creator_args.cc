@@ -2495,7 +2495,7 @@ static int arg_handle_fl_dump_keymap(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     /* Vuelca y sale: asi vale igual en modo grafico, que es donde el keymap esta
-     * completo (WM_keyconfig_reload se salta a si mismo con G.background). */
+     * completo. */
     const bool ok = FL_keyconfig_dump(CTX_wm_manager(C), argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;

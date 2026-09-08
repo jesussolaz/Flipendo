@@ -40,6 +40,7 @@
 
 struct wmKeyConfig;
 struct wmKeyMap;
+struct IDProperty;
 struct wmKeyMapItem;
 
 namespace flipendo::keymap {
@@ -127,6 +128,10 @@ Event &any_except(Event &e, std::initializer_list<const char *> except);
 class Props {
  public:
   Props(const PointerRNA &a, const PointerRNA &b) : ptr_{a, b} {}
+  Props(const PointerRNA &a, const PointerRNA &b, IDProperty *ga, IDProperty *gb)
+      : ptr_{a, b}, group_{ga, gb}
+  {
+  }
 
   Props &boolean(const char *name, bool value);
   Props &integer(const char *name, int value);
@@ -142,6 +147,9 @@ class Props {
  private:
   /* Dos, por el gemelo con Cmd de macOS; el segundo puede estar vacio. */
   PointerRNA ptr_[2];
+  /* Respaldo cuando el operador macro aun no esta registrado y no hay RNA: se
+   * escribe directamente en el grupo de IDProperty. */
+  IDProperty *group_[2] = {nullptr, nullptr};
 };
 
 /**

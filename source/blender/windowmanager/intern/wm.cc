@@ -38,6 +38,10 @@
 #include "BKE_workspace.hh"
 
 #include "WM_api.hh"
+
+#include <cstdio>
+
+#include "keymap/FL_keymap_default.hpp"
 #include "WM_keymap.hh"
 #include "WM_message.hh"
 #include "WM_types.hh"
@@ -421,12 +425,31 @@ void WM_operator_handlers_clear(wmWindowManager *wm, wmOperatorType *ot)
 
 void WM_keyconfig_reload(bContext *C)
 {
-  if (CTX_py_init_get(C) && !G.background) {
-#ifdef WITH_PYTHON
-    const char *imports[] = {"bpy", nullptr};
-    BPY_run_string_eval(C, imports, "bpy.utils.keyconfig_init()");
-#endif
+  /* El mapa de teclado por defecto es C++ nativo. Antes esto ejecutaba
+   * `bpy.utils.keyconfig_init()` con el interprete, y era el motivo por el que tanto
+   * el editor como el Player exportado tenian que arrancar CPython solo para saber
+   * que hace la tecla G. Ver politicas/KEYMAP-A-CPP.md.
+   *
+   * Ya no hay guarda de `CTX_py_init_get` ni de `G.background`: la primera no tiene
+   * sentido sin Python, y la segunda solo existia porque ejecutar el script en
+   * segundo plano no compensaba — el efecto secundario era que en `--background` no
+   * habia keymap por defecto en absoluto. Ahora si lo hay. */
+  wmWindowManager *wm = CTX_wm_manager(C);
+  if (wm == nullptr || wm->defaultconf == nullptr) {
+    return;
   }
+
+  /* Se vacian los atajos antes de rellenar, conservando los keymaps y sus
+   * enumeraciones modales. Es lo mismo que hacia el camino de Python sin que se
+   * notara: su `keyconfigs.new("Blender")` acababa en WM_keyconfig_ensure, que para
+   * la configuracion por defecto limpia los items de cada keymap
+   * (wm_keymap.cc:311-317). Sin esto los keymaps modales que el motor ya registro de
+   * forma nativa -- el de gizmos, por ejemplo -- salen con los atajos por duplicado. */
+  LISTBASE_FOREACH (wmKeyMap *, km, &wm->defaultconf->keymaps) {
+    WM_keymap_clear(km);
+  }
+
+  flipendo::keymap::register_default(wm->defaultconf);
 }
 
 void WM_keyconfig_init(bContext *C)
@@ -445,7 +468,10 @@ void WM_keyconfig_init(bContext *C)
     wm->userconf = WM_keyconfig_new(wm, WM_KEYCONFIG_STR_DEFAULT " user", false);
   }
 
-  /* Initialize only after python init is done, for keymaps that use python operators. */
+  /* El keymap por defecto ya es C++, pero TODAVIA se apoya en operadores que siguen
+   * en Python (la familia `wm.context_*` y el sistema de herramientas). Por eso se
+   * conserva la espera: construirlo antes deja atajos sin sus propiedades. La guarda
+   * se retira cuando esos operadores sean nativos. */
   if (CTX_py_init_get(C) && (wm->init_flag & WM_INIT_FLAG_KEYCONFIG) == 0) {
     /* Create default key config, only initialize once,
      * it's persistent across sessions. */
