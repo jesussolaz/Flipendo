@@ -101,8 +101,18 @@ struct Params {
  */
 Event with_tool_modifier(const Params &params, Event event);
 
-/** Los parametros con los que se construye el keymap por defecto. */
-const Params &default_params();
+/**
+ * Los parametros con los que se construye el keymap por defecto.
+ *
+ * Lee las preferencias de teclado del usuario, que el motor guarda como IDProperty
+ * en `UserDef` (`BKE_keyconfig_pref_ensure`). Antes ese grupo lo definia y leia una
+ * clase de Python del preset (`presets/keyconfig/Blender.py`); los DATOS siempre
+ * fueron nativos, lo que era Python es el tipo RNA y el panel.
+ *
+ * Se recalcula en cada llamada porque el usuario puede cambiar las preferencias en
+ * caliente y el keymap se reconstruye entero.
+ */
+Params params_from_preferences();
 
 }  // namespace flipendo::keymap
 

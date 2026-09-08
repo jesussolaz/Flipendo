@@ -78,3 +78,41 @@ Ver el parte que da `--fl-check-keymap`. Cuando llegue a 248/248 idénticos, se
 sustituye la llamada a Python de `WM_keyconfig_reload` por
 `flipendo::keymap::register_default`, y con ella cae el último motivo por el que el
 Player carga un intérprete.
+
+---
+
+## Estado: hecho, con una deuda concreta
+
+El keymap por defecto **ya no lo genera Python**. `WM_keyconfig_reload` llama a
+`flipendo::keymap::register_default()`, y el volcado de la configuración activa del
+editor es byte a byte idéntico a la línea base: 248 keymaps, 3.673 atajos.
+
+### Lo que las preferencias enseñaron
+
+Al quitar el preset de Python se perdió, sin que lo pareciera, la capacidad de
+**cambiar** las opciones de teclado. Los datos nunca fueron Python — se guardan como
+`IDProperty` en `UserDef` y el propio motor los escribe
+(`BKE_keyconfig_pref_set_select_mouse`, usado por el versionado de ficheros
+antiguos). Lo que era Python es el **tipo RNA y el panel**, que vivían en
+`presets/keyconfig/Blender.py`.
+
+`params_from_preferences()` ya los lee de ahí, así que la preferencia vuelve a tener
+**efecto**: con `select_mouse` a la derecha el keymap se construye distinto, como
+antes.
+
+**Deuda abierta:** no hay panel nativo para cambiarlas. Se leen y se aplican, pero la
+interfaz de Preferencias › Teclado está vacía hasta que ese panel se migre con
+`FL_ui_registry`. Es una regresión de interfaz, no de comportamiento, y está aquí
+escrita para que no se olvide.
+
+### Dos guardas que siguen en pie, y por qué
+
+1. **Se espera a que Python haya arrancado** antes de construir el keymap. No es
+   inercia: el keymap todavía referencia operadores que siguen en Python (la familia
+   `wm.context_*`, el sistema de herramientas). Construirlo antes deja atajos sin sus
+   propiedades — se midió: 519 líneas de diferencia. La guarda cae cuando esos
+   operadores sean nativos.
+
+2. **El respaldo a `IDProperty`** cuando un operador aún no está registrado. Es lo
+   que hacía `setattr` en Python (`bl_keymap_utils/io.py:241`) y evita que un valor
+   se pierda en silencio. Se retira el mismo día que la guarda anterior.

@@ -168,7 +168,9 @@ void register_group_28(wmKeyConfig *kc, const Params &params);
 
 void register_default(wmKeyConfig *kc)
 {
-  const Params &params = default_params();
+  /* Se leen las preferencias del usuario en cada reconstruccion; el keymap se
+   * rehace entero cuando cambian. */
+  const Params params = params_from_preferences();
 
   km_logic(kc);
 
