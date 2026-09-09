@@ -34,16 +34,7 @@ SPACE IMAGE_EDITOR MODE VIEW tools=5
   TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
   TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
   TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
-SPACE NODE_EDITOR MODE None tools=18
-  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=Node Tool: Tweak brush_type=None data_block=None op=None options=None
-  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=Node Tool: Select Box brush_type=None data_block=None op=None options=None
-  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=Node Tool: Select Lasso brush_type=None data_block=None op=None options=None
-  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=Node Tool: Select Circle brush_type=None data_block=None op=None options=None
-  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
-  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
-  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
-  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
-  TOOL builtin.links_cut label='Links Cut' icon=ops.node.links_cut cursor=None widget=None keymap=Node Tool: Links Cut brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE NODE_EDITOR MODE None tools=9
   TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=Node Tool: Tweak brush_type=None data_block=None op=None options=None
   TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=Node Tool: Select Box brush_type=None data_block=None op=None options=None
   TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=Node Tool: Select Lasso brush_type=None data_block=None op=None options=None
