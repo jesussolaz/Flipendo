@@ -1,0 +1,455 @@
+SPACE IMAGE_EDITOR MODE MASK tools=0
+SPACE IMAGE_EDITOR MODE PAINT tools=10
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.soften label='Blur' icon=brush.paint_texture.soften cursor=None widget=None keymap=None brush_type=SOFTEN data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.smear label='Smear' icon=brush.paint_texture.smear cursor=None widget=None keymap=None brush_type=SMEAR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.clone label='Clone' icon=brush.paint_texture.clone cursor=None widget=None keymap=None brush_type=CLONE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.fill label='Fill' icon=brush.paint_texture.fill cursor=None widget=None keymap=None brush_type=FILL data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.mask label='Mask' icon=brush.paint_texture.mask cursor=None widget=None keymap=None brush_type=MASK data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE IMAGE_EDITOR MODE UV tools=17
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=Image Editor Tool: Uv, Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=Image Editor Tool: Uv, Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=Image Editor Tool: Uv, Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=Image Editor Tool: Uv, Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=Image Editor Tool: Uv, Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=IMAGE_GGT_gizmo2d_translate keymap=Image Editor Tool: Uv, Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=IMAGE_GGT_gizmo2d_rotate keymap=Image Editor Tool: Uv, Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=IMAGE_GGT_gizmo2d_resize keymap=Image Editor Tool: Uv, Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=IMAGE_GGT_gizmo2d keymap=None brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.rip_region label='Rip Region' icon=ops.mesh.rip cursor=None widget=None keymap=Image Editor Tool: Uv, Rip Region brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL sculpt.uv_sculpt_grab label='Grab' icon=brush.uv_sculpt.grab cursor=None widget=None keymap=Image Editor Tool: Uv, Grab brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL sculpt.uv_sculpt_relax label='Relax' icon=brush.uv_sculpt.relax cursor=None widget=None keymap=Image Editor Tool: Uv, Relax brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL sculpt.uv_sculpt_pinch label='Pinch' icon=brush.uv_sculpt.pinch cursor=None widget=None keymap=Image Editor Tool: Uv, Pinch brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE IMAGE_EDITOR MODE VIEW tools=5
+  TOOL builtin.sample label='Sample' icon=ops.paint.weight_sample cursor=None widget=None keymap=Image Editor Tool: Sample brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE NODE_EDITOR MODE None tools=18
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=Node Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=Node Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=Node Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=Node Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.links_cut label='Links Cut' icon=ops.node.links_cut cursor=None widget=None keymap=Node Tool: Links Cut brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=Node Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=Node Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=Node Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=Node Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.links_cut label='Links Cut' icon=ops.node.links_cut cursor=None widget=None keymap=Node Tool: Links Cut brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE SEQUENCE_EDITOR MODE PREVIEW tools=12
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=Preview Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=Preview Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=Preview Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=SEQUENCER_GGT_gizmo2d_translate keymap=Preview Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=SEQUENCER_GGT_gizmo2d_rotate keymap=Preview Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=SEQUENCER_GGT_gizmo2d_resize keymap=Preview Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=SEQUENCER_GGT_gizmo2d keymap=None brush_type=None data_block=None op=None options=None
+  TOOL builtin.sample label='Sample' icon=ops.paint.weight_sample cursor=None widget=None keymap=Preview Tool: Sample brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE SEQUENCE_EDITOR MODE SEQUENCER tools=2
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=Sequencer Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.blade label='Blade' icon=ops.sequencer.blade cursor=CROSSHAIR widget=None keymap=Sequencer Tool: Blade brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE SEQUENCE_EDITOR MODE SEQUENCER_PREVIEW tools=6
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=Sequencer Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.blade label='Blade' icon=ops.sequencer.blade cursor=CROSSHAIR widget=None keymap=Sequencer Tool: Blade brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE EDIT_ARMATURE tools=21
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.roll label='Roll' icon=ops.armature.bone.roll cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Armature, Roll brush_type=None data_block=None op=None options=None
+  TOOL builtin.bone_size label='Bone Size' icon=ops.transform.bone_size cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Armature, Bone Size brush_type=None data_block=None op=None options=None
+  TOOL builtin.bone_envelope label='Bone Envelope' icon=ops.transform.bone_envelope cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Armature, Bone Envelope brush_type=None data_block=None op=None options=None
+  TOOL builtin.extrude label='Extrude' icon=ops.armature.extrude_move cursor=None widget=VIEW3D_GGT_xform_extrude keymap=3D View Tool: Edit Armature, Extrude brush_type=None data_block=None op=None options=None
+  TOOL builtin.extrude_to_cursor label='Extrude to Cursor' icon=ops.armature.extrude_cursor cursor=CROSSHAIR widget=None keymap=3D View Tool: Edit Armature, Extrude to Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.shear label='Shear' icon=ops.transform.shear cursor=None widget=VIEW3D_GGT_xform_shear keymap=3D View Tool: Shear brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE EDIT_CURVE tools=23
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.draw label='Draw' icon=ops.curve.draw cursor=PAINT_BRUSH widget=None keymap=3D View Tool: Edit Curve, Draw brush_type=None data_block=None op=None options=None
+  TOOL builtin.pen label='Curve Pen' icon=ops.curve.pen cursor=CROSSHAIR widget=None keymap=3D View Tool: Edit Curve, Curve Pen brush_type=None data_block=None op=None options=None
+  TOOL builtin.extrude label='Extrude' icon=ops.curve.extrude_move cursor=None widget=VIEW3D_GGT_xform_extrude keymap=3D View Tool: Edit Curve, Extrude brush_type=None data_block=None op=None options=None
+  TOOL builtin.extrude_cursor label='Extrude to Cursor' icon=ops.curve.extrude_cursor cursor=CROSSHAIR widget=None keymap=3D View Tool: Edit Curve, Extrude to Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.radius label='Radius' icon=ops.curve.radius cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Curve, Radius brush_type=None data_block=None op=None options=None
+  TOOL builtin.tilt label='Tilt' icon=ops.transform.tilt cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Curve, Tilt brush_type=None data_block=None op=None options=None
+  TOOL builtin.shear label='Shear' icon=ops.transform.shear cursor=None widget=VIEW3D_GGT_xform_shear keymap=3D View Tool: Shear brush_type=None data_block=None op=None options=None
+  TOOL builtin.randomize label='Randomize' icon=ops.curve.vertex_random cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Curve, Randomize brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE EDIT_CURVES tools=18
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.draw label='Draw' icon=ops.curve.draw cursor=PAINT_BRUSH widget=None keymap=3D View Tool: Edit Curves, Draw brush_type=None data_block=None op=None options=None
+  TOOL builtin.radius label='Radius' icon=ops.curve.radius cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Curve, Radius brush_type=None data_block=None op=None options=None
+  TOOL builtin.tilt label='Tilt' icon=ops.transform.tilt cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Curve, Tilt brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE EDIT_GREASE_PENCIL tools=20
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.radius label='Radius' icon=ops.curve.radius cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Curve, Radius brush_type=None data_block=None op=None options=None
+  TOOL builtin.bend label='Bend' icon=ops.gpencil.edit_bend cursor=None widget=None keymap=3D View Tool: Bend brush_type=None data_block=None op=None options=None
+  TOOL builtin.shear label='Shear' icon=ops.gpencil.edit_shear cursor=None widget=VIEW3D_GGT_xform_shear keymap=3D View Tool: Shear brush_type=None data_block=None op=None options=None
+  TOOL builtin.to_sphere label='To Sphere' icon=ops.transform.tosphere cursor=None widget=None keymap=3D View Tool: Edit Mesh, To Sphere brush_type=None data_block=None op=None options=None
+  TOOL builtin.interpolate label='Interpolate' icon=ops.pose.breakdowner cursor=DEFAULT widget=None keymap=3D View Tool: Edit Grease Pencil, Interpolate brush_type=None data_block=None op=None options=None
+  TOOL builtin.texture_gradient label='Gradient' icon=ops.paint.weight_gradient cursor=None widget=None keymap=3D View Tool: Edit Grease Pencil, Gradient brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE EDIT_LATTICE tools=16
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.shear label='Shear' icon=ops.transform.shear cursor=None widget=VIEW3D_GGT_xform_shear keymap=3D View Tool: Shear brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE EDIT_MESH tools=43
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_cube_add label='Add Cube' icon=ops.mesh.primitive_cube_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_cone_add label='Add Cone' icon=ops.mesh.primitive_cone_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_cylinder_add label='Add Cylinder' icon=ops.mesh.primitive_cylinder_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_uv_sphere_add label='Add UV Sphere' icon=ops.mesh.primitive_sphere_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_ico_sphere_add label='Add Ico Sphere' icon=ops.mesh.primitive_sphere_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.extrude_region label='Extrude Region' icon=ops.mesh.extrude_region_move cursor=None widget=VIEW3D_GGT_xform_extrude keymap=3D View Tool: Edit Mesh, Extrude Region brush_type=None data_block=None op=view3d.edit_mesh_extrude_move_normal options=None
+  TOOL builtin.extrude_manifold label='Extrude Manifold' icon=ops.mesh.extrude_manifold cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Extrude Manifold brush_type=None data_block=None op=None options=None
+  TOOL builtin.extrude_along_normals label='Extrude Along Normals' icon=ops.mesh.extrude_region_shrink_fatten cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Extrude Along Normals brush_type=None data_block=None op=mesh.extrude_region_shrink_fatten options=None
+  TOOL builtin.extrude_individual label='Extrude Individual' icon=ops.mesh.extrude_faces_move cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Extrude Individual brush_type=None data_block=None op=None options=None
+  TOOL builtin.extrude_to_cursor label='Extrude to Cursor' icon=ops.mesh.dupli_extrude_cursor cursor=CROSSHAIR widget=None keymap=3D View Tool: Edit Mesh, Extrude to Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.inset_faces label='Inset Faces' icon=ops.mesh.inset cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Mesh, Inset Faces brush_type=None data_block=None op=None options=None
+  TOOL builtin.bevel label='Bevel' icon=ops.mesh.bevel cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Bevel brush_type=None data_block=None op=None options=None
+  TOOL builtin.loop_cut label='Loop Cut' icon=ops.mesh.loopcut_slide cursor=None widget=VIEW3D_GGT_mesh_preselect_edgering keymap=3D View Tool: Edit Mesh, Loop Cut brush_type=None data_block=None op=None options=None
+  TOOL builtin.offset_edge_loop_cut label='Offset Edge Loop Cut' icon=ops.mesh.offset_edge_loops_slide cursor=None widget=None keymap=3D View Tool: Edit Mesh, Offset Edge Loop Cut brush_type=None data_block=None op=None options=None
+  TOOL builtin.knife label='Knife' icon=ops.mesh.knife_tool cursor=KNIFE widget=None keymap=3D View Tool: Edit Mesh, Knife brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.bisect label='Bisect' icon=ops.mesh.bisect cursor=None widget=None keymap=3D View Tool: Edit Mesh, Bisect brush_type=None data_block=None op=None options=None
+  TOOL builtin.poly_build label='Poly Build' icon=ops.mesh.polybuild_hover cursor=None widget=VIEW3D_GGT_mesh_preselect_elem keymap=3D View Tool: Edit Mesh, Poly Build brush_type=None data_block=None op=None options=None
+  TOOL builtin.spin label='Spin' icon=ops.mesh.spin cursor=None widget=MESH_GGT_spin keymap=3D View Tool: Edit Mesh, Spin brush_type=None data_block=None op=None options=None
+  TOOL builtin.smooth label='Smooth' icon=ops.mesh.vertices_smooth cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Smooth brush_type=None data_block=None op=None options=None
+  TOOL builtin.randomize label='Randomize' icon=ops.transform.vertex_random cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Randomize brush_type=None data_block=None op=None options=None
+  TOOL builtin.edge_slide label='Edge Slide' icon=ops.transform.edge_slide cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Edge Slide brush_type=None data_block=None op=None options=None
+  TOOL builtin.vertex_slide label='Vertex Slide' icon=ops.transform.vert_slide cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Mesh, Vertex Slide brush_type=None data_block=None op=None options=None
+  TOOL builtin.shrink_fatten label='Shrink/Fatten' icon=ops.transform.shrink_fatten cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Shrink/Fatten brush_type=None data_block=None op=None options=None
+  TOOL builtin.push_pull label='Push/Pull' icon=ops.transform.push_pull cursor=None widget=VIEW3D_GGT_tool_generic_handle_normal keymap=3D View Tool: Edit Mesh, Push/Pull brush_type=None data_block=None op=None options=None
+  TOOL builtin.shear label='Shear' icon=ops.transform.shear cursor=None widget=VIEW3D_GGT_xform_shear keymap=3D View Tool: Shear brush_type=None data_block=None op=None options=None
+  TOOL builtin.to_sphere label='To Sphere' icon=ops.transform.tosphere cursor=None widget=None keymap=3D View Tool: Edit Mesh, To Sphere brush_type=None data_block=None op=None options=None
+  TOOL builtin.rip_region label='Rip Region' icon=ops.mesh.rip cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Mesh, Rip Region brush_type=None data_block=None op=None options=None
+  TOOL builtin.rip_edge label='Rip Edge' icon=ops.mesh.rip_edge cursor=None widget=VIEW3D_GGT_tool_generic_handle_free keymap=3D View Tool: Edit Mesh, Rip Edge brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE EDIT_METABALL tools=16
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.shear label='Shear' icon=ops.transform.shear cursor=None widget=VIEW3D_GGT_xform_shear keymap=3D View Tool: Shear brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE EDIT_POINTCLOUD tools=15
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE EDIT_SURFACE tools=16
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.shear label='Shear' icon=ops.transform.shear cursor=None widget=VIEW3D_GGT_xform_shear keymap=3D View Tool: Shear brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE EDIT_TEXT tools=7
+  TOOL builtin.select_text label='Select Text' icon=ops.generic.select_box cursor=TEXT widget=None keymap=3D View Tool: Edit Text, Select Text brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE OBJECT tools=20
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_cube_add label='Add Cube' icon=ops.mesh.primitive_cube_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_cone_add label='Add Cone' icon=ops.mesh.primitive_cone_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_cylinder_add label='Add Cylinder' icon=ops.mesh.primitive_cylinder_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_uv_sphere_add label='Add UV Sphere' icon=ops.mesh.primitive_sphere_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+  TOOL builtin.primitive_ico_sphere_add label='Add Ico Sphere' icon=ops.mesh.primitive_sphere_add_gizmo cursor=None widget=VIEW3D_GGT_placement keymap=3D View Tool: Object, Add Primitive brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE PAINT_GREASE_PENCIL tools=13
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.Erase label='Erase' icon=brush.gpencil_draw.erase cursor=None widget=None keymap=None brush_type=ERASE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.Fill label='Fill' icon=brush.gpencil_draw.fill cursor=None widget=None keymap=None brush_type=FILL data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.box label='Box' icon=ops.gpencil.primitive_box cursor=CROSSHAIR widget=None keymap=3D View Tool: Paint Grease Pencil, Box brush_type=DRAW data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.circle label='Circle' icon=ops.gpencil.primitive_circle cursor=CROSSHAIR widget=None keymap=3D View Tool: Paint Grease Pencil, Circle brush_type=DRAW data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.line label='Line' icon=ops.gpencil.primitive_line cursor=CROSSHAIR widget=None keymap=3D View Tool: Paint Grease Pencil, Line brush_type=DRAW data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.polyline label='Polyline' icon=ops.gpencil.primitive_polyline cursor=CROSSHAIR widget=None keymap=3D View Tool: Paint Grease Pencil, Polyline brush_type=DRAW data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.arc label='Arc' icon=ops.gpencil.primitive_arc cursor=CROSSHAIR widget=None keymap=3D View Tool: Paint Grease Pencil, Arc brush_type=DRAW data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.curve label='Curve' icon=ops.gpencil.primitive_curve cursor=CROSSHAIR widget=None keymap=3D View Tool: Paint Grease Pencil, Curve brush_type=DRAW data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.trim label='Trim' icon=ops.gpencil.stroke_trim cursor=KNIFE widget=None keymap=3D View Tool: Paint Grease Pencil, Trim brush_type=None data_block=None op=None options=None
+  TOOL builtin.eyedropper label='Eyedropper' icon=ops.paint.eyedropper_add cursor=EYEDROPPER widget=None keymap=3D View Tool: Paint Grease Pencil, Eyedropper brush_type=None data_block=None op=None options=None
+  TOOL builtin.interpolate label='Interpolate' icon=ops.pose.breakdowner cursor=DEFAULT widget=None keymap=3D View Tool: Paint Grease Pencil, Interpolate brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE PAINT_TEXTURE tools=10
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.soften label='Blur' icon=brush.paint_texture.soften cursor=None widget=None keymap=None brush_type=SOFTEN data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.smear label='Smear' icon=brush.paint_texture.smear cursor=None widget=None keymap=None brush_type=SMEAR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.clone label='Clone' icon=brush.paint_texture.clone cursor=None widget=None keymap=None brush_type=CLONE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.fill label='Fill' icon=brush.paint_texture.fill cursor=None widget=None keymap=None brush_type=FILL data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.mask label='Mask' icon=brush.paint_texture.mask cursor=None widget=None keymap=None brush_type=MASK data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE PAINT_VERTEX tools=8
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.blur label='Blur' icon=brush.paint_vertex.blur cursor=None widget=None keymap=None brush_type=BLUR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.average label='Average' icon=brush.paint_vertex.average cursor=None widget=None keymap=None brush_type=AVERAGE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.smear label='Smear' icon=brush.paint_vertex.smear cursor=None widget=None keymap=None brush_type=SMEAR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE PAINT_WEIGHT tools=11
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.blur label='Blur' icon=brush.paint_weight.blur cursor=None widget=None keymap=None brush_type=BLUR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.average label='Average' icon=brush.paint_weight.average cursor=None widget=None keymap=None brush_type=AVERAGE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.smear label='Smear' icon=brush.paint_weight.smear cursor=None widget=None keymap=None brush_type=SMEAR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.gradient label='Gradient' icon=ops.paint.weight_gradient cursor=None widget=None keymap=3D View Tool: Paint Weight, Gradient brush_type=None data_block=None op=None options=None
+  TOOL builtin.sample_weight label='Sample Weight' icon=ops.paint.weight_sample cursor=EYEDROPPER widget=None keymap=3D View Tool: Paint Weight, Sample Weight brush_type=None data_block=None op=None options=None
+  TOOL builtin.sample_vertex_group label='Sample Vertex Group' icon=ops.paint.weight_sample_group cursor=EYEDROPPER widget=None keymap=3D View Tool: Paint Weight, Sample Vertex Group brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE PARTICLE tools=12
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin_brush.Comb label='Comb' icon=brush.particle.comb cursor=DEFAULT widget=None keymap=None brush_type=None data_block=COMB op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.Smooth label='Smooth' icon=brush.particle.smooth cursor=DEFAULT widget=None keymap=None brush_type=None data_block=SMOOTH op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.Add label='Add' icon=brush.particle.add cursor=DEFAULT widget=None keymap=None brush_type=None data_block=ADD op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.Length label='Length' icon=brush.particle.length cursor=DEFAULT widget=None keymap=None brush_type=None data_block=LENGTH op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.Puff label='Puff' icon=brush.particle.puff cursor=DEFAULT widget=None keymap=None brush_type=None data_block=PUFF op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.Cut label='Cut' icon=brush.particle.cut cursor=DEFAULT widget=None keymap=None brush_type=None data_block=CUT op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.Weight label='Weight' icon=brush.particle.weight cursor=DEFAULT widget=None keymap=None brush_type=None data_block=WEIGHT op=None options=['USE_BRUSHES']
+SPACE VIEW_3D MODE POSE tools=18
+  TOOL builtin.select label='Tweak' icon=ops.generic.select cursor=None widget=None keymap=3D View Tool: Tweak brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_box label='Select Box' icon=ops.generic.select_box cursor=None widget=None keymap=3D View Tool: Select Box brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_circle label='Select Circle' icon=ops.generic.select_circle cursor=None widget=None keymap=3D View Tool: Select Circle brush_type=None data_block=None op=None options=None
+  TOOL builtin.select_lasso label='Select Lasso' icon=ops.generic.select_lasso cursor=None widget=None keymap=3D View Tool: Select Lasso brush_type=None data_block=None op=None options=None
+  TOOL builtin.cursor label='Cursor' icon=ops.generic.cursor cursor=None widget=None keymap=3D View Tool: Cursor brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.scale_cage label='Scale Cage' icon=ops.transform.resize.cage cursor=None widget=VIEW3D_GGT_xform_cage keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.measure label='Measure' icon=ops.view3d.ruler cursor=None widget=VIEW3D_GGT_ruler keymap=3D View Tool: Measure brush_type=None data_block=None op=None options=None
+  TOOL builtin.breakdowner label='Breakdowner' icon=ops.pose.breakdowner cursor=None widget=None keymap=3D View Tool: Pose, Breakdowner brush_type=None data_block=None op=None options=None
+  TOOL builtin.push label='Push' icon=ops.pose.push cursor=None widget=None keymap=3D View Tool: Pose, Push brush_type=None data_block=None op=None options=None
+  TOOL builtin.relax label='Relax' icon=ops.pose.relax cursor=None widget=None keymap=3D View Tool: Pose, Relax brush_type=None data_block=None op=None options=None
+SPACE VIEW_3D MODE SCULPT tools=36
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.paint label='Paint' icon=brush.sculpt.paint cursor=None widget=None keymap=None brush_type=PAINT data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.mask label='Mask' icon=brush.sculpt.mask cursor=None widget=None keymap=None brush_type=MASK data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.draw_face_sets label='Draw Face Sets' icon=brush.sculpt.draw_face_sets cursor=None widget=None keymap=None brush_type=DRAW_FACE_SETS data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.displacement_eraser label='Multires Displacement Eraser' icon=brush.sculpt.displacement_eraser cursor=None widget=None keymap=None brush_type=DISPLACEMENT_ERASER data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.displacement_smear label='Multires Displacement Smear' icon=brush.sculpt.displacement_smear cursor=None widget=None keymap=None brush_type=DISPLACEMENT_SMEAR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.box_mask label='Box Mask' icon=ops.sculpt.border_mask cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Box Mask brush_type=None data_block=None op=None options=None
+  TOOL builtin.lasso_mask label='Lasso Mask' icon=ops.sculpt.lasso_mask cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Lasso Mask brush_type=None data_block=None op=None options=None
+  TOOL builtin.line_mask label='Line Mask' icon=ops.sculpt.line_mask cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Line Mask brush_type=None data_block=None op=None options=None
+  TOOL builtin.polyline_mask label='Polyline Mask' icon=ops.sculpt.polyline_mask cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Polyline Mask brush_type=None data_block=None op=None options=None
+  TOOL builtin.box_hide label='Box Hide' icon=ops.sculpt.border_hide cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Box Hide brush_type=None data_block=None op=None options=None
+  TOOL builtin.lasso_hide label='Lasso Hide' icon=ops.sculpt.lasso_hide cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Lasso Hide brush_type=None data_block=None op=None options=None
+  TOOL builtin.line_hide label='Line Hide' icon=ops.sculpt.line_hide cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Line Hide brush_type=None data_block=None op=None options=None
+  TOOL builtin.polyline_hide label='Polyline Hide' icon=ops.sculpt.polyline_hide cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Polyline Hide brush_type=None data_block=None op=None options=None
+  TOOL builtin.box_face_set label='Box Face Set' icon=ops.sculpt.border_face_set cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Box Face Set brush_type=None data_block=None op=None options=None
+  TOOL builtin.lasso_face_set label='Lasso Face Set' icon=ops.sculpt.lasso_face_set cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Lasso Face Set brush_type=None data_block=None op=None options=None
+  TOOL builtin.line_face_set label='Line Face Set' icon=ops.sculpt.line_face_set cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Line Face Set brush_type=None data_block=None op=None options=None
+  TOOL builtin.polyline_face_set label='Polyline Face Set' icon=ops.sculpt.polyline_face_set cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Polyline Face Set brush_type=None data_block=None op=None options=None
+  TOOL builtin.box_trim label='Box Trim' icon=ops.sculpt.box_trim cursor=None widget=None keymap=3D View Tool: Sculpt, Box Trim brush_type=None data_block=None op=None options=None
+  TOOL builtin.lasso_trim label='Lasso Trim' icon=ops.sculpt.lasso_trim cursor=None widget=None keymap=3D View Tool: Sculpt, Lasso Trim brush_type=None data_block=None op=None options=None
+  TOOL builtin.line_trim label='Line Trim' icon=ops.sculpt.line_trim cursor=None widget=None keymap=3D View Tool: Sculpt, Line Trim brush_type=None data_block=None op=None options=None
+  TOOL builtin.polyline_trim label='Polyline Trim' icon=ops.sculpt.polyline_trim cursor=None widget=None keymap=3D View Tool: Sculpt, Polyline Trim brush_type=None data_block=None op=None options=None
+  TOOL builtin.line_project label='Line Project' icon=ops.sculpt.line_project cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Line Project brush_type=None data_block=None op=None options=None
+  TOOL builtin.mesh_filter label='Mesh Filter' icon=ops.sculpt.mesh_filter cursor=None widget=None keymap=3D View Tool: Sculpt, Mesh Filter brush_type=None data_block=None op=None options=None
+  TOOL builtin.cloth_filter label='Cloth Filter' icon=ops.sculpt.cloth_filter cursor=None widget=None keymap=3D View Tool: Sculpt, Cloth Filter brush_type=None data_block=None op=None options=None
+  TOOL builtin.color_filter label='Color Filter' icon=ops.sculpt.color_filter cursor=None widget=None keymap=3D View Tool: Sculpt, Color Filter brush_type=None data_block=None op=None options=None
+  TOOL builtin.face_set_edit label='Edit Face Set' icon=ops.sculpt.face_set_edit cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Face Set Edit brush_type=None data_block=None op=None options=None
+  TOOL builtin.mask_by_color label='Mask by Color' icon=ops.sculpt.mask_by_color cursor=PAINT_CROSS widget=None keymap=3D View Tool: Sculpt, Mask by Color brush_type=None data_block=None op=None options=None
+  TOOL builtin.move label='Move' icon=ops.transform.translate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Move brush_type=None data_block=None op=transform.translate options=None
+  TOOL builtin.rotate label='Rotate' icon=ops.transform.rotate cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Rotate brush_type=None data_block=None op=transform.rotate options=None
+  TOOL builtin.scale label='Scale' icon=ops.transform.resize cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Scale brush_type=None data_block=None op=transform.resize options=None
+  TOOL builtin.transform label='Transform' icon=ops.transform.transform cursor=None widget=VIEW3D_GGT_xform_gizmo keymap=3D View Tool: Transform brush_type=None data_block=None op=None options=None
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE SCULPT_CURVES tools=9
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.selection_paint label='Selection Paint' icon=ops.generic.select_paint cursor=None widget=None keymap=None brush_type=SELECTION_PAINT data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.density label='Density' icon=ops.curves.sculpt_density cursor=None widget=None keymap=None brush_type=DENSITY data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.add label='Add' icon=ops.curves.sculpt_add cursor=None widget=None keymap=None brush_type=ADD data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.delete label='Delete' icon=ops.curves.sculpt_delete cursor=None widget=None keymap=None brush_type=DELETE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE SCULPT_GREASE_PENCIL tools=6
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.clone label='Clone' icon=ops.gpencil.sculpt_clone cursor=None widget=None keymap=None brush_type=CLONE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE VERTEX_GREASE_PENCIL tools=9
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.blur label='Blur' icon=brush.paint_vertex.blur cursor=None widget=None keymap=None brush_type=BLUR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.average label='Average' icon=brush.paint_vertex.average cursor=None widget=None keymap=None brush_type=AVERAGE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.smear label='Smear' icon=brush.paint_vertex.smear cursor=None widget=None keymap=None brush_type=SMEAR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.replace label='Replace' icon=brush.paint_vertex.replace cursor=None widget=None keymap=None brush_type=REPLACE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+SPACE VIEW_3D MODE WEIGHT_GREASE_PENCIL tools=8
+  TOOL builtin.brush label='Brush' icon=brush.generic cursor=None widget=None keymap=None brush_type=None data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.blur label='Blur' icon=ops.gpencil.sculpt_blur cursor=None widget=None keymap=None brush_type=BLUR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.average label='Average' icon=ops.gpencil.sculpt_average cursor=None widget=None keymap=None brush_type=AVERAGE data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin_brush.smear label='Smear' icon=ops.gpencil.sculpt_smear cursor=None widget=None keymap=None brush_type=SMEAR data_block=None op=None options=['USE_BRUSHES']
+  TOOL builtin.annotate label='Annotate' icon=ops.gpencil.draw cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_line label='Annotate Line' icon=ops.gpencil.draw.line cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Line brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_polygon label='Annotate Polygon' icon=ops.gpencil.draw.poly cursor=PAINT_BRUSH widget=None keymap=Generic Tool: Annotate Polygon brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
+  TOOL builtin.annotate_eraser label='Annotate Eraser' icon=ops.gpencil.draw.eraser cursor=ERASER widget=None keymap=Generic Tool: Annotate Eraser brush_type=None data_block=None op=None options=['KEYMAP_FALLBACK']
