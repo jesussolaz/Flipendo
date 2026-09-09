@@ -28,7 +28,15 @@
  *   linea base no son un error: son herramientas homonimas de espacios distintos.
  */
 
+#include <fmt/format.h>
+
 #include "BLT_translation.hh"
+
+#include "WM_api.hh"
+#include "WM_keymap.hh"
+#include "wm_event_types.hh"
+
+#include "fl_tool_description.hh"
 
 #include "fl_tool_defs_edit_mesh.hh"
 
@@ -89,6 +97,47 @@ static const PropRow poly_build_settings[] = {
      "MESH_OT_polybuild_face_at_cursor.create_quads"},
 };
 
+/**
+ * `_defs_edit_mesh.poly_build.description` (`space_toolsystem_toolbar.py:774`).
+ *
+ * Los tres atajos que enseña son TODO el manejo de la herramienta: sin ellos el usuario
+ * ve una etiqueta y nada mas. Y no hay red de seguridad: `poly_build` tampoco tiene `op`
+ * del que heredar descripcion.
+ *
+ * Se buscan dentro del keymap de la propia herramienta, que es donde viven esas teclas y
+ * donde el usuario puede haberlas cambiado. Los operadores van en su forma interna
+ * (`MESH_OT_...`): el Python los escribe como `mesh....` y es el RNA quien los convierte
+ * al vuelo, pero aqui no hay RNA por medio.
+ */
+static std::string description_poly_build(const bContext * /*C*/, const wmKeyMap *km)
+{
+  const wmKeyMapItem *kmi_add = nullptr;
+  const wmKeyMapItem *kmi_extrude = nullptr;
+  const wmKeyMapItem *kmi_delete = nullptr;
+  if (km != nullptr) {
+    /* La busqueda no toca el keymap, pero la API de ventanas no es const-correcta y el
+     * contrato si lo es. */
+    wmKeyMap *km_mut = const_cast<wmKeyMap *>(km);
+    kmi_add = WM_key_event_operator_from_keymap(
+        km_mut, "MESH_OT_polybuild_face_at_cursor_move", nullptr, EVT_TYPE_MASK_ALL, 0);
+    kmi_extrude = WM_key_event_operator_from_keymap(
+        km_mut, "MESH_OT_polybuild_extrude_at_cursor_move", nullptr, EVT_TYPE_MASK_ALL, 0);
+    kmi_delete = WM_key_event_operator_from_keymap(
+        km_mut, "MESH_OT_polybuild_delete_at_cursor", nullptr, EVT_TYPE_MASK_ALL, 0);
+  }
+
+  return fmt::format(
+      fmt::runtime(TIP_("Use multiple operators in an interactive way to add, delete, or move "
+                        "geometry\n"
+                        " \u2022 {:s} - Add geometry by moving the cursor close to an element\n"
+                        " \u2022 {:s} - Extrude edges by moving the cursor\n"
+                        " \u2022 {:s} - Delete mesh element")),
+      kmi_to_string_or_none(kmi_add),
+      kmi_to_string_or_none(kmi_extrude),
+      kmi_to_string_or_none(kmi_delete));
+}
+
+
 /* La descripcion la calcula el Python con los atajos que el usuario tenga puestos para
  * anadir, extruir y borrar. `description_fn` sigue a `nullptr` a proposito: el simbolo
  * esta declarado en la cabecera pero todavia sin definir, y apuntarlo aqui romperia el
@@ -97,7 +146,7 @@ const ToolDecl poly_build = {
     /*idname*/ "builtin.poly_build",
     /*label*/ N_("Poly Build"),
     /*description*/ nullptr,
-    /*description_fn*/ nullptr,
+    /*description_fn*/ description_poly_build,
     /*icon*/ "ops.mesh.polybuild_hover",
     /*cursor*/ nullptr,
     /*gizmo_group*/ "VIEW3D_GGT_mesh_preselect_elem",
@@ -191,19 +240,13 @@ const ToolDecl spin = {
     /*settings*/ span(spin_settings),
 };
 
-/*
- * Unica herramienta de TODO el Python con `widget_properties`: arranca el asa generica
- * con radio 75 y sin relleno de fondo, para que no tape la cara mientras se mete.
- *
- * Aqui solo quedan anotados los dos nombres, porque `PropRow` describe una fila de
- * interfaz y no tiene donde guardar el VALOR. Se dejan escritos igualmente para que la
- * fase de gizmos sepa cuales son las dos que hay que preparar; el 75.0 y el 0.0 siguen
- * viviendo unicamente en este comentario y en el Python, y hace falta un campo de valor
- * en el contrato antes de poder aplicarlos.
- */
-static const PropRow inset_gizmo_properties[] = {
-    {PropSource::GizmoGroup, "VIEW3D_GGT_tool_generic_handle_free", "radius"},
-    {PropSource::GizmoGroup, "VIEW3D_GGT_tool_generic_handle_free", "backdrop_fill_alpha"},
+/* Unica herramienta de TODO el Python con `widget_properties`
+ * (`space_toolsystem_toolbar.py:866`): arranca el asa generica con radio 75 y sin
+ * relleno de fondo, para que no tape la cara mientras se mete el inset. El grupo de
+ * gizmos es el del propio `gizmo_group`, asi que no hace falta repetirlo por fila. */
+static const GizmoProp inset_gizmo_properties[] = {
+    gizmo_number("radius", 75.0f),
+    gizmo_number("backdrop_fill_alpha", 0.0f),
 };
 
 static const PropRow inset_settings[] = {
@@ -257,7 +300,7 @@ const ToolDecl bevel = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /** \} */
@@ -537,7 +580,7 @@ const ToolDecl knife = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 static const PropRow bisect_settings[] = {

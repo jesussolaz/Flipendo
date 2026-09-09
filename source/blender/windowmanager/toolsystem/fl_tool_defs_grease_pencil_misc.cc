@@ -55,7 +55,7 @@ const ToolDecl shear = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 static const PropRow interpolate_settings[] = {

@@ -274,7 +274,7 @@ const ToolDecl sample_weight = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl sample_weight_group = {
@@ -315,7 +315,7 @@ const ToolDecl gradient = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 }  // namespace defs_weight_paint

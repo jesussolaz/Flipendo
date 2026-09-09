@@ -130,7 +130,7 @@ const ToolDecl line = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl polyline = {
@@ -150,7 +150,7 @@ const ToolDecl polyline = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl arc = {
@@ -170,7 +170,7 @@ const ToolDecl arc = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl curve = {
@@ -190,7 +190,7 @@ const ToolDecl curve = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl box = {
@@ -210,7 +210,7 @@ const ToolDecl box = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl circle = {
@@ -230,7 +230,7 @@ const ToolDecl circle = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /** \} */
@@ -289,7 +289,7 @@ const ToolDecl eyedropper = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /** \} */

@@ -62,7 +62,7 @@ const ToolDecl grab = {
     /*settings*/ span(uv_sculpt_common_settings),
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS | TOOL_PENDING_DRAW_CURSOR,
 };
 
 /* `relax` es la unica de las tres que ademas elige metodo, y ese si es una propiedad
@@ -92,7 +92,7 @@ const ToolDecl relax = {
     /*settings*/ span(relax_settings),
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS | TOOL_PENDING_DRAW_CURSOR,
 };
 
 const ToolDecl pinch = {
@@ -112,7 +112,7 @@ const ToolDecl pinch = {
     /*settings*/ span(uv_sculpt_common_settings),
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS | TOOL_PENDING_DRAW_CURSOR,
 };
 
 }  // namespace defs_image_uv_sculpt

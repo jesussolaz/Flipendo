@@ -193,7 +193,7 @@ const ToolDecl mask_lasso = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 static const PropRow mask_line_settings[] = {
@@ -287,7 +287,7 @@ const ToolDecl hide_lasso = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 static const PropRow hide_line_settings[] = {
@@ -376,7 +376,7 @@ const ToolDecl face_set_lasso = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 static const PropRow face_set_line_settings[] = {
@@ -478,7 +478,7 @@ const ToolDecl trim_lasso = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 static const PropRow trim_line_settings[] = {
@@ -579,7 +579,7 @@ const ToolDecl mesh_filter = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* El filtro de tela es el hermano de `mesh_filter` que SI cabe en filas: pinta los
@@ -634,7 +634,7 @@ const ToolDecl color_filter = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 static const PropRow mask_by_color_settings[] = {

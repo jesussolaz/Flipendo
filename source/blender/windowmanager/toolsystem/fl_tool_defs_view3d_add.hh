@@ -34,22 +34,13 @@ namespace defs_view3d_add {
  * pertenece a esta fase.
  * \{ */
 
-/**
- * `description_interactive_add` (`space_toolsystem_toolbar.py:498`).
+/* `description_interactive_add` NO se declara aqui: es una funcion interna del `.cc`.
  *
- * Las cinco descripciones son la misma plantilla con distinto prefijo, y NINGUNA es un
- * literal: la funcion abre el keymap DEL USUARIO "View3D Placement Modal", busca los
- * elementos con `propvalue` `SNAP_ON`, `PIVOT_CENTER_ON` y `FIXED_ASPECT_ON`, y mete
- * sus atajos dentro del texto. Por eso las cinco llevan `description` a `nullptr`: no
- * hay cadena que copiar.
- *
- * Queda declarada y sin definir a proposito. Es una de las siete descripciones
- * calculadas del catalogo, que se escriben a mano en su propia fase; hasta entonces
- * `description_fn` sigue a `nullptr` y el tooltip cae en el del operador, que es
- * exactamente lo que hace hoy el motor cuando el Python no responde. El prefijo de
- * cada herramienta queda anotado en su declaracion del `.cc` para que no se pierda.
+ * En el Python es un metodo estatico que las cinco comparten, pero fuera de ellas no la
+ * usa nadie, y sacarla a la cabecera solo servia para que pareciera parte del contrato.
+ * Lo que si comparte de verdad todo el catalogo son las ayudas de
+ * `fl_tool_description.hh`.
  */
-std::string description_interactive_add(const bContext *C, const wmKeyMap *km, const char *prefix);
 
 /**
  * `draw_settings_interactive_add` (`space_toolsystem_toolbar.py:530`).

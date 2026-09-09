@@ -330,13 +330,23 @@ bool check_native(const bContext *C, const char *baseline_filepath)
     }
   }
 
-  /* La deuda de ajustes se lista aqui a proposito: es la unica parte de la migracion
-   * que la linea base NO puede detectar, porque no incluye los ajustes. Si no saliera
-   * por aqui, se perderia sin que nada avisara. */
-  const blender::Vector<blender::StringRefNull> pending_settings = settings_pending_list();
-  if (!pending_settings.is_empty()) {
-    printf("\nAjustes sin trasladar (%d herramientas):\n", int(pending_settings.size()));
-    for (const blender::StringRefNull idname : pending_settings) {
+  /* La deuda se lista aqui a proposito: es la parte de la migracion que la linea base
+   * NO puede detectar, porque sus nueve campos no incluyen ni los ajustes ni el dibujo
+   * sobre la vista. Si no saliera por aqui, se perderia sin que nada avisara. */
+  struct {
+    int flag;
+    const char *titulo;
+  } deudas[] = {
+      {TOOL_PENDING_SETTINGS, "Ajustes sin trasladar"},
+      {TOOL_PENDING_DRAW_CURSOR, "Dibujo sobre la vista sin trasladar"},
+  };
+  for (const auto &deuda : deudas) {
+    const blender::Vector<blender::StringRefNull> lista = pending_list(deuda.flag);
+    if (lista.is_empty()) {
+      continue;
+    }
+    printf("\n%s (%d herramientas):\n", deuda.titulo, int(lista.size()));
+    for (const blender::StringRefNull idname : lista) {
       printf("  %s\n", idname.c_str());
     }
   }

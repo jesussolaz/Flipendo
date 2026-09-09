@@ -394,14 +394,14 @@ void group_active_set(const int space_type,
 /** \name Deuda pendiente
  * \{ */
 
-blender::Vector<blender::StringRefNull> settings_pending_list()
+blender::Vector<blender::StringRefNull> pending_list(const int flag)
 {
   blender::Vector<blender::StringRefNull> out;
   for (const ToolbarDecl *toolbar : toolbars_all()) {
     for (const ModeTools &mode_tools : toolbar->modes) {
       for (const ToolEntry &entry : mode_tools.entries) {
         for (const ToolDecl *tool : entry.tools) {
-          if (!tool->settings_pending) {
+          if ((tool->pending & flag) == 0) {
             continue;
           }
           const blender::StringRefNull idname(tool->idname);

@@ -2,6 +2,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
+
 /** \file
  * \ingroup wm
  *
@@ -24,11 +25,72 @@
  *   declaraciones de las dos auxiliares que comparten.
  */
 
+#include <fmt/format.h>
+
 #include "BLT_translation.hh"
+
+#include "fl_tool_description.hh"
 
 #include "fl_tool_defs_view3d_add.hh"
 
 namespace flipendo::toolsystem::defs_view3d_add {
+
+/* -------------------------------------------------------------------- */
+/** \name Las descripciones calculadas de las cinco
+ *
+ * `description_interactive_add` (`space_toolsystem_toolbar.py:498`).
+ *
+ * Las cinco son la misma plantilla con distinto prefijo, y NINGUNA es un literal: la
+ * funcion abre el keymap modal del usuario y mete dentro los tres atajos que esa
+ * persona tenga puestos. Por eso `description` va a `nullptr` y `description_fn` no.
+ *
+ * Aqui no vale dejarlo sin hacer y confiar en que el tooltip caiga en el del operador,
+ * que es lo que hace el motor cuando no hay descripcion: estas cinco tienen `op` a
+ * `nullptr`, asi que no hay operador del que heredar nada. Sin esto el usuario se queda
+ * con la etiqueta a secas y sin ninguna pista de los tres modificadores, que son la
+ * mitad del manejo de la herramienta.
+ * \{ */
+
+static std::string description_interactive_add(const bContext *C, const char *prefix)
+{
+  const wmKeyMap *km = user_modal_keymap(C, "View3D Placement Modal");
+
+  return fmt::format(fmt::runtime(TIP_("{:s}\n"
+                                       " \u2022 {:s} toggles snap while dragging\n"
+                                       " \u2022 {:s} toggles dragging from the center\n"
+                                       " \u2022 {:s} toggles fixed aspect")),
+                     prefix,
+                     kmi_to_string_or_none(modal_kmi_from_identifier(km, "SNAP_ON")),
+                     kmi_to_string_or_none(modal_kmi_from_identifier(km, "PIVOT_CENTER_ON")),
+                     kmi_to_string_or_none(modal_kmi_from_identifier(km, "FIXED_ASPECT_ON")));
+}
+
+/* El keymap que llega es el de la herramienta; estas cinco no lo usan, porque los
+ * atajos que enseñan viven en el modal de colocacion, que es comun a las cinco. */
+static std::string description_cube_add(const bContext *C, const wmKeyMap * /*km*/)
+{
+  return description_interactive_add(C, TIP_("Add cube to mesh interactively"));
+}
+static std::string description_cone_add(const bContext *C, const wmKeyMap * /*km*/)
+{
+  return description_interactive_add(C, TIP_("Add cone to mesh interactively"));
+}
+static std::string description_cylinder_add(const bContext *C, const wmKeyMap * /*km*/)
+{
+  return description_interactive_add(C, TIP_("Add cylinder to mesh interactively"));
+}
+/* Las dos esferas comparten texto en el Python; no es un descuido al copiar. */
+static std::string description_uv_sphere_add(const bContext *C, const wmKeyMap * /*km*/)
+{
+  return description_interactive_add(C, TIP_("Add sphere to mesh interactively"));
+}
+static std::string description_ico_sphere_add(const bContext *C, const wmKeyMap * /*km*/)
+{
+  return description_interactive_add(C, TIP_("Add sphere to mesh interactively"));
+}
+
+/** \} */
+
 
 /* Los cinco prefijos de la descripcion calculada quedan anotados con cada herramienta.
  * Son el unico trozo de `description_interactive_add` que SI es dato literal del
@@ -40,7 +102,7 @@ const ToolDecl cube_add = {
     /*idname*/ "builtin.primitive_cube_add",
     /*label*/ N_("Add Cube"),
     /*description*/ nullptr,
-    /*description_fn*/ nullptr,
+    /*description_fn*/ description_cube_add,
     /*icon*/ "ops.mesh.primitive_cube_add_gizmo",
     /*cursor*/ nullptr,
     /*gizmo_group*/ "VIEW3D_GGT_placement",
@@ -53,7 +115,7 @@ const ToolDecl cube_add = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* Prefijo de la descripcion: "Add cone to mesh interactively".
@@ -66,7 +128,7 @@ const ToolDecl cone_add = {
     /*idname*/ "builtin.primitive_cone_add",
     /*label*/ N_("Add Cone"),
     /*description*/ nullptr,
-    /*description_fn*/ nullptr,
+    /*description_fn*/ description_cone_add,
     /*icon*/ "ops.mesh.primitive_cone_add_gizmo",
     /*cursor*/ nullptr,
     /*gizmo_group*/ "VIEW3D_GGT_placement",
@@ -79,7 +141,7 @@ const ToolDecl cone_add = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* Prefijo de la descripcion: "Add cylinder to mesh interactively".
@@ -90,7 +152,7 @@ const ToolDecl cylinder_add = {
     /*idname*/ "builtin.primitive_cylinder_add",
     /*label*/ N_("Add Cylinder"),
     /*description*/ nullptr,
-    /*description_fn*/ nullptr,
+    /*description_fn*/ description_cylinder_add,
     /*icon*/ "ops.mesh.primitive_cylinder_add_gizmo",
     /*cursor*/ nullptr,
     /*gizmo_group*/ "VIEW3D_GGT_placement",
@@ -103,7 +165,7 @@ const ToolDecl cylinder_add = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* Prefijo de la descripcion: "Add sphere to mesh interactively". Es el mismo texto que
@@ -115,7 +177,7 @@ const ToolDecl uv_sphere_add = {
     /*idname*/ "builtin.primitive_uv_sphere_add",
     /*label*/ N_("Add UV Sphere"),
     /*description*/ nullptr,
-    /*description_fn*/ nullptr,
+    /*description_fn*/ description_uv_sphere_add,
     /*icon*/ "ops.mesh.primitive_sphere_add_gizmo",
     /*cursor*/ nullptr,
     /*gizmo_group*/ "VIEW3D_GGT_placement",
@@ -128,7 +190,7 @@ const ToolDecl uv_sphere_add = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* Prefijo de la descripcion: "Add sphere to mesh interactively".
@@ -138,7 +200,7 @@ const ToolDecl ico_sphere_add = {
     /*idname*/ "builtin.primitive_ico_sphere_add",
     /*label*/ N_("Add Ico Sphere"),
     /*description*/ nullptr,
-    /*description_fn*/ nullptr,
+    /*description_fn*/ description_ico_sphere_add,
     /*icon*/ "ops.mesh.primitive_sphere_add_gizmo",
     /*cursor*/ nullptr,
     /*gizmo_group*/ "VIEW3D_GGT_placement",
@@ -151,7 +213,7 @@ const ToolDecl ico_sphere_add = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 }  // namespace flipendo::toolsystem::defs_view3d_add

@@ -93,6 +93,41 @@ struct PropRow {
   int flags = PROP_ROW_NONE;
 };
 
+/**
+ * Una propiedad inicial del grupo de gizmos: nombre y VALOR.
+ *
+ * No se reutiliza `PropRow` para esto, aunque tiente. `PropRow` describe como se PINTA
+ * una propiedad (etiqueta, expandida, solo iconos); esto describe con que valor ARRANCA
+ * el gizmo. Son cosas distintas y la prueba es que reutilizar `PropRow` costo el 75.0 y
+ * el 0.0 de `builtin.inset_faces`: no habia donde ponerlos, se quedaron en un
+ * comentario, y ni la linea base ni el compilador podian avisar. Con el valor dentro
+ * del tipo, olvidarlo no compila.
+ *
+ * Hoy solo `builtin.inset_faces` lo usa (`space_toolsystem_toolbar.py:866`, el unico
+ * `widget_properties` de todo el Python), y ambos valores son numeros. El tipo lleva
+ * etiqueta para que anadir un booleano o una enumeracion no obligue a rehacerlo.
+ */
+struct GizmoProp {
+  enum class Type { Number, Boolean, Integer, Enum };
+
+  const char *prop = nullptr;
+  Type type = Type::Number;
+  float number = 0.0f;
+  bool boolean = false;
+  int integer = 0;
+  const char *enum_identifier = nullptr;
+};
+
+/** Atajos para declarar una propiedad de gizmo sin repetir la etiqueta. */
+constexpr GizmoProp gizmo_number(const char *prop, const float value)
+{
+  return GizmoProp{prop, GizmoProp::Type::Number, value};
+}
+constexpr GizmoProp gizmo_boolean(const char *prop, const bool value)
+{
+  return GizmoProp{prop, GizmoProp::Type::Boolean, 0.0f, value};
+}
+
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -109,6 +144,15 @@ enum ToolOption {
   /** No puede ser reserva de un pincel. Sustituye a la lista negra de seis cadenas
    * escrita a mano en `wm.py:2151-2158`. */
   TOOL_OPTION_NO_BRUSH_FALLBACK = 1 << 2,
+};
+
+/** Deuda declarada de una herramienta. Ver `ToolDecl::pending`. */
+enum ToolPending {
+  TOOL_PENDING_NONE = 0,
+  /** Tiene `draw_settings` con flujo de control que aun no se ha trasladado. */
+  TOOL_PENDING_SETTINGS = 1 << 0,
+  /** Dibuja sobre la vista mientras esta activa, y eso aun no se hace. */
+  TOOL_PENDING_DRAW_CURSOR = 1 << 1,
 };
 
 /** Descripcion calculada. Solo 7 herramientas la necesitan, y leen el keymap DEL
@@ -143,7 +187,7 @@ struct ToolDecl {
   /** Grupo de gizmos que se activa con la herramienta. */
   const char *gizmo_group = nullptr;
   /** Propiedades iniciales del grupo de gizmos, si las lleva. */
-  blender::Span<PropRow> gizmo_properties;
+  blender::Span<GizmoProp> gizmo_properties;
 
   /**
    * Nombre del keymap de la herramienta. SIEMPRE literal, NUNCA calculado.
@@ -200,15 +244,15 @@ struct ToolDecl {
   DrawCursorFn draw_cursor = nullptr;
 
   /**
-   * Marca TEMPORAL: la herramienta tiene ajustes en el Python que todavia no se han
-   * trasladado, porque dependen de algo que aun no es nativo.
+   * Marcas TEMPORALES de deuda: lo que la herramienta tiene en el Python y aqui
+   * todavia no.
    *
-   * Existe para que la deuda no se pierda: un `draw_settings` a `nullptr` es
-   * indistinguible de "no tiene ajustes", y esa es exactamente la forma en que se
-   * pierden capacidades sin que nadie se entere. El volcado la lista en cada
-   * verificacion y la fase de dibujo comprueba que no quede ninguna puesta.
+   * Existen porque un puntero a `nullptr` es indistinguible de "no lo necesita", y esa
+   * es exactamente la forma en que se pierden capacidades sin que nadie se entere. Los
+   * nueve campos de la linea base no cubren nada de esto. El volcado las lista en cada
+   * verificacion y las fases correspondientes comprueban que no quede ninguna puesta.
    */
-  bool settings_pending = false;
+  int pending = TOOL_PENDING_NONE;
 };
 
 /** \} */
@@ -395,8 +439,8 @@ void group_active_set(int space_type, blender::StringRefNull group_leader_idname
 /** \name Deuda pendiente
  * \{ */
 
-/** Los idnames de las herramientas con `settings_pending`, en orden de catalogo. */
-blender::Vector<blender::StringRefNull> settings_pending_list();
+/** Los idnames de las herramientas con la marca dada, en orden de catalogo. */
+blender::Vector<blender::StringRefNull> pending_list(int flag);
 
 /** \} */
 

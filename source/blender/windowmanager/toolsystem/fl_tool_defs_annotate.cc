@@ -42,7 +42,7 @@ const ToolDecl scribble = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl line = {
@@ -62,7 +62,7 @@ const ToolDecl line = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl poly = {
@@ -82,7 +82,7 @@ const ToolDecl poly = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* El borrador es el unico de los cuatro que NO usa `draw_settings_common`: su unico

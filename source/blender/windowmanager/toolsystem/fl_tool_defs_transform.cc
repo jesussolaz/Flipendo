@@ -74,7 +74,7 @@ const ToolDecl translate = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl rotate = {
@@ -94,7 +94,7 @@ const ToolDecl rotate = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 const ToolDecl scale = {
@@ -114,7 +114,7 @@ const ToolDecl scale = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* La jaula es una herramienta distinta de la de escalar (otro gizmo, otro icono), pero
@@ -136,7 +136,7 @@ const ToolDecl scale_cage = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* El sesgado, como la jaula, no pinta los ajustes del escultor: solo la orientacion de
@@ -158,7 +158,7 @@ const ToolDecl shear = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 /* La unica de las siete sin gizmo y sin ajustes, asi que no hay nada pendiente que
@@ -201,7 +201,7 @@ const ToolDecl transform = {
     /*settings*/ {},
     /*draw_settings*/ nullptr,
     /*draw_cursor*/ nullptr,
-    /*settings_pending*/ true,
+    /*pending*/ TOOL_PENDING_SETTINGS,
 };
 
 }  // namespace defs_transform

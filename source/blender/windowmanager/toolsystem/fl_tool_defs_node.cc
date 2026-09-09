@@ -115,6 +115,9 @@ const ToolDecl circle = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ span(circle_settings),
+    /*draw_settings*/ nullptr,
+    /*draw_cursor*/ nullptr,
+    /*pending*/ TOOL_PENDING_DRAW_CURSOR,
 };
 
 }  // namespace defs_node_select

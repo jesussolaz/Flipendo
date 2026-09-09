@@ -21,6 +21,8 @@
 
 #include "BLT_translation.hh"
 
+#include "fl_tool_description.hh"
+
 #include "WM_keymap.hh"
 
 #include "wm_event_types.hh"
@@ -77,23 +79,6 @@ const ToolDecl cursor_click = {
     /*description_fn*/ nullptr,
     /*icon*/ "ops.generic.cursor",
 };
-
-/**
- * `kmi_to_string_or_none` (`space_toolsystem_toolbar.py:27`): el atajo escrito, o
- * `<none>` si esa accion no tiene ninguno. Ese `<none>` no se traduce; entra tal cual
- * dentro de un texto que ya viene traducido.
- *
- * En el Python es una funcion de modulo que usan las siete descripciones calculadas del
- * catalogo. Aqui se queda local porque hoy la unica trasladada es la de la regla;
- * cuando aparezcan las demas hay que subirla a un sitio comun en vez de copiarla.
- */
-static std::string kmi_to_string_or_none(const wmKeyMapItem *kmi)
-{
-  if (kmi == nullptr) {
-    return "<none>";
-  }
-  return WM_keymap_item_to_string(kmi, false).value_or("");
-}
 
 /**
  * `_defs_view3d_generic.ruler.description`.
@@ -246,6 +231,9 @@ const ToolDecl circle = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ span(circle_settings),
+    /*draw_settings*/ nullptr,
+    /*draw_cursor*/ nullptr,
+    /*pending*/ TOOL_PENDING_DRAW_CURSOR,
 };
 
 }  // namespace defs_view3d_select
