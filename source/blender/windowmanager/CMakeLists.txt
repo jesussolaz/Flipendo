@@ -21,6 +21,11 @@ set(INC_SYS
 set(SRC
   intern/fl_keymap_dump.cc
   intern/wm_context_ops.cc
+  toolsystem/fl_toolsystem_registry.cc
+  toolsystem/fl_toolsystem_dump.cc
+  toolsystem/fl_tool_defs_annotate.cc
+  toolsystem/fl_tool_defs_node.cc
+  toolsystem/fl_toolbar_node.cc
   keymap/fl_keymap_build.cc
   keymap/fl_keymap_params.cc
   keymap/fl_keymap_default.cc
@@ -95,6 +100,9 @@ set(SRC
   message_bus/intern/wm_message_bus_static.cc
 
   FL_keymap_dump.hpp
+  toolsystem/FL_toolsystem.hpp
+  toolsystem/FL_toolsystem_dump.hpp
+  toolsystem/fl_tool_defs.hh
   keymap/FL_keymap_build.hpp
   keymap/FL_keymap_params.hpp
   keymap/FL_keymap_default.hpp

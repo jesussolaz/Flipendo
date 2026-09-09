@@ -1,0 +1,349 @@
+/* SPDX-FileCopyrightText: 2026 Flipendo
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+/** \file
+ * \ingroup wm
+ *
+ * Volcado del catalogo de herramientas. Ver FL_toolsystem_dump.hpp.
+ */
+
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <string>
+
+#include "MEM_guardedalloc.h"
+
+#include "BLI_fileops.h"
+#include "BLI_index_range.hh"
+#include "BLI_string.h"
+#include "BLI_utildefines.h"
+#include "BLI_map.hh"
+#include "BLI_string_ref.hh"
+#include "BLI_vector.hh"
+
+#include "RNA_access.hh"
+#include "RNA_enum_types.hh"
+
+#include "FL_toolsystem.hpp"
+#include "FL_toolsystem_dump.hpp"
+
+namespace flipendo::toolsystem {
+
+/* -------------------------------------------------------------------- */
+/** \name Formato
+ *
+ * La linea base la genero un script de Python con `%r` y `%s`, asi que el formato hay
+ * que reproducirlo tal cual, comillas incluidas. No es capricho: cualquier diferencia
+ * de formato se confunde con una diferencia de contenido.
+ * \{ */
+
+/** `repr()` de una cadena de Python. */
+static std::string py_repr(const char *s)
+{
+  if (s == nullptr) {
+    return "None";
+  }
+  const blender::StringRefNull str(s);
+  /* Python prefiere la comilla simple, y cambia a la doble solo si la cadena lleva una
+   * simple y no lleva ninguna doble. */
+  const bool has_single = str.find('\'') != blender::StringRef::not_found;
+  const bool has_double = str.find('"') != blender::StringRef::not_found;
+  const char quote = (has_single && !has_double) ? '"' : '\'';
+
+  std::string out;
+  out += quote;
+  for (const char c : str) {
+    switch (c) {
+      case '\\':
+        out += "\\\\";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        if (c == quote) {
+          out += '\\';
+          out += c;
+        }
+        else if (static_cast<unsigned char>(c) < 0x20 || static_cast<unsigned char>(c) == 0x7f) {
+          char buf[8];
+          SNPRINTF(buf, "\\x%02x", static_cast<unsigned char>(c));
+          out += buf;
+        }
+        else {
+          out += c;
+        }
+        break;
+    }
+  }
+  out += quote;
+  return out;
+}
+
+/** Un campo opcional: la cadena, o `None` sin comillas, como lo escribe `%s`. */
+static std::string py_str_or_none(const char *s)
+{
+  return s != nullptr ? std::string(s) : std::string("None");
+}
+
+/** `sorted(item.options)` del Python, o `None` si no hay ninguna. */
+static std::string options_repr(const int options)
+{
+  blender::Vector<const char *> names;
+  /* En orden alfabetico, que es lo que da `sorted()` sobre el conjunto. */
+  if (options & TOOL_OPTION_KEYMAP_FALLBACK) {
+    names.append("KEYMAP_FALLBACK");
+  }
+  if (options & TOOL_OPTION_USE_BRUSHES) {
+    names.append("USE_BRUSHES");
+  }
+  if (names.is_empty()) {
+    return "None";
+  }
+  std::string out = "[";
+  for (const int i : names.index_range()) {
+    if (i != 0) {
+      out += ", ";
+    }
+    out += py_repr(names[i]);
+  }
+  out += "]";
+  return out;
+}
+
+static std::string tool_line(const ToolDecl &tool)
+{
+  std::string out = "  TOOL ";
+  out += tool.idname;
+  out += " label=" + py_repr(tool.label);
+  out += " icon=" + py_str_or_none(tool.icon);
+  out += " cursor=" + py_str_or_none(tool.cursor);
+  out += " widget=" + py_str_or_none(tool.gizmo_group);
+  out += " keymap=" + py_str_or_none(tool.keymap_name);
+  out += " brush_type=" + py_str_or_none(tool.brush_type);
+  out += " data_block=" + py_str_or_none(tool.data_block);
+  out += " op=" + py_str_or_none(tool.op);
+  out += " options=" + options_repr(tool.options);
+  return out;
+}
+
+/** El identificador RNA del espacio: 'NODE_EDITOR', 'VIEW_3D'... */
+static const char *space_type_identifier(const int space_type)
+{
+  const char *identifier = nullptr;
+  if (!RNA_enum_identifier(rna_enum_space_type_items, space_type, &identifier)) {
+    return "UNKNOWN";
+  }
+  return identifier;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Recorrido del catalogo
+ * \{ */
+
+struct Section {
+  std::string header;
+  blender::Vector<std::string> lines;
+};
+
+/**
+ * Todas las secciones que el catalogo nativo sabe producir, ordenadas igual que la
+ * linea base: por nombre de espacio y, dentro, por nombre de modo.
+ */
+static blender::Vector<Section> sections_build(const bContext *C)
+{
+  blender::Vector<const ToolbarDecl *> toolbars;
+  for (const ToolbarDecl *decl : toolbars_all()) {
+    toolbars.append(decl);
+  }
+  std::sort(toolbars.begin(), toolbars.end(), [](const ToolbarDecl *a, const ToolbarDecl *b) {
+    return strcmp(space_type_identifier(a->space_type), space_type_identifier(b->space_type)) < 0;
+  });
+
+  blender::Vector<Section> out;
+  for (const ToolbarDecl *toolbar : toolbars) {
+    /* Los modos con nombre, en orden alfabetico. Un espacio sin ninguno produce una
+     * sola seccion etiquetada None: es lo que declara, y no hay forma de que la lista
+     * comun se recorra dos veces. */
+    blender::Vector<const char *> modes;
+    for (const ModeTools &mode_tools : toolbar->modes) {
+      if (mode_tools.mode != nullptr) {
+        modes.append(mode_tools.mode);
+      }
+    }
+    std::sort(modes.begin(), modes.end(), [](const char *a, const char *b) {
+      return strcmp(a, b) < 0;
+    });
+    if (modes.is_empty()) {
+      modes.append(nullptr);
+    }
+
+    for (const char *mode : modes) {
+      const blender::Vector<const ToolDecl *> tools = tools_for_space_mode(C, *toolbar, mode);
+      Section section;
+      char header[256];
+      SNPRINTF(header,
+               "SPACE %s MODE %s tools=%d",
+               space_type_identifier(toolbar->space_type),
+               mode != nullptr ? mode : "None",
+               int(tools.size()));
+      section.header = header;
+      for (const ToolDecl *tool : tools) {
+        section.lines.append(tool_line(*tool));
+      }
+      out.append(std::move(section));
+    }
+  }
+  return out;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Volcado y comprobacion
+ * \{ */
+
+bool dump_native(const bContext *C, const char *filepath)
+{
+  FILE *fp = BLI_fopen(filepath, "w");
+  if (fp == nullptr) {
+    fprintf(stderr, "No se pudo abrir '%s' para escribir.\n", filepath);
+    return false;
+  }
+  for (const Section &section : sections_build(C)) {
+    fprintf(fp, "%s\n", section.header.c_str());
+    for (const std::string &line : section.lines) {
+      fprintf(fp, "%s\n", line.c_str());
+    }
+  }
+  fclose(fp);
+  printf("TOOLS_DUMP_NATIVE_OK %s\n", filepath);
+  return true;
+}
+
+/** La clave de una seccion: "SPACE X MODE Y", sin la cuenta. */
+static std::string section_key(const std::string &header)
+{
+  const size_t pos = header.rfind(" tools=");
+  return pos == std::string::npos ? header : header.substr(0, pos);
+}
+
+bool check_native(const bContext *C, const char *baseline_filepath)
+{
+  size_t baseline_size = 0;
+  char *baseline_text = static_cast<char *>(BLI_file_read_text_as_mem(baseline_filepath, 0, &baseline_size));
+  if (baseline_text == nullptr) {
+    fprintf(stderr, "No se pudo leer la linea base '%s'.\n", baseline_filepath);
+    return false;
+  }
+
+  /* La linea base, troceada en secciones por su cabecera. */
+  blender::Map<std::string, Section> baseline;
+  blender::Vector<std::string> baseline_order;
+  {
+    std::string current;
+    const std::string text(baseline_text, baseline_size);
+    size_t start = 0;
+    while (start <= text.size()) {
+      const size_t end = text.find('\n', start);
+      const std::string line = text.substr(start, (end == std::string::npos ? text.size() : end) - start);
+      if (!line.empty()) {
+        if (line.rfind("SPACE ", 0) == 0) {
+          Section section;
+          section.header = line;
+          current = section_key(line);
+          baseline_order.append(current);
+          baseline.add_overwrite(current, std::move(section));
+        }
+        else if (!current.empty()) {
+          baseline.lookup(current).lines.append(line);
+        }
+      }
+      if (end == std::string::npos) {
+        break;
+      }
+      start = end + 1;
+    }
+  }
+  MEM_freeN(baseline_text);
+
+  const blender::Vector<Section> native = sections_build(C);
+
+  int differences = 0;
+  blender::Vector<std::string> checked;
+  for (const Section &section : native) {
+    const std::string key = section_key(section.header);
+    checked.append(key);
+    const Section *expected = baseline.lookup_ptr(key);
+    if (expected == nullptr) {
+      printf("SOBRA   %s (no esta en la linea base)\n", section.header.c_str());
+      differences++;
+      continue;
+    }
+    if (expected->header != section.header) {
+      printf("CUENTA  %s\n  esperado: %s\n", section.header.c_str(), expected->header.c_str());
+      differences++;
+    }
+    const int64_t n = std::max(expected->lines.size(), section.lines.size());
+    for (const int64_t i : blender::IndexRange(n)) {
+      const std::string *a = i < expected->lines.size() ? &expected->lines[i] : nullptr;
+      const std::string *b = i < section.lines.size() ? &section.lines[i] : nullptr;
+      if (a != nullptr && b != nullptr && *a == *b) {
+        continue;
+      }
+      printf("DIFIERE %s linea %d\n  python: %s\n  nativo: %s\n",
+             key.c_str(),
+             int(i + 1),
+             a != nullptr ? a->c_str() : "(no hay)",
+             b != nullptr ? b->c_str() : "(no hay)");
+      differences++;
+    }
+  }
+
+  int pending = 0;
+  for (const std::string &key : baseline_order) {
+    if (!checked.contains(key)) {
+      pending++;
+    }
+  }
+
+  printf("\nHerramientas: %d secciones comprobadas, %d diferencias, %d secciones sin trasladar.\n",
+         int(checked.size()),
+         differences,
+         pending);
+  if (pending != 0) {
+    printf("Pendientes:\n");
+    for (const std::string &key : baseline_order) {
+      if (!checked.contains(key)) {
+        printf("  %s\n", key.c_str());
+      }
+    }
+  }
+
+  /* La deuda de ajustes se lista aqui a proposito: es la unica parte de la migracion
+   * que la linea base NO puede detectar, porque no incluye los ajustes. Si no saliera
+   * por aqui, se perderia sin que nada avisara. */
+  const blender::Vector<blender::StringRefNull> pending_settings = settings_pending_list();
+  if (!pending_settings.is_empty()) {
+    printf("\nAjustes sin trasladar (%d herramientas):\n", int(pending_settings.size()));
+    for (const blender::StringRefNull idname : pending_settings) {
+      printf("  %s\n", idname.c_str());
+    }
+  }
+
+  return differences == 0;
+}
+
+/** \} */
+
+}  // namespace flipendo::toolsystem

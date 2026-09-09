@@ -33,6 +33,18 @@ struct wmKeyMap;
 
 namespace flipendo::toolsystem {
 
+/**
+ * `Span` de una tabla escrita como array de C.
+ *
+ * `blender::Span` no se construye sola desde un array literal, y el catalogo son
+ * cientos de tablas cortas. Sin esto cada una tendria que repetir el tamano a mano,
+ * que es justo la clase de dato duplicado que acaba desincronizandose.
+ */
+template<typename T, size_t N> constexpr blender::Span<T> span(const T (&array)[N])
+{
+  return blender::Span<T>(array, int64_t(N));
+}
+
 /* -------------------------------------------------------------------- */
 /** \name Ajustes de la herramienta, en forma de datos
  *
@@ -51,6 +63,9 @@ enum class PropSource {
   ToolSettings,
   /** `context.scene.tool_settings.<sub>`. */
   ToolSettingsSub,
+  /** `context.preferences.edit`. Lo usa el borrador de anotaciones, que todavia
+   * guarda su radio en las preferencias y no en `tool_settings`. */
+  PreferencesEdit,
 };
 
 enum PropRowFlag {
@@ -61,6 +76,10 @@ enum PropRowFlag {
   PROP_ROW_NO_TEXT = 1 << 2,
   /** Solo se dibuja en el popover "extra" del topbar, no en la cabecera. */
   PROP_ROW_EXTRA_ONLY = 1 << 3,
+  /** `icon_only=True`: se pintan solo los iconos de la enumeracion. */
+  PROP_ROW_ICON_ONLY = 1 << 4,
+  /** `slider=True`. */
+  PROP_ROW_SLIDER = 1 << 5,
 };
 
 struct PropRow {
@@ -163,6 +182,17 @@ struct ToolDecl {
   /** La via de codigo: las 6 que no caben en filas. */
   DrawSettingsFn draw_settings = nullptr;
   DrawCursorFn draw_cursor = nullptr;
+
+  /**
+   * Marca TEMPORAL: la herramienta tiene ajustes en el Python que todavia no se han
+   * trasladado, porque dependen de algo que aun no es nativo.
+   *
+   * Existe para que la deuda no se pierda: un `draw_settings` a `nullptr` es
+   * indistinguible de "no tiene ajustes", y esa es exactamente la forma en que se
+   * pierden capacidades sin que nadie se entere. El volcado la lista en cada
+   * verificacion y la fase de dibujo comprueba que no quede ninguna puesta.
+   */
+  bool settings_pending = false;
 };
 
 /** \} */
@@ -192,6 +222,16 @@ struct ModeTools {
   blender::Span<ToolEntry> entries;
 };
 
+/**
+ * De donde sale el modo activo de un espacio.
+ *
+ * No hay un sitio comun: la vista 3D usa `context.mode`, el editor de imagen
+ * `space_data.mode`, el de secuencias `space_data.view_type` y el de nodos
+ * `space_data.tree_type`. Devuelve `nullptr` si no hay espacio o si el espacio no
+ * tiene modos.
+ */
+using ModeFromContextFn = const char *(*)(const bContext *C);
+
 /** Una barra de herramientas: un espacio con sus modos. */
 struct ToolbarDecl {
   /** `SPACE_VIEW3D`, `SPACE_IMAGE`... */
@@ -200,8 +240,45 @@ struct ToolbarDecl {
   const char *keymap_prefix = nullptr;
   /** Herramienta que se usa como reserva por defecto. */
   const char *tool_fallback_id = nullptr;
+  ModeFromContextFn mode_from_context = nullptr;
+  /**
+   * Entradas por modo.
+   *
+   * La entrada con `mode == nullptr` son las herramientas COMUNES del espacio, y van
+   * siempre delante de las del modo activo. Un espacio sin modos (hoy solo el de
+   * nodos) tiene unicamente esa.
+   *
+   * Ojo con reproducir el Python literalmente aqui: alli las dos listas salen de
+   * `(cls._tools[None], cls._tools.get(mode, ()))`, asi que en un espacio sin modos y
+   * con `mode=None` se recorre LA MISMA lista dos veces y el catalogo sale duplicado.
+   * Buscando la entrada del modo por nombre eso no puede pasar, porque `nullptr` no
+   * casa con ningun modo. Ver tests/flipendo/toolsystem/README.md.
+   */
   blender::Span<ModeTools> modes;
 };
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name El catalogo
+ * \{ */
+
+/** Todas las barras declaradas, una por espacio. */
+blender::Span<const ToolbarDecl *> toolbars_all();
+
+/** La barra de un espacio, o `nullptr` si ese espacio no tiene herramientas. */
+const ToolbarDecl *toolbar_for_space(int space_type);
+
+/**
+ * Aplana las herramientas de un espacio y un modo DADOS, sin mirar en que espacio
+ * esta el contexto. Es lo que necesita el volcado para recorrer el catalogo entero, y
+ * la base sobre la que `tools_for_context` resuelve el modo.
+ *
+ * `mode` a `nullptr` devuelve solo las comunes.
+ */
+blender::Vector<const ToolDecl *> tools_for_space_mode(const bContext *C,
+                                                       const ToolbarDecl &toolbar,
+                                                       const char *mode);
 
 /** \} */
 
@@ -262,6 +339,15 @@ bool activate_by_id_or_cycle(bContext *C,
  */
 int group_active_get(int space_type, blender::StringRefNull group_leader_idname);
 void group_active_set(int space_type, blender::StringRefNull group_leader_idname, int index);
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Deuda pendiente
+ * \{ */
+
+/** Los idnames de las herramientas con `settings_pending`, en orden de catalogo. */
+blender::Vector<blender::StringRefNull> settings_pending_list();
 
 /** \} */
 

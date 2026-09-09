@@ -65,6 +65,7 @@
 #  include "WM_api.hh"
 
 #  include "FL_keymap_dump.hpp"
+#  include "toolsystem/FL_toolsystem_dump.hpp"
 
 /* for passing information between creator and gameengine */
 #  ifdef WITH_GAMEENGINE
@@ -2535,6 +2536,38 @@ static int arg_handle_fl_check_keymap(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_dump_tools_doc[] =
+    "<filepath>\n"
+    "\tVuelca el catalogo NATIVO de herramientas y sale.\n"
+    "\tSe compara con tests/flipendo/toolsystem/baseline-python.txt.";
+static int arg_handle_fl_dump_tools(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::toolsystem::dump_native(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_tools_doc[] =
+    "<baseline>\n"
+    "\tCompara el catalogo nativo de herramientas contra una linea base y sale.\n"
+    "\tSolo compara las secciones ya trasladadas; lista aparte las que faltan.";
+static int arg_handle_fl_check_tools(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::toolsystem::check_native(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_python_expr_run_doc[] =
     "<expression>\n"
     "\tRun the given expression as a Python script.";
@@ -3069,6 +3102,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-dump-keymap", CB(arg_handle_fl_dump_keymap), C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap-native", CB(arg_handle_fl_dump_keymap_native), C);
   BLI_args_add(ba, nullptr, "--fl-check-keymap", CB(arg_handle_fl_check_keymap), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-tools", CB(arg_handle_fl_dump_tools), C);
+  BLI_args_add(ba, nullptr, "--fl-check-tools", CB(arg_handle_fl_check_tools), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);
