@@ -20,6 +20,7 @@ set(INC_SYS
 
 set(SRC
   intern/fl_keymap_dump.cc
+  intern/wm_context_ops.cc
   keymap/fl_keymap_build.cc
   keymap/fl_keymap_params.cc
   keymap/fl_keymap_default.cc

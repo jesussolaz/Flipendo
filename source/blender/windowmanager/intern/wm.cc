@@ -39,8 +39,6 @@
 
 #include "WM_api.hh"
 
-#include <cstdio>
-
 #include "keymap/FL_keymap_default.hpp"
 #include "WM_keymap.hh"
 #include "WM_message.hh"
@@ -468,10 +466,17 @@ void WM_keyconfig_init(bContext *C)
     wm->userconf = WM_keyconfig_new(wm, WM_KEYCONFIG_STR_DEFAULT " user", false);
   }
 
-  /* El keymap por defecto ya es C++, pero TODAVIA se apoya en operadores que siguen
-   * en Python (la familia `wm.context_*` y el sistema de herramientas). Por eso se
-   * conserva la espera: construirlo antes deja atajos sin sus propiedades. La guarda
-   * se retira cuando esos operadores sean nativos. */
+  /* Esta guarda NO es "espera a Python", aunque lo parezca por como esta escrita:
+   * es "espera a la fase tardia del arranque". WM_keyconfig_init se llama dos veces,
+   * y en la primera todavia no se han registrado los operadores MACRO
+   * (ED_spacemacros_init, wm_init_exit.cc:316) ni los de Python. Construir el keymap
+   * ahi deja sin propiedades a los atajos que los usan -- se midio: 502 lineas de
+   * diferencia, casi todas de MESH_OT_/NODE_OT_/OBJECT_OT_.
+   *
+   * CTX_py_init_get resulta ser cierto justo en la segunda llamada, asi que sirve de
+   * marca de fase. Es una casualidad util, no un diseno: cuando el editor no ejecute
+   * Python habra que sustituirla por una marca de fase explicita, no simplemente
+   * borrarla. */
   if (CTX_py_init_get(C) && (wm->init_flag & WM_INIT_FLAG_KEYCONFIG) == 0) {
     /* Create default key config, only initialize once,
      * it's persistent across sessions. */

@@ -4160,8 +4160,32 @@ static void WM_OT_stereo3d_set(wmOperatorType *ot)
 /** \name Operator Registration & Keymaps
  * \{ */
 
+/* Definidos en wm_context_ops.cc (transliterados de bl_operators/wm.py). */
+void WM_OT_context_toggle(wmOperatorType *ot);
+void WM_OT_context_set_boolean(wmOperatorType *ot);
+void WM_OT_context_set_int(wmOperatorType *ot);
+void WM_OT_context_set_float(wmOperatorType *ot);
+void WM_OT_context_set_string(wmOperatorType *ot);
+void WM_OT_context_set_enum(wmOperatorType *ot);
+void WM_OT_context_toggle_enum(wmOperatorType *ot);
+void WM_OT_context_cycle_int(wmOperatorType *ot);
+void WM_OT_context_cycle_enum(wmOperatorType *ot);
+void WM_OT_context_scale_float(wmOperatorType *ot);
+void WM_OT_context_scale_int(wmOperatorType *ot);
+
 void wm_operatortypes_register()
 {
+  WM_operatortype_append(WM_OT_context_toggle);
+  WM_operatortype_append(WM_OT_context_set_boolean);
+  WM_operatortype_append(WM_OT_context_set_int);
+  WM_operatortype_append(WM_OT_context_set_float);
+  WM_operatortype_append(WM_OT_context_set_string);
+  WM_operatortype_append(WM_OT_context_set_enum);
+  WM_operatortype_append(WM_OT_context_toggle_enum);
+  WM_operatortype_append(WM_OT_context_cycle_int);
+  WM_operatortype_append(WM_OT_context_cycle_enum);
+  WM_operatortype_append(WM_OT_context_scale_float);
+  WM_operatortype_append(WM_OT_context_scale_int);
   WM_operatortype_append(WM_OT_window_close);
   WM_operatortype_append(WM_OT_window_new);
   WM_operatortype_append(WM_OT_window_new_main);
