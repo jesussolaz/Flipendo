@@ -28,6 +28,7 @@
 
 struct bContext;
 struct bToolRef;
+struct StructRNA;
 struct uiLayout;
 struct wmKeyMap;
 
@@ -205,6 +206,37 @@ struct ToolDecl {
  * dentro de la lista de un modo, y deciden si el bloque se muestra. */
 using ToolPollFn = bool (*)(const bContext *C);
 
+/**
+ * Herramientas GENERADAS de una enumeracion RNA.
+ *
+ * `generate_from_enum_ex` del Python, que se usa en un unico sitio: los siete pinceles
+ * del modo de particulas, sacados de `ParticleEdit.tool`. Se genera en vez de
+ * escribirse a mano para que siga la enumeracion si esta cambia; una tabla copiada se
+ * quedaria desincronizada en silencio.
+ *
+ * Ojo con la enumeracion, que usa sus dos campos para cosas distintas:
+ *
+ *     idname     = idname_prefix + enum.name         -> "builtin_brush.Comb"
+ *     label      = enum.name                         -> "Comb"
+ *     icon       = icon_prefix + lower(identifier)   -> "brush.particle.comb"
+ *     data_block = enum.identifier                   -> "COMB"
+ *
+ * Confundir `name` con `identifier` da idnames que no existen, y el viaje de ida y
+ * vuelta con el pincel activo deja de funcionar.
+ */
+struct EnumToolsDecl {
+  const char *idname_prefix = nullptr;
+  const char *icon_prefix = nullptr;
+  /** El struct RNA que tiene la propiedad. Se pasa como funcion para no obligar a
+   * incluir RNA_prototypes.hh en cada tabla del catalogo. */
+  StructRNA *(*type_fn)() = nullptr;
+  const char *attr = nullptr;
+  int options = 0;
+  const char *cursor = "DEFAULT";
+  /** Los elementos vacios de la enumeracion son separadores de la barra. */
+  bool use_separators = true;
+};
+
 /** Una entrada de la barra: una herramienta suelta, un grupo con ciclo, o un
  * separador. */
 struct ToolEntry {
@@ -213,6 +245,8 @@ struct ToolEntry {
   blender::Span<const ToolDecl *> tools;
   /** Si esta puesto y devuelve false, la entrada no se muestra. */
   ToolPollFn poll = nullptr;
+  /** Si esta puesto, las herramientas salen de una enumeracion RNA en vez de `tools`. */
+  const EnumToolsDecl *generated = nullptr;
 };
 
 /** Las entradas de un modo concreto de un espacio. */

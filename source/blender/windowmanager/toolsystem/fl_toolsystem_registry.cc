@@ -12,11 +12,14 @@
  * FL_toolsystem.hpp.
  */
 
+#include <cctype>
 #include <cstring>
+#include <memory>
 #include <string>
 
 #include "BKE_context.hh"
 
+#include "BLI_index_range.hh"
 #include "BLI_map.hh"
 #include "BLI_string.h"
 #include "BLI_utildefines.h"
@@ -27,6 +30,7 @@
 #include "DNA_windowmanager_types.h"
 
 #include "RNA_access.hh"
+#include "RNA_prototypes.hh"
 #include "RNA_enum_types.hh"
 
 #include "WM_api.hh"
@@ -62,6 +66,109 @@ const ToolbarDecl *toolbar_for_space(const int space_type)
 }
 
 /**
+ * Las herramientas de una enumeracion RNA, generadas una sola vez.
+ *
+ * El resultado se cachea porque la API devuelve punteros a `ToolDecl`, y esos tienen
+ * que seguir siendo validos despues de volver. La reserva EXACTA de los dos vectores
+ * es la que lo garantiza: si crecieran, moverian su contenido y los punteros — y los
+ * `c_str()` de los idnames — se quedarian colgando.
+ */
+struct GeneratedTools {
+  /** Dos por herramienta: su idname y su icono, que son los unicos campos calculados.
+   * El resto apunta a las cadenas de la enumeracion RNA, que viven para siempre. */
+  blender::Vector<std::string> strings;
+  blender::Vector<ToolDecl> tools;
+  blender::Vector<const ToolDecl *> pointers;
+};
+
+static blender::Span<const ToolDecl *> generated_tools(const EnumToolsDecl &decl)
+{
+  static blender::Map<const EnumToolsDecl *, std::unique_ptr<GeneratedTools>> cache;
+
+  if (const std::unique_ptr<GeneratedTools> *found = cache.lookup_ptr(&decl)) {
+    return (*found)->pointers;
+  }
+
+  auto generated = std::make_unique<GeneratedTools>();
+
+  StructRNA *srna = decl.type_fn != nullptr ? decl.type_fn() : nullptr;
+  PropertyRNA *prop = srna != nullptr ? RNA_struct_type_find_property(srna, decl.attr) : nullptr;
+  if (prop == nullptr) {
+    fprintf(stderr,
+            "Herramientas: no existe la propiedad '%s' de la que generar '%s*'.\n",
+            decl.attr != nullptr ? decl.attr : "(null)",
+            decl.idname_prefix != nullptr ? decl.idname_prefix : "");
+    GeneratedTools *raw = generated.get();
+    cache.add_new(&decl, std::move(generated));
+    return raw->pointers;
+  }
+
+  const EnumPropertyItem *items = nullptr;
+  int items_num = 0;
+  RNA_property_enum_items_ex(nullptr, nullptr, prop, !decl.use_separators, &items, &items_num, nullptr);
+
+  /* Primero se cuenta, para reservar exacto. Ver el comentario de GeneratedTools. */
+  int keep_num = 0;
+  for (const int i : blender::IndexRange(items_num)) {
+    const EnumPropertyItem &item = items[i];
+    if (decl.use_separators) {
+      if (item.name == nullptr || item.name[0] == '\0') {
+        /* Separador de la barra: no es una herramienta. */
+        continue;
+      }
+      if (item.identifier == nullptr || item.identifier[0] == '\0') {
+        /* Encabezado: no se muestra. */
+        continue;
+      }
+    }
+    keep_num++;
+  }
+  generated->strings.reserve(keep_num * 2);
+  generated->tools.reserve(keep_num);
+  generated->pointers.reserve(keep_num);
+
+  for (const int i : blender::IndexRange(items_num)) {
+    const EnumPropertyItem &item = items[i];
+    if (decl.use_separators) {
+      if (item.name == nullptr || item.name[0] == '\0') {
+        continue;
+      }
+      if (item.identifier == nullptr || item.identifier[0] == '\0') {
+        continue;
+      }
+    }
+
+    /* El icono es el IDENTIFICADOR en minusculas; el idname, el NOMBRE. No son lo
+     * mismo: 'COMB' da el icono 'brush.particle.comb' y el idname
+     * 'builtin_brush.Comb'. */
+    std::string icon = std::string(decl.icon_prefix);
+    for (const char *c = item.identifier; *c != '\0'; c++) {
+      icon += char(tolower(*c));
+    }
+
+    generated->strings.append(std::string(decl.idname_prefix) + item.name);
+    generated->strings.append(std::move(icon));
+
+    ToolDecl tool{};
+    tool.idname = generated->strings[generated->strings.size() - 2].c_str();
+    tool.label = item.name;
+    tool.description = item.description;
+    tool.icon = generated->strings.last().c_str();
+    tool.cursor = decl.cursor;
+    tool.data_block = item.identifier;
+    tool.options = decl.options;
+    generated->tools.append(tool);
+  }
+  for (ToolDecl &tool : generated->tools) {
+    generated->pointers.append(&tool);
+  }
+
+  GeneratedTools *raw = generated.get();
+  cache.add_new(&decl, std::move(generated));
+  return raw->pointers;
+}
+
+/**
  * Anade a `out` las herramientas de una lista de entradas.
  *
  * Aplanar aqui es exactamente lo que hace `_tools_flatten` del Python: una entrada con
@@ -75,6 +182,12 @@ static void entries_flatten(const bContext *C,
 {
   for (const ToolEntry &entry : entries) {
     if (entry.poll != nullptr && !entry.poll(C)) {
+      continue;
+    }
+    if (entry.generated != nullptr) {
+      for (const ToolDecl *tool : generated_tools(*entry.generated)) {
+        out.append(tool);
+      }
       continue;
     }
     for (const ToolDecl *tool : entry.tools) {
