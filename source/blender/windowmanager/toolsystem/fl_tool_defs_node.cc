@@ -14,7 +14,7 @@
 
 #include "BLT_translation.hh"
 
-#include "fl_tool_defs.hh"
+#include "fl_tool_defs_node.hh"
 
 namespace flipendo::toolsystem {
 

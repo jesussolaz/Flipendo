@@ -21,7 +21,7 @@
 
 #include "BLT_translation.hh"
 
-#include "fl_tool_defs.hh"
+#include "fl_tool_defs_annotate.hh"
 
 namespace flipendo::toolsystem::defs_annotate {
 

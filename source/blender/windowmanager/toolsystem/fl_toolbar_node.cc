@@ -12,7 +12,9 @@
 
 #include "DNA_space_types.h"
 
-#include "fl_tool_defs.hh"
+#include "fl_tool_defs_annotate.hh"
+#include "fl_tool_defs_node.hh"
+#include "fl_toolbar_node.hh"
 
 namespace flipendo::toolsystem {
 

@@ -5,16 +5,19 @@
 /** \file
  * \ingroup wm
  *
- * Declaraciones de las herramientas del catalogo, para uso interno del subsistema.
+ * Indice de las declaraciones de herramientas del catalogo.
  *
  * Un espacio a menudo usa herramientas definidas "para otro" — las de anotacion salen
- * en los cuatro — asi que las definiciones viven aqui, en espacios de nombres que
- * corresponden uno a uno con las clases `_defs_*` del Python
+ * en los cuatro — asi que las definiciones viven en ficheros por familia, en espacios
+ * de nombres que corresponden uno a uno con las clases `_defs_*` del Python
  * (`scripts/startup/bl_ui/space_toolsystem_toolbar.py`), y las barras de cada espacio
  * solo las referencian.
  *
  * Mantener la correspondencia de nombres no es cosmetico: es lo que permite revisar
  * una herramienta abriendo el Python al lado y comparar linea a linea.
+ *
+ * Este fichero no declara nada por su cuenta; solo reune las cabeceras para quien
+ * necesite el catalogo entero.
  */
 
 #ifndef __FL_TOOL_DEFS_HH__
@@ -22,37 +25,24 @@
 
 #include "FL_toolsystem.hpp"
 
-namespace flipendo::toolsystem {
+#include "fl_tool_defs_annotate.hh"
+#include "fl_tool_defs_edit_mesh.hh"
+#include "fl_tool_defs_edit_misc.hh"
+#include "fl_tool_defs_grease_pencil_misc.hh"
+#include "fl_tool_defs_grease_pencil_paint.hh"
+#include "fl_tool_defs_image_uv.hh"
+#include "fl_tool_defs_node.hh"
+#include "fl_tool_defs_paint.hh"
+#include "fl_tool_defs_sculpt.hh"
+#include "fl_tool_defs_sequencer.hh"
+#include "fl_tool_defs_transform.hh"
+#include "fl_tool_defs_uv_curves_sculpt.hh"
+#include "fl_tool_defs_view3d.hh"
+#include "fl_tool_defs_view3d_add.hh"
 
-/** `_defs_annotate` del Python. Compartidas por vista 3D, imagen, nodos y secuencias. */
-namespace defs_annotate {
-extern const ToolDecl scribble;
-extern const ToolDecl line;
-extern const ToolDecl poly;
-extern const ToolDecl eraser;
-}  // namespace defs_annotate
-
-/** `_defs_node_select`. */
-namespace defs_node_select {
-extern const ToolDecl select;
-extern const ToolDecl box;
-extern const ToolDecl lasso;
-extern const ToolDecl circle;
-}  // namespace defs_node_select
-
-/** `_defs_node_edit`. */
-namespace defs_node_edit {
-extern const ToolDecl links_cut;
-}  // namespace defs_node_edit
-
-/* -------------------------------------------------------------------- */
-/** \name Barras de cada espacio
- * \{ */
-
-extern const ToolbarDecl toolbar_node;
-
-/** \} */
-
-}  // namespace flipendo::toolsystem
+#include "fl_toolbar_image.hh"
+#include "fl_toolbar_node.hh"
+#include "fl_toolbar_sequencer.hh"
+#include "fl_toolbar_view3d.hh"
 
 #endif /* __FL_TOOL_DEFS_HH__ */

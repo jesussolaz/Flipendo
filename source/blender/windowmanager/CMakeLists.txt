@@ -24,8 +24,23 @@ set(SRC
   toolsystem/fl_toolsystem_registry.cc
   toolsystem/fl_toolsystem_dump.cc
   toolsystem/fl_tool_defs_annotate.cc
+  toolsystem/fl_tool_defs_edit_mesh.cc
+  toolsystem/fl_tool_defs_edit_misc.cc
+  toolsystem/fl_tool_defs_grease_pencil_misc.cc
+  toolsystem/fl_tool_defs_grease_pencil_paint.cc
+  toolsystem/fl_tool_defs_image_uv.cc
   toolsystem/fl_tool_defs_node.cc
+  toolsystem/fl_tool_defs_paint.cc
+  toolsystem/fl_tool_defs_sculpt.cc
+  toolsystem/fl_tool_defs_sequencer.cc
+  toolsystem/fl_tool_defs_transform.cc
+  toolsystem/fl_tool_defs_uv_curves_sculpt.cc
+  toolsystem/fl_tool_defs_view3d.cc
+  toolsystem/fl_tool_defs_view3d_add.cc
+  toolsystem/fl_toolbar_image.cc
   toolsystem/fl_toolbar_node.cc
+  toolsystem/fl_toolbar_sequencer.cc
+  toolsystem/fl_toolbar_view3d.cc
   keymap/fl_keymap_build.cc
   keymap/fl_keymap_params.cc
   keymap/fl_keymap_default.cc
@@ -103,6 +118,24 @@ set(SRC
   toolsystem/FL_toolsystem.hpp
   toolsystem/FL_toolsystem_dump.hpp
   toolsystem/fl_tool_defs.hh
+  toolsystem/fl_tool_defs_annotate.hh
+  toolsystem/fl_tool_defs_edit_mesh.hh
+  toolsystem/fl_tool_defs_edit_misc.hh
+  toolsystem/fl_tool_defs_grease_pencil_misc.hh
+  toolsystem/fl_tool_defs_grease_pencil_paint.hh
+  toolsystem/fl_tool_defs_image_uv.hh
+  toolsystem/fl_tool_defs_node.hh
+  toolsystem/fl_tool_defs_paint.hh
+  toolsystem/fl_tool_defs_sculpt.hh
+  toolsystem/fl_tool_defs_sequencer.hh
+  toolsystem/fl_tool_defs_transform.hh
+  toolsystem/fl_tool_defs_uv_curves_sculpt.hh
+  toolsystem/fl_tool_defs_view3d.hh
+  toolsystem/fl_tool_defs_view3d_add.hh
+  toolsystem/fl_toolbar_image.hh
+  toolsystem/fl_toolbar_node.hh
+  toolsystem/fl_toolbar_sequencer.hh
+  toolsystem/fl_toolbar_view3d.hh
   keymap/FL_keymap_build.hpp
   keymap/FL_keymap_params.hpp
   keymap/FL_keymap_default.hpp

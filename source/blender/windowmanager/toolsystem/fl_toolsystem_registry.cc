@@ -47,7 +47,10 @@ namespace flipendo::toolsystem {
 
 /* Una barra por espacio. El orden no importa: la busqueda es por `space_type`. */
 static const ToolbarDecl *g_toolbars[] = {
+    &toolbar_view3d,
+    &toolbar_image,
     &toolbar_node,
+    &toolbar_sequencer,
 };
 
 blender::Span<const ToolbarDecl *> toolbars_all()
@@ -103,9 +106,23 @@ static blender::Span<const ToolDecl *> generated_tools(const EnumToolsDecl &decl
     return raw->pointers;
   }
 
+  /* La tabla ESTATICA de la enumeracion, y ademas pedida como tal.
+   *
+   * El Python lee `enum_items_static_ui`, que por dentro pide los dinamicos... pero
+   * pasando contexto nulo, asi que la funcion del enum no puede correr y acaba cayendo
+   * en la misma tabla estatica. Pedirla directamente es equivalente y ademas es lo
+   * unico seguro aqui: por el camino dinamico, `RNA_property_enum_items_ex` desreferencia
+   * el `PointerRNA`, y aqui no hay ninguno que dar. `ParticleEdit.tool` SI tiene funcion
+   * de enum (`rna_ParticleEdit_tool_itemf`), asi que no es un caso hipotetico: pedirlo
+   * mal reventaba nada mas arrancar.
+   *
+   * La tabla estatica de la unica enumeracion en juego no lleva separadores ni
+   * encabezados, asi que el filtro de abajo no descarta nada hoy; esta para que siga
+   * siendo correcto si alguna vez los lleva. */
   const EnumPropertyItem *items = nullptr;
   int items_num = 0;
-  RNA_property_enum_items_ex(nullptr, nullptr, prop, !decl.use_separators, &items, &items_num, nullptr);
+  bool items_free = false;
+  RNA_property_enum_items_ex(nullptr, nullptr, prop, true, &items, &items_num, &items_free);
 
   /* Primero se cuenta, para reservar exacto. Ver el comentario de GeneratedTools. */
   int keep_num = 0;
@@ -162,6 +179,12 @@ static blender::Span<const ToolDecl *> generated_tools(const EnumToolsDecl &decl
   for (ToolDecl &tool : generated->tools) {
     generated->pointers.append(&tool);
   }
+
+  /* Las cadenas de `label`, `description` y `data_block` apuntan a los elementos, asi
+   * que si fueran temporales habria que copiarlas. Con la tabla estatica nunca lo son;
+   * la comprobacion esta por si eso cambia. */
+  BLI_assert(!items_free);
+  UNUSED_VARS_NDEBUG(items_free);
 
   GeneratedTools *raw = generated.get();
   cache.add_new(&decl, std::move(generated));
