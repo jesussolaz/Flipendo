@@ -123,3 +123,75 @@ de clase que sustituye.
 
 Se verifica contra `tests/flipendo/toolsystem/baseline-python.txt`, igual que el keymap
 contra el suyo.
+
+---
+
+## Lo verificado al empezar la fase 1
+
+### La línea base estaba mal, y por mi culpa
+
+La primera versión decía 425 entradas. El editor de nodos salía con sus 9 herramientas
+**dos veces**. El fallo no estaba en el catálogo sino en cómo lo enumeraba mi script:
+`tools_from_context` recorre `(cls._tools[None], cls._tools.get(mode, ()))`, y el editor
+de nodos no tiene modos — su tabla solo tiene la clave `None`. Preguntarle con
+`mode=None` recorre la misma lista dos veces.
+
+En uso real no pasa, porque allí el modo es `space_data.tree_type`, que nunca es clave.
+Corregido: **416 entradas, 30 combinaciones, 124 idnames**.
+
+La lección que queda en el código: un espacio sin modos **no se modela como "un modo
+llamado `None`"**. En `ToolbarDecl::modes` la lista común y la del modo son entradas
+distintas y la del modo se busca por nombre, así que la duplicación no puede repetirse.
+
+### El verificador se verificó al revés
+
+`--fl-check-tools` compara el catálogo nativo contra la línea base. Antes de confiar en
+su "0 diferencias" se le pasó una línea base alterada a propósito: la caza, señala la
+línea y devuelve código de salida 1. Un verificador que solo sabe decir que sí no
+verifica nada.
+
+Dos propiedades que no tenía el del keymap:
+
+- **Es incremental.** Compara solo las secciones ya trasladadas y lista aparte las que
+  faltan, así que sirve desde la primera herramienta en vez de dar rojo hasta el final.
+- **Corre en `--background`.** La generación con Python no puede: allí el campo `keymap`
+  sigue siendo un objeto función hasta que arranca el modo gráfico. En el catálogo
+  nativo es un literal. Eso lo hace apto para CI.
+
+### La deuda de ajustes no se puede perder sola
+
+`draw_settings` a `nullptr` es indistinguible de "esta herramienta no tiene ajustes".
+Así es exactamente como se pierde una capacidad sin que nadie se entere. Por eso existe
+`ToolDecl::settings_pending`: marca las que sí tienen ajustes en el Python pero aún no
+se han trasladado, y el verificador las lista en cada pasada. La fase de dibujo
+comprobará que no quede ninguna puesta.
+
+Las tres primeras son las de anotación, y el motivo es real, no pereza: dentro dibujan
+un popover al panel `TOPBAR_PT_annotation_layers`, que todavía es un panel de Python.
+Dependen de la migración de `bl_ui`, no de esta.
+
+### Generar en vez de copiar
+
+`generate_from_enum_ex` se usa en un solo sitio: los siete pinceles del modo de
+partículas, sacados de `ParticleEdit.tool`. Se generan desde la enumeración RNA en vez
+de copiarse a mano, porque una tabla copiada se desincroniza en silencio si la
+enumeración cambia.
+
+La enumeración usa sus dos campos para cosas distintas, y la línea base lo confirma:
+
+| campo | de dónde sale | ejemplo |
+|---|---|---|
+| `idname` | prefijo + `enum.name` | `builtin_brush.Comb` |
+| `icon` | prefijo + `identifier` en minúsculas | `brush.particle.comb` |
+| `data_block` | `enum.identifier` | `COMB` |
+
+Confundir `name` con `identifier` da idnames que no existen y rompe la sincronización
+con el pincel activo, que el motor lee y escribe.
+
+### Los siete `lambda` caben en el contrato
+
+Los filtros de contexto del Python son todos de la forma
+`lambda context: (herramientas) if poll(context) else ()`, que es exactamente
+`ToolEntry::poll`. El único matiz: un bloque filtrado puede contener varias entradas
+(cursor, separador y las de transformación, en `PAINT_WEIGHT`), y entonces el mismo
+filtro se repite en cada una, porque se aplica por entrada.
