@@ -62,9 +62,10 @@ Estado real, medido y verificable en el propio binario:
 | C mantenido (fuera de `extern/`) | **0 ficheros** |
 | Componentes de gameplay | **100% C++** (`FL_Component`; el sistema Python fue eliminado) |
 | Mapa de teclado por defecto | **248/248 keymaps en C++**, idénticos a los que generaba Python |
+| Catálogo de herramientas | **416/416 entradas en C++**, byte a byte idénticas (30 espacios y modos) — escrito y verificado; falta enchufarlo |
 | El build necesita Python | **no** (el último generador pasó a C++) |
 | Player sin CPython | **compila y juega** — 0 símbolos `_Py`, 536 MB frente a 771 MB |
-| Python restante | ~249.000 líneas, todas del editor |
+| Python restante | ~248.000 líneas, todas del editor |
 
 Lo que queda es el editor: paneles, operadores y el puente CPython. La infraestructura para migrarlo ya existe (`FL_ui_registry`) y el editor de lógica es el piloto que la valida.
 
@@ -115,6 +116,7 @@ La fila que más cambia el cálculo es la de add-ons: quitar Python **cuesta** e
 | Cierre del player con `ImageRender` activo | ❌ segfault | ✅ (use-after-free corregido) |
 | Componentes de gameplay | Python | ✅ C++ nativo |
 | Mapa de teclado | script de 8.669 líneas | ✅ C++, verificado atajo a atajo |
+| Catálogo de herramientas | script de 3.752 líneas | ✅ C++, verificado herramienta a herramienta |
 
 Todo verificado con capturas y tests en Metal — ver los mensajes de commit, que documentan cada verificación.
 
