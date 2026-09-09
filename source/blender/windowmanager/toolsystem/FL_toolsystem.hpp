@@ -157,8 +157,23 @@ struct ToolDecl {
    * que nada avisara. Ver politicas/TOOLSYSTEM-A-CPP.md.
    */
   const char *keymap_name = nullptr;
-  /** Keymap de la variante de reserva; normalmente `<keymap_name> (fallback)`. */
-  const char *keymap_fallback = nullptr;
+
+  /* NO hay campo `keymap_fallback`, y es a proposito.
+   *
+   * Tienta ponerlo, porque existe un keymap "<nombre> (fallback)" por cada herramienta.
+   * Pero no es un dato suyo, por dos motivos distintos:
+   *
+   *   1. El armazon registra ese keymap para TODO keymap de herramienta que sea una
+   *      cadena (`space_toolsystem_common.py:576`), sin que la herramienta diga nada.
+   *   2. Al activar, el nombre se arma en ejecucion a partir de la herramienta de
+   *      RESERVA del espacio (`:1039`), no de la que se esta activando. O sea que el
+   *      valor correcto para una herramienta ni siquiera depende de ella.
+   *
+   * Cuando existia el campo, dos de los doce que trasladaron el catalogo lo rellenaron
+   * con el nombre calculado de su propia herramienta. Los dos habrian estado mal, y
+   * nada lo habria detectado: el campo no sale en la linea base. Por eso se quita en
+   * vez de documentarse.
+   */
 
   /** Identificador del tipo de pincel al que se limita, si `TOOL_OPTION_USE_BRUSHES`. */
   const char *brush_type = nullptr;

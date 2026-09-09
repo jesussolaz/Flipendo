@@ -36,7 +36,6 @@ const ToolDecl cursor = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Preview Tool: Cursor",
-    /*keymap_fallback*/ "Preview Tool: Cursor (fallback)",
 };
 
 /* El unico ajuste es el tipo de corte del operador de division (blando o duro), en una
@@ -58,7 +57,6 @@ const ToolDecl blade = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Sequencer Tool: Blade",
-    /*keymap_fallback*/ "Sequencer Tool: Blade (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
@@ -82,7 +80,6 @@ const ToolDecl sample = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Preview Tool: Sample",
-    /*keymap_fallback*/ "Preview Tool: Sample (fallback)",
 };
 
 /* Las cuatro de transformacion son la version 2D de las de la vista 3D: mismos iconos y
@@ -99,7 +96,6 @@ const ToolDecl translate = {
     /*gizmo_group*/ "SEQUENCER_GGT_gizmo2d_translate",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Preview Tool: Move",
-    /*keymap_fallback*/ "Preview Tool: Move (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ "transform.translate",
@@ -115,7 +111,6 @@ const ToolDecl rotate = {
     /*gizmo_group*/ "SEQUENCER_GGT_gizmo2d_rotate",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Preview Tool: Rotate",
-    /*keymap_fallback*/ "Preview Tool: Rotate (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ "transform.rotate",
@@ -133,7 +128,6 @@ const ToolDecl scale = {
     /*gizmo_group*/ "SEQUENCER_GGT_gizmo2d_resize",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Preview Tool: Scale",
-    /*keymap_fallback*/ "Preview Tool: Scale (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ "transform.resize",
@@ -174,7 +168,6 @@ const ToolDecl select_preview = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Preview Tool: Tweak",
-    /*keymap_fallback*/ "Preview Tool: Tweak (fallback)",
 };
 
 /* Las dos cajas de seleccion pintan el mismo control - el modo de seleccion del
@@ -204,7 +197,6 @@ const ToolDecl box_timeline = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Sequencer Tool: Select Box",
-    /*keymap_fallback*/ "Sequencer Tool: Select Box (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
@@ -222,7 +214,6 @@ const ToolDecl box_preview = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "Preview Tool: Select Box",
-    /*keymap_fallback*/ "Preview Tool: Select Box (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,

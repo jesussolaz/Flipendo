@@ -65,7 +65,6 @@ const ToolDecl roll = {
     /*gizmo_group*/ "VIEW3D_GGT_tool_generic_handle_free",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Armature, Roll",
-    /*keymap_fallback*/ "3D View Tool: Edit Armature, Roll (fallback)",
 };
 
 const ToolDecl bone_envelope = {
@@ -78,7 +77,6 @@ const ToolDecl bone_envelope = {
     /*gizmo_group*/ "VIEW3D_GGT_tool_generic_handle_free",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Armature, Bone Envelope",
-    /*keymap_fallback*/ "3D View Tool: Edit Armature, Bone Envelope (fallback)",
 };
 
 const ToolDecl bone_size = {
@@ -91,7 +89,6 @@ const ToolDecl bone_size = {
     /*gizmo_group*/ "VIEW3D_GGT_tool_generic_handle_free",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Armature, Bone Size",
-    /*keymap_fallback*/ "3D View Tool: Edit Armature, Bone Size (fallback)",
 };
 
 const ToolDecl extrude = {
@@ -104,7 +101,6 @@ const ToolDecl extrude = {
     /*gizmo_group*/ "VIEW3D_GGT_xform_extrude",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Armature, Extrude",
-    /*keymap_fallback*/ "3D View Tool: Edit Armature, Extrude (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
@@ -125,7 +121,6 @@ const ToolDecl extrude_cursor = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Armature, Extrude to Cursor",
-    /*keymap_fallback*/ "3D View Tool: Edit Armature, Extrude to Cursor (fallback)",
 };
 
 }  // namespace defs_edit_armature
@@ -152,7 +147,6 @@ const ToolDecl draw = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Curve, Draw",
-    /*keymap_fallback*/ "3D View Tool: Edit Curve, Draw (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
@@ -173,7 +167,6 @@ const ToolDecl extrude = {
     /*gizmo_group*/ "VIEW3D_GGT_xform_extrude",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Curve, Extrude",
-    /*keymap_fallback*/ "3D View Tool: Edit Curve, Extrude (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
@@ -193,7 +186,6 @@ const ToolDecl extrude_cursor = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Curve, Extrude to Cursor",
-    /*keymap_fallback*/ "3D View Tool: Edit Curve, Extrude to Cursor (fallback)",
 };
 
 static const PropRow pen_settings[] = {
@@ -211,7 +203,6 @@ const ToolDecl pen = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Curve, Curve Pen",
-    /*keymap_fallback*/ "3D View Tool: Edit Curve, Curve Pen (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
@@ -231,7 +222,6 @@ const ToolDecl tilt = {
     /*gizmo_group*/ "VIEW3D_GGT_tool_generic_handle_free",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Curve, Tilt",
-    /*keymap_fallback*/ "3D View Tool: Edit Curve, Tilt (fallback)",
 };
 
 /* La reutilizan EDIT_CURVES y EDIT_GREASE_PENCIL; de ahi que su keymap diga "Edit
@@ -246,7 +236,6 @@ const ToolDecl curve_radius = {
     /*gizmo_group*/ "VIEW3D_GGT_tool_generic_handle_free",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Curve, Radius",
-    /*keymap_fallback*/ "3D View Tool: Edit Curve, Radius (fallback)",
 };
 
 static const PropRow curve_vertex_randomize_settings[] = {
@@ -265,7 +254,6 @@ const ToolDecl curve_vertex_randomize = {
     /*gizmo_group*/ "VIEW3D_GGT_tool_generic_handle_normal",
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Curve, Randomize",
-    /*keymap_fallback*/ "3D View Tool: Edit Curve, Randomize (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
@@ -299,7 +287,6 @@ const ToolDecl draw = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Curves, Draw",
-    /*keymap_fallback*/ "3D View Tool: Edit Curves, Draw (fallback)",
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
@@ -332,7 +319,6 @@ const ToolDecl select_text = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Edit Text, Select Text",
-    /*keymap_fallback*/ "3D View Tool: Edit Text, Select Text (fallback)",
 };
 
 }  // namespace defs_edit_text
@@ -357,7 +343,6 @@ const ToolDecl breakdown = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Pose, Breakdowner",
-    /*keymap_fallback*/ "3D View Tool: Pose, Breakdowner (fallback)",
 };
 
 const ToolDecl push = {
@@ -370,7 +355,6 @@ const ToolDecl push = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Pose, Push",
-    /*keymap_fallback*/ "3D View Tool: Pose, Push (fallback)",
 };
 
 const ToolDecl relax = {
@@ -383,7 +367,6 @@ const ToolDecl relax = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ "3D View Tool: Pose, Relax",
-    /*keymap_fallback*/ "3D View Tool: Pose, Relax (fallback)",
 };
 
 }  // namespace defs_pose

@@ -60,7 +60,6 @@ static const ToolDecl brush_tool = {
     /*gizmo_group*/ nullptr,
     /*gizmo_properties*/ {},
     /*keymap_name*/ nullptr,
-    /*keymap_fallback*/ nullptr,
     /*brush_type*/ nullptr,
     /*data_block*/ nullptr,
     /*op*/ nullptr,
