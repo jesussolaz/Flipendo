@@ -2,6 +2,13 @@ url=blender.org -> https://blender.org?utm_source=blender-4.5.0-alpha
 url=https://blender.org/path -> https://blender.org/path?utm_source=blender-4.5.0-alpha
 url=https://www.blender.org/path?a=1&utm_source=old&b=two%20words#frag -> https://www.blender.org/path?a=1&utm_source=blender-4.5.0-alpha&b=two+words#frag
 url=https://example.com/?x=1 -> https://example.com/?x=1
+preset=1 -> https://www.blender.org/download/releases/4-5/?utm_source=blender-4.5.0-alpha
+preset=2 -> https://docs.blender.org/manual/en/4.5/?utm_source=blender-4.5.0-alpha
+preset=3 -> https://docs.blender.org/api/4.5/?utm_source=blender-4.5.0-alpha
+preset=4 -> https://fund.blender.org?utm_source=blender-4.5.0-alpha
+preset=5 -> https://www.blender.org?utm_source=blender-4.5.0-alpha
+preset=6 -> https://www.blender.org/about/credits/?utm_source=blender-4.5.0-alpha
+preset=7 -> https://extensions.blender.org/?utm_source=blender-4.5.0-alpha
 doc=Object -> https://docs.blender.org/api/4.5/bpy.types.Object.html
 doc=Object.location -> https://docs.blender.org/api/4.5/bpy.types.Object.html#bpy.types.Object.location
 doc=Object.name -> https://docs.blender.org/api/4.5/bpy.types.ID.html#bpy.types.ID.name

@@ -27,6 +27,11 @@ al lanzador con un argumento separado.
 operadores en sintaxis Python o `SOME_OT_name`, sube hasta la clase que declaró una
 propiedad heredada y conserva el destino genérico de propiedades personalizadas.
 
+`wm.url_open_preset` publica los mismos ocho destinos mediante un enum RNA dinámico.
+Las URL dependientes de versión se construyen con `BLENDER_VERSION`; el manual respeta
+el idioma activo, y el informe de error incorpora la versión de macOS, el backend GPU y
+los datos de compilación antes de pasar por la misma normalización segura de URL.
+
 ## Verificación
 
 El contrato general sigue congelado en
@@ -35,18 +40,21 @@ El contrato general sigue congelado en
 líneas, 3.406.563 bytes).
 
 `--fl-selftest-wm-system-ops` compara contra
-`tests/flipendo/operators/system-python.txt`: cuatro normalizaciones de URL, ocho
-resoluciones de documentación y las ramas sin efectos externos de `wm.path_open`.
+`tests/flipendo/operators/system-python.txt`: cuatro normalizaciones de URL, los siete
+presets que no abren un informe dependiente de una GPU gráfica, ocho resoluciones de
+documentación y las ramas sin efectos externos de `wm.path_open`.
 La línea base se obtuvo del `Blender-python.app` congelado antes de retirar las clases.
 
 ## Estado y deuda explícita
 
-Son nativos `wm.url_open`, `wm.path_open` y `wm.doc_view`.
+Son nativos `wm.url_open`, `wm.url_open_preset`, `wm.path_open` y `wm.doc_view`.
 
-Quedan dos piezas relacionadas que no se deben borrar a medias:
+El antiguo `preset_items` de la clase Python era mutable, pero no existe en el árbol
+ningún consumidor que lo ampliase. El contrato efectivo son los ocho valores expuestos
+por el callback RNA nativo; el volcado sigue observando un enum dinámico, igual que antes.
 
-- `wm.url_open_preset`: sus ocho destinos incluyen el informe de error con datos de
-  plataforma/GPU y el enum era ampliable modificando la clase Python.
+Queda una pieza relacionada que no se debe borrar a medias:
+
 - `wm.doc_view_manual`: consulta 4.253 patrones generados en
   `rna_manual_reference.py` y también mapas registrados por extensiones mediante
   `bpy.utils.register_manual_map`. Migrar sólo el operador dejando esa consulta en

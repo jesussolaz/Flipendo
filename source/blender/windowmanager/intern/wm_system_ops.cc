@@ -17,6 +17,7 @@
 #include <optional>
 #include <spawn.h>
 #include <string>
+#include <sys/sysctl.h>
 #include <sys/wait.h>
 #include <utility>
 #include <vector>
@@ -25,6 +26,9 @@
 #include "BLI_path_utils.hh"
 #include "BLI_string.h"
 
+#include "BLT_lang.hh"
+#include "BLT_translation.hh"
+
 #include "BKE_blender_version.h"
 #include "BKE_context.hh"
 #include "BKE_main.hh"
@@ -32,6 +36,10 @@
 
 #include "RNA_access.hh"
 #include "RNA_define.hh"
+#include "RNA_enum_types.hh"
+
+#include "GPU_context.hh"
+#include "GPU_platform.hh"
 
 #include "WM_api.hh"
 #include "WM_types.hh"
@@ -39,6 +47,10 @@
 #include "FL_operator_dump.hpp"
 
 extern char **environ;
+extern "C" char build_commit_date[];
+extern "C" char build_commit_time[];
+extern "C" char build_hash[];
+extern "C" char build_branch[];
 
 namespace {
 
@@ -268,6 +280,142 @@ std::string complete_url(std::string url)
   return base + '?' + build_query(query) + fragment;
 }
 
+std::string manual_language_code()
+{
+  static const std::pair<const char *, const char *> languages[] = {
+      {"ar_EG", "ar"}, {"ca_AD", "ca"}, {"de_DE", "de"}, {"el_GR", "el"},
+      {"es", "es"},    {"fi_FI", "fi"}, {"fr_FR", "fr"}, {"id_ID", "id"},
+      {"it_IT", "it"}, {"ja_JP", "ja"}, {"ko_KR", "ko"}, {"nl_NL", "nl"},
+      {"pt_PT", "pt"}, {"pt_BR", "pt"}, {"ru_RU", "ru"}, {"sk_SK", "sk"},
+      {"sr_RS", "sr"}, {"th_TH", "th"}, {"uk_UA", "uk"}, {"vi_VN", "vi"},
+      {"zh_HANS", "zh-hans"},
+      {"zh_HANT", "zh-hant"},
+  };
+  const char *locale = BLT_lang_get();
+  for (const auto &[identifier, manual_code] : languages) {
+    if (STREQ(locale, identifier)) {
+      return manual_code;
+    }
+  }
+  return "en";
+}
+
+std::string macos_platform_string()
+{
+  char version[128] = "unknown";
+  size_t version_size = sizeof(version);
+  if (sysctlbyname("kern.osproductversion", version, &version_size, nullptr, 0) != 0) {
+    STRNCPY(version, "unknown");
+  }
+  return "macOS-" + std::string(version) + "-x86_64-i386-64bit";
+}
+
+std::string bug_report_url()
+{
+  std::vector<QueryValue> query = {
+      {"type", {"bug_report"}},
+      {"project", {"blender"}},
+      {"os", {macos_platform_string() + " 64 Bits"}},
+      {"gpu",
+       {std::string(GPU_platform_renderer()) + " " + GPU_platform_vendor() + " " +
+        GPU_platform_version()}},
+      {"broken_version",
+       {std::string(BKE_blender_version_string()) + ", branch: " + build_branch +
+        ", commit date: " + build_commit_date + " " + build_commit_time + ", hash: `" +
+        build_hash + "`"}},
+  };
+  return "https://redirect.blender.org/?" + build_query(query);
+}
+
+enum UrlPreset {
+  URL_PRESET_BUG = 0,
+  URL_PRESET_RELEASE_NOTES,
+  URL_PRESET_MANUAL,
+  URL_PRESET_API,
+  URL_PRESET_FUND,
+  URL_PRESET_BLENDER,
+  URL_PRESET_CREDITS,
+  URL_PRESET_EXTENSIONS,
+};
+
+static const EnumPropertyItem url_preset_items[] = {
+    {URL_PRESET_BUG, "BUG", 0, N_("Bug"), N_("Report a bug with pre-filled version information")},
+    {URL_PRESET_RELEASE_NOTES,
+     "RELEASE_NOTES",
+     0,
+     N_("Release Notes"),
+     N_("Read about what's new in this version of Blender")},
+    {URL_PRESET_MANUAL,
+     "MANUAL",
+     0,
+     N_("User Manual"),
+     N_("The reference manual for this version of Blender")},
+    {URL_PRESET_API,
+     "API",
+     0,
+     N_("Python API Reference"),
+     N_("The API reference manual for this version of Blender")},
+    {URL_PRESET_FUND,
+     "FUND",
+     0,
+     N_("Development Fund"),
+     N_("The donation program to support maintenance and improvements")},
+    {URL_PRESET_BLENDER,
+     "BLENDER",
+     0,
+     "blender.org",
+     N_("Blender's official web-site")},
+    {URL_PRESET_CREDITS,
+     "CREDITS",
+     0,
+     N_("Credits"),
+     N_("Lists committers to Blender's source code")},
+    {URL_PRESET_EXTENSIONS,
+     "EXTENSIONS",
+     0,
+     N_("Extensions Platform"),
+     N_("Online directory of free and open source extensions")},
+    {0, nullptr, 0, nullptr, nullptr},
+};
+
+static const EnumPropertyItem *url_preset_itemf(bContext * /*C*/,
+                                                PointerRNA * /*ptr*/,
+                                                PropertyRNA * /*prop*/,
+                                                bool *r_free)
+{
+  *r_free = false;
+  return url_preset_items;
+}
+
+std::string url_from_preset(const int preset)
+{
+  const int major = BLENDER_VERSION / 100;
+  const int minor = BLENDER_VERSION % 100;
+  switch (preset) {
+    case URL_PRESET_BUG:
+      return bug_report_url();
+    case URL_PRESET_RELEASE_NOTES:
+      return "https://www.blender.org/download/releases/" + std::to_string(major) + '-' +
+             std::to_string(minor) + '/';
+    case URL_PRESET_MANUAL:
+      return "https://docs.blender.org/manual/" + manual_language_code() + '/' +
+             std::to_string(major) + '.' + std::to_string(minor) + '/';
+    case URL_PRESET_API:
+      return "https://docs.blender.org/api/" + std::to_string(major) + '.' +
+             std::to_string(minor) + '/';
+    case URL_PRESET_FUND:
+      return "https://fund.blender.org";
+    case URL_PRESET_BLENDER:
+      return "https://www.blender.org";
+    case URL_PRESET_CREDITS:
+      return "https://www.blender.org/about/credits/";
+    case URL_PRESET_EXTENSIONS:
+      return "https://extensions.blender.org/";
+    default:
+      return {};
+  }
+}
+
 std::optional<std::string> documentation_url(const char *doc_id, ReportList *reports)
 {
   const std::string id = doc_id ? doc_id : "";
@@ -346,6 +494,29 @@ void WM_OT_url_open(wmOperatorType *ot)
   RNA_def_string(ot->srna, "url", nullptr, 0, "URL", "URL to open");
 }
 
+static wmOperatorStatus url_open_preset_exec(bContext * /*C*/, wmOperator *op)
+{
+  const std::string url = url_from_preset(RNA_enum_get(op->ptr, "type"));
+  if (url.empty()) {
+    return OPERATOR_CANCELLED;
+  }
+  open_with_default_application(complete_url(url).c_str());
+  return OPERATOR_FINISHED;
+}
+
+void WM_OT_url_open_preset(wmOperatorType *ot)
+{
+  ot->name = "Open Preset Website";
+  ot->idname = "WM_OT_url_open_preset";
+  ot->description = "Open a preset website in the web browser";
+  ot->exec = url_open_preset_exec;
+  ot->flag = OPTYPE_INTERNAL;
+
+  ot->prop = RNA_def_enum(
+      ot->srna, "type", rna_enum_dummy_NULL_items, URL_PRESET_BUG, "Site", "");
+  RNA_def_property_enum_funcs_runtime(ot->prop, nullptr, nullptr, url_preset_itemf);
+}
+
 static wmOperatorStatus path_open_exec(bContext *C, wmOperator *op)
 {
   char filepath[FILE_MAX];
@@ -419,6 +590,12 @@ bool FL_wm_system_operators_selftest(bContext *C, const char *filepath)
   };
   for (const char *url : url_cases) {
     std::fprintf(fp, "url=%s -> %s\n", url, complete_url(url).c_str());
+  }
+  for (int preset = URL_PRESET_RELEASE_NOTES; preset <= URL_PRESET_EXTENSIONS; preset++) {
+    std::fprintf(fp,
+                 "preset=%d -> %s\n",
+                 preset,
+                 complete_url(url_from_preset(preset)).c_str());
   }
 
   const char *doc_cases[] = {

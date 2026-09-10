@@ -4185,6 +4185,7 @@ void WM_OT_context_collection_boolean_set(wmOperatorType *ot);
 void WM_OT_context_modal_mouse(wmOperatorType *ot);
 /* wm_system_ops.cc */
 void WM_OT_url_open(wmOperatorType *ot);
+void WM_OT_url_open_preset(wmOperatorType *ot);
 void WM_OT_path_open(wmOperatorType *ot);
 void WM_OT_doc_view(wmOperatorType *ot);
 
@@ -4212,6 +4213,7 @@ void wm_operatortypes_register()
   WM_operatortype_append(WM_OT_context_collection_boolean_set);
   WM_operatortype_append(WM_OT_context_modal_mouse);
   WM_operatortype_append(WM_OT_url_open);
+  WM_operatortype_append(WM_OT_url_open_preset);
   WM_operatortype_append(WM_OT_path_open);
   WM_operatortype_append(WM_OT_doc_view);
   WM_operatortype_append(WM_OT_window_close);

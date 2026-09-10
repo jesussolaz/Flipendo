@@ -335,81 +335,6 @@ data_path_item = StringProperty(
 )
 
 
-class WM_OT_url_open_preset(Operator):
-    """Open a preset website in the web browser"""
-    bl_idname = "wm.url_open_preset"
-    bl_label = "Open Preset Website"
-    bl_options = {'INTERNAL'}
-    bl_property = "type"
-
-    @staticmethod
-    def _wm_url_open_preset_type_items(_self, _context):
-        return [item for (item, _) in WM_OT_url_open_preset.preset_items]
-
-    type: EnumProperty(
-        name="Site",
-        items=WM_OT_url_open_preset._wm_url_open_preset_type_items,
-    )
-
-    def _url_from_bug(self, _context):
-        from _bpy_internal.system_info.url_prefill_runtime import url_from_blender
-        return url_from_blender()
-
-    def _url_from_release_notes(self, _context):
-        return "https://www.blender.org/download/releases/{:d}-{:d}/".format(*bpy.app.version[:2])
-
-    def _url_from_manual(self, _context):
-        return "https://docs.blender.org/manual/{:s}/{:d}.{:d}/".format(
-            bpy.utils.manual_language_code(), *bpy.app.version[:2],
-        )
-
-    def _url_from_api(self, _context):
-        return "https://docs.blender.org/api/{:d}.{:d}/".format(*bpy.app.version[:2])
-
-    # This list is: (enum_item, url) pairs.
-    # Allow dynamically extending.
-    preset_items = [
-        # Dynamic URL's.
-        (('BUG', iface_("Bug"),
-          tip_("Report a bug with pre-filled version information")),
-         _url_from_bug),
-        (('RELEASE_NOTES', iface_("Release Notes"),
-          tip_("Read about what's new in this version of Blender")),
-         _url_from_release_notes),
-        (('MANUAL', iface_("User Manual"),
-          tip_("The reference manual for this version of Blender")),
-         _url_from_manual),
-        (('API', iface_("Python API Reference"),
-          tip_("The API reference manual for this version of Blender")),
-         _url_from_api),
-
-        # Static URL's.
-        (('FUND', iface_("Development Fund"),
-          tip_("The donation program to support maintenance and improvements")),
-         "https://fund.blender.org"),
-        (('BLENDER', "blender.org",
-          tip_("Blender's official web-site")),
-         "https://www.blender.org"),
-        (('CREDITS', iface_("Credits"),
-          tip_("Lists committers to Blender's source code")),
-         "https://www.blender.org/about/credits/"),
-        (('EXTENSIONS', iface_("Extensions Platform"),
-          tip_("Online directory of free and open source extensions")),
-         "https://extensions.blender.org/"),
-    ]
-
-    def execute(self, context):
-        url = None
-        type = self.type
-        for (item_id, _, _), url in self.preset_items:
-            if item_id == type:
-                if callable(url):
-                    url = url(self, context)
-                break
-
-        return bpy.ops.wm.url_open(url=url)
-
-
 def _wm_doc_get_id(doc_id, *, do_url=True, url_prefix="", report=None):
 
     def operator_exists_pair(a, b):
@@ -2743,7 +2668,6 @@ classes = (
     WM_OT_sysinfo,
     WM_OT_owner_disable,
     WM_OT_owner_enable,
-    WM_OT_url_open_preset,
     WM_OT_toolbar,
     WM_OT_toolbar_fallback_pie,
     WM_OT_toolbar_prompt,
