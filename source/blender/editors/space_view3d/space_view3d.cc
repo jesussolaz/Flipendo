@@ -44,6 +44,7 @@
 #include "BKE_viewer_path.hh"
 
 #include "FL_toolbar_ui.hh"
+#include "FL_view3d_menus.hh"
 #include "ED_asset_shelf.hh"
 #include "ED_geometry.hh"
 #include "ED_info.hh"
@@ -1719,6 +1720,12 @@ void ED_spacetype_view3d()
       MEM_dupallocN<MenuType>(__func__, blender::ed::geometry::node_group_operator_assets_menu()));
   WM_menutype_add(MEM_dupallocN<MenuType>(
       __func__, blender::ed::geometry::node_group_operator_assets_menu_unassigned()));
+
+  /* Menus nativos de la vista 3D (sustituyen a las clases de bl_ui/space_view3d.py).
+   * Antes de registrar el espacio: el keymap nativo los busca por nombre. */
+  blender::ed::view3d::view3d_menus_register();
+  blender::ed::view3d::view3d_edit_menus_register();
+  blender::ed::view3d::view3d_mesh_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

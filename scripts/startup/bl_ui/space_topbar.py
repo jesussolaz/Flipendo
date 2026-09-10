@@ -72,18 +72,8 @@ class TOPBAR_PT_tool_settings_extra(Panel):
     bl_description = "Extra options"
 
     def draw(self, context):
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        layout = self.layout
-
-        # Get the active tool
-        space_type, mode = ToolSelectPanelHelper._tool_key_from_context(context)
-        cls = ToolSelectPanelHelper._tool_class_from_space_type(space_type)
-        item, tool, _ = cls._tool_get_active(context, space_type, mode, with_icon=True)
-        if item is None:
-            return
-
-        # Draw the extra settings
-        item.draw_settings(context, layout, tool, extra=True)
+        # Los ajustes "extra" de la herramienta activa: dibujo nativo (C++).
+        self.layout.template_tool_settings_extra()
 
 
 class TOPBAR_PT_tool_fallback(Panel):

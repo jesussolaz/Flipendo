@@ -21,6 +21,7 @@ set(SRC
   ed_util_imbuf.cc
   ed_util_ops.cc
   ed_viewer_path.cc
+  fl_numinput_native.cc
   gizmo_utils.cc
   numinput.cc
   select_utils.cc
@@ -91,6 +92,7 @@ set(SRC
   ../include/ED_view3d.hh
   ../include/ED_view3d_offscreen.hh
   ../include/ED_viewer_path.hh
+  ../include/FL_numinput_native.hh
   ../include/UI_abstract_view.hh
   ../include/UI_grid_view.hh
   ../include/UI_icons.hh

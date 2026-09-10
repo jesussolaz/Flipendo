@@ -1,0 +1,12 @@
+fpreset 1
+subdir cloth
+set context.cloth.settings.quality 5
+set context.cloth.settings.mass 0.3
+set context.cloth.settings.tension_stiffness 15
+set context.cloth.settings.compression_stiffness 15
+set context.cloth.settings.shear_stiffness 15
+set context.cloth.settings.bending_stiffness 0.5
+set context.cloth.settings.tension_damping 5
+set context.cloth.settings.compression_damping 5
+set context.cloth.settings.shear_damping 5
+set context.cloth.settings.air_damping 1.0

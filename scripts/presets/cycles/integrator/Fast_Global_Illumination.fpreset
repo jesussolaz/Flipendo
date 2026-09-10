@@ -1,0 +1,13 @@
+fpreset 1
+subdir cycles/integrator
+set context.scene.cycles.max_bounces 8
+set context.scene.cycles.caustics_reflective false
+set context.scene.cycles.caustics_refractive false
+set context.scene.cycles.diffuse_bounces 1
+set context.scene.cycles.glossy_bounces 4
+set context.scene.cycles.transmission_bounces 8
+set context.scene.cycles.volume_bounces 2
+set context.scene.cycles.transparent_max_bounces 8
+set context.scene.cycles.use_fast_gi true
+set context.scene.cycles.ao_bounces 2
+set context.scene.cycles.ao_bounces_render 2

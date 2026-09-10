@@ -42,6 +42,15 @@ void OBJECT_OT_parent_inverse_apply(wmOperatorType *ot);
 void OBJECT_OT_transform_axis_target(wmOperatorType *ot);
 void OBJECT_OT_origin_set(wmOperatorType *ot);
 
+/* `object_align.cc` (Flipendo, carril C: migracion de bl_operators/object_align.py) */
+
+void OBJECT_OT_align(wmOperatorType *ot);
+
+/* `object_randomize_transform.cc` (Flipendo, carril C: migracion de
+ * bl_operators/object_randomize_transform.py) */
+
+void OBJECT_OT_randomize_transform(wmOperatorType *ot);
+
 /* `object_relations.cc` */
 
 void OBJECT_OT_parent_set(wmOperatorType *ot);
@@ -278,6 +287,12 @@ void POSE_OT_ik_clear(wmOperatorType *ot);
 void CONSTRAINT_OT_delete(wmOperatorType *ot);
 void CONSTRAINT_OT_apply(wmOperatorType *ot);
 void CONSTRAINT_OT_copy(wmOperatorType *ot);
+
+/* Ported from `scripts/startup/bl_operators/constraint.py` (Flipendo C2). */
+void CONSTRAINT_OT_add_target(wmOperatorType *ot);
+void CONSTRAINT_OT_remove_target(wmOperatorType *ot);
+void CONSTRAINT_OT_normalize_target_weights(wmOperatorType *ot);
+void CONSTRAINT_OT_disable_keep_transform(wmOperatorType *ot);
 void CONSTRAINT_OT_copy_to_selected(wmOperatorType *ot);
 
 void CONSTRAINT_OT_move_up(wmOperatorType *ot);

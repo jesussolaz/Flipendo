@@ -1,0 +1,23 @@
+fpreset 1
+subdir gpencil_material
+set context.object.active_material.grease_pencil.mode "LINE"
+set context.object.active_material.grease_pencil.stroke_style "SOLID"
+set context.object.active_material.grease_pencil.color [0.0, 0.0, 0.0, 1.0]
+set context.object.active_material.grease_pencil.stroke_image none
+set context.object.active_material.grease_pencil.pixel_size 100.0
+set context.object.active_material.grease_pencil.mix_stroke_factor 0.0
+set context.object.active_material.grease_pencil.alignment_mode "PATH"
+set context.object.active_material.grease_pencil.fill_style "SOLID"
+set context.object.active_material.grease_pencil.fill_color [0.5, 0.5, 0.5, 1.0]
+set context.object.active_material.grease_pencil.fill_image none
+set context.object.active_material.grease_pencil.gradient_type "LINEAR"
+set context.object.active_material.grease_pencil.mix_color [1.0, 1.0, 1.0, 0.2]
+set context.object.active_material.grease_pencil.mix_factor 0.0
+set context.object.active_material.grease_pencil.flip false
+set context.object.active_material.grease_pencil.texture_offset [0.0, 0.0]
+set context.object.active_material.grease_pencil.texture_scale [1.0, 1.0]
+set context.object.active_material.grease_pencil.texture_angle 0.0
+set context.object.active_material.grease_pencil.texture_clamp false
+set context.object.active_material.grease_pencil.mix_factor 0.0
+set context.object.active_material.grease_pencil.show_stroke true
+set context.object.active_material.grease_pencil.show_fill true

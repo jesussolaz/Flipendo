@@ -66,6 +66,13 @@
 
 #  include "FL_keymap_dump.hpp"
 #  include "FL_operator_dump.hpp"
+#  include "FL_numinput_native.hh"
+#  include "FL_object_ops_selftest.hh"
+#  if __has_include("FL_ui_dump.hpp")
+#    include "FL_ui_dump.hpp"
+#    define FL_UI_DUMP_AVAILABLE
+#  endif
+#  include "preset/FL_preset.hpp"
 #  include "toolsystem/FL_toolsystem_dump.hpp"
 
 /* for passing information between creator and gameengine */
@@ -2681,6 +2688,141 @@ static int arg_handle_fl_dump_tool_queries(int argc, const char **argv, void *da
   return 0;
 }
 
+static const char arg_handle_fl_dump_toolbar_keymaps_doc[] =
+    "<filepath>\n"
+    "\tVuelca el keymap del popup de la barra de cada espacio y modo y sale (modo grafico).";
+static int arg_handle_fl_dump_toolbar_keymaps(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::toolsystem::dump_toolbar_keymaps_native(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+
+static const char arg_handle_fl_convert_presets_doc[] =
+    "<dir>\n"
+    "\tConvierte los presets .py de <dir> a .fpreset (datos) y sale.\n"
+    "\tUsa el MISMO lector nativo que atiende a los presets del usuario.";
+static int arg_handle_fl_convert_presets(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::preset::convert_tree(argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el directorio despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_presets_doc[] =
+    "<dir> <informe>\n"
+    "\tAplica cada preset por el camino de Python y por el de C++ sobre el mismo\n"
+    "\testado de partida y compara el resultado. Vale en --background.";
+static int arg_handle_fl_check_presets(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 2) {
+    const bool ok = flipendo::preset::check_tree(C, argv[1], argv[2]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 2;
+  }
+  fprintf(stderr, "\nError: hacen falta <dir> y <informe> despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+#  ifdef FL_UI_DUMP_AVAILABLE
+static const char arg_handle_fl_dump_ui_doc[] =
+    "<filepath>\n"
+    "\tVuelca el REGISTRO de interfaz (paneles, menus y cabeceras) y sale.\n"
+    "\tSe compara con tests/flipendo/ui/baseline-python.txt. Vale en --background.";
+static int arg_handle_fl_dump_ui(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::ui_dump::dump_registry(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_dump_ui_layout_doc[] =
+    "<filepath>\n"
+    "\tEjecuta el draw() de cada panel, menu y cabecera y vuelca el uiLayout que sale.\n"
+    "\tSe compara con tests/flipendo/ui/baseline-python-layout.txt. Necesita modo grafico.";
+static int arg_handle_fl_dump_ui_layout(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::ui_dump::dump_layout(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_ui_doc[] =
+    "<baseline>\n"
+    "\tCompara la interfaz contra una linea base y sale.\n"
+    "\tAdmite las dos lineas base, la de registro y la de dibujo: lo decide la marca\n"
+    "\tde su primera linea.";
+static int arg_handle_fl_check_ui(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::ui_dump::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+#  endif
+
+static const char arg_handle_fl_selftest_object_ops_doc[] =
+    "<filepath>\n"
+    "\tConstruye una escena determinista, invoca `object.align`,\n"
+    "\t`object.randomize_transform` y `mesh.primitive_torus_add` por su idname y\n"
+    "\tvuelca el estado numerico resultante. Se compara con\n"
+    "\ttests/flipendo/objectops/baseline-python.txt (Carril C).";
+static int arg_handle_fl_selftest_object_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::object_ops_selftest::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_numinput_doc[] =
+    "<filepath>\n"
+    "\tEvalua una bateria de expresiones de campo numerico (aritmetica, funciones,\n"
+    "\tconstantes y unidades) y vuelca el resultado. El binario CON Python y el\n"
+    "\tbinario SIN Python tienen que escribir el mismo fichero. Se compara con\n"
+    "\ttests/flipendo/numinput/baseline-python.txt (Carril H).";
+static int arg_handle_fl_selftest_numinput(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::numinput::selftest::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_python_expr_run_doc[] =
     "<expression>\n"
     "\tRun the given expression as a Python script.";
@@ -3239,6 +3381,21 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
       ba, nullptr, "--fl-dump-tool-activation", CB(arg_handle_fl_dump_tool_activation), C);
   BLI_args_add(
       ba, nullptr, "--fl-dump-tool-queries", CB(arg_handle_fl_dump_tool_queries), C);
+  BLI_args_add(ba,
+               nullptr,
+               "--fl-dump-toolbar-keymaps",
+               CB(arg_handle_fl_dump_toolbar_keymaps),
+               C);
+  BLI_args_add(ba, nullptr, "--fl-convert-presets", CB(arg_handle_fl_convert_presets), C);
+  BLI_args_add(ba, nullptr, "--fl-check-presets", CB(arg_handle_fl_check_presets), C);
+  BLI_args_add(ba, nullptr, "--fl-selftest-numinput", CB(arg_handle_fl_selftest_numinput), C);
+#  ifdef FL_UI_DUMP_AVAILABLE
+  BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
+  BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);
+#  endif
+  BLI_args_add(
+      ba, nullptr, "--fl-selftest-object-ops", CB(arg_handle_fl_selftest_object_ops), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

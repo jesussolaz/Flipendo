@@ -58,6 +58,8 @@
 
 #include "interface_intern.hh"
 
+#include "FL_toolbar_ui.hh"
+
 #include "WM_api.hh"
 #include "WM_types.hh"
 
@@ -2833,6 +2835,10 @@ static void UI_OT_drop_material(wmOperatorType *ot)
 void ED_operatortypes_ui()
 {
   using namespace blender::ui;
+  /* Los de la barra de herramientas, antes operadores de Python (`bl_operators/wm.py`). */
+  WM_operatortype_append(WM_OT_toolbar);
+  WM_operatortype_append(WM_OT_toolbar_fallback_pie);
+  WM_operatortype_append(WM_OT_toolbar_prompt);
   WM_operatortype_append(UI_OT_copy_data_path_button);
   WM_operatortype_append(UI_OT_copy_as_driver_button);
   WM_operatortype_append(UI_OT_copy_python_command_button);

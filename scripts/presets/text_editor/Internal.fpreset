@@ -1,0 +1,4 @@
+fpreset 1
+subdir text_editor
+set context.preferences.filepaths.text_editor ""
+set context.preferences.filepaths.text_editor_args ""

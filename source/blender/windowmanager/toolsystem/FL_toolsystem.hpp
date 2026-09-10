@@ -22,6 +22,7 @@
 
 #include <string>
 
+#include "BLI_math_vector_types.hh"
 #include "BLI_span.hh"
 #include "BLI_vector.hh"
 #include "BLI_string_ref.hh"
@@ -81,6 +82,11 @@ enum PropRowFlag {
   PROP_ROW_ICON_ONLY = 1 << 4,
   /** `slider=True`. */
   PROP_ROW_SLIDER = 1 << 5,
+  /** La propiedad va en una fila propia (`row = layout.row(); row.prop(...)`), no
+   * directamente en `layout`. En el panel lateral eso cambia la maqueta. */
+  PROP_ROW_OWN_ROW = 1 << 6,
+  /** Con `PROP_ROW_OWN_ROW`: `row.use_property_split = False`. */
+  PROP_ROW_NO_SPLIT = 1 << 7,
 };
 
 struct PropRow {
@@ -165,9 +171,13 @@ using DescriptionFn = std::string (*)(const bContext *C, const wmKeyMap *km);
  * herramienta activa y el popover `TOPBAR_PT_tool_settings_extra`. */
 using DrawSettingsFn = void (*)(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
 
-/** Dibujo sobre la vista mientras la herramienta esta activa (6 usos). Se registra y
- * se desregistra al cambiar de herramienta. */
-using DrawCursorFn = void (*)(const bContext *C, void *customdata);
+/**
+ * Dibujo sobre la vista mientras la herramienta esta activa (`draw_cursor` del Python,
+ * seis usos: el circulo del radio bajo el raton). `xy` es la posicion del raton en la
+ * region. Se registra al activar la herramienta y se quita al activar otra en el mismo
+ * tipo de espacio.
+ */
+using DrawCursorFn = void (*)(bContext *C, bToolRef *tref, const blender::int2 &xy);
 
 struct ToolDecl {
   /** `builtin.select_box`, `builtin_brush.smear`... Obligatorio. */
@@ -506,6 +516,22 @@ bool activate_by_id_or_cycle(bContext *C,
  * cambiaria que herramienta se activa al elegir un pincel, y eso no es una migracion.
  */
 /* `r_tool_id`: la herramienta que se intento activar, para el aviso del operador. */
+/**
+ * `_tool_active_from_context` con un modo EXPLICITO (el `tool_key` del Python), en vez
+ * del que dice el contexto. `mode` es el identificador ('EDIT_MESH', 'UV'...); `nullptr`
+ * usa el del contexto.
+ */
+bToolRef *tool_ref_for_mode(const bContext *C, int space_type, const char *mode, bool create);
+
+/**
+ * `_tool_get_by_id_active`: si la herramienta encabeza un grupo, la variante recordada
+ * de ese grupo; si esta suelta, ella misma. Lo usa la etiqueta "Drag:" de la cabecera.
+ */
+const ToolDecl *tool_find_by_id_active(const bContext *C,
+                                       const ToolbarDecl &toolbar,
+                                       const char *mode,
+                                       blender::StringRefNull idname);
+
 bool activate_by_brush_type(bContext *C,
                             int space_type,
                             blender::StringRefNull brush_type,
@@ -569,6 +595,30 @@ void group_active_set(int space_type, blender::StringRefNull group_leader_idname
 /** Olvida la memoria de grupos de un espacio. La usa el volcado para que cada
  * activacion parta del mismo estado. */
 void group_active_clear(int space_type);
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name El keymap del popup de la barra
+ * \{ */
+
+/**
+ * `bl_keymap_utils.keymap_from_toolbar.generate`: fabrica el keymap temporal
+ * "Toolbar Popup <temp>" con una tecla para cada herramienta visible. Se rehace en cada
+ * apertura. Lo usan el popup de `wm.toolbar`, el aviso de `wm.toolbar_prompt` y el
+ * tooltip de las herramientas.
+ */
+wmKeyMap *toolbar_keymap_generate(bContext *C,
+                                  int space_type,
+                                  bool use_fallback_keys = true,
+                                  bool use_reset = true);
+
+/** Igual, con espacio y modo explicitos: para el volcado. */
+wmKeyMap *toolbar_keymap_generate_in(bContext *C,
+                                     const ToolbarDecl &toolbar,
+                                     const char *mode,
+                                     bool use_fallback_keys,
+                                     bool use_reset);
 
 /** \} */
 

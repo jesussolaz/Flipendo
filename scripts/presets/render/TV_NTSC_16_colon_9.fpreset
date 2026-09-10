@@ -1,0 +1,9 @@
+fpreset 1
+subdir render
+set context.scene.render.resolution_x 720
+set context.scene.render.resolution_y 480
+set context.scene.render.resolution_percentage 100
+set context.scene.render.pixel_aspect_x 40
+set context.scene.render.pixel_aspect_y 33
+set context.scene.render.fps 30
+set context.scene.render.fps_base 1.001

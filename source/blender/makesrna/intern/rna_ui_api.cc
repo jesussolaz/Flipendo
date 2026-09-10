@@ -12,6 +12,7 @@
 #include "RNA_enum_types.hh"
 
 #include "DNA_screen_types.h"
+#include "DNA_space_types.h" /* SPACE_EMPTY, en la definicion de las plantillas. */
 
 #include "UI_interface.hh"
 #include "UI_resources.hh"
@@ -41,6 +42,11 @@ const EnumPropertyItem rna_enum_icon_items[] = {
 #  include "ED_object.hh"
 
 #  include "WM_api.hh"
+
+/* Plantillas de la cabecera de herramienta: el dibujo es nativo (`FL_toolbar_ui.hh`). */
+#  include "BKE_context.hh"
+#  include "DNA_workspace_types.h"
+#  include "FL_toolbar_ui.hh"
 
 using blender::StringRefNull;
 
@@ -1139,6 +1145,53 @@ PointerRNA rna_uiTemplatePopupConfirm(uiLayout *layout,
   return opptr;
 }
 
+/* -------------------------------------------------------------------- */
+/** \name Plantillas del sistema de herramientas
+ *
+ * Puente en la direccion permitida: la interfaz que todavia es Python (las cabeceras de
+ * `bl_ui`) llama al dibujo nativo. Se van cuando esas cabeceras sean C++.
+ * \{ */
+
+static PointerRNA rna_uiTemplateToolHeader(uiLayout *layout,
+                                           bContext *C,
+                                           bool show_tool_icon_always,
+                                           int space_type,
+                                           const char *mode)
+{
+  bToolRef *tref = flipendo::ui::tool_header_draw(C,
+                                                  layout,
+                                                  show_tool_icon_always,
+                                                  space_type == SPACE_EMPTY ? -1 : space_type,
+                                                  (mode != nullptr && mode[0] != '\0') ? mode :
+                                                                                         nullptr);
+  WorkSpace *workspace = CTX_wm_workspace(C);
+  if (tref == nullptr || workspace == nullptr) {
+    return PointerRNA_NULL;
+  }
+  return RNA_pointer_create_discrete(&workspace->id, &RNA_WorkSpaceTool, tref);
+}
+
+static void rna_uiTemplateToolFallbackItems(uiLayout *layout, bContext *C, bool pie)
+{
+  flipendo::ui::tool_fallback_items_draw(C, layout, pie);
+}
+
+static void rna_uiTemplateToolFallbackSettings(uiLayout *layout,
+                                               bContext *C,
+                                               PointerRNA *tool_ptr,
+                                               bool is_horizontal_layout)
+{
+  flipendo::ui::tool_fallback_settings_draw(
+      C, layout, static_cast<bToolRef *>(tool_ptr->data), is_horizontal_layout);
+}
+
+static void rna_uiTemplateToolSettingsExtra(uiLayout *layout, bContext *C)
+{
+  flipendo::ui::tool_settings_extra_draw(C, layout);
+}
+
+/** \} */
+
 #else
 
 static void api_ui_item_common_heading(FunctionRNA *func)
@@ -1219,6 +1272,43 @@ void RNA_api_ui_layout(StructRNA *srna)
 {
   FunctionRNA *func;
   PropertyRNA *parm;
+
+  /* Sistema de herramientas: dibujo nativo, ver `FL_toolbar_ui.hh`. */
+  func = RNA_def_function(srna, "template_tool_header", "rna_uiTemplateToolHeader");
+  RNA_def_function_flag(func, FUNC_USE_CONTEXT);
+  RNA_def_function_ui_description(
+      func, "Active tool header: icon or label, tool settings and fallback tool (internal)");
+  RNA_def_boolean(func, "show_tool_icon_always", false, "", "Always show the tool icon and name");
+  RNA_def_enum(func,
+               "space_type",
+               rna_enum_space_type_items,
+               SPACE_EMPTY,
+               "Space Type",
+               "Space type of the tool, EMPTY for the current one");
+  RNA_def_string(func, "mode", nullptr, 0, "Mode", "Mode of the tool, empty for the current one");
+  parm = RNA_def_pointer(func, "tool", "WorkSpaceTool", "", "The active tool, if any");
+  /* Se devuelve un `PointerRNA` completo, con el WorkSpace como dueno, no el dato crudo. */
+  RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_RNAPTR);
+  RNA_def_function_return(func, parm);
+
+  func = RNA_def_function(
+      srna, "template_tool_fallback_items", "rna_uiTemplateToolFallbackItems");
+  RNA_def_function_flag(func, FUNC_USE_CONTEXT);
+  RNA_def_function_ui_description(func, "Choices for the fallback tool (internal)");
+  RNA_def_boolean(func, "pie", false, "", "Lay them out as a pie menu");
+
+  func = RNA_def_function(
+      srna, "template_tool_fallback_settings", "rna_uiTemplateToolFallbackSettings");
+  RNA_def_function_flag(func, FUNC_USE_CONTEXT);
+  RNA_def_function_ui_description(func, "Settings of the fallback tool (internal)");
+  parm = RNA_def_pointer(func, "tool", "WorkSpaceTool", "", "");
+  RNA_def_parameter_flags(parm, PROP_NEVER_NULL, PARM_REQUIRED | PARM_RNAPTR);
+  RNA_def_boolean(func, "is_horizontal_layout", false, "", "");
+
+  func = RNA_def_function(
+      srna, "template_tool_settings_extra", "rna_uiTemplateToolSettingsExtra");
+  RNA_def_function_flag(func, FUNC_USE_CONTEXT);
+  RNA_def_function_ui_description(func, "Extra settings of the active tool (internal)");
 
   static const EnumPropertyItem curve_type_items[] = {
       {0, "NONE", 0, "None", ""},

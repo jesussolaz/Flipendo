@@ -29,6 +29,19 @@ set(SRC
   interface_align.cc
   FL_ui_registry.cc
   fl_toolbar_ui.cc
+  fl_toolbar_ops.cc
+  fl_tool_settings_ui.cc
+  fl_tool_cursor_ui.cc
+  fl_tool_settings_grease_pencil_paint.cc
+  fl_tool_settings_transform.cc
+  fl_tool_settings_sculpt.cc
+  fl_tool_settings_view3d_add.cc
+  fl_tool_settings_uv_sculpt.cc
+  fl_tool_settings_annotate.cc
+  fl_tool_settings_paint.cc
+  fl_tool_settings_edit_mesh.cc
+  fl_tool_settings_gp_edit.cc
+  fl_tool_settings_edit_curve.cc
   interface_anim.cc
   interface_button_group.cc
   interface_button_sections.cc

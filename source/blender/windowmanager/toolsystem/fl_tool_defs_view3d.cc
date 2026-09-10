@@ -29,6 +29,11 @@
 
 #include "fl_tool_defs_view3d.hh"
 
+/* Definida en editors/interface/fl_tool_cursor_ui.cc: el circulo del radio bajo el raton. */
+namespace flipendo::ui::cursor {
+void draw_select_circle_view3d(bContext *C, bToolRef *tref, const blender::int2 &xy);
+}  // namespace flipendo::ui::cursor
+
 namespace flipendo::toolsystem {
 
 /* -------------------------------------------------------------------- */
@@ -160,7 +165,7 @@ static const PropRow box_settings[] = {
      "view3d.select_box",
      "mode",
      nullptr,
-     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY},
+     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY | PROP_ROW_OWN_ROW | PROP_ROW_NO_SPLIT},
 };
 
 const ToolDecl box = {
@@ -185,7 +190,7 @@ static const PropRow lasso_settings[] = {
      "view3d.select_lasso",
      "mode",
      nullptr,
-     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY},
+     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY | PROP_ROW_OWN_ROW | PROP_ROW_NO_SPLIT},
 };
 
 const ToolDecl lasso = {
@@ -210,7 +215,7 @@ static const PropRow circle_settings[] = {
      "view3d.select_circle",
      "mode",
      nullptr,
-     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY},
+     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY | PROP_ROW_OWN_ROW | PROP_ROW_NO_SPLIT},
     {PropSource::Operator, "view3d.select_circle", "radius"},
 };
 
@@ -232,8 +237,8 @@ const ToolDecl circle = {
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ span(circle_settings),
     /*draw_settings*/ nullptr,
-    /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_DRAW_CURSOR,
+    /*draw_cursor*/ flipendo::ui::cursor::draw_select_circle_view3d,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 }  // namespace defs_view3d_select

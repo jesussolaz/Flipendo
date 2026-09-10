@@ -1,0 +1,10 @@
+fpreset 1
+subdir cycles/viewport_sampling
+set context.scene.cycles.use_preview_adaptive_sampling true
+set context.scene.cycles.preview_adaptive_threshold 0.1
+set context.scene.cycles.preview_samples 1024
+set context.scene.cycles.preview_adaptive_min_samples 0
+set context.scene.cycles.use_preview_denoising false
+set context.scene.cycles.preview_denoiser "AUTO"
+set context.scene.cycles.preview_denoising_input_passes "RGB_ALBEDO"
+set context.scene.cycles.preview_denoising_prefilter "FAST"

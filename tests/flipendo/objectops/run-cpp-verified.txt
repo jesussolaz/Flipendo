@@ -1,0 +1,31 @@
+# FL-OBJECT-OPS-SELFTEST v1
+object.align combo=0 mode=OPT_2 rel=OPT_4 axis=111 bbq=1
+  A          loc=(1,2,3) rot=(0,0,0) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  B          loc=(1,2,3) rot=(0.300000012,0.100000001,0) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  C          loc=(1,2,3) rot=(0,0.699999988,0.200000003) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+object.align combo=1 mode=OPT_1 rel=OPT_2 axis=110 bbq=1
+  A          loc=(1,1,3) rot=(0,0,0) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  B          loc=(0.559940815,0.625428438,0.5) rot=(0.300000012,0.100000001,0) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  C          loc=(2.36946297,1.89000535,1) rot=(0,0.699999988,0.200000003) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+object.align combo=2 mode=OPT_3 rel=OPT_3 axis=011 bbq=0
+  A          loc=(1,1.13228846,0.443205118) rot=(0,0,0) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  B          loc=(5,1.50686002,0.77098465) rot=(0.300000012,0.100000001,0) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  C          loc=(-3,0.242283344,-0.670384645) rot=(0,0.699999988,0.200000003) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+object.randomize_transform combo=0 seed=0 delta=0 loc=1 rot=1 scale=1 even=0
+  1          loc=(0.688843727,0.515908778,-0.158856839) rot=(-0.241083249,0.0112747215,-0.0950658619) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  2          loc=(0.166764081,0.816225767,0.00937371142) rot=(-0.218162149,0.255804211,0.118368998) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  3          loc=(0.620434463,0.804331899,-0.379704863) rot=(0.229831755,0.398838282,0.183983937) scale=(1,1,1) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+object.randomize_transform combo=1 seed=42 delta=0 loc=1 rot=0 scale=1 even=1
+  1          loc=(0.557707191,0,-1.34982407) rot=(0,0,0) scale=(0.607820451,0.607820451,0.607820451) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  2          loc=(-1.8808111,0,0.0321317278) rot=(0,0,0) scale=(0.955058515,0.955058515,0.955058515) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+  3          loc=(1.2377218,0,1.83491552) rot=(0,0,0) scale=(0.542786956,0.542786956,0.542786956) dloc=(0,0,0) drot=(0,0,0) dscale=(1,1,1)
+object.randomize_transform combo=2 seed=123 delta=1 loc=1 rot=1 scale=1 even=0
+  1          loc=(0,0,0) rot=(0,0,0) scale=(1,1,1) dloc=(-0.447636396,-0.412813336,-0.0927582383) drot=(-0.784599543,0.16047956,0) dscale=(0.942076743,1.26848364,0.436661422)
+  2          loc=(0,0,0) rot=(0,0,0) scale=(1,1,1) dloc=(-0.340337604,-0.16278334,-0.166203603) drot=(-0.509673297,-0.199331775,0) dscale=(1.65981841,0.843840837,1.6881969)
+  3          loc=(0,0,0) rot=(0,0,0) scale=(1,1,1) dloc=(-0.184541032,-0.0516782925,0.405398667) drot=(-0.814470887,-0.143129975,0) dscale=(1.76602244,0.342159122,0.882547081)
+mesh.primitive_torus_add combo=0 major_seg=48 minor_seg=12 mode=MAJOR_MINOR uvs=1
+  mesh verts=576 edges=1152 faces=576 loops=2304 sum=2.14293283e-05 sumsq=612.000014 uvs=1
+mesh.primitive_torus_add combo=1 major_seg=8 minor_seg=5 mode=MAJOR_MINOR uvs=0
+  mesh verts=40 edges=80 faces=40 loops=160 sum=3.87430197e-06 sumsq=272.499998 uvs=0
+mesh.primitive_torus_add combo=2 major_seg=16 minor_seg=6 mode=EXT_INT uvs=1
+  mesh verts=96 edges=192 faces=96 loops=384 sum=7.58760829e-06 sumsq=816.000029 uvs=1

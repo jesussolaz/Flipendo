@@ -42,20 +42,6 @@ namespace defs_view3d_add {
  * `fl_tool_description.hh`.
  */
 
-/**
- * `draw_settings_interactive_add` (`space_toolsystem_toolbar.py:530`).
- *
- * Una de las seis funciones de ajustes con flujo de control real de todo el catalogo:
- * decide segun `extra` y segun el TIPO DE REGION (`TOOL_HEADER` o no) si pinta la fila
- * de profundidad, orientacion y ajuste, o el bloque de ejes y origenes del popover. No
- * cabe en filas `PropRow`, asi que las cinco herramientas van con `settings_pending`.
- *
- * Devuelve, como en el Python, si la envolvente debe rematar pintando el popover
- * `TOPBAR_PT_tool_settings_extra`. Sin ese valor de vuelta las cinco pintarian el
- * popover dos veces o ninguna, segun la region.
- */
-bool draw_settings_interactive_add(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
-
 /** \} */
 
 /* -------------------------------------------------------------------- */

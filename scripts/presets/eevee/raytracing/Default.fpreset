@@ -1,0 +1,20 @@
+fpreset 1
+subdir eevee/raytracing
+set context.scene.eevee.ray_tracing_method "SCREEN"
+set context.scene.eevee.ray_tracing_options.resolution_scale "2"
+set context.scene.eevee.ray_tracing_options.trace_max_roughness 0.5
+set context.scene.eevee.ray_tracing_options.screen_trace_quality 0.25
+set context.scene.eevee.ray_tracing_options.screen_trace_thickness 0.20000000298023224
+set context.scene.eevee.ray_tracing_options.use_denoise true
+set context.scene.eevee.ray_tracing_options.denoise_spatial true
+set context.scene.eevee.ray_tracing_options.denoise_temporal true
+set context.scene.eevee.ray_tracing_options.denoise_bilateral true
+set context.scene.eevee.fast_gi_method "GLOBAL_ILLUMINATION"
+set context.scene.eevee.fast_gi_resolution "2"
+set context.scene.eevee.fast_gi_ray_count 2
+set context.scene.eevee.fast_gi_step_count 8
+set context.scene.eevee.fast_gi_quality 0.25
+set context.scene.eevee.fast_gi_distance 0.0
+set context.scene.eevee.fast_gi_thickness_near 0.25
+set context.scene.eevee.fast_gi_thickness_far 0.7853981852531433
+set context.scene.eevee.fast_gi_bias 0.05000000074505806

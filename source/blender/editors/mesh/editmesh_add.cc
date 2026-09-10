@@ -6,16 +6,24 @@
  * \ingroup edmesh
  */
 
-#include "BLI_math_matrix.h"
-#include "BLI_sys_types.h"
+#include <cmath>
 
+#include "BLI_math_matrix.h"
+#include "BLI_math_rotation.h"
+#include "BLI_sys_types.h"
+#include "BLI_vector.hh"
+
+#include "DNA_mesh_types.h"
 #include "DNA_object_types.h"
 #include "DNA_scene_types.h"
 
 #include "BLT_translation.hh"
 
+#include "BKE_attribute.hh"
 #include "BKE_context.hh"
 #include "BKE_editmesh.hh"
+#include "BKE_mesh.h"
+#include "BKE_mesh.hh"
 
 #include "RNA_access.hh"
 #include "RNA_define.hh"
@@ -736,3 +744,293 @@ void MESH_OT_primitive_ico_sphere_add(wmOperatorType *ot)
   blender::ed::object::add_mesh_props(ot);
   blender::ed::object::add_generic_props(ot, true);
 }
+
+/* -------------------------------------------------------------------- */
+/** \name Add Torus Operator
+ *
+ * Migracion de `scripts/startup/bl_operators/add_mesh_torus.py` (Carril C, Flipendo).
+ * Mismo idname `mesh.primitive_torus_add`, mismas propiedades. A diferencia de los
+ * primitivos de arriba, el Python original NO construye la malla dentro de un objeto
+ * en modo edicion (no usa `bmesh`): crea una `Mesh` de datos sueltos con
+ * vertices/loops/poligonos ya calculados y la asigna a un objeto nuevo via
+ * `object_data_add`. Aqui se reproduce lo mismo con la API de bajo nivel de `Mesh`
+ * (`BKE_mesh_new_nomain` + `mesh_calc_edges`) y `add_type_with_obdata`, que es el
+ * equivalente en C++ de `object_data_add` ya usado por el resto de operadores
+ * "add object" nativos (`OBJECT_OT_empty_add` y hermanos en `object_add.cc`).
+ * \{ */
+
+enum {
+  MESH_TORUS_MAJOR_MINOR = 0,
+  MESH_TORUS_EXT_INT = 1,
+};
+
+static void torus_verts_and_faces(const float major_rad,
+                                  const float minor_rad,
+                                  const int major_seg,
+                                  const int minor_seg,
+                                  blender::Vector<blender::float3> &r_verts,
+                                  blender::Vector<int> &r_faces)
+{
+  using namespace blender;
+
+  const int tot_verts = major_seg * minor_seg;
+  r_verts.reserve(tot_verts);
+  r_faces.reserve(tot_verts * 4);
+
+  int i1 = 0;
+  for (int major_index = 0; major_index < major_seg; major_index++) {
+    float mat[3][3];
+    axis_angle_to_mat3_single(mat, 'Z', (float(major_index) / float(major_seg)) * float(2.0 * M_PI));
+
+    for (int minor_index = 0; minor_index < minor_seg; minor_index++) {
+      const float angle = float(2.0 * M_PI) * float(minor_index) / float(minor_seg);
+
+      const float3 local(major_rad + cosf(angle) * minor_rad, 0.0f, sinf(angle) * minor_rad);
+      float3 vec;
+      mul_v3_m3v3(vec, mat, local);
+      r_verts.append(vec);
+
+      int i2, i3, i4;
+      if (minor_index + 1 == minor_seg) {
+        i2 = major_index * minor_seg;
+        i3 = i1 + minor_seg;
+        i4 = i2 + minor_seg;
+      }
+      else {
+        i2 = i1 + 1;
+        i3 = i1 + minor_seg;
+        i4 = i3 + 1;
+      }
+
+      if (i2 >= tot_verts) {
+        i2 -= tot_verts;
+      }
+      if (i3 >= tot_verts) {
+        i3 -= tot_verts;
+      }
+      if (i4 >= tot_verts) {
+        i4 -= tot_verts;
+      }
+
+      r_faces.append(i1);
+      r_faces.append(i3);
+      r_faces.append(i4);
+      r_faces.append(i2);
+
+      i1++;
+    }
+  }
+}
+
+static void torus_add_uvs(Mesh *mesh, const int minor_seg, const int major_seg)
+{
+  using namespace blender;
+
+  bke::MutableAttributeAccessor attributes = mesh->attributes_for_write();
+  bke::SpanAttributeWriter<float2> uv_map = attributes.lookup_or_add_for_write_only_span<float2>(
+      "UVMap", bke::AttrDomain::Corner);
+  const Span<int> face_offsets = mesh->face_offsets();
+
+  const float u_step = 1.0f / float(major_seg);
+  const float v_step = 1.0f / float(minor_seg);
+
+  const float u_init = 0.5f + fmodf(0.5f, u_step);
+  const float v_init = 0.5f + fmodf(0.5f, v_step);
+
+  const float u_wrap = 1.0f - (u_step / 2.0f);
+  const float v_wrap = 1.0f - (v_step / 2.0f);
+
+  int face_index = 0;
+  float u_prev = u_init;
+  float u_next = u_prev + u_step;
+  for (int major_index = 0; major_index < major_seg; major_index++) {
+    float v_prev = v_init;
+    float v_next = v_prev + v_step;
+    for (int minor_index = 0; minor_index < minor_seg; minor_index++) {
+      const int loop_start = face_offsets[face_index];
+      /* Mismo orden de esquinas que el Python (create_grid: i1,i3,i4,i2 -> loops
+       * 0,1,2,3 == i1,i3,i4,i2). */
+      uv_map.span[loop_start + 0] = float2(u_prev, v_prev);
+      uv_map.span[loop_start + 1] = float2(u_next, v_prev);
+      uv_map.span[loop_start + 3] = float2(u_prev, v_next);
+      uv_map.span[loop_start + 2] = float2(u_next, v_next);
+
+      v_prev = (v_next > v_wrap) ? (v_next - 1.0f) : v_next;
+      v_next = v_prev + v_step;
+
+      face_index++;
+    }
+    u_prev = (u_next > u_wrap) ? (u_next - 1.0f) : u_next;
+    u_next = u_prev + u_step;
+  }
+
+  uv_map.finish();
+}
+
+static wmOperatorStatus add_primitive_torus_exec(bContext *C, wmOperator *op)
+{
+  float major_radius = RNA_float_get(op->ptr, "major_radius");
+  float minor_radius = RNA_float_get(op->ptr, "minor_radius");
+  const int major_segments = RNA_int_get(op->ptr, "major_segments");
+  const int minor_segments = RNA_int_get(op->ptr, "minor_segments");
+  const bool generate_uvs = RNA_boolean_get(op->ptr, "generate_uvs");
+
+  if (RNA_enum_get(op->ptr, "mode") == MESH_TORUS_EXT_INT) {
+    const float abso_major_rad = RNA_float_get(op->ptr, "abso_major_rad");
+    const float abso_minor_rad = RNA_float_get(op->ptr, "abso_minor_rad");
+    const float extra_helper = (abso_major_rad - abso_minor_rad) * 0.5f;
+    major_radius = abso_minor_rad + extra_helper;
+    minor_radius = extra_helper;
+    RNA_float_set(op->ptr, "major_radius", major_radius);
+    RNA_float_set(op->ptr, "minor_radius", minor_radius);
+  }
+
+  blender::Vector<blender::float3> verts;
+  blender::Vector<int> faces;
+  torus_verts_and_faces(major_radius, minor_radius, major_segments, minor_segments, verts, faces);
+
+  const int verts_num = verts.size();
+  const int faces_num = int(faces.size()) / 4;
+  const int corners_num = int(faces.size());
+
+  Mesh *mesh = BKE_mesh_new_nomain(verts_num, 0, faces_num, corners_num);
+  mesh->vert_positions_for_write().copy_from(verts);
+  blender::MutableSpan<int> face_offsets = mesh->face_offsets_for_write();
+  blender::MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
+  for (int i = 0; i < faces_num; i++) {
+    face_offsets[i] = i * 4;
+  }
+  corner_verts.copy_from(faces);
+
+  blender::bke::mesh_calc_edges(*mesh, false, false);
+  blender::bke::mesh_smooth_set(*mesh, false);
+
+  if (generate_uvs) {
+    torus_add_uvs(mesh, minor_segments, major_segments);
+  }
+
+  float loc[3], rot[3];
+  bool enter_editmode;
+  ushort local_view_bits;
+  blender::ed::object::add_generic_get_opts(
+      C, op, 'Z', loc, rot, nullptr, &enter_editmode, &local_view_bits, nullptr);
+
+  Object *ob = blender::ed::object::add_type_with_obdata(C,
+                                                         OB_MESH,
+                                                         CTX_DATA_(BLT_I18NCONTEXT_ID_MESH, "Torus"),
+                                                         loc,
+                                                         rot,
+                                                         enter_editmode,
+                                                         local_view_bits,
+                                                         &mesh->id);
+  BLI_assert(ob->data == mesh);
+
+  WM_event_add_notifier(C, NC_OBJECT | ND_DRAW, ob);
+
+  return OPERATOR_FINISHED;
+}
+
+static void mesh_torus_mode_update(Main * /*bmain*/, Scene * /*scene*/, PointerRNA *ptr)
+{
+  if (RNA_enum_get(ptr, "mode") == MESH_TORUS_EXT_INT) {
+    const float major_radius = RNA_float_get(ptr, "major_radius");
+    const float minor_radius = RNA_float_get(ptr, "minor_radius");
+    RNA_float_set(ptr, "abso_major_rad", major_radius + minor_radius);
+    RNA_float_set(ptr, "abso_minor_rad", major_radius - minor_radius);
+  }
+}
+
+void MESH_OT_primitive_torus_add(wmOperatorType *ot)
+{
+  static const EnumPropertyItem prop_torus_mode_items[] = {
+      {MESH_TORUS_MAJOR_MINOR,
+       "MAJOR_MINOR",
+       0,
+       "Major/Minor",
+       "Use the major/minor radii for torus dimensions"},
+      {MESH_TORUS_EXT_INT,
+       "EXT_INT",
+       0,
+       "Exterior/Interior",
+       "Use the exterior/interior radii for torus dimensions"},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+
+  /* identifiers */
+  ot->name = "Add Torus";
+  ot->description = "Construct a torus mesh";
+  ot->idname = "MESH_OT_primitive_torus_add";
+
+  /* API callbacks. */
+  ot->exec = add_primitive_torus_exec;
+  ot->poll = ED_operator_scene_editable;
+
+  /* flags */
+  ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO | OPTYPE_PRESET;
+
+  /* properties */
+  PropertyRNA *prop;
+  RNA_def_int(ot->srna,
+             "major_segments",
+             48,
+             3,
+             256,
+             "Major Segments",
+             "Number of segments for the main ring of the torus",
+             3,
+             256);
+  RNA_def_int(ot->srna,
+             "minor_segments",
+             12,
+             3,
+             256,
+             "Minor Segments",
+             "Number of segments for the minor ring of the torus",
+             3,
+             256);
+  prop = RNA_def_enum(
+      ot->srna, "mode", prop_torus_mode_items, MESH_TORUS_MAJOR_MINOR, "Dimensions Mode", "");
+  RNA_def_property_update_runtime(prop, mesh_torus_mode_update);
+
+  RNA_def_float_distance(ot->srna,
+                        "major_radius",
+                        1.0f,
+                        0.0f,
+                        10000.0f,
+                        "Major Radius",
+                        "Radius from the origin to the center of the cross sections",
+                        0.0f,
+                        100.0f);
+  RNA_def_float_distance(ot->srna,
+                        "minor_radius",
+                        0.25f,
+                        0.0f,
+                        10000.0f,
+                        "Minor Radius",
+                        "Radius of the torus' cross section",
+                        0.0f,
+                        100.0f);
+  RNA_def_float_distance(ot->srna,
+                        "abso_major_rad",
+                        1.25f,
+                        0.0f,
+                        10000.0f,
+                        "Exterior Radius",
+                        "Total Exterior Radius of the torus",
+                        0.0f,
+                        100.0f);
+  RNA_def_float_distance(ot->srna,
+                        "abso_minor_rad",
+                        0.75f,
+                        0.0f,
+                        10000.0f,
+                        "Interior Radius",
+                        "Total Interior Radius of the torus",
+                        0.0f,
+                        100.0f);
+  RNA_def_boolean(ot->srna, "generate_uvs", true, "Generate UVs", "Generate a default UV map");
+
+  blender::ed::object::add_generic_props(ot, false);
+}
+
+/** \} */

@@ -1,0 +1,5 @@
+fpreset 1
+subdir camera
+set context.camera.sensor_width 71.41
+set context.camera.sensor_height 52.63
+set context.camera.sensor_fit "HORIZONTAL"

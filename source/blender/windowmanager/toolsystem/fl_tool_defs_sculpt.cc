@@ -16,13 +16,25 @@
  *
  * Las seis que NO caben son las cuatro de lazo (`mask_lasso`, `hide_lasso`,
  * `face_set_lasso`, `trim_lasso`) y los dos filtros que cambian de controles segun el
- * tipo elegido (`mesh_filter`, `color_filter`). Van marcadas con `settings_pending`;
- * el porque de cada una esta junto a su declaracion.
+ * tipo elegido (`mesh_filter`, `color_filter`). Esas llevan `draw_settings` escrito a
+ * mano en `editors/interface/fl_tool_settings_sculpt.cc`; el porque de cada una esta
+ * junto a su declaracion.
  */
 
 #include "BLT_translation.hh"
 
 #include "fl_tool_defs_sculpt.hh"
+
+/* Los `draw_settings` de `editors/interface/fl_tool_settings_sculpt.cc`. Se declaran aqui
+ * y no en una cabecera de editors/interface para que el catalogo no dependa de ella. */
+namespace flipendo::ui::settings {
+void draw_mask_lasso(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_hide_lasso(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_face_set_lasso(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_trim_lasso(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_mesh_filter(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_color_filter(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}  // namespace flipendo::ui::settings
 
 namespace flipendo::toolsystem::defs_sculpt {
 
@@ -147,12 +159,12 @@ const ToolDecl multires_smear = {
  * `..._polyline_...`), asi que sus filas no se pueden compartir aunque pinten la misma
  * propiedad: cada fila nombra a su operador.
  *
- * Las de lazo no se trasladan. Su `draw_settings` comparte
+ * Las de lazo no caben en filas. Su `draw_settings` comparte
  * `_defs_sculpt.draw_lasso_stroke_settings`, que decide que pinta mirando si la region
  * es `TOOL_HEADER` y, cuando lo es, abre un popover al panel
  * `TOPBAR_PT_tool_settings_extra`. Ni el tipo de region ni ese panel estan disponibles
- * desde una fila declarativa, asi que van con `settings_pending`: preferimos la deuda
- * listada a un `draw_settings` nulo que nadie distingue de "no tiene ajustes".
+ * desde una fila declarativa, asi que llevan `draw_settings` escrito a mano (el mismo
+ * patron se repite en las cuatro familias de lazo: ocultacion, conjuntos y recorte).
  * \{ */
 
 static const PropRow mask_border_settings[] = {
@@ -191,9 +203,9 @@ const ToolDecl mask_lasso = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_mask_lasso,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 static const PropRow mask_line_settings[] = {
@@ -285,9 +297,9 @@ const ToolDecl hide_lasso = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_hide_lasso,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 static const PropRow hide_line_settings[] = {
@@ -374,9 +386,9 @@ const ToolDecl face_set_lasso = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_face_set_lasso,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 static const PropRow face_set_line_settings[] = {
@@ -476,9 +488,9 @@ const ToolDecl trim_lasso = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_trim_lasso,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 static const PropRow trim_line_settings[] = {
@@ -558,10 +570,10 @@ const ToolDecl project_line = {
     /*settings*/ span(project_line_settings),
 };
 
-/* Sus ajustes cambian con el tipo de filtro elegido: `SURFACE_SMOOTH` anade tres
- * controles propios y `SHARPEN` otros tres. Una tabla de filas no puede leer el valor
- * de una propiedad para decidir si pinta la siguiente, asi que queda pendiente entera
- * en vez de dejar fuera, en silencio, seis controles. */
+/* Sus ajustes cambian con el tipo de filtro elegido: `SURFACE_SMOOTH` anade dos
+ * controles propios y `SHARPEN` tres. Una tabla de filas no puede leer el valor de una
+ * propiedad para decidir si pinta la siguiente, asi que lleva `draw_settings` escrito a
+ * mano en vez de dejar fuera, en silencio, cinco controles. */
 const ToolDecl mesh_filter = {
     /*idname*/ "builtin.mesh_filter",
     /*label*/ N_("Mesh Filter"),
@@ -577,9 +589,9 @@ const ToolDecl mesh_filter = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_mesh_filter,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* El filtro de tela es el hermano de `mesh_filter` que SI cabe en filas: pinta los
@@ -614,8 +626,8 @@ const ToolDecl cloth_filter = {
     /*settings*/ span(cloth_filter_settings),
 };
 
-/* Pendiente por lo mismo que `mesh_filter`, aunque aqui sea un solo control: el color
- * de relleno solo se pinta con el tipo `FILL`, y ademas va EN MEDIO de los otros dos.
+/* Codigo por lo mismo que `mesh_filter`, aunque aqui sea un solo control: el color de
+ * relleno solo se pinta con el tipo `FILL`, y ademas va EN MEDIO de los otros dos.
  * Trasladar solo `type` y `strength` dejaria la herramienta sin poder elegir color. */
 const ToolDecl color_filter = {
     /*idname*/ "builtin.color_filter",
@@ -632,9 +644,9 @@ const ToolDecl color_filter = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_color_filter,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 static const PropRow mask_by_color_settings[] = {

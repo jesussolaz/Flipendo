@@ -1,0 +1,4 @@
+fpreset 1
+subdir framerate
+set context.scene.render.fps 60
+set context.scene.render.fps_base 1

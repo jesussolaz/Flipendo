@@ -1,0 +1,44 @@
+# Presets: mismo estado por el camino Python y por el camino C++
+#
+# Para cada preset se captura el estado de las rutas que toca, se aplica
+# el .py con el interprete, se restaura, se aplica el .fpreset con el
+# lector nativo y se comparan los dos estados.
+#
+
+
+identicos 0 de 0 comparados (0 distintos, 0 sin comparar)
+
+# Segunda pasada: cada .fpreset se lee y se aplica.
+
+SIN-CTX  scripts/presets/cycles/integrator/Default.fpreset
+         context.scene.cycles.max_bounces: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/integrator/Direct_Light.fpreset
+         context.scene.cycles.max_bounces: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/integrator/Fast_Global_Illumination.fpreset
+         context.scene.cycles.max_bounces: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/integrator/Full_Global_Illumination.fpreset
+         context.scene.cycles.max_bounces: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/integrator/Limited_Global_Illumination.fpreset
+         context.scene.cycles.max_bounces: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/performance/Default.fpreset
+         context.scene.cycles.debug_use_spatial_splits: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/performance/Faster_Render.fpreset
+         context.scene.cycles.debug_use_spatial_splits: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/performance/Lower_Memory.fpreset
+         context.scene.cycles.debug_use_spatial_splits: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/sampling/Final.fpreset
+         context.scene.cycles.use_adaptive_sampling: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/sampling/Preview.fpreset
+         context.scene.cycles.use_adaptive_sampling: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/viewport_sampling/Final.fpreset
+         context.scene.cycles.use_preview_adaptive_sampling: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/cycles/viewport_sampling/Preview.fpreset
+         context.scene.cycles.use_preview_adaptive_sampling: esta ruta RNA ya no existe
+SIN-CTX  scripts/presets/hair_dynamics/Default.fpreset
+         el contexto no tiene 'particle_system' (ruta 'context.particle_system.cloth.settings.quality')
+SIN-CTX  scripts/presets/operator/wm.collada_export/sl_plus_open_sim_rigged.fpreset
+         el contexto no tiene 'active_operator' (ruta 'context.active_operator.apply_modifiers')
+SIN-CTX  scripts/presets/operator/wm.collada_export/sl_plus_open_sim_static.fpreset
+         el contexto no tiene 'active_operator' (ruta 'context.active_operator.apply_modifiers')
+
+aplicados sin error 151 de 166 (0 con error, 15 sin contexto)

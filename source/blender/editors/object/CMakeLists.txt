@@ -20,7 +20,9 @@ set(INC_SYS
 
 set(SRC
   add_modifier_assets.cc
+  fl_object_ops_selftest.cc
   object_add.cc
+  object_align.cc
   object_bake.cc
   object_bake_api.cc
   object_bake_simulation.cc
@@ -38,6 +40,7 @@ set(SRC
   object_multires_modifier.cc
   object_ops.cc
   object_random.cc
+  object_randomize_transform.cc
   object_relations.cc
   object_remesh.cc
   object_select.cc

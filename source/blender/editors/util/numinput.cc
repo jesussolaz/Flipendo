@@ -31,6 +31,7 @@
 #endif
 
 #include "ED_numinput.hh"
+#include "FL_numinput_native.hh"
 #include "UI_interface.hh"
 
 /* Numeric input which isn't allowing full numeric editing. */
@@ -262,6 +263,35 @@ static bool editstr_insert_at_cursor(NumInput *n, const char *buf, const int buf
   return true;
 }
 
+/* Evalua una expresion ya libre de unidades.
+ *
+ * Flipendo: antes el `#ifdef WITH_PYTHON` envolvia TODA `user_string_to_number()`, y
+ * la rama `#else` era `*r_value = atof(str)`. Eso significaba que un build sin Python
+ * leia `2*3` como 2 y `5cm` como 5 —sin error y sin aviso— porque se saltaba a la vez
+ * la aritmetica y toda la conversion de unidades. Ahora el `#ifdef` solo envuelve la
+ * evaluacion de la expresion, asi que la logica de unidades es literalmente la misma
+ * en los dos builds y solo cambia quien hace la cuenta:
+ * CPython, o `BLI_expr_pylike` mas `BKE_unit_replace_string`. */
+static bool numinput_eval_expression(bContext *C,
+                                     const char *str,
+                                     const bool use_single_line_error,
+                                     char **r_error,
+                                     double *r_value)
+{
+#ifdef WITH_PYTHON
+  BPy_RunErrInfo err_info{};
+  err_info.use_single_line_error = use_single_line_error;
+  err_info.r_string = r_error;
+  return BPY_run_string_as_number(C, nullptr, str, &err_info, r_value);
+#else
+  UNUSED_VARS(C);
+  flipendo::numinput::EvalErrInfo err_info{};
+  err_info.use_single_line_error = use_single_line_error;
+  err_info.r_string = r_error;
+  return flipendo::numinput::eval_expression(str, &err_info, r_value);
+#endif
+}
+
 bool user_string_to_number(bContext *C,
                            const char *str,
                            const UnitSettings &unit,
@@ -270,11 +300,6 @@ bool user_string_to_number(bContext *C,
                            const bool use_single_line_error,
                            char **r_error)
 {
-#ifdef WITH_PYTHON
-  BPy_RunErrInfo err_info{};
-  err_info.use_single_line_error = use_single_line_error;
-  err_info.r_string = r_error;
-
   const double unit_scale = BKE_unit_value_scale(unit, type, 1.0);
   if (BKE_unit_string_contains_unit(str, type)) {
     char str_unit_convert[256];
@@ -282,19 +307,14 @@ bool user_string_to_number(bContext *C,
     BKE_unit_replace_string(
         str_unit_convert, sizeof(str_unit_convert), str, unit_scale, unit.system, type);
 
-    return BPY_run_string_as_number(C, nullptr, str_unit_convert, &err_info, r_value);
+    return numinput_eval_expression(
+        C, str_unit_convert, use_single_line_error, r_error, r_value);
   }
 
-  bool success = BPY_run_string_as_number(C, nullptr, str, &err_info, r_value);
+  const bool success = numinput_eval_expression(C, str, use_single_line_error, r_error, r_value);
   *r_value = BKE_unit_apply_preferred_unit(unit, type, *r_value);
   *r_value /= unit_scale;
   return success;
-
-#else
-  UNUSED_VARS(C, unit, type, use_single_line_error, r_error);
-  *r_value = atof(str);
-  return true;
-#endif
 }
 
 static bool editstr_is_simple_numinput(const char ascii)

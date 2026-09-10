@@ -1,0 +1,10 @@
+fpreset 1
+subdir cycles/performance
+set context.scene.render.threads_mode "AUTO"
+set context.scene.render.use_persistent_data false
+set context.scene.cycles.debug_use_spatial_splits false
+set context.scene.cycles.debug_use_compact_bvh true
+set context.scene.cycles.debug_use_hair_bvh true
+set context.scene.cycles.debug_bvh_time_steps 0
+set context.scene.cycles.use_auto_tile true
+set context.scene.cycles.tile_size 512

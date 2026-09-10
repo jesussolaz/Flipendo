@@ -1,0 +1,11 @@
+fpreset 1
+subdir cycles/sampling
+set context.scene.cycles.use_adaptive_sampling true
+set context.scene.cycles.adaptive_threshold 0.1
+set context.scene.cycles.samples 1024
+set context.scene.cycles.adaptive_min_samples 0
+set context.scene.cycles.time_limit 0.0
+set context.scene.cycles.use_denoising true
+set context.scene.cycles.denoiser "OPENIMAGEDENOISE"
+set context.scene.cycles.denoising_input_passes "RGB_ALBEDO_NORMAL"
+set context.scene.cycles.denoising_prefilter "ACCURATE"

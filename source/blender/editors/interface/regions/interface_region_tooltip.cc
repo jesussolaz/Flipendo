@@ -76,9 +76,6 @@
 #include "BLF_api.hh"
 #include "BLT_translation.hh"
 
-#ifdef WITH_PYTHON
-#  include "BPY_extern_run.hh"
-#endif
 
 #include "ED_screen.hh"
 
@@ -596,48 +593,24 @@ static std::unique_ptr<uiTooltipData> ui_tooltip_data_from_tool(bContext *C,
       if (std::optional<std::string> shortcut_toolbar = WM_key_event_operator_string(
               C, "WM_OT_toolbar", WM_OP_INVOKE_REGION_WIN, nullptr, true))
       {
-#ifdef WITH_PYTHON
-        /* PUENTE PENDIENTE. El keymap de la barra lo fabrica todavia
-         * `bl_keymap_utils.keymap_from_toolbar` (394 lineas de Python), y `wm.toolbar`
-         * sigue siendo un operador de Python. Se migran con el dibujo de la barra (fase 4
-         * de politicas/TOOLSYSTEM-A-CPP.md). Sin Python, `wm.toolbar` no existe y no se
-         * llega aqui. */
-        /* Generate keymap in order to inspect it.
-         * NOTE: we could make a utility to avoid the keymap generation part of this. */
-        const char *expr_imports[] = {
-            "bpy", "bl_keymap_utils", "bl_keymap_utils.keymap_from_toolbar", nullptr};
-        const char *expr =
-            ("getattr("
-             "bl_keymap_utils.keymap_from_toolbar.generate("
-             "bpy.context, "
-             "bpy.context.space_data.type), "
-             "'as_pointer', lambda: 0)()");
-
-        intptr_t expr_result = 0;
-
+        /* El keymap del popup de la barra, nativo (`toolbar_keymap_generate`). Antes lo
+         * fabricaba Python en cada tooltip, evaluando una cadena de codigo. */
         if (has_valid_context == false) {
           shortcut = has_valid_context_error;
         }
-        else if (BPY_run_string_as_intptr(C, expr_imports, expr, nullptr, &expr_result)) {
-          if (expr_result != 0) {
-            wmKeyMap *keymap = (wmKeyMap *)expr_result;
-            LISTBASE_FOREACH (wmKeyMapItem *, kmi, &keymap->items) {
-              if (STREQ(kmi->idname, but->optype->idname)) {
-                char tool_id_test[MAX_NAME];
-                RNA_string_get(kmi->ptr, "name", tool_id_test);
-                if (STREQ(tool_id, tool_id_test)) {
-                  std::string kmi_str = WM_keymap_item_to_string(kmi, false).value_or("");
-                  shortcut = fmt::format("{}, {}", *shortcut_toolbar, kmi_str);
-                  break;
-                }
+        else if (wmKeyMap *keymap = ts::toolbar_keymap_generate(C, space_type, true, true)) {
+          LISTBASE_FOREACH (wmKeyMapItem *, kmi, &keymap->items) {
+            if (STREQ(kmi->idname, but->optype->idname)) {
+              char tool_id_test[MAX_NAME];
+              RNA_string_get(kmi->ptr, "name", tool_id_test);
+              if (STREQ(tool_id, tool_id_test)) {
+                std::string kmi_str = WM_keymap_item_to_string(kmi, false).value_or("");
+                shortcut = fmt::format("{}, {}", *shortcut_toolbar, kmi_str);
+                break;
               }
             }
           }
         }
-        else {
-          BLI_assert(0);
-        }
-#endif /* WITH_PYTHON */
       }
     }
 

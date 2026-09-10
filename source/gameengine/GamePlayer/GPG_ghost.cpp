@@ -1704,6 +1704,13 @@ int main(int argc,
               CTX_py_init_set(C, true);
 #  endif /*WITH_PYTHON*/
 
+              /* Flipendo: marca de fase del mapa de teclado. Estaba atada de rebote a
+               * `CTX_py_init_set()`, que aqui vive dentro del `#ifdef WITH_PYTHON`, asi
+               * que el Player sin CPython llegaba a `WM_keyconfig_init()` unas lineas
+               * mas abajo con la marca en falso y se quedaba sin keymap por defecto.
+               * Mismo punto, ahora sin depender de Python. */
+              WM_keyconfig_init_phase_ready_set();
+
               WM_set_g_system_blenderplayer(system);
               GPU_backend_ghost_system_set(system);
               WM_init_gpu();

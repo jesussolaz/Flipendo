@@ -44,6 +44,12 @@ bool dump_activation_native(const bContext *C, const char *filepath);
  */
 bool dump_queries_native(const bContext *C, const char *filepath);
 
+/**
+ * Escribe el keymap del popup de la barra de cada espacio y modo, en el formato de
+ * `tests/flipendo/toolsystem/toolbar-keymaps-python.txt`. En modo grafico.
+ */
+bool dump_toolbar_keymaps_native(bContext *C, const char *filepath);
+
 }  // namespace flipendo::toolsystem
 
 #endif /* __FL_TOOLSYSTEM_DUMP_HPP__ */

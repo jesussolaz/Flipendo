@@ -12,13 +12,11 @@
  * dos pinceles que solo fijan `brush_type` (relleno y borrado), las seis primitivas de
  * trazo y las tres sueltas (recorte, cuentagotas e interpolacion).
  *
- * Las seis primitivas comparten en el Python un unico `grease_pencil_primitive_toolbar`
- * que NO se traslada aqui, y no por pereza: se corta en seco si no hay pincel activo,
- * abre el selector de recursos de pincel y delega en
- * `bl_ui.properties_paint_common.brush_basic_grease_pencil_paint_settings`. Es codigo,
- * no una tabla de filas, y ademas depende de dos piezas que siguen siendo Python. Por
- * eso van marcadas con `settings_pending`: asi la deuda sale listada en cada
- * verificacion en vez de confundirse con "esta herramienta no tiene ajustes".
+ * Las seis primitivas comparten en el Python un unico `grease_pencil_primitive_toolbar`,
+ * y el cuentagotas cambia de forma segun su modo. Eso es codigo, no una tabla de filas:
+ * sus `draw_settings` estan transliterados en
+ * `editors/interface/fl_tool_settings_grease_pencil_paint.cc`, junto con las piezas de
+ * `bl_ui/properties_paint_common.py` de las que tiran.
  *
  * Ninguna de las once registra `draw_cursor`.
  */
@@ -26,6 +24,29 @@
 #include "BLT_translation.hh"
 
 #include "fl_tool_defs_grease_pencil_paint.hh"
+
+/* En `editors/interface/fl_tool_settings_grease_pencil_paint.cc`. */
+namespace flipendo::ui::settings {
+void draw_grease_pencil_paint_line(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_grease_pencil_paint_polyline(const bContext *C,
+                                       uiLayout *layout,
+                                       bToolRef *tref,
+                                       bool extra);
+void draw_grease_pencil_paint_arc(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_grease_pencil_paint_curve(const bContext *C,
+                                    uiLayout *layout,
+                                    bToolRef *tref,
+                                    bool extra);
+void draw_grease_pencil_paint_box(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_grease_pencil_paint_circle(const bContext *C,
+                                     uiLayout *layout,
+                                     bToolRef *tref,
+                                     bool extra);
+void draw_grease_pencil_paint_eyedropper(const bContext *C,
+                                         uiLayout *layout,
+                                         bToolRef *tref,
+                                         bool extra);
+}  // namespace flipendo::ui::settings
 
 namespace flipendo::toolsystem::defs_grease_pencil_paint {
 
@@ -110,7 +131,7 @@ const ToolDecl trim = {
  *
  * Las seis son la misma herramienta con distinto operador de primitiva, y las seis se
  * limitan a los pinceles de dibujo: nada de borrar, rellenar ni tintar con ellas.
- * Sus ajustes son los del pincel activo, todavia pendientes; ver la cabecera.
+ * Sus ajustes son los del pincel activo y los pinta codigo; ver la cabecera.
  * \{ */
 
 const ToolDecl line = {
@@ -128,9 +149,9 @@ const ToolDecl line = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_USE_BRUSHES | TOOL_OPTION_NO_BRUSH_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_grease_pencil_paint_line,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl polyline = {
@@ -148,9 +169,9 @@ const ToolDecl polyline = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_USE_BRUSHES | TOOL_OPTION_NO_BRUSH_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_grease_pencil_paint_polyline,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl arc = {
@@ -168,9 +189,9 @@ const ToolDecl arc = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_USE_BRUSHES | TOOL_OPTION_NO_BRUSH_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_grease_pencil_paint_arc,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl curve = {
@@ -188,9 +209,9 @@ const ToolDecl curve = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_USE_BRUSHES | TOOL_OPTION_NO_BRUSH_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_grease_pencil_paint_curve,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl box = {
@@ -208,9 +229,9 @@ const ToolDecl box = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_USE_BRUSHES | TOOL_OPTION_NO_BRUSH_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_grease_pencil_paint_box,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl circle = {
@@ -228,9 +249,9 @@ const ToolDecl circle = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_USE_BRUSHES | TOOL_OPTION_NO_BRUSH_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_grease_pencil_paint_circle,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /** \} */
@@ -271,7 +292,7 @@ const ToolDecl interpolate = {
 /* Los ajustes del cuentagotas cambian de forma segun el modo elegido: con material
  * pintan otra propiedad, y con paleta montan un selector de ID y una rejilla de colores
  * de la paleta activa. Eso es flujo de control y plantillas de interfaz, no una lista de
- * filas, asi que queda como deuda declarada en vez de traducirse a medias. */
+ * filas, asi que los pinta codigo; ver la cabecera. */
 const ToolDecl eyedropper = {
     /*idname*/ "builtin.eyedropper",
     /*label*/ N_("Eyedropper"),
@@ -287,9 +308,9 @@ const ToolDecl eyedropper = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_grease_pencil_paint_eyedropper,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /** \} */

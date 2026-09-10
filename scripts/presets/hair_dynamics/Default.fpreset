@@ -1,0 +1,13 @@
+fpreset 1
+subdir hair_dynamics
+set context.particle_system.cloth.settings.quality 5
+set context.particle_system.cloth.settings.mass 0.30000001192092896
+set context.particle_system.cloth.settings.bending_stiffness 0.5
+set context.particle_system.settings.bending_random 0.0
+set context.particle_system.cloth.settings.bending_damping 0.5
+set context.particle_system.cloth.settings.air_damping 1.0
+set context.particle_system.cloth.settings.internal_friction 0.0
+set context.particle_system.cloth.settings.density_target 0.0
+set context.particle_system.cloth.settings.density_strength 0.0
+set context.particle_system.cloth.settings.voxel_cell_size 0.10000000149011612
+set context.particle_system.cloth.settings.pin_stiffness 0.0

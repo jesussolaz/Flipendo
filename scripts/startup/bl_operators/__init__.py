@@ -11,14 +11,12 @@ if "bpy" in locals():
     del reload
 
 _modules = [
-    "add_mesh_torus",
     "anim",
     "assets",
     "bone_selection_sets",
     "clip",
     "connect_to_output",
     "console",
-    "constraint",
     "file",
     "geometry_nodes",
     "grease_pencil",
@@ -27,9 +25,7 @@ _modules = [
     "mesh",
     "node",
     "object",
-    "object_align",
     "object_quick_effects",
-    "object_randomize_transform",
     "presets",
     "rigidbody",
     "screen_play_rendered_anim",

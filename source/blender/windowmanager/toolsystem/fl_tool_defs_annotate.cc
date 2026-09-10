@@ -11,17 +11,21 @@
  * Tres de las cuatro comparten `draw_settings_common`, que es una de las SEIS
  * funciones de ajustes con flujo de control real de todo el catalogo: mira el tipo de
  * espacio, el tipo de region y el idname de la propia herramienta para pintar cosas
- * distintas. No cabe en filas declarativas, asi que ira como codigo.
+ * distintas. No cabe en filas declarativas, asi que va como codigo:
+ * `flipendo::ui::settings::draw_annotate_common`, en
+ * `editors/interface/fl_tool_settings_annotate.cc`, y las tres apuntan a ella.
  *
- * Todavia no esta: dentro dibuja un popover al panel `TOPBAR_PT_annotation_layers`,
- * que sigue siendo un panel de Python. Hasta que la migracion de `bl_ui` lo haga
- * nativo, esas tres van marcadas con `settings_pending` para que la deuda salga
- * listada en cada verificacion en vez de desaparecer.
+ * El popover que pinta dentro, a `TOPBAR_PT_annotation_layers`, se busca por nombre al
+ * dibujar; que ese panel siga siendo de Python no cambia nada aqui.
  */
 
 #include "BLT_translation.hh"
 
 #include "fl_tool_defs_annotate.hh"
+
+namespace flipendo::ui::settings {
+void draw_annotate_common(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}
 
 namespace flipendo::toolsystem::defs_annotate {
 
@@ -40,9 +44,9 @@ const ToolDecl scribble = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_KEYMAP_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_annotate_common,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl line = {
@@ -60,9 +64,9 @@ const ToolDecl line = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_KEYMAP_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_annotate_common,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl poly = {
@@ -80,9 +84,9 @@ const ToolDecl poly = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_KEYMAP_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_annotate_common,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* El borrador es el unico de los cuatro que NO usa `draw_settings_common`: su unico

@@ -21,8 +21,8 @@
  *   Mesh sin que nada avisara. Ver la nota de `keymap_name` en FL_toolsystem.hpp.
  *
  * - Ninguna de las cinco tiene descripcion literal ni ajustes declarativos: las dos
- *   cosas son codigo en el Python y estan explicadas en el `.hh`, junto a las
- *   declaraciones de las dos auxiliares que comparten.
+ *   cosas son codigo en el Python. La descripcion esta aqui abajo; el dibujo de los
+ *   ajustes, en `editors/interface/fl_tool_settings_view3d_add.cc`.
  */
 
 #include <fmt/format.h>
@@ -32,6 +32,16 @@
 #include "fl_tool_description.hh"
 
 #include "fl_tool_defs_view3d_add.hh"
+
+/* Los `draw_settings` de las cinco, transliterados en
+ * `editors/interface/fl_tool_settings_view3d_add.cc`. */
+namespace flipendo::ui::settings {
+void draw_cube_add(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_cone_add(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_cylinder_add(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_uv_sphere_add(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_ico_sphere_add(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}  // namespace flipendo::ui::settings
 
 namespace flipendo::toolsystem::defs_view3d_add {
 
@@ -97,7 +107,9 @@ static std::string description_ico_sphere_add(const bContext *C, const wmKeyMap 
  * Python, y perderlos obligaria a volver a abrir el fichero de Python cuando se
  * escriban las siete descripciones calculadas. */
 
-/* Prefijo de la descripcion: "Add cube to mesh interactively". */
+/* Prefijo de la descripcion: "Add cube to mesh interactively".
+ *
+ * Sus ajustes son solo los comunes a las cinco, sin controles propios. */
 const ToolDecl cube_add = {
     /*idname*/ "builtin.primitive_cube_add",
     /*label*/ N_("Add Cube"),
@@ -113,17 +125,17 @@ const ToolDecl cube_add = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_cube_add,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* Prefijo de la descripcion: "Add cone to mesh interactively".
  *
  * Ademas de lo comun, sus ajustes anaden `vertices` y `end_fill_type` de
  * `mesh.primitive_cone_add`, pero solo cuando NO se esta pintando el popover extra.
- * Ese "solo cuando" es flujo de control, asi que la herramienta entera queda
- * pendiente en vez de trasladar las dos filas y perder la condicion. */
+ * Ese "solo cuando" es flujo de control, y por eso va como codigo (`draw_settings`) y
+ * no como dos filas que perderian la condicion. */
 const ToolDecl cone_add = {
     /*idname*/ "builtin.primitive_cone_add",
     /*label*/ N_("Add Cone"),
@@ -139,9 +151,9 @@ const ToolDecl cone_add = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_cone_add,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* Prefijo de la descripcion: "Add cylinder to mesh interactively".
@@ -163,9 +175,9 @@ const ToolDecl cylinder_add = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_cylinder_add,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* Prefijo de la descripcion: "Add sphere to mesh interactively". Es el mismo texto que
@@ -188,9 +200,9 @@ const ToolDecl uv_sphere_add = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_uv_sphere_add,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* Prefijo de la descripcion: "Add sphere to mesh interactively".
@@ -211,9 +223,9 @@ const ToolDecl ico_sphere_add = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_ico_sphere_add,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 }  // namespace flipendo::toolsystem::defs_view3d_add

@@ -29,6 +29,11 @@
 
 #include "fl_tool_defs_edit_misc.hh"
 
+/* Dibujo de ajustes en C++ (`editors/interface/fl_tool_settings_edit_curve.cc`). */
+namespace flipendo::ui::settings {
+void draw_edit_curve_draw(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}  // namespace flipendo::ui::settings
+
 namespace flipendo::toolsystem {
 
 /* -------------------------------------------------------------------- */
@@ -135,8 +140,8 @@ namespace defs_edit_curve {
 
 /* Sus ajustes son `curve_draw_settings` (`space_toolsystem_toolbar.py:1167`), una de
  * las seis funciones con flujo de control real: mira el tipo de region, decide si es
- * la cabecera o el popover "extra" y ramifica segun `cps.curve_type`. No cabe en filas
- * y no se inventa; queda marcada como deuda para que el verificador la liste. */
+ * la cabecera o el popover "extra" y ramifica segun `cps.curve_type`. No cabe en filas;
+ * se pinta con codigo en `fl_tool_settings_edit_curve.cc`. */
 const ToolDecl draw = {
     /*idname*/ "builtin.draw",
     /*label*/ N_("Draw"),
@@ -152,9 +157,9 @@ const ToolDecl draw = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_edit_curve_draw,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl extrude = {
@@ -272,8 +277,9 @@ const ToolDecl curve_vertex_randomize = {
 namespace defs_edit_curves {
 
 /* En el Python esta envuelta en una funcion de una linea que solo reenvia a
- * `curve_draw_settings`, la misma que usa la de curva. Vale el mismo motivo: tiene
- * flujo de control y queda como deuda declarada.
+ * `curve_draw_settings` con el mismo `extra` (`space_toolsystem_toolbar.py:1325`), la
+ * misma que usa la de curva. El envoltorio no anade nada, asi que apunta directamente
+ * a la misma funcion C++ y el dibujo sale igual.
  *
  * Comparte `idname` e icono con `defs_edit_curve::draw` pero es otra declaracion, y su
  * keymap lo demuestra: aqui "Edit Curves" y alli "Edit Curve". */
@@ -292,9 +298,9 @@ const ToolDecl draw = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_edit_curve_draw,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 }  // namespace defs_edit_curves

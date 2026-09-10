@@ -1,0 +1,4 @@
+fpreset 1
+subdir color_management/white_balance
+set context.scene.view_settings.white_balance_temperature 4070
+set context.scene.view_settings.white_balance_tint 3.3

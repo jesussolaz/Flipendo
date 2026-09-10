@@ -181,7 +181,7 @@ static const PropRow box_settings[] = {
      "sequencer.select_box",
      "mode",
      nullptr,
-     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY},
+     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY | PROP_ROW_OWN_ROW | PROP_ROW_NO_SPLIT},
 };
 
 /* Misma herramienta que `box_preview` para el usuario, pero declarada aparte porque en

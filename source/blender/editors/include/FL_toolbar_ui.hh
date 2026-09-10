@@ -21,6 +21,7 @@
 
 struct ARegionType;
 struct bContext;
+struct bToolRef;
 struct uiLayout;
 
 namespace flipendo::ui {
@@ -47,4 +48,45 @@ void toolbar_draw(const bContext *C, uiLayout *layout, bool detect_layout, float
  */
 int tool_icon_value(const char *icon_name);
 
+/* -------------------------------------------------------------------- */
+/** \name La cabecera de la herramienta activa y sus ajustes
+ *
+ * Sustituyen a `draw_active_tool_header`, `draw_active_tool_fallback`,
+ * `draw_fallback_tool_items[_for_pie_menu]` y al `draw_settings` de cada herramienta.
+ * La interfaz que aun es Python (las cabeceras de `bl_ui`) las llama por las plantillas
+ * `UILayout.template_tool_*` de RNA.
+ * \{ */
+
+/**
+ * `draw_active_tool_header`: icono o etiqueta, ajustes de la herramienta y el selector
+ * de reserva. `space_type` -1 y `mode` nulo toman los del contexto. Devuelve la
+ * herramienta activa, o nulo si no hay.
+ */
+bToolRef *tool_header_draw(const bContext *C,
+                           uiLayout *layout,
+                           bool show_tool_icon_always,
+                           int space_type,
+                           const char *mode);
+
+/** `draw_fallback_tool_items` (popover) o `..._for_pie_menu` (tarta). */
+void tool_fallback_items_draw(const bContext *C, uiLayout *layout, bool pie);
+
+/** `draw_active_tool_fallback`: los ajustes de la herramienta de reserva de `tref`. */
+void tool_fallback_settings_draw(const bContext *C,
+                                 uiLayout *layout,
+                                 bToolRef *tref,
+                                 bool is_horizontal_layout);
+
+/** `TOPBAR_PT_tool_settings_extra`: los ajustes "extra" de la herramienta activa. */
+void tool_settings_extra_draw(const bContext *C, uiLayout *layout);
+
+/** \} */
+
 }  // namespace flipendo::ui
+
+struct wmOperatorType;
+
+/* Los operadores de la barra: `fl_toolbar_ops.cc`. Los registra `ED_operatortypes_ui`. */
+void WM_OT_toolbar(wmOperatorType *ot);
+void WM_OT_toolbar_fallback_pie(wmOperatorType *ot);
+void WM_OT_toolbar_prompt(wmOperatorType *ot);

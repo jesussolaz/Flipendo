@@ -16,6 +16,11 @@
 
 #include "fl_tool_defs_node.hh"
 
+/* Definida en editors/interface/fl_tool_cursor_ui.cc: el circulo del radio bajo el raton. */
+namespace flipendo::ui::cursor {
+void draw_select_circle_node(bContext *C, bToolRef *tref, const blender::int2 &xy);
+}  // namespace flipendo::ui::cursor
+
 namespace flipendo::toolsystem {
 
 /* -------------------------------------------------------------------- */
@@ -44,7 +49,7 @@ static const PropRow box_settings[] = {
      "node.select_box",
      "mode",
      nullptr,
-     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY},
+     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY | PROP_ROW_OWN_ROW | PROP_ROW_NO_SPLIT},
 };
 
 const ToolDecl box = {
@@ -69,7 +74,7 @@ static const PropRow lasso_settings[] = {
      "node.select_lasso",
      "mode",
      nullptr,
-     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY},
+     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY | PROP_ROW_OWN_ROW | PROP_ROW_NO_SPLIT},
 };
 
 const ToolDecl lasso = {
@@ -94,7 +99,7 @@ static const PropRow circle_settings[] = {
      "node.select_circle",
      "mode",
      nullptr,
-     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY},
+     PROP_ROW_EXPAND | PROP_ROW_NO_TEXT | PROP_ROW_ICON_ONLY | PROP_ROW_OWN_ROW | PROP_ROW_NO_SPLIT},
     {PropSource::Operator, "node.select_circle", "radius"},
 };
 
@@ -116,8 +121,8 @@ const ToolDecl circle = {
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ span(circle_settings),
     /*draw_settings*/ nullptr,
-    /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_DRAW_CURSOR,
+    /*draw_cursor*/ flipendo::ui::cursor::draw_select_circle_node,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 }  // namespace defs_node_select

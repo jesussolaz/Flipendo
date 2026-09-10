@@ -1,0 +1,8 @@
+fpreset 1
+subdir ffmpeg
+set context.scene.render.ffmpeg.format "MKV"
+set context.scene.render.ffmpeg.codec "H264"
+set context.scene.render.ffmpeg.gopsize 1
+set context.scene.render.ffmpeg.constant_rate_factor "PERC_LOSSLESS"
+set context.scene.render.ffmpeg.use_max_b_frames true
+set context.scene.render.ffmpeg.max_b_frames 0
