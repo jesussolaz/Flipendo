@@ -343,6 +343,12 @@ void WM_init(bContext *C, int argc, const char **argv)
 
   CTX_py_init_set(C, true);
 
+  /* Flipendo: la marca de fase del mapa de teclado, en el punto exacto en el que antes
+   * la hacia `CTX_py_init_set()` de rebote. Aqui ya paso `ED_spacemacros_init()` (mas
+   * arriba en esta misma funcion), que es la precondicion de verdad. Ver
+   * `WM_keyconfig_init_phase_ready_set()`. */
+  WM_keyconfig_init_phase_ready_set();
+
   /* Postpone updating the key-configuration until after add-ons have been registered,
    * needed to properly load user-configured add-on key-maps, see: #113603. */
   WM_keyconfig_update_postpone_begin();

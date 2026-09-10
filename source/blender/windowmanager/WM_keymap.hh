@@ -23,6 +23,23 @@ struct EnumPropertyItem;
 /* Key Configuration. */
 
 void WM_keyconfig_init(bContext *C);
+/**
+ * Marca que el arranque ya paso la fase tardia y que `WM_keyconfig_init` puede
+ * construir el mapa de teclado por defecto.
+ *
+ * `WM_keyconfig_init` se llama dos veces y solo la segunda vale: en la primera aun no
+ * estan registrados los operadores MACRO (`ED_spacemacros_init`) y construir el keymap
+ * ahi deja 502 lineas de diferencia. Hasta ahora la fase se detectaba con
+ * `CTX_py_init_get(C)`, que resultaba cierto justo en el momento bueno **por
+ * casualidad**; con `WITH_PYTHON=OFF` nunca lo era y el keymap por defecto no se
+ * construia jamas. Esta funcion es la marca de fase explicita que la sustituye, puesta
+ * exactamente donde estaba `CTX_py_init_set()` para que el build con Python no note
+ * ni un atajo de diferencia.
+ *
+ * Es estado de PROCESO, no del gestor de ventanas: `wm->init_flag` se reinicia al
+ * cargar un `.blend` y la fase de arranque no.
+ */
+void WM_keyconfig_init_phase_ready_set();
 void WM_keyconfig_reload(bContext *C);
 
 wmKeyConfig *WM_keyconfig_new(wmWindowManager *wm, const char *idname, bool user_defined);

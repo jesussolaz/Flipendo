@@ -450,6 +450,15 @@ void WM_keyconfig_reload(bContext *C)
   flipendo::keymap::register_default(wm->defaultconf);
 }
 
+/* Marca de fase del arranque; ver `WM_keyconfig_init_phase_ready_set()`. Es de
+ * proceso, no de `wmWindowManager`: `wm->init_flag` se reinicia al leer un `.blend`. */
+static bool wm_keyconfig_phase_ready = false;
+
+void WM_keyconfig_init_phase_ready_set()
+{
+  wm_keyconfig_phase_ready = true;
+}
+
 void WM_keyconfig_init(bContext *C)
 {
   wmWindowManager *wm = CTX_wm_manager(C);
@@ -466,18 +475,21 @@ void WM_keyconfig_init(bContext *C)
     wm->userconf = WM_keyconfig_new(wm, WM_KEYCONFIG_STR_DEFAULT " user", false);
   }
 
-  /* Esta guarda NO es "espera a Python", aunque lo parezca por como esta escrita:
-   * es "espera a la fase tardia del arranque". WM_keyconfig_init se llama dos veces,
-   * y en la primera todavia no se han registrado los operadores MACRO
-   * (ED_spacemacros_init, wm_init_exit.cc:316) ni los de Python. Construir el keymap
-   * ahi deja sin propiedades a los atajos que los usan -- se midio: 502 lineas de
-   * diferencia, casi todas de MESH_OT_/NODE_OT_/OBJECT_OT_.
+  /* Esta guarda NO es "espera a Python", aunque antes lo pareciera: es "espera a la
+   * fase tardia del arranque". WM_keyconfig_init se llama dos veces, y en la primera
+   * todavia no se han registrado los operadores MACRO (ED_spacemacros_init,
+   * wm_init_exit.cc:316) ni los de Python. Construir el keymap ahi deja sin
+   * propiedades a los atajos que los usan -- se midio: 502 lineas de diferencia, casi
+   * todas de MESH_OT_/NODE_OT_/OBJECT_OT_.
    *
-   * CTX_py_init_get resulta ser cierto justo en la segunda llamada, asi que sirve de
-   * marca de fase. Es una casualidad util, no un diseno: cuando el editor no ejecute
-   * Python habra que sustituirla por una marca de fase explicita, no simplemente
-   * borrarla. */
-  if (CTX_py_init_get(C) && (wm->init_flag & WM_INIT_FLAG_KEYCONFIG) == 0) {
+   * Hasta el 2026-09-11 la condicion era `CTX_py_init_get(C)`, que resulta cierto
+   * justo en la segunda llamada... por casualidad, porque `CTX_py_init_set()` se
+   * llama entre las dos. Con WITH_PYTHON=OFF nunca era cierto y el mapa de teclado por
+   * defecto NO se construia jamas: el editor sin Python arrancaba mudo, sin un solo
+   * atajo, y sin decir por que. Ahora la marca de fase es explicita y se pone en el
+   * mismo punto exacto, asi que el build con Python queda igual (verificado con
+   * --fl-check-keymap: 248 keymaps, 3.673 atajos) y el build sin Python funciona. */
+  if (wm_keyconfig_phase_ready && (wm->init_flag & WM_INIT_FLAG_KEYCONFIG) == 0) {
     /* Create default key config, only initialize once,
      * it's persistent across sessions. */
     if (!(wm->defaultconf->flag & KEYCONF_INIT_DEFAULT)) {
