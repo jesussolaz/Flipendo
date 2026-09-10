@@ -5,6 +5,12 @@
 # keymap del usuario y busca en el las teclas que ya activan cada herramienta.
 #
 # Uso:  Blender --factory-startup --python dump_toolbar_keymaps_gui.py -- <salida.txt>
+#
+# YA NO SE PUEDE EJECUTAR, y es lo que tenia que pasar: `keymap_from_toolbar.py` se
+# retiro una vez verificado el nativo (912/912 atajos). El fichero se conserva porque es
+# la receta con la que se fabrico `toolbar-keymaps-python.txt`, que sigue siendo la linea
+# base contra la que compara `--fl-dump-toolbar-keymaps`. Un oraculo se guarda aunque su
+# sujeto muera: sin el, la linea base seria un numero sin procedencia.
 import sys
 import traceback
 
