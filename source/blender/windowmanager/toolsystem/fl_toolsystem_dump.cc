@@ -382,6 +382,52 @@ bool dump_activation_native(const bContext *C, const char *filepath)
 /** \} */
 
 /* -------------------------------------------------------------------- */
+/** \name Volcado de las consultas
+ *
+ * Mismo formato que `tests/flipendo/toolsystem/dump_queries_gui.py`. Tiene que correr
+ * en modo grafico: las descripciones salen de los keymaps de usuario.
+ * \{ */
+
+bool dump_queries_native(const bContext *C, const char *filepath)
+{
+  FILE *fp = BLI_fopen(filepath, "w");
+  if (fp == nullptr) {
+    fprintf(stderr, "No se pudo abrir '%s' para escribir.\n", filepath);
+    return false;
+  }
+  int lines = 0;
+  for (const SpaceMode &sm : space_modes_ordered()) {
+    const ToolbarDecl &toolbar = *sm.toolbar;
+    const char *label = sm.mode != nullptr ? sm.mode : "None";
+    const char *space = space_type_identifier(toolbar.space_type);
+    for (const ToolDecl *tool : tools_for_space_mode(C, toolbar, sm.mode)) {
+      std::string group;
+      for (const blender::StringRefNull id :
+           tool_group_idnames_in(C, toolbar, sm.mode, tool->idname, true))
+      {
+        group += group.empty() ? "" : ",";
+        group += id;
+      }
+      const std::string desc = tool_description_in(C, toolbar, sm.mode, tool->idname, true);
+      fprintf(fp,
+              "Q %s %s %s label=%s group=%s desc=%s\n",
+              space,
+              label,
+              tool->idname,
+              tool->label,
+              group.empty() ? "-" : group.c_str(),
+              py_repr(desc.c_str()).c_str());
+      lines++;
+    }
+  }
+  fclose(fp);
+  printf("QUERIES_DUMP_NATIVE_OK %d\n", lines);
+  return true;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
 /** \name Volcado y comprobacion
  * \{ */
 

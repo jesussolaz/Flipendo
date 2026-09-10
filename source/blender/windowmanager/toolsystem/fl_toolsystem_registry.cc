@@ -300,6 +300,11 @@ blender::Vector<ToolGroupView> tools_unexpanded_for_space_mode(const bContext *C
 /** \name Consultas
  * \{ */
 
+static const char *mode_for_toolbar(const bContext *C, const ToolbarDecl &toolbar)
+{
+  return toolbar.mode_from_context != nullptr ? toolbar.mode_from_context(C) : nullptr;
+}
+
 blender::Vector<const ToolDecl *> tools_for_context(const bContext *C, const int space_type)
 {
   const ToolbarDecl *toolbar = toolbar_for_space(space_type);
@@ -316,6 +321,19 @@ const ToolDecl *tool_find_by_id(const bContext *C,
                                 const blender::StringRefNull idname)
 {
   for (const ToolDecl *tool : tools_for_context(C, space_type)) {
+    if (idname == tool->idname) {
+      return tool;
+    }
+  }
+  return nullptr;
+}
+
+const ToolDecl *tool_find_in(const bContext *C,
+                             const ToolbarDecl &toolbar,
+                             const char *mode,
+                             const blender::StringRefNull idname)
+{
+  for (const ToolDecl *tool : tools_for_space_mode(C, toolbar, mode)) {
     if (idname == tool->idname) {
       return tool;
     }
@@ -344,16 +362,13 @@ blender::StringRefNull tool_label_for_id(const bContext *C,
  * `_tool_get_group_by_id`: el grupo que contiene la herramienta, en CUALQUIER posicion
  * (no solo como lider). El primero que la contenga gana, igual que en el Python.
  */
-blender::Vector<blender::StringRefNull> tool_group_idnames_for_id(
-    const bContext *C, const int space_type, const blender::StringRefNull idname, const bool coerce)
+blender::Vector<blender::StringRefNull> tool_group_idnames_in(const bContext *C,
+                                                              const ToolbarDecl &toolbar,
+                                                              const char *mode,
+                                                              const blender::StringRefNull idname,
+                                                              const bool coerce)
 {
-  const ToolbarDecl *toolbar = toolbar_for_space(space_type);
-  if (toolbar == nullptr) {
-    return {};
-  }
-  const char *mode = toolbar->mode_from_context != nullptr ? toolbar->mode_from_context(C) :
-                                                             nullptr;
-  for (const ToolGroupView &group : tools_unexpanded_for_space_mode(C, *toolbar, mode)) {
+  for (const ToolGroupView &group : tools_unexpanded_for_space_mode(C, toolbar, mode)) {
     for (const ToolDecl *tool : group.tools) {
       if (idname != tool->idname) {
         continue;
@@ -369,6 +384,18 @@ blender::Vector<blender::StringRefNull> tool_group_idnames_for_id(
     }
   }
   return {};
+}
+
+blender::Vector<blender::StringRefNull> tool_group_idnames_for_id(const bContext *C,
+                                                                  const int space_type,
+                                                                  const blender::StringRefNull idname,
+                                                                  const bool coerce)
+{
+  const ToolbarDecl *toolbar = toolbar_for_space(space_type);
+  if (toolbar == nullptr) {
+    return {};
+  }
+  return tool_group_idnames_in(C, *toolbar, mode_for_toolbar(C, *toolbar), idname, coerce);
 }
 
 /**
@@ -403,12 +430,13 @@ static wmKeyMap *user_keymap_by_name(const bContext *C, const char *name)
  * de la herramienta. Es lo que hace que la mayoria de herramientas tengan tooltip sin
  * haber escrito ninguno.
  */
-std::string tool_description_for_id(const bContext *C,
-                                    const int space_type,
-                                    const blender::StringRefNull idname,
-                                    const bool use_operator)
+std::string tool_description_in(const bContext *C,
+                                const ToolbarDecl &toolbar,
+                                const char *mode,
+                                const blender::StringRefNull idname,
+                                const bool use_operator)
 {
-  const ToolDecl *item = tool_find_by_id(C, space_type, idname);
+  const ToolDecl *item = tool_find_in(C, toolbar, mode, idname);
   if (item == nullptr) {
     return "";
   }
@@ -439,6 +467,18 @@ std::string tool_description_for_id(const bContext *C,
     }
   }
   return "";
+}
+
+std::string tool_description_for_id(const bContext *C,
+                                    const int space_type,
+                                    const blender::StringRefNull idname,
+                                    const bool use_operator)
+{
+  const ToolbarDecl *toolbar = toolbar_for_space(space_type);
+  if (toolbar == nullptr) {
+    return "";
+  }
+  return tool_description_in(C, *toolbar, mode_for_toolbar(C, *toolbar), idname, use_operator);
 }
 
 wmKeyMap *tool_keymap_for_id(const bContext *C,

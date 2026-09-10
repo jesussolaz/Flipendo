@@ -39,10 +39,7 @@
 #include "RNA_path.hh"
 #include "RNA_prototypes.hh"
 
-#ifdef WITH_PYTHON
-#  include "BPY_extern.hh"
-#  include "BPY_extern_run.hh"
-#endif
+#include "toolsystem/FL_toolsystem.hpp"
 
 #include "WM_api.hh"
 #include "WM_types.hh"
@@ -397,29 +394,14 @@ static void ui_but_user_menu_add(bContext *C, uiBut *but, bUserMenu *um)
       if (UI_but_is_tool(but)) {
         char idname[64];
         RNA_string_get(but->opptr, "name", idname);
-#ifdef WITH_PYTHON
-        {
-          const char *expr_imports[] = {"bpy", "bl_ui", nullptr};
-          char expr[256];
-          SNPRINTF(expr,
-                   "bl_ui.space_toolsystem_common.item_from_id("
-                   "bpy.context, "
-                   "bpy.context.space_data.type, "
-                   "'%s').label",
-                   idname);
-          char *expr_result = nullptr;
-          if (BPY_run_string_as_string(C, expr_imports, expr, nullptr, &expr_result)) {
-            drawstr = expr_result;
-            MEM_freeN(expr_result);
-          }
-          else {
-            BLI_assert(0);
-            drawstr = idname;
-          }
-        }
-#else
-        drawstr = idname;
-#endif
+        /* La etiqueta sale del catalogo nativo. Antes se le preguntaba a Python
+         * construyendo una cadena de codigo y evaluandola. Si la herramienta no esta en
+         * el espacio actual se usa el identificador, igual que cuando el Python fallaba. */
+        const SpaceLink *sl = CTX_wm_space_data(C);
+        const blender::StringRefNull label =
+            sl != nullptr ? flipendo::toolsystem::tool_label_for_id(C, sl->spacetype, idname) :
+                            blender::StringRefNull("");
+        drawstr = label.is_empty() ? std::string(idname) : std::string(label);
       }
       else if (but->tip_quick_func) {
         /* The "quick tooltip" often contains a short string that can be used as a fallback. */

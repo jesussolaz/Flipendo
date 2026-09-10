@@ -420,6 +420,27 @@ const ToolDecl *tool_find_by_index(const bContext *C, int space_type, int index)
  * cuenta como uno y devuelve su variante recordada. */
 const ToolDecl *tool_find_by_index_active(const bContext *C, int space_type, int index);
 
+/**
+ * Las mismas consultas con espacio y modo EXPLICITOS, sin mirar el contexto.
+ *
+ * Las de arriba resuelven el modo del contexto y llaman a estas. Existen para poder
+ * recorrer el catalogo entero modo a modo, que es lo que hace el volcado de consultas.
+ */
+const ToolDecl *tool_find_in(const bContext *C,
+                             const ToolbarDecl &toolbar,
+                             const char *mode,
+                             blender::StringRefNull idname);
+std::string tool_description_in(const bContext *C,
+                                const ToolbarDecl &toolbar,
+                                const char *mode,
+                                blender::StringRefNull idname,
+                                bool use_operator);
+blender::Vector<blender::StringRefNull> tool_group_idnames_in(const bContext *C,
+                                                              const ToolbarDecl &toolbar,
+                                                              const char *mode,
+                                                              blender::StringRefNull idname,
+                                                              bool coerce);
+
 blender::StringRefNull tool_label_for_id(const bContext *C,
                                          int space_type,
                                          blender::StringRefNull idname);

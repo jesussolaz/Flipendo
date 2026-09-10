@@ -265,3 +265,43 @@ usuario, y eso no es una migración.
 Siete puentes: las cinco consultas del tooltip y del menú contextual (fase 3), el keymap
 de la barra que el tooltip fabrica en cada apertura, y el dibujo de la barra (fase 4).
 Hasta la fase 4 el dibujo sigue en Python, y con él `space_toolsystem_common.py`.
+
+---
+
+## Fase 3: las consultas, en C++
+
+El tooltip y el menú contextual ya no le preguntan nada a Python. Antes cada tooltip de
+herramienta hacía **cuatro evaluaciones de cadenas de código**: etiqueta, descripción,
+grupo y keymap. Ahora son llamadas al catálogo nativo.
+
+| Puente | Estado |
+|---|---|
+| `wm_toolsystem.cc:926`, `:985` | cortados en la fase 2 |
+| `interface_query.cc:146` | disuelto: compara con un operador que ya es C++ |
+| `interface_context_menu.cc:405` — etiqueta | cortado |
+| `interface_region_tooltip.cc:526` — etiqueta | cortado |
+| `interface_region_tooltip.cc:578` — descripción | cortado |
+| `interface_region_tooltip.cc:703` — grupo | cortado |
+| `interface_region_tooltip.cc:775` — keymap | cortado |
+| `interface_region_tooltip.cc:641` — keymap de la barra | **queda**, aislado en su `#ifdef` |
+
+**Ocho de nueve.** El que queda depende de `keymap_from_toolbar.py` y del operador
+`wm.toolbar`, que van con el dibujo de la barra.
+
+### La consulta delicada era la descripción
+
+Casi ninguna herramienta tiene texto propio: su tooltip sale del **primer atajo activo
+de su keymap de usuario**. Un matiz mal replicado habría degradado cientos de tooltips
+sin que nada avisara. Se verificó igual que todo lo demás: `queries-python.txt` sale de
+las funciones reales (`item_from_id`, `description_from_id`, `item_group_from_id`), modo
+a modo, y el nativo la reproduce **416/416 byte a byte**, en modo gráfico porque los
+keymaps de usuario solo existen ahí. Incluye las siete descripciones calculadas, con los
+atajos del usuario dentro, y las **45 herramientas que no tienen ninguna**: un tooltip
+inventado sería una diferencia igual que uno perdido.
+
+### Una diferencia deliberada
+
+Manteniendo Mayúsculas sobre una herramienta, el tooltip debía enseñar su keymap. En el
+Python **no salía nunca**: `keymap_from_id` devuelve el *nombre* del keymap, no el
+keymap, y `getattr(nombre, 'as_pointer', lambda: 0)()` daba siempre 0. El nativo pide el
+keymap de verdad, que es lo que el código C pretendía. Está escrito en el código.

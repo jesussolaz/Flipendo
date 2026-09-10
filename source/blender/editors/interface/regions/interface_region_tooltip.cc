@@ -82,6 +82,8 @@
 
 #include "ED_screen.hh"
 
+#include "toolsystem/FL_toolsystem.hpp"
+
 #include "interface_intern.hh"
 #include "interface_regions_intern.hh"
 
@@ -398,8 +400,6 @@ static std::string ui_tooltip_text_python_from_op(bContext *C,
 /** \name ToolTip Creation
  * \{ */
 
-#ifdef WITH_PYTHON
-
 static bool ui_tooltip_data_append_from_keymap(bContext *C, uiTooltipData &data, wmKeyMap *keymap)
 {
   const int fields_len_init = data.fields.size();
@@ -438,8 +438,6 @@ static bool ui_tooltip_data_append_from_keymap(bContext *C, uiTooltipData &data,
 
   return (fields_len_init != data.fields.size());
 }
-
-#endif /* WITH_PYTHON */
 
 static bool ui_tooltip_period_needed(blender::StringRef tip)
 {
@@ -514,101 +512,67 @@ static std::unique_ptr<uiTooltipData> ui_tooltip_data_from_tool(bContext *C,
   /* We have a tool, now extract the info. */
   std::unique_ptr<uiTooltipData> data = std::make_unique<uiTooltipData>();
 
-#ifdef WITH_PYTHON
-  /* It turns out to be most simple to do this via Python since C
-   * doesn't have access to information about non-active tools. */
+  /* Todo sale del catalogo nativo (`toolsystem/FL_toolsystem.hpp`). Antes cada dato se
+   * le pedia a Python construyendo una cadena de codigo y evaluandola: cuatro
+   * evaluaciones por tooltip. */
+  namespace ts = flipendo::toolsystem;
+  const int space_type = CTX_wm_space_data(C)->spacetype;
 
   /* Title (when icon-only). */
   if (but->drawstr.empty()) {
-    const char *expr_imports[] = {"bpy", "bl_ui", nullptr};
-    char expr[256];
-    SNPRINTF(expr,
-             "bl_ui.space_toolsystem_common.item_from_id("
-             "bpy.context, "
-             "bpy.context.space_data.type, "
-             "'%s').label",
-             tool_id);
-    char *expr_result = nullptr;
+    std::string label_str;
     bool is_error = false;
-
     if (has_valid_context == false) {
-      expr_result = BLI_strdup(has_valid_context_error);
+      label_str = has_valid_context_error;
     }
-    else if (BPY_run_string_as_string(C, expr_imports, expr, nullptr, &expr_result)) {
-      if (STREQ(expr_result, "")) {
-        MEM_freeN(expr_result);
-        expr_result = nullptr;
+    else if (const ts::ToolDecl *tool = ts::tool_find_by_id(C, space_type, tool_id)) {
+      if (tool->label != nullptr && tool->label[0] != '\0') {
+        /* NOTE: This is a very weak hack to get a valid translation most of the time...
+         * Proper way to do would be to get i18n context from the item, somehow. */
+        const char *translated = CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, tool->label);
+        if (translated == tool->label) {
+          translated = IFACE_(tool->label);
+        }
+        label_str = translated;
       }
     }
     else {
-      /* NOTE: this is an exceptional case, we could even remove it
-       * however there have been reports of tooltips failing, so keep it for now. */
-      expr_result = BLI_strdup(IFACE_("Internal error!"));
+      /* Donde el Python fallaba: la herramienta no esta en este espacio y modo. */
+      label_str = IFACE_("Internal error!");
       is_error = true;
     }
-
-    if (expr_result != nullptr) {
-      /* NOTE: This is a very weak hack to get a valid translation most of the time...
-       * Proper way to do would be to get i18n context from the item, somehow. */
-      const char *label_str = CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, expr_result);
-      if (label_str == expr_result) {
-        label_str = IFACE_(expr_result);
-      }
-
-      if (label_str != expr_result) {
-        MEM_freeN(expr_result);
-        expr_result = BLI_strdup(label_str);
-      }
-
+    if (!label_str.empty()) {
       UI_tooltip_text_field_add(*data,
-                                expr_result,
+                                label_str,
                                 {},
                                 UI_TIP_STYLE_NORMAL,
                                 (is_error) ? UI_TIP_LC_ALERT : UI_TIP_LC_MAIN,
                                 false);
-      MEM_freeN(expr_result);
     }
   }
 
   /* Tip. */
   if (is_quick_tip == false) {
-    const char *expr_imports[] = {"bpy", "bl_ui", nullptr};
-    char expr[256];
-    SNPRINTF(expr,
-             "bl_ui.space_toolsystem_common.description_from_id("
-             "bpy.context, "
-             "bpy.context.space_data.type, "
-             "'%s')",
-             tool_id);
-
-    char *expr_result = nullptr;
+    std::string tip;
     bool is_error = false;
-
     if (has_valid_context == false) {
-      expr_result = BLI_strdup(has_valid_context_error);
+      tip = has_valid_context_error;
     }
-    else if (BPY_run_string_as_string(C, expr_imports, expr, nullptr, &expr_result)) {
-      if (STREQ(expr_result, "")) {
-        MEM_freeN(expr_result);
-        expr_result = nullptr;
-      }
+    else if (ts::tool_find_by_id(C, space_type, tool_id) != nullptr) {
+      tip = ts::tool_description_for_id(C, space_type, tool_id, true);
     }
     else {
-      /* NOTE: this is an exceptional case, we could even remove it
-       * however there have been reports of tooltips failing, so keep it for now. */
-      expr_result = BLI_strdup(TIP_("Internal error!"));
+      tip = TIP_("Internal error!");
       is_error = true;
     }
-
-    if (expr_result != nullptr) {
-      const bool add_period = ui_tooltip_period_needed(expr_result);
+    if (!tip.empty()) {
+      const bool add_period = ui_tooltip_period_needed(tip);
       UI_tooltip_text_field_add(*data,
-                                fmt::format("{}{}", expr_result, add_period ? "." : ""),
+                                fmt::format("{}{}", tip, add_period ? "." : ""),
                                 {},
                                 UI_TIP_STYLE_NORMAL,
                                 (is_error) ? UI_TIP_LC_ALERT : UI_TIP_LC_MAIN,
                                 false);
-      MEM_freeN(expr_result);
     }
   }
 
@@ -632,6 +596,12 @@ static std::unique_ptr<uiTooltipData> ui_tooltip_data_from_tool(bContext *C,
       if (std::optional<std::string> shortcut_toolbar = WM_key_event_operator_string(
               C, "WM_OT_toolbar", WM_OP_INVOKE_REGION_WIN, nullptr, true))
       {
+#ifdef WITH_PYTHON
+        /* PUENTE PENDIENTE. El keymap de la barra lo fabrica todavia
+         * `bl_keymap_utils.keymap_from_toolbar` (394 lineas de Python), y `wm.toolbar`
+         * sigue siendo un operador de Python. Se migran con el dibujo de la barra (fase 4
+         * de politicas/TOOLSYSTEM-A-CPP.md). Sin Python, `wm.toolbar` no existe y no se
+         * llega aqui. */
         /* Generate keymap in order to inspect it.
          * NOTE: we could make a utility to avoid the keymap generation part of this. */
         const char *expr_imports[] = {
@@ -667,6 +637,7 @@ static std::unique_ptr<uiTooltipData> ui_tooltip_data_from_tool(bContext *C,
         else {
           BLI_assert(0);
         }
+#endif /* WITH_PYTHON */
       }
     }
 
@@ -691,43 +662,17 @@ static std::unique_ptr<uiTooltipData> ui_tooltip_data_from_tool(bContext *C,
      *
      * This is a little involved since the shortcut may be bound to another tool in this group,
      * instead of the current tool on display. */
-
-    char *expr_result = nullptr;
-    size_t expr_result_len;
-
-    {
-      const char *expr_imports[] = {"bpy", "bl_ui", nullptr};
-      char expr[256];
-      SNPRINTF(expr,
-               "'\\x00'.join("
-               "item.idname for item in bl_ui.space_toolsystem_common.item_group_from_id("
-               "bpy.context, "
-               "bpy.context.space_data.type, '%s', coerce=True) "
-               "if item is not None)",
-               tool_id);
-
-      if (has_valid_context == false) {
-        /* pass */
-      }
-      else if (BPY_run_string_as_string_and_len(
-                   C, expr_imports, expr, nullptr, &expr_result, &expr_result_len))
-      {
-        /* pass. */
-      }
-    }
-
-    if (expr_result != nullptr) {
+    const blender::Vector<blender::StringRefNull> group_ids =
+        has_valid_context ? ts::tool_group_idnames_for_id(C, space_type, tool_id, true) :
+                            blender::Vector<blender::StringRefNull>();
+    if (!group_ids.is_empty()) {
       PointerRNA op_props;
       WM_operator_properties_create_ptr(&op_props, but->optype);
       RNA_boolean_set(&op_props, "cycle", true);
 
       std::optional<std::string> shortcut;
-
-      const char *item_end = expr_result + expr_result_len;
-      const char *item_step = expr_result;
-
-      while (item_step < item_end) {
-        RNA_string_set(&op_props, "name", item_step);
+      for (const blender::StringRefNull group_id : group_ids) {
+        RNA_string_set(&op_props, "name", group_id.c_str());
         shortcut = WM_key_event_operator_string(C,
                                                 but->optype->idname,
                                                 WM_OP_INVOKE_REGION_WIN,
@@ -736,11 +681,8 @@ static std::unique_ptr<uiTooltipData> ui_tooltip_data_from_tool(bContext *C,
         if (shortcut) {
           break;
         }
-        item_step += strlen(item_step) + 1;
       }
-
       WM_operator_properties_free(&op_props);
-      MEM_freeN(expr_result);
 
       if (shortcut) {
         UI_tooltip_text_field_add(*data,
@@ -766,39 +708,22 @@ static std::unique_ptr<uiTooltipData> ui_tooltip_data_from_tool(bContext *C,
 
   /* Keymap */
 
-  /* This is too handy not to expose somehow, let's be sneaky for now. */
+  /* This is too handy not to expose somehow, let's be sneaky for now.
+   *
+   * DIFERENCIA DELIBERADA con el Python. Alli se pedia
+   * `keymap_from_id(...).as_pointer()`, pero `keymap_from_id` devuelve el NOMBRE del
+   * keymap, no el keymap: `getattr(nombre, 'as_pointer', lambda: 0)()` daba siempre 0 y
+   * esta seccion no salia nunca. Aqui se pide el keymap de verdad, que es lo que este
+   * codigo C pretendia. Solo se ve manteniendo Mayusculas sobre una herramienta. */
   if ((is_quick_tip == false) && CTX_wm_window(C)->eventstate->modifier & KM_SHIFT) {
-    const char *expr_imports[] = {"bpy", "bl_ui", nullptr};
-    char expr[256];
-    SNPRINTF(expr,
-             "getattr("
-             "bl_ui.space_toolsystem_common.keymap_from_id("
-             "bpy.context, "
-             "bpy.context.space_data.type, "
-             "'%s'), "
-             "'as_pointer', lambda: 0)()",
-             tool_id);
-
-    intptr_t expr_result = 0;
-
-    if (has_valid_context == false) {
-      /* pass */
-    }
-    else if (BPY_run_string_as_intptr(C, expr_imports, expr, nullptr, &expr_result)) {
-      if (expr_result != 0) {
+    if (has_valid_context) {
+      if (wmKeyMap *keymap = ts::tool_keymap_for_id(C, space_type, tool_id)) {
         UI_tooltip_text_field_add(
             *data, TIP_("Tool Keymap:"), {}, UI_TIP_STYLE_NORMAL, UI_TIP_LC_NORMAL, true);
-        wmKeyMap *keymap = (wmKeyMap *)expr_result;
         ui_tooltip_data_append_from_keymap(C, *data, keymap);
       }
     }
-    else {
-      BLI_assert(0);
-    }
   }
-#else
-  UNUSED_VARS(is_quick_tip, has_valid_context, has_valid_context_error);
-#endif /* WITH_PYTHON */
 
   return data->fields.is_empty() ? nullptr : std::move(data);
 }

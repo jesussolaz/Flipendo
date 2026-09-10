@@ -38,6 +38,12 @@ bool check_native(const bContext *C, const char *baseline_filepath);
  */
 bool dump_activation_native(const bContext *C, const char *filepath);
 
+/**
+ * Escribe la etiqueta, el grupo y la descripcion de cada herramienta de cada modo, en el
+ * formato de `tests/flipendo/toolsystem/queries-python.txt`. En modo grafico.
+ */
+bool dump_queries_native(const bContext *C, const char *filepath);
+
 }  // namespace flipendo::toolsystem
 
 #endif /* __FL_TOOLSYSTEM_DUMP_HPP__ */

@@ -62,7 +62,7 @@ Estado real, medido y verificable en el propio binario:
 | C mantenido (fuera de `extern/`) | **0 ficheros** |
 | Componentes de gameplay | **100% C++** (`FL_Component`; el sistema Python fue eliminado) |
 | Mapa de teclado por defecto | **248/248 keymaps en C++**, idénticos a los que generaba Python |
-| Catálogo de herramientas | **416/416 entradas en C++**, byte a byte idénticas (30 espacios y modos) — escrito y verificado; falta enchufarlo |
+| Sistema de herramientas | **catálogo, activación y consultas en C++**, verificados contra el Python real (416 + 474 + 416 casos, byte a byte); queda el dibujo de la barra |
 | El build necesita Python | **no** (el último generador pasó a C++) |
 | Player sin CPython | **compila y juega** — 0 símbolos `_Py`, 536 MB frente a 771 MB |
 | Python restante | ~248.000 líneas, todas del editor |
