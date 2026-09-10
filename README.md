@@ -62,10 +62,16 @@ Estado real, medido y verificable en el propio binario:
 | C mantenido (fuera de `extern/`) | **0 ficheros** |
 | Componentes de gameplay | **100% C++** (`FL_Component`; el sistema Python fue eliminado) |
 | Mapa de teclado por defecto | **248/248 keymaps en C++**, idénticos a los que generaba Python |
-| Sistema de herramientas | **catálogo, activación y consultas en C++**, verificados contra el Python real (416 + 474 + 416 casos, byte a byte); queda el dibujo de la barra |
+| Sistema de herramientas | **en C++ y sin puentes a Python**: catálogo, activación, consultas, barra, ajustes, cabecera, reserva y keymap del popup. Verificado contra el Python real (416 + 474 + 416 + 912 casos) y la barra píxel a píxel; la cabecera, en verificación visual |
 | El build necesita Python | **no** (el último generador pasó a C++) |
 | Player sin CPython | **compila y juega** — 0 símbolos `_Py`, 536 MB frente a 771 MB |
 | Python restante | ~248.000 líneas, todas del editor |
+
+**Cómo se verifica.** Nada se da por migrado leyendo el código: se congela lo que produce el Python y el C++ tiene que reproducirlo exactamente. Para la interfaz, eso significa capturas. Cada par de columnas es la barra de herramientas del mismo editor y modo, dibujada por **Python a la izquierda** y por **C++ a la derecha** — vista 3D en modo objeto, edición y escultura; editor UV, nodos y secuenciador:
+
+![Barra de herramientas: Python frente a C++, idénticas píxel a píxel](docs/img/flipendo/barra-python-vs-cpp.png)
+
+*Las seis parejas son idénticas píxel a píxel. La barra ya no ejecuta Python en cada redibujado.*
 
 Lo que queda es el editor: paneles, operadores y el puente CPython. La infraestructura para migrarlo ya existe (`FL_ui_registry`) y el editor de lógica es el piloto que la valida.
 
