@@ -166,3 +166,43 @@ la señaló (5 menús con `label='Pivot Point'`, uno de ellos migrado).
    modo edición se comparan en su rama vacía. Es la misma rama en Python y en
    C++, pero no prueba la llena: `VIEW3D_MT_edit_mesh_extrude` sale con 3 de sus
    9 botones posibles. Lo que no se verifica, se dice.
+
+### Segunda y tercera tanda: 16 menús más (2026-09-11)
+
+| Familia | Fichero C++ | Menús | Teclas |
+|---|---|---|---|
+| 4 · Objeto, pose y UV | `editors/space_view3d/fl_view3d_menus_object.cc` | 8 | Ctrl-A, U, Ctrl-L, Ctrl-H, Ctrl-G, Alt-P |
+| 5 · Contextuales cortos y lápiz de cera | `editors/space_view3d/fl_view3d_menus_context.cc` | 8 | botón derecho en retícula, metabola, texto y curvas; U |
+
+Quedan **88** de los 133.
+
+## Tres trampas más, todas cazadas por el volcado y ninguna por la vista
+
+1. **`layout.operator_menu_enum(op, prop)` sin `text=` no es `""`.** El Python
+   pasa `None`, `rna_translate_ui_text` lo convierte en `std::nullopt`, y es ese
+   `nullopt` el que hace que la etiqueta salga del nombre del operador. Con `""`
+   el botón sale mudo. En C++ hay que ir por
+   `uiItemMenuEnumFullO_ptr(..., std::nullopt, ...)`, porque el atajo
+   `uiItemMenuEnumO()` exige una cadena. Pasó en `VIEW3D_MT_make_links` (lo
+   marcó el volcado) y en los cinco `operator_menu_enum` de `VIEW3D_MT_hook`
+   (esos **no** los marcó, porque la escena de fábrica no tiene ningún
+   modificador de gancho: se arreglaron por analogía).
+2. **Propiedades de enumeración dinámica.** `grease_pencil.set_material` declara
+   `slot` como `RNA_def_enum` con `RNA_def_enum_funcs(..., material_enum_itemf)`.
+   Asignarla con `RNA_string_set` **se lleva el proceso por delante**. Va con
+   `RNA_enum_set_identifier(C, ...)`, que necesita el contexto para resolver los
+   items. Sin el volcado, esto se descubre el día que alguien pulsa la tecla.
+3. **`bl_translation_context` del menú.** `VIEW3D_MT_edit_curves_add` lleva
+   `i18n_contexts.operator_default`; en el `MenuDecl` es
+   `BLT_I18NCONTEXT_OPERATOR_DEFAULT`. Lo canta el volcado de **registro**, no el
+   de dibujo.
+
+## Y una advertencia de método
+
+La línea base caduca. Mientras se migraban estas familias, otros carriles
+añadieron (`RENDER_PT_publish`) y quitaron (`VIEW3D_PT_gpencil_brush_presets`)
+paneles. Por eso el parte de cada tanda compara **los bloques de los menús
+migrados** — que tienen que salir idénticos, sin excusa — y además da el número
+global diciendo qué bloques cambiaron y de quién son. Un `0 distintos` global en
+un árbol que comparten cuatro carriles a la vez no es alcanzable, y fingir que
+sí lo es sería peor que no medir.
