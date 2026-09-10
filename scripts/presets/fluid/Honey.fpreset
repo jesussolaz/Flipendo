@@ -1,0 +1,4 @@
+fpreset 1
+subdir fluid
+set context.fluid.domain_settings.viscosity_base 2.0
+set context.fluid.domain_settings.viscosity_exponent 3

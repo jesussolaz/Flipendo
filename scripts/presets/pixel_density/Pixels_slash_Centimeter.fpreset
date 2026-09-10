@@ -1,0 +1,3 @@
+fpreset 1
+subdir pixel_density
+set context.scene.render.ppm_base 0.01

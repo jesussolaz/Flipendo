@@ -1,0 +1,5 @@
+fpreset 1
+subdir tracking_camera
+set context.edit_movieclip.tracking.camera.sensor_width 8.8
+set context.edit_movieclip.tracking.camera.units "MILLIMETERS"
+set context.edit_movieclip.tracking.camera.pixel_aspect 1

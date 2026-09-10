@@ -1,0 +1,4 @@
+fpreset 1
+subdir tracking_track_color
+set context.edit_movieclip.tracking.tracks.active.color [0.0, 1.0, 0.0]
+set context.edit_movieclip.tracking.tracks.active.use_custom_color true

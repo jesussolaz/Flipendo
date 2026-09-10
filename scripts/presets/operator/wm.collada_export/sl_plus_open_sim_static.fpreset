@@ -1,0 +1,16 @@
+fpreset 1
+subdir operator/wm.collada_export
+set context.active_operator.apply_modifiers true
+set context.active_operator.export_mesh_type 0
+set context.active_operator.export_mesh_type_selection "view"
+set context.active_operator.selected true
+set context.active_operator.include_children false
+set context.active_operator.include_armatures false
+set context.active_operator.include_shapekeys false
+set context.active_operator.deform_bones_only false
+set context.active_operator.active_uv_only true
+set context.active_operator.use_texture_copies true
+set context.active_operator.triangulate true
+set context.active_operator.use_object_instantiation false
+set context.active_operator.sort_by_name true
+set context.active_operator.open_sim false

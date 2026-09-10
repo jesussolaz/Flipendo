@@ -1,0 +1,9 @@
+# Flipendo es solo macOS. El preset original ramificaba con
+# `match platform.system()` y en esta plataforma caia siempre en la rama `_`,
+# que da "code"; en Windows habria dado "code.cmd". Misma razon por la que el
+# pase de macOS del keymap esta siempre activo.
+# Ver politicas/PRESETS-A-DATOS.md, deuda 3.
+fpreset 1
+subdir text_editor
+set context.preferences.filepaths.text_editor_args "-g $filepath:$line:$column"
+set context.preferences.filepaths.text_editor "code"

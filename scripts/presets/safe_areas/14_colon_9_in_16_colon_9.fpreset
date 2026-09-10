@@ -1,0 +1,6 @@
+fpreset 1
+subdir safe_areas
+set context.scene.safe_areas.title [0.035, 0.035]
+set context.scene.safe_areas.action [0.1, 0.05]
+set context.scene.safe_areas.title_center [0.15, 0.05]
+set context.scene.safe_areas.action_center [0.1, 0.05]
