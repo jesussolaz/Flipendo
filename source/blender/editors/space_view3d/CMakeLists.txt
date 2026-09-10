@@ -22,6 +22,7 @@ set(SRC
   fl_view3d_menus.cc
   fl_view3d_menus_edit.cc
   fl_view3d_menus_mesh.cc
+  fl_view3d_menus_context.cc
   fl_view3d_menus_object.cc
   space_view3d.cc
   view3d_buttons.cc

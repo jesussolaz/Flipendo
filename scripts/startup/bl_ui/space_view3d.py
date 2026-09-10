@@ -2025,21 +2025,6 @@ class VIEW3D_MT_select_edit_metaball(Menu):
         layout.operator_menu_enum("mball.select_similar", "type")
 
 
-class VIEW3D_MT_edit_lattice_context_menu(Menu):
-    bl_label = "Lattice"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.menu("VIEW3D_MT_mirror")
-        layout.operator_menu_enum("lattice.flip", "axis")
-        layout.menu("VIEW3D_MT_snap")
-
-        layout.separator()
-
-        layout.operator("lattice.make_regular")
-
-
 class VIEW3D_MT_select_edit_lattice(Menu):
     bl_label = "Select"
 
@@ -2411,30 +2396,6 @@ class VIEW3D_MT_surface_add(Menu):
         )
         layout.operator("surface.primitive_nurbs_surface_sphere_add", text="Nurbs Sphere", icon='SURFACE_NSPHERE')
         layout.operator("surface.primitive_nurbs_surface_torus_add", text="Nurbs Torus", icon='SURFACE_NTORUS')
-
-
-class VIEW3D_MT_edit_metaball_context_menu(Menu):
-    bl_label = "Metaball"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        # Add
-        layout.operator("mball.duplicate_move")
-
-        layout.separator()
-
-        # Modify
-        layout.menu("VIEW3D_MT_mirror")
-        layout.menu("VIEW3D_MT_snap")
-
-        layout.separator()
-
-        # Remove
-        layout.operator_context = 'EXEC_REGION_WIN'
-        layout.operator("mball.delete_metaelems", text="Delete")
 
 
 class VIEW3D_MT_metaball_add(Menu):
@@ -3302,17 +3263,6 @@ class VIEW3D_MT_paint_vertex(Menu):
 
         layout.operator("paint.vertex_color_set")
         layout.operator("paint.sample_color").merged = False
-
-
-class VIEW3D_MT_greasepencil_vertex_group(Menu):
-    bl_label = "Vertex Groups"
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.operator_context = 'EXEC_AREA'
-
-        layout.operator("object.vertex_group_add", text="Add New Group")
 
 
 class VIEW3D_MT_paint_weight_lock(Menu):
@@ -4834,27 +4784,6 @@ class VIEW3D_MT_edit_font(Menu):
         layout.menu("VIEW3D_MT_edit_font_delete")
 
 
-class VIEW3D_MT_edit_font_context_menu(Menu):
-    bl_label = "Text"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-
-        layout.operator("font.text_cut", text="Cut")
-        layout.operator("font.text_copy", text="Copy", icon='COPYDOWN')
-        layout.operator("font.text_paste", text="Paste", icon='PASTEDOWN')
-
-        layout.separator()
-
-        layout.operator("font.select_all")
-
-        layout.separator()
-
-        layout.menu("VIEW3D_MT_edit_font")
-
-
 class VIEW3D_MT_edit_meta(Menu):
     bl_label = "Metaball"
 
@@ -5070,23 +4999,6 @@ class VIEW3D_MT_weight_grease_pencil(Menu):
         layout.operator("grease_pencil.weight_sample", text="Sample Weight")
 
 
-class VIEW3D_MT_edit_greasepencil_animation(Menu):
-    bl_label = "Animation"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator("grease_pencil.insert_blank_frame", text="Insert Blank Keyframe (Active Layer)")
-        layout.operator("grease_pencil.insert_blank_frame", text="Insert Blank Keyframe (All Layers)").all_layers = True
-
-        layout.separator()
-        layout.operator("grease_pencil.frame_duplicate", text="Duplicate Active Keyframe (Active Layer)").all = False
-        layout.operator("grease_pencil.frame_duplicate", text="Duplicate Active Keyframe (All Layers)").all = True
-
-        layout.separator()
-        layout.operator("grease_pencil.active_frame_delete", text="Delete Active Keyframe (Active Layer)").all = False
-        layout.operator("grease_pencil.active_frame_delete", text="Delete Active Keyframe (All Layers)").all = True
-
-
 class VIEW3D_MT_edit_greasepencil_showhide(Menu):
     bl_label = "Show/Hide"
 
@@ -5236,17 +5148,6 @@ class VIEW3D_MT_edit_greasepencil_point(Menu):
         layout.template_node_operator_asset_menu_items(catalog_path=self.bl_label)
 
 
-class VIEW3D_MT_edit_curves_add(Menu):
-    bl_label = "Add"
-    bl_translation_context = i18n_contexts.operator_default
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("curves.add_bezier", text="Bezier", icon='CURVE_BEZCURVE')
-        layout.operator("curves.add_circle", text="Circle", icon='CURVE_BEZCIRCLE')
-
-
 class VIEW3D_MT_edit_curves(Menu):
     bl_label = "Curves"
 
@@ -5293,46 +5194,6 @@ class VIEW3D_MT_edit_curves_segments(Menu):
 
         layout.operator("curves.subdivide")
         layout.operator("curves.switch_direction")
-
-
-class VIEW3D_MT_edit_curves_context_menu(Menu):
-    bl_label = "Curves"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-
-        # Additive Operators
-        layout.operator("curves.subdivide")
-
-        layout.separator()
-
-        layout.operator("curves.extrude_move")
-
-        layout.separator()
-
-        # Deform Operators
-        layout.menu("VIEW3D_MT_mirror")
-        layout.menu("VIEW3D_MT_snap")
-
-        layout.separator()
-
-        # Modify Flags
-        layout.operator_menu_enum("curves.curve_type_set", "type")
-        layout.operator_menu_enum("curves.handle_type_set", "type")
-        layout.operator("curves.cyclic_toggle")
-        layout.operator("curves.switch_direction")
-
-        layout.separator()
-
-        # Removal Operators
-        layout.operator("curves.separate")
-        layout.operator("curves.delete")
-
-        layout.separator()
-
-        layout.operator("curves.split")
 
 
 class VIEW3D_MT_edit_pointcloud(Menu):
@@ -7361,32 +7222,6 @@ class VIEW3D_PT_grease_pencil_multi_frame(Panel):
             layout.template_curve_mapping(settings, "multiframe_falloff_curve", brush=True)
 
 
-class VIEW3D_MT_greasepencil_material_active(Menu):
-    bl_label = "Active Material"
-
-    @classmethod
-    def poll(cls, context):
-        ob = context.active_object
-        if ob is None or len(ob.material_slots) == 0:
-            return False
-
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator_context = 'INVOKE_REGION_WIN'
-        ob = context.active_object
-
-        for slot in ob.material_slots:
-            mat = slot.material
-            if not mat:
-                continue
-            mat.id_data.preview_ensure()
-            if mat and mat.id_data and mat.id_data.preview:
-                icon = mat.id_data.preview.icon_id
-                layout.operator("grease_pencil.set_material", text=mat.name, icon_value=icon).slot = mat.name
-
-
 class VIEW3D_MT_grease_pencil_assign_material(Menu):
     bl_label = "Assign Material"
 
@@ -8230,7 +8065,6 @@ classes = (
     VIEW3D_MT_select_edit_surface,
     VIEW3D_MT_select_edit_text,
     VIEW3D_MT_select_edit_metaball,
-    VIEW3D_MT_edit_lattice_context_menu,
     VIEW3D_MT_select_edit_lattice,
     VIEW3D_MT_select_edit_armature,
     VIEW3D_MT_select_edit_grease_pencil,
@@ -8243,7 +8077,6 @@ classes = (
     VIEW3D_MT_mesh_add,
     VIEW3D_MT_curve_add,
     VIEW3D_MT_surface_add,
-    VIEW3D_MT_edit_metaball_context_menu,
     VIEW3D_MT_metaball_add,
     TOPBAR_MT_edit_curve_add,
     TOPBAR_MT_edit_armature_add,
@@ -8276,7 +8109,6 @@ classes = (
     VIEW3D_MT_object_cleanup,
     VIEW3D_MT_object_game,
     VIEW3D_MT_paint_vertex,
-    VIEW3D_MT_greasepencil_vertex_group,
     VIEW3D_MT_paint_weight,
     VIEW3D_MT_paint_weight_lock,
     VIEW3D_MT_sculpt,
@@ -8315,7 +8147,6 @@ classes = (
     VIEW3D_MT_edit_mesh_weights,
     VIEW3D_MT_edit_mesh_clean,
     VIEW3D_MT_edit_mesh_showhide,
-    VIEW3D_MT_greasepencil_material_active,
     VIEW3D_MT_paint_grease_pencil,
     VIEW3D_MT_paint_vertex_grease_pencil,
     VIEW3D_MT_edit_greasepencil_showhide,
@@ -8326,7 +8157,6 @@ classes = (
     VIEW3D_MT_edit_greasepencil,
     VIEW3D_MT_edit_greasepencil_stroke,
     VIEW3D_MT_edit_greasepencil_point,
-    VIEW3D_MT_edit_greasepencil_animation,
     VIEW3D_MT_edit_curve,
     VIEW3D_MT_edit_curve_ctrlpoints,
     VIEW3D_MT_edit_curve_segments,
@@ -8338,7 +8168,6 @@ classes = (
     VIEW3D_MT_edit_font_chars,
     VIEW3D_MT_edit_font_kerning,
     VIEW3D_MT_edit_font_delete,
-    VIEW3D_MT_edit_font_context_menu,
     VIEW3D_MT_edit_meta,
     VIEW3D_MT_edit_meta_showhide,
     VIEW3D_MT_edit_lattice,
@@ -8348,10 +8177,8 @@ classes = (
     VIEW3D_MT_edit_armature_roll,
     VIEW3D_MT_edit_armature_names,
     VIEW3D_MT_edit_curves,
-    VIEW3D_MT_edit_curves_add,
     VIEW3D_MT_edit_curves_segments,
     VIEW3D_MT_edit_curves_control_points,
-    VIEW3D_MT_edit_curves_context_menu,
     VIEW3D_MT_edit_pointcloud,
     VIEW3D_MT_sculpt_curves,
     VIEW3D_PT_active_tool,

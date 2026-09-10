@@ -38,4 +38,7 @@ void view3d_mesh_menus_register();
 /** Familia 4: objeto, pose y mapeado UV (Ctrl-A, U, Ctrl-L, Ctrl-H, Ctrl-G, Alt-P). */
 void view3d_object_menus_register();
 
+/** Familia 5: menus contextuales cortos y los del lapiz de cera. */
+void view3d_context_menus_register();
+
 }  // namespace blender::ed::view3d

@@ -1727,6 +1727,7 @@ void ED_spacetype_view3d()
   blender::ed::view3d::view3d_edit_menus_register();
   blender::ed::view3d::view3d_mesh_menus_register();
   blender::ed::view3d::view3d_object_menus_register();
+  blender::ed::view3d::view3d_context_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }
