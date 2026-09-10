@@ -335,55 +335,6 @@ data_path_item = StringProperty(
 )
 
 
-class WM_OT_url_open(Operator):
-    """Open a website in the web browser"""
-    bl_idname = "wm.url_open"
-    bl_label = ""
-    bl_options = {'INTERNAL'}
-
-    url: StringProperty(
-        name="URL",
-        description="URL to open",
-    )
-
-    @staticmethod
-    def _add_utm_param_to_url(url, utm_source):
-        import urllib.parse
-
-        # Parse the URL to get its domain and query parameters.
-        if not urllib.parse.urlparse(url).scheme:
-            url = "https://" + url
-        parsed_url = urllib.parse.urlparse(url)
-
-        # Only add a utm source if it points to a blender.org domain.
-        domain = parsed_url.netloc
-        if not (domain.endswith(".blender.org") or domain == "blender.org"):
-            return url
-
-        # Parse the query parameters and add or update the utm_source parameter.
-        query_params = urllib.parse.parse_qs(parsed_url.query)
-        query_params["utm_source"] = utm_source
-        new_query = urllib.parse.urlencode(query_params, doseq=True)
-
-        # Create a new URL with the updated query parameters.
-        new_url_parts = list(parsed_url)
-        new_url_parts[4] = new_query
-        new_url = urllib.parse.urlunparse(new_url_parts)
-
-        return new_url
-
-    @staticmethod
-    def _get_utm_source():
-        version = bpy.app.version_string
-        return "blender-" + version.replace(" ", "-").lower()
-
-    def execute(self, _context):
-        import webbrowser
-        complete_url = self._add_utm_param_to_url(self.url, self._get_utm_source())
-        webbrowser.open(complete_url)
-        return {'FINISHED'}
-
-
 class WM_OT_url_open_preset(Operator):
     """Open a preset website in the web browser"""
     bl_idname = "wm.url_open_preset"
@@ -457,50 +408,6 @@ class WM_OT_url_open_preset(Operator):
                 break
 
         return bpy.ops.wm.url_open(url=url)
-
-
-class WM_OT_path_open(Operator):
-    """Open a path in a file browser"""
-    bl_idname = "wm.path_open"
-    bl_label = ""
-    bl_options = {'INTERNAL'}
-
-    filepath: StringProperty(
-        subtype='FILE_PATH',
-        options={'SKIP_SAVE'},
-    )
-
-    def execute(self, _context):
-        import sys
-        import os
-        import subprocess
-
-        filepath = self.filepath
-
-        if not filepath:
-            self.report({'ERROR'}, "File path was not set")
-            return {'CANCELLED'}
-
-        filepath = bpy.path.abspath(filepath)
-        filepath = os.path.normpath(filepath)
-
-        if not os.path.exists(filepath):
-            self.report({'ERROR'}, rpt_("File '{:s}' not found").format(filepath))
-            return {'CANCELLED'}
-
-        if sys.platform[:3] == "win":
-            os.startfile(filepath)
-        elif sys.platform == "darwin":
-            subprocess.check_call(["open", filepath])
-        else:
-            try:
-                subprocess.check_call(["xdg-open", filepath])
-            except Exception:
-                # `xdg-open` *should* be supported by recent Gnome, KDE, XFCE.
-                import traceback
-                traceback.print_exc()
-
-        return {'FINISHED'}
 
 
 def _wm_doc_get_id(doc_id, *, do_url=True, url_prefix="", report=None):
@@ -651,22 +558,6 @@ class WM_OT_doc_view_manual(Operator):
             return {'CANCELLED'}
         else:
             return bpy.ops.wm.url_open(url=url)
-
-
-class WM_OT_doc_view(Operator):
-    """Open online reference docs in a web browser"""
-    bl_idname = "wm.doc_view"
-    bl_label = "View Documentation"
-
-    doc_id: doc_id
-    _prefix = "https://docs.blender.org/api/{:d}.{:d}".format(*bpy.app.version[:2])
-
-    def execute(self, _context):
-        url = _wm_doc_get_id(self.doc_id, do_url=True, url_prefix=self._prefix, report=self.report)
-        if url is None:
-            return {'CANCELLED'}
-
-        return bpy.ops.wm.url_open(url=url)
 
 
 rna_path = StringProperty(
@@ -2840,12 +2731,10 @@ class WM_OT_drop_blend_file(Operator):
 
 classes = (
     WM_OT_blenderplayer_start,
-    WM_OT_doc_view,
     WM_OT_doc_view_manual,
     WM_OT_drop_blend_file,
     WM_OT_operator_cheat_sheet,
     WM_OT_operator_pie_enum,
-    WM_OT_path_open,
     WM_OT_properties_add,
     WM_OT_properties_context_change,
     WM_OT_properties_edit,
@@ -2854,7 +2743,6 @@ classes = (
     WM_OT_sysinfo,
     WM_OT_owner_disable,
     WM_OT_owner_enable,
-    WM_OT_url_open,
     WM_OT_url_open_preset,
     WM_OT_toolbar,
     WM_OT_toolbar_fallback_pie,

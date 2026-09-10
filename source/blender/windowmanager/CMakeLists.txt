@@ -23,6 +23,7 @@ set(SRC
   intern/fl_operator_dump.cc
   intern/wm_tool_ops.cc
   intern/wm_context_ops.cc
+  intern/wm_system_ops.cc
   toolsystem/fl_toolsystem_registry.cc
   toolsystem/fl_toolsystem_activate.cc
   toolsystem/fl_toolsystem_dump.cc

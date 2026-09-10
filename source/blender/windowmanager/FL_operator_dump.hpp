@@ -21,3 +21,6 @@ bool FL_context_operators_selftest(bContext *C, const char *filepath);
 
 /** Espera al primer ciclo de interfaz antes de ejecutar la prueba real. */
 bool FL_context_operators_selftest_schedule(bContext *C, const char *filepath);
+
+/** Exercise URL/document resolution and safe error branches of the native system operators. */
+bool FL_wm_system_operators_selftest(bContext *C, const char *filepath);
