@@ -82,22 +82,18 @@ dev/build-nopy/bin/Blender.app/.../Blender --background --factory-startup \
 diff tests/flipendo/numinput/baseline-python.txt /tmp/numinput-nopy.txt
 ```
 
-**108 casos cubiertos, 108 idénticos, `diff` vacío.** Once casos más se declaran
+**133 casos cubiertos, 133 idénticos, `diff` vacío.** Nueve casos más se declaran
 divergentes por escrito (tabla en `tests/flipendo/numinput/README.md`); ninguno de
 ellos devuelve un número equivocado callando: o coinciden o se rechaza la entrada.
 
 ### Lo que NO se cubre, y por qué
 
-`**`, `%` y `//` no los tokeniza `BLI_expr_pylike`; se escriben `pow(a,b)`,
-`fmod(a,b)` y `floor(a/b)`. Tampoco los literales `0x10` ni `1_000`, ni las listas
-separadas por comas (`10km, 2m`), que CPython lee como tupla y **suma**. `round()` de
-un `.5` exacto difiere: C redondea hacia afuera y CPython al par.
+No se cubren los literales `0x10` ni `1_000`, ni las listas separadas por comas
+(`10km, 2m`), que CPython lee como tupla y **suma**. `round()` de un `.5` exacto
+difiere: C redondea hacia afuera y CPython al par. Y `lerp`, `clamp` y `smoothstep`
+divergen al revés: existen en `BLI_expr_pylike` y no en el `math` de CPython.
 
-Ampliar `BLI_expr_pylike` con `**` y `%` sería pequeño, pero ese fichero es también el
-camino rápido de los drivers **en el build con Python**: tocarlo cambiaría el
-comportamiento de un subsistema que hoy está verificado, en una noche en la que tres
-carriles más comparten el árbol. Queda anotado como trabajo siguiente, no como deuda
-oculta.
+`**`, `%` y `//` **sí se cubren desde el 2026-09-11**: ver §6.
 
 ### La trampa que costó una vuelta de medición
 
@@ -229,3 +225,57 @@ Python:
    `user` baja de 3.674 a 3.673 atajos por el mismo motivo.
 
 Nada más. Todo lo demás del mapa de teclado del editor ya es nativo.
+
+
+---
+
+## 6. `BLI_expr_pylike` aprende `**`, `%` y `//` (2026-09-11)
+
+Era lo único que quedaba fuera del subconjunto por un motivo de gramática, no de
+diseño: el tokenizador no reconocía los operadores de dos caracteres y el analizador no
+tenía nivel de potencia. Tres operadores, 25 líneas de evaluador.
+
+### Por qué se hizo aparte, y con qué red
+
+Ese fichero es **también el camino rápido de los drivers en el build con Python**:
+`driver_try_evaluate_simple_expr()` lo intenta antes que CPython. Ampliar la gramática
+no puede romper nada que hoy funcione —lo que antes era error de sintaxis ahora se
+evalúa, nunca al revés— pero **sí cambia quién evalúa** un driver con `**`: antes
+CPython, ahora C++. Por eso el listón no era «que compile» sino «que dé exactamente el
+mismo número que CPython», y para eso ya existía el arnés.
+
+### Lo que no es obvio: la semántica de Python no es la de C
+
+Copiar `fmod` y `pow` a secas habría sido otro fallo silencioso, justo la clase de cosa
+que este trabajo está quitando. Medido caso a caso contra el binario con CPython:
+
+| Expresión | CPython | `fmod`/`pow` de C a secas | Lo que se implementó |
+|---|---:|---:|---|
+| `-7 % 3` | 2 | −1 | módulo con **suelo**: el signo es el del divisor |
+| `7 % -3` | −2 | 1 | ídem |
+| `-7 // 2` | −4 | −3 | `floor(a/b)`, no truncar |
+| `-2**2` | −4 | 4 | `**` liga más que el menos unario de su **izquierda** |
+| `2**-1` | 0,5 | — | ...y menos que el de su **derecha** |
+| `2**3**2` | 512 | 64 | asociativo por la **derecha** |
+| `2*3**2` | 18 | 36 | `**` liga más que `*` |
+
+La precedencia sale sola escribiendo la gramática de CPython tal cual
+(`power ::= primary ["**" u_expr]`, `u_expr ::= power | "-" u_expr`), que es lo que se
+hizo: `parse_unary()` se partió en `parse_primary()` + `parse_power()` + `parse_unary()`.
+
+### Verificación
+
+25 casos nuevos en la batería de `--fl-selftest-numinput`, incluidos los seis de
+precedencia de la tabla, los cuatro signos de `%` y de `//`, y tres de error
+(`7%0`, `7//0`, `0**-1`, `(-8)**(1/3)`, que CPython convierte en complejo).
+**133 casos cubiertos, 133 idénticos, `diff` vacío** entre los dos binarios. Y de los
+108 casos que ya estaban antes, **ninguno cambió de valor**: las únicas tres filas que
+se mueven son precisamente `2**3`, `7%3` y `7//2`, que pasan de la sección de
+divergencias declaradas a la de cubiertos.
+
+### Lo que sigue fuera
+
+`int ** int` con resultado enorme (`3**500`): CPython lo calcula exacto con enteros de
+precisión arbitraria y redondea al final; aquí es `pow()` en doble desde el principio.
+En el caso medido los dos dan el mismo doble, pero por suerte, no por construcción, así
+que se queda declarado divergente.

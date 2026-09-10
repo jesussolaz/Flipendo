@@ -1,6 +1,6 @@
 # Línea base de los campos numéricos
 
-`baseline-python.txt` es lo que devuelve el binario **con** CPython al evaluar 119
+`baseline-python.txt` es lo que devuelve el binario **con** CPython al evaluar 142
 cadenas de entrada de campo numérico. Es el objetivo que tiene que reproducir el
 binario **sin** CPython, byte a byte.
 
@@ -50,17 +50,19 @@ el evaluador a pelo: así comprueba de paso toda la cadena de unidades
 
 ## Las cifras
 
-**108 casos cubiertos, 108 idénticos**, `diff` vacío entre el binario con Python
-(`dev/build`) y el binario sin Python (`dev/build-nopy`). Once casos más, declarados
+**133 casos cubiertos, 133 idénticos**, `diff` vacío entre el binario con Python
+(`dev/build`) y el binario sin Python (`dev/build-nopy`). Nueve casos más, declarados
 divergentes a sabiendas, abajo.
+
+Los 25 últimos son de `**`, `%` y `//`, que `BLI_expr_pylike` aprendió el 2026-09-11.
+Ahí lo que se comprueba no es la aritmética sino la **semántica de Python**, que no es
+la de C: `-2**2` es -4 y no 4, `2**3**2` es 512 y no 64, `2**-1` es 0.5, `-7 % 3` es 2
+y no -1 (módulo con suelo, no `fmod`), y `-7 // 2` es -4 y no -3.
 
 ## Las divergencias medidas, una a una
 
 | Entrada | Con Python | Sin Python | Por qué |
 |---|---|---|---|
-| `2**3` | 8 | error | `BLI_expr_pylike` no tokeniza `**`; se escribe `pow(2,3)` |
-| `7%3` | 1 | error | tampoco `%`; se escribe `fmod(7,3)` |
-| `7//2` | 3 | error | tampoco `//`; se escribe `floor(7/2)` |
 | `0x10` | 16 | error | literales hexadecimales: solo CPython |
 | `1_000` | 1000 | error | separador de miles del literal: solo CPython |
 | `round(2.5)` | 2 | 3 | CPython redondea al par (bancario); `round()` de C redondea hacia afuera. El resto de valores coincide |
@@ -69,6 +71,7 @@ divergentes a sabiendas, abajo.
 | `smoothstep(0,1,0.5)` | error | 0,5 | ídem |
 | `2,5` | 7 | error | CPython lo lee como tupla `(2,5)` y `PyC_RunString_AsNumber` **suma** las tuplas |
 | `10km, 2m` | 10002 | error | el mismo caso, con unidades |
+| `3**500` | 3,636…e+238 | 3,636…e+238 | aquí coinciden, pero **por suerte**: CPython calcula `int**int` exacto con precisión arbitraria y redondea al final, y aquí es `pow()` en doble desde el principio. Se deja declarado divergente porque la igualdad no está garantizada en general |
 
 Ninguna de ellas devuelve un número equivocado sin avisar: o coinciden, o el binario
 sin Python rechaza la entrada con un mensaje que dice qué se admite.
