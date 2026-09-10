@@ -305,3 +305,35 @@ Manteniendo Mayúsculas sobre una herramienta, el tooltip debía enseñar su key
 Python **no salía nunca**: `keymap_from_id` devuelve el *nombre* del keymap, no el
 keymap, y `getattr(nombre, 'as_pointer', lambda: 0)()` daba siempre 0. El nativo pide el
 keymap de verdad, que es lo que el código C pretendía. Está escrito en el código.
+
+---
+
+## Una regresión mía de la fase 2, encontrada y cerrada
+
+Al fijar la reserva en C++, el Python dejó de enterarse. El popover y la tarta de
+reserva resaltan su opción con la memoria de grupos, y la etiqueta «Drag: …» de la
+cabecera también; las tres leían un diccionario *Python* que ya nadie escribía. Tras
+cambiar la reserva a Select Lasso seguían diciendo Tweak. Las pruebas de la fase 2 no
+lo vieron porque no miraban esos dibujos.
+
+Arreglo: la memoria de grupos es **una sola, la del motor**. `WindowManager` expone
+`tool_group_active_get/set` por RNA y el armazón Python lee y escribe ahí. Es un puente
+en la dirección que se puede quedar mientras se migra `bl_ui`: Python llama a C++.
+
+`check_fallback_memory_gui.py` lo comprueba, y se ejecutó contra los dos binarios: con
+el de antes falla (resalta Tweak), con el de después pasa.
+
+## La barra tiene línea base visual
+
+`capture_toolbar_gui.py` recorta la región de la barra en 14 combinaciones de editor y
+modo y guarda su huella (`toolbar-capturas.txt`). Si el dibujo nativo es el mismo que el
+de Python, las huellas tienen que coincidir píxel a píxel.
+
+Dos avisos sobre esa prueba:
+
+- **Tuvo que hacerse determinista.** La primera versión dio anchos de 112 y 113 píxeles
+  en dos ejecuciones del mismo binario: capturaba antes de que las regiones se
+  asentaran. Ahora espera a que el tamaño no cambie en dos redibujados seguidos, y dos
+  ejecuciones dan exactamente lo mismo.
+- **Las huellas dependen de la máquina** (resolución, escala, GPU). Sirven para comparar
+  antes y después en el mismo equipo, no como referencia absoluta.

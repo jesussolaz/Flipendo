@@ -75,6 +75,23 @@ const EnumPropertyItem rna_enum_window_cursor_items[] = {
 #  include "WM_types.hh"
 
 /* Needed since RNA doesn't use `const` in function signatures. */
+/* Memoria de grupos del sistema de herramientas: que variante de cada grupo se uso la
+ * ultima vez. Vive en el motor (`toolsystem/FL_toolsystem.hpp`); esto la expone a la
+ * interfaz que aun es Python, para que popover, tarta y cabecera lean la misma que
+ * escriben la activacion y el ciclo nativos. Puente en esa direccion (Python llama a
+ * C++), que es la que se puede quedar mientras se migra `bl_ui`. */
+#  include "toolsystem/FL_toolsystem.hpp"
+
+static int rna_wm_tool_group_active_get(int space_type, const char *group)
+{
+  return flipendo::toolsystem::group_active_get(space_type, group);
+}
+
+static void rna_wm_tool_group_active_set(int space_type, const char *group, int index)
+{
+  flipendo::toolsystem::group_active_set(space_type, group, index);
+}
+
 static bool rna_KeyMapItem_compare(wmKeyMapItem *k1, wmKeyMapItem *k2)
 {
   return WM_keymap_item_compare(k1, k2);
@@ -874,6 +891,28 @@ void RNA_api_wm(StructRNA *srna)
 {
   FunctionRNA *func;
   PropertyRNA *parm;
+
+  func = RNA_def_function(srna, "tool_group_active_get", "rna_wm_tool_group_active_get");
+  RNA_def_function_flag(func, FUNC_NO_SELF);
+  RNA_def_function_ui_description(
+      func, "Remembered variant of a tool group (internal, used by the toolbar)");
+  parm = RNA_def_enum(func, "space_type", rna_enum_space_type_items, SPACE_EMPTY, "Space Type", "");
+  RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
+  parm = RNA_def_string(func, "group", nullptr, 0, "Group", "Identifier of the tool leading the group");
+  RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
+  parm = RNA_def_int(func, "index", 0, INT_MIN, INT_MAX, "", "", INT_MIN, INT_MAX);
+  RNA_def_function_return(func, parm);
+
+  func = RNA_def_function(srna, "tool_group_active_set", "rna_wm_tool_group_active_set");
+  RNA_def_function_flag(func, FUNC_NO_SELF);
+  RNA_def_function_ui_description(
+      func, "Set the remembered variant of a tool group (internal, used by the toolbar)");
+  parm = RNA_def_enum(func, "space_type", rna_enum_space_type_items, SPACE_EMPTY, "Space Type", "");
+  RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
+  parm = RNA_def_string(func, "group", nullptr, 0, "Group", "Identifier of the tool leading the group");
+  RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
+  parm = RNA_def_int(func, "index", 0, INT_MIN, INT_MAX, "Index", "", INT_MIN, INT_MAX);
+  RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
 
   func = RNA_def_function(srna, "fileselect_add", "WM_event_add_fileselect");
   /* Note that a full description is located at:

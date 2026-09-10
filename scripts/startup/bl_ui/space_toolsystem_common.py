@@ -169,6 +169,11 @@ ToolDef.from_fn = from_fn
 del from_dict, from_fn, with_args
 
 
+def _group_active_set(cls, leader_idname, index):
+    # Ver `_tool_group_active_get_from_item`: la memoria es la del motor.
+    bpy.context.window_manager.tool_group_active_set(cls.bl_space_type, leader_idname, index)
+
+
 class ToolActivePanelHelper:
     # Sub-class must define.
     # bl_space_type = 'VIEW_3D'
@@ -430,7 +435,10 @@ class ToolSelectPanelHelper:
 
     @classmethod
     def _tool_group_active_get_from_item(cls, item):
-        index = cls._tool_group_active.get(item[0].idname, 0)
+        # La memoria de grupos vive en el motor (C++): la escriben la activacion nativa y el
+        # ciclo. Leer un diccionario de Python aqui dejaba al popover, a la tarta de reserva
+        # y a la cabecera viendo una reserva vieja.
+        index = bpy.context.window_manager.tool_group_active_get(cls.bl_space_type, item[0].idname)
         # Can happen in the case a group is dynamic.
         #
         # NOTE(Campbell): that in this case it's possible the order could change too,
@@ -447,7 +455,7 @@ class ToolSelectPanelHelper:
         if item_group:
             for i, item in enumerate(item_group):
                 if item and item.idname == idname:
-                    cls._tool_group_active[item_group[0].idname] = i
+                    _group_active_set(cls, item_group[0].idname, i)
                     return True
         return False
 
@@ -715,7 +723,7 @@ class ToolSelectPanelHelper:
 
                 if is_active:
                     # not ideal, write this every time :S
-                    cls._tool_group_active[item[0].idname] = index
+                    _group_active_set(cls, item[0].idname, index)
                 else:
                     index = cls._tool_group_active_get_from_item(item)
 
@@ -1015,7 +1023,7 @@ def _activate_by_item(context, space_type, item, index, *, as_fallback=False):
         if index_new == -1:
             raise Exception("Fallback tool not found in group")
 
-        cls._tool_group_active[tool_fallback_id] = index_new
+        _group_active_set(cls, tool_fallback_id, index_new)
 
         # Done, now get the current tool to replace the item & index.
         tool_active = ToolSelectPanelHelper._tool_active_from_context(context, space_type)
@@ -1126,7 +1134,7 @@ def activate_by_id_or_cycle(context, space_type, idname, *, offset=1, as_fallbac
 
     index_found = (tool_active.index + offset) % len(item_group)
 
-    cls._tool_group_active[item_group[0].idname] = index_found
+    _group_active_set(cls, item_group[0].idname, index_found)
 
     item_found = item_group[index_found]
     _activate_by_item(context, space_type, item_found, index_found)
