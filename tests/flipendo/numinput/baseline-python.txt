@@ -1,0 +1,127 @@
+# volcado de campos numericos de Flipendo
+# Cada linea: <tipo de unidad> | <cadena tecleada> | ok=<0|1> | <valor con %.17g>
+# Unidades fijas: metrico, scale_length=1, sin split, rotacion en grados.
+# El binario CON Python y el binario SIN Python tienen que escribir esto igual.
+
+[cubiertos] 108
+NONE           | 2*3                    | ok=1 | 6
+NONE           | 1+1                    | ok=1 | 2
+NONE           | 10-4                   | ok=1 | 6
+NONE           | 7/2                    | ok=1 | 3.5
+NONE           | 1/3                    | ok=1 | 0.33333333333333331
+NONE           | 2*3+1                  | ok=1 | 7
+NONE           | 1+2*3                  | ok=1 | 7
+NONE           | -5                     | ok=1 | -5
+NONE           | - 5                    | ok=1 | -5
+NONE           | +5                     | ok=1 | 5
+NONE           | --5                    | ok=1 | 5
+NONE           | 1.5*2                  | ok=1 | 3
+NONE           | .5*4                   | ok=1 | 2
+NONE           | 1e3                    | ok=1 | 1000
+NONE           | 1E-3                   | ok=1 | 0.001
+NONE           | 2.5e+2                 | ok=1 | 250
+NONE           |   42                   | ok=0 | 0
+NONE           | 42                     | ok=1 | 42
+NONE           |                        | ok=0 | 0
+NONE           |                        | ok=1 | 0
+NONE           | 1e300*1e300            | ok=1 | 0
+NONE           | (1+2)*(3+4)            | ok=1 | 21
+NONE           | ((2))                  | ok=1 | 2
+NONE           | 2*(3*(4+1))            | ok=1 | 30
+NONE           | -(2+3)                 | ok=1 | -5
+NONE           | 2*(-3)                 | ok=1 | -6
+NONE           | pi                     | ok=1 | 3.1415926535897931
+NONE           | 2*pi                   | ok=1 | 6.2831853071795862
+NONE           | pi/2                   | ok=1 | 1.5707963267948966
+NONE           | True                   | ok=1 | 1
+NONE           | False                  | ok=1 | 0
+NONE           | sqrt(2)                | ok=1 | 1.4142135623730951
+NONE           | abs(-3)                | ok=1 | 3
+NONE           | fabs(-3.5)             | ok=1 | 3.5
+NONE           | floor(2.7)             | ok=1 | 2
+NONE           | ceil(2.1)              | ok=1 | 3
+NONE           | trunc(-2.9)            | ok=1 | -2
+NONE           | int(2.9)               | ok=1 | 2
+NONE           | int(-2.9)              | ok=1 | -2
+NONE           | round(2.4)             | ok=1 | 2
+NONE           | min(3,5)               | ok=1 | 3
+NONE           | max(3,5)               | ok=1 | 5
+NONE           | min(3,5,1)             | ok=1 | 1
+NONE           | max(3,5,9,2)           | ok=1 | 9
+NONE           | pow(2,10)              | ok=1 | 1024
+NONE           | fmod(7,3)              | ok=1 | 1
+NONE           | radians(90)            | ok=1 | 1.5707963267948966
+NONE           | degrees(pi)            | ok=1 | 180
+NONE           | sin(0)                 | ok=1 | 0
+NONE           | cos(0)                 | ok=1 | 1
+NONE           | tan(0)                 | ok=1 | 0
+NONE           | asin(1)                | ok=1 | 1.5707963267948966
+NONE           | acos(0)                | ok=1 | 1.5707963267948966
+NONE           | atan(1)                | ok=1 | 0.78539816339744828
+NONE           | atan2(1,1)             | ok=1 | 0.78539816339744828
+NONE           | exp(1)                 | ok=1 | 2.7182818284590451
+NONE           | log(10)                | ok=1 | 2.3025850929940459
+NONE           | log(8,2)               | ok=1 | 3
+NONE           | sqrt(abs(-16))         | ok=1 | 4
+NONE           | max(1,min(5,3))        | ok=1 | 3
+NONE           | 1 if 2>1 else 3        | ok=1 | 1
+NONE           | 1 if 2<1 else 3        | ok=1 | 3
+NONE           | 1<2<3                  | ok=1 | 1
+NONE           | 2>3                    | ok=1 | 0
+NONE           | not 5                  | ok=1 | 0
+NONE           | not 0                  | ok=1 | 1
+NONE           | 0 or 3                 | ok=1 | 3
+NONE           | 2 and 7                | ok=1 | 7
+NONE           | 1/0                    | ok=0 | 0
+NONE           | sqrt(-1)               | ok=0 | 0
+NONE           | log(0)                 | ok=0 | 0
+NONE           | 2+                     | ok=0 | 0
+NONE           | (                      | ok=0 | 0
+NONE           | foo                    | ok=0 | 0
+NONE           | 2 3                    | ok=0 | 0
+LENGTH         | 5cm                    | ok=1 | 0.049999998899999995
+LENGTH         | 1m                     | ok=1 | 1
+LENGTH         | 2km                    | ok=1 | 2000
+LENGTH         | 0.5m                   | ok=1 | 0.5
+LENGTH         | 3mm                    | ok=1 | 0.0030000001500000003
+LENGTH         | 250um                  | ok=1 | 0.00024999999925000001
+LENGTH         | 2ft                    | ok=1 | 0.60960000800000003
+LENGTH         | 3in                    | ok=1 | 0.076199999099999999
+LENGTH         | 1mi                    | ok=1 | 1609.3439900000001
+LENGTH         | 5yd                    | ok=1 | 4.5719999050000002
+LENGTH         | 7                      | ok=1 | 7
+LENGTH         | 2*3                    | ok=1 | 6
+LENGTH         | 1m20cm                 | ok=1 | 1.1999999956
+LENGTH         | 1m 20cm                | ok=1 | 1.1999999956
+LENGTH         | -1m50cm                | ok=1 | -1.499999989
+LENGTH         | 5'2"                   | ok=1 | 1.5748000194
+LENGTH         | 2*3cm                  | ok=1 | 0.05999999868
+LENGTH         | 2+2in                  | ok=1 | 2.0507999994000001
+LENGTH         | (1+1)m                 | ok=1 | 2
+LENGTH         | 3km+50m                | ok=1 | 3050
+ROTATION       | 90                     | ok=1 | 1.5707963267948966
+ROTATION       | 90d                    | ok=1 | 1.5707963249999999
+ROTATION       | 45+45                  | ok=1 | 1.5707963267948966
+ROTATION       | 2*45                   | ok=1 | 1.5707963267948966
+TIME           | 1s                     | ok=1 | 1
+TIME           | 2min                   | ok=1 | 120
+TIME           | 1h                     | ok=1 | 3600
+TIME           | 1h30min                | ok=1 | 5400.0000036000001
+MASS           | 5kg                    | ok=1 | 5
+MASS           | 500g                   | ok=1 | 0.50000002500000007
+AREA           | 2m2                    | ok=1 | 2
+VOLUME         | 3m3                    | ok=1 | 3
+CAMERA         | 50mm                   | ok=1 | 50
+
+[no-cubiertos] 11
+NONE           | 2**3                   | ** no lo tokeniza BLI_expr_pylike; se escribe pow(2,3)
+NONE           | 7%3                    | % no lo tokeniza BLI_expr_pylike; se escribe fmod(7,3)
+NONE           | 7//2                   | // no lo tokeniza BLI_expr_pylike; se escribe floor(7/2)
+NONE           | 0x10                   | literales hexadecimales: solo Python
+NONE           | 1_000                  | separador de miles del literal: solo Python
+NONE           | round(2.5)             | round() de C redondea 2.5 a 3; Python redondea a 2 (bancario)
+NONE           | lerp(0,10,0.25)        | lerp existe en BLI_expr_pylike y no en math de Python
+NONE           | clamp(5,0,1)           | clamp existe en BLI_expr_pylike y no en math de Python
+NONE           | smoothstep(0,1,0.5)    | smoothstep existe en BLI_expr_pylike y no en math de Python
+NONE           | 2,5                    | Python lo lee como tupla y suma 2+5=7; aqui es error de sintaxis
+LENGTH         | 10km, 2m               | lista separada por comas: Python la suma, aqui es error

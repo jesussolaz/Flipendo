@@ -68,6 +68,8 @@
 #include "ED_numinput.hh"
 #include "ED_screen.hh"
 
+#include "FL_numinput_native.hh"
+
 #include "IMB_colormanagement.hh"
 
 #include "interface_intern.hh"
@@ -3459,6 +3461,11 @@ static bool ui_number_from_string_units_with_but(bContext *C,
   return ui_number_from_string_units(C, str, unit_type, unit, r_value);
 }
 
+/* Flipendo: la rama `#else` de esto era `*r_value = atof(str)`, de modo que un build
+ * sin Python convertia `2*3` en 2 y `1/2` en 1 sin dar ni un aviso. Ahora evalua la
+ * expresion con `BLI_expr_pylike` (el mismo evaluador C++ que ya usan los drivers
+ * simples) y, cuando la expresion no entra en ese subconjunto, informa del error en
+ * vez de devolver un numero equivocado. Ver `FL_numinput_native.hh`. */
 static bool ui_number_from_string(bContext *C, const char *str, double *r_value)
 {
   bool ok;
@@ -3468,9 +3475,10 @@ static bool ui_number_from_string(bContext *C, const char *str, double *r_value)
   err_info.report_prefix = UI_NUMBER_EVAL_ERROR_PREFIX;
   ok = BPY_run_string_as_number(C, nullptr, str, &err_info, r_value);
 #else
-  UNUSED_VARS(C);
-  *r_value = atof(str);
-  ok = true;
+  flipendo::numinput::EvalErrInfo err_info = {};
+  err_info.reports = CTX_wm_reports(C);
+  err_info.report_prefix = UI_NUMBER_EVAL_ERROR_PREFIX;
+  ok = flipendo::numinput::eval_expression(str, &err_info, r_value);
 #endif
   return ok;
 }
