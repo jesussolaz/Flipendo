@@ -65,6 +65,7 @@
 #  include "WM_api.hh"
 
 #  include "FL_keymap_dump.hpp"
+#  include "preset/FL_preset.hpp"
 #  include "toolsystem/FL_toolsystem_dump.hpp"
 
 /* for passing information between creator and gameengine */
@@ -2615,6 +2616,39 @@ static int arg_handle_fl_dump_toolbar_keymaps(int argc, const char **argv, void 
   return 0;
 }
 
+static const char arg_handle_fl_convert_presets_doc[] =
+    "<dir>\n"
+    "\tConvierte los presets .py de <dir> a .fpreset (datos) y sale.\n"
+    "\tUsa el MISMO lector nativo que atiende a los presets del usuario.";
+static int arg_handle_fl_convert_presets(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::preset::convert_tree(argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el directorio despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_presets_doc[] =
+    "<dir> <informe>\n"
+    "\tAplica cada preset por el camino de Python y por el de C++ sobre el mismo\n"
+    "\testado de partida y compara el resultado. Vale en --background.";
+static int arg_handle_fl_check_presets(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 2) {
+    const bool ok = flipendo::preset::check_tree(C, argv[1], argv[2]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 2;
+  }
+  fprintf(stderr, "\nError: hacen falta <dir> y <informe> despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+
 static const char arg_handle_python_expr_run_doc[] =
     "<expression>\n"
     "\tRun the given expression as a Python script.";
@@ -3160,6 +3194,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
                "--fl-dump-toolbar-keymaps",
                CB(arg_handle_fl_dump_toolbar_keymaps),
                C);
+  BLI_args_add(ba, nullptr, "--fl-convert-presets", CB(arg_handle_fl_convert_presets), C);
+  BLI_args_add(ba, nullptr, "--fl-check-presets", CB(arg_handle_fl_check_presets), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

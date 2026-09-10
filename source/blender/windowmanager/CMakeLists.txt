@@ -20,6 +20,11 @@ set(INC_SYS
 
 set(SRC
   intern/fl_keymap_dump.cc
+  preset/fl_preset_file.cc
+  preset/fl_preset_spec.cc
+  preset/fl_preset_ops.cc
+  preset/fl_preset_apply.cc
+  preset/fl_preset_check.cc
   intern/wm_tool_ops.cc
   intern/wm_context_ops.cc
   toolsystem/fl_toolsystem_registry.cc
@@ -119,6 +124,7 @@ set(SRC
   message_bus/intern/wm_message_bus_static.cc
 
   FL_keymap_dump.hpp
+  preset/FL_preset.hpp
   toolsystem/FL_toolsystem.hpp
   toolsystem/FL_toolsystem_dump.hpp
   toolsystem/fl_tool_defs.hh

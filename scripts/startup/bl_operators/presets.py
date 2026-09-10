@@ -130,7 +130,11 @@ class AddPresetBase:
         if is_xml:
             ext = ".xml"
         else:
-            ext = ".py"
+            # Los presets se guardan como DATOS (`.fpreset`), no como script.
+            # Ver politicas/PRESETS-A-DATOS.md. `preset_ext` solo lo fija la
+            # familia keyconfig, que no es una lista de propiedades sino un
+            # generador de keymaps y sigue exportandose como `.py`.
+            ext = getattr(self, "preset_ext", ".fpreset")
 
         name = self.name.strip() if is_preset_add else self.name
 
@@ -163,48 +167,20 @@ class AddPresetBase:
                     import rna_xml
                     rna_xml.xml_file_write(context, filepath, preset_menu_class.preset_xml_map)
                 else:
-
-                    def rna_recursive_attr_expand(value, rna_path_step, level):
-                        if isinstance(value, bpy.types.PropertyGroup):
-                            for sub_value_attr in value.bl_rna.properties.keys():
-                                if sub_value_attr == "rna_type":
-                                    continue
-                                sub_value = getattr(value, sub_value_attr)
-                                rna_recursive_attr_expand(
-                                    sub_value,
-                                    "{:s}.{:s}".format(rna_path_step, sub_value_attr),
-                                    level,
-                                )
-                        elif type(value).__name__ == "bpy_prop_collection_idprop":  # could use nicer method
-                            file_preset.write("{:s}.clear()\n".format(rna_path_step))
-                            for sub_value in value:
-                                file_preset.write("item_sub_{:d} = {:s}.add()\n".format(level, rna_path_step))
-                                rna_recursive_attr_expand(sub_value, "item_sub_{:d}".format(level), level + 1)
-                        else:
-                            # convert thin wrapped sequences
-                            # to simple lists to repr()
-                            try:
-                                value = value[:]
-                            except Exception:
-                                pass
-
-                            file_preset.write("{:s} = {!r}\n".format(rna_path_step, value))
-
-                    with open(filepath, "w", encoding="utf-8") as file_preset:
-                        file_preset.write("import bpy\n")
-
-                        namespace_globals = {"bpy": bpy}
-                        namespace_locals = {}
-
-                        if hasattr(self, "preset_defines"):
-                            for rna_path in self.preset_defines:
-                                exec(rna_path, namespace_globals, namespace_locals)
-                                file_preset.write("{:s}\n".format(rna_path))
-                            file_preset.write("\n")
-
-                        for rna_path in self.preset_values:
-                            value = eval(rna_path, namespace_globals, namespace_locals)
-                            rna_recursive_attr_expand(value, rna_path, 1)
+                    # Escribir el preset ya no es metaprogramacion: la lista de
+                    # rutas de cada familia es una tabla en C++
+                    # (`fl_preset_spec.cc`) y `WM_OT_preset_write` captura los
+                    # valores con RNA y los serializa. Ni `exec`, ni `eval`, ni
+                    # `repr`. Ver politicas/PRESETS-A-DATOS.md.
+                    try:
+                        bpy.ops.wm.preset_write(
+                            filepath=filepath,
+                            subdir=self.preset_subdir,
+                            use_focal_length=getattr(self, "use_focal_length", False),
+                        )
+                    except Exception as ex:
+                        self.report({'ERROR'}, rpt_("Unable to write preset: {!r}").format(ex))
+                        return {'CANCELLED'}
 
             preset_menu_class.bl_label = bpy.path.display_name(filename)
 
@@ -213,10 +189,17 @@ class AddPresetBase:
                 name = preset_menu_class.bl_label
 
             # fairly sloppy but convenient.
-            filepath = bpy.utils.preset_find(name, self.preset_subdir, ext=ext)
-
-            if not filepath:
-                filepath = bpy.utils.preset_find(name, self.preset_subdir, display_name=True, ext=ext)
+            # Se busca primero con la extension de hoy y luego con `.py`: un
+            # preset que el usuario guardo antes de la migracion se tiene que
+            # poder borrar igual.
+            filepath = ""
+            for ext_try in (ext, ".py") if ext == ".fpreset" else (ext,):
+                filepath = bpy.utils.preset_find(name, self.preset_subdir, ext=ext_try)
+                if not filepath:
+                    filepath = bpy.utils.preset_find(
+                        name, self.preset_subdir, display_name=True, ext=ext_try)
+                if filepath:
+                    break
 
             if not filepath:
                 return {'CANCELLED'}
@@ -280,15 +263,19 @@ class ExecutePreset(Operator):
 
         ext = splitext(filepath)[1].lower()
 
-        if ext not in {".py", ".xml"}:
+        if ext not in {".fpreset", ".py", ".xml"}:
             self.report({'ERROR'}, rpt_("Unknown file type: {!r}").format(ext))
             return {'CANCELLED'}
 
         _call_preset_cb(getattr(preset_class, "reset_cb", None), context, filepath)
 
-        if ext == ".py":
+        if ext in {".fpreset", ".py"}:
+            # Un preset ya no se EJECUTA: se lee como dato y se aplica desde C++
+            # (`WM_OT_preset_apply`). Un `.py` heredado -- los que el usuario
+            # tenga guardados de antes -- se analiza igualmente de forma nativa,
+            # sin interprete. Ver politicas/PRESETS-A-DATOS.md.
             try:
-                bpy.utils.execfile(filepath)
+                bpy.ops.wm.preset_apply(filepath=filepath)
             except Exception as ex:
                 self.report({'ERROR'}, "Failed to execute the preset: " + repr(ex))
 
@@ -717,6 +704,9 @@ class AddPresetKeyconfig(AddPresetBase, Operator):
     bl_label = "Add Custom Keymap Configuration"
     preset_menu = "USERPREF_MT_keyconfigs"
     preset_subdir = "keyconfig"
+    # La familia keyconfig no es una lista de propiedades: fabrica keymaps y se
+    # exporta como script. Ver la deuda 1 de politicas/PRESETS-A-DATOS.md.
+    preset_ext = ".py"
 
     def add(self, _context, filepath):
         bpy.ops.preferences.keyconfig_export(filepath=filepath)
@@ -729,6 +719,7 @@ class RemovePresetKeyconfig(AddPresetBase, Operator):
     bl_label = "Remove Keymap Configuration"
     preset_menu = "USERPREF_MT_keyconfigs"
     preset_subdir = "keyconfig"
+    preset_ext = ".py"
 
     remove_active: BoolProperty(
         default=True,

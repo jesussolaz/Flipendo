@@ -1279,7 +1279,11 @@ class Menu(_StructRNA, _GenericUI, metaclass=_RNAMeta):
         - preset_operator_defaults (dict of keyword args)
         """
         import bpy
-        ext_valid = getattr(self, "preset_extensions", {".py", ".xml"})
+        # `.fpreset` es el formato de datos de los presets de Flipendo; `.py` se
+        # sigue listando porque los presets que el usuario guardo antes de la
+        # migracion siguen ahi y se siguen leyendo (de forma nativa, sin
+        # interprete). Ver politicas/PRESETS-A-DATOS.md.
+        ext_valid = getattr(self, "preset_extensions", {".fpreset", ".py", ".xml"})
         props_default = getattr(self, "preset_operator_defaults", None)
         add_operator = getattr(self, "preset_add_operator", None)
         add_operator_props = getattr(self, "preset_add_operator_properties", None)
