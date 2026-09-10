@@ -65,6 +65,7 @@
 #  include "WM_api.hh"
 
 #  include "FL_keymap_dump.hpp"
+#  include "FL_operator_dump.hpp"
 #  include "toolsystem/FL_toolsystem_dump.hpp"
 
 /* for passing information between creator and gameengine */
@@ -2505,6 +2506,39 @@ static int arg_handle_fl_dump_keymap(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_dump_operators_doc[] =
+    "<filepath>\n"
+    "\tVuelca el contrato observable de todos los operadores registrados y sale.\n"
+    "\tNo incluye si cada operador procede de Python o C++.";
+static int arg_handle_fl_dump_operators(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_operators_dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_context_ops_doc[] =
+    "<filepath>\n"
+    "\tEjecuta los siete operadores wm.context_* pendientes sobre datos reales y sale.";
+static int arg_handle_fl_selftest_context_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_context_operators_selftest_schedule(C, argv[1]);
+    if (!ok) {
+      WM_exit(C, EXIT_FAILURE);
+    }
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_keymap_native_doc[] =
     "<filepath>\n"
     "\tVuelca el mapa de teclado NATIVO (C++) a un fichero y sale.\n"
@@ -3132,6 +3166,9 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--python-text", CB(arg_handle_python_text_run), C);
   BLI_args_add(ba, nullptr, "--python-expr", CB(arg_handle_python_expr_run), C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap", CB(arg_handle_fl_dump_keymap), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-operators", CB(arg_handle_fl_dump_operators), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-selftest-context-ops", CB(arg_handle_fl_selftest_context_ops), C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap-native", CB(arg_handle_fl_dump_keymap_native), C);
   BLI_args_add(ba, nullptr, "--fl-check-keymap", CB(arg_handle_fl_check_keymap), C);
   BLI_args_add(ba, nullptr, "--fl-dump-tools", CB(arg_handle_fl_dump_tools), C);
