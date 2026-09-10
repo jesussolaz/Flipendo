@@ -64,6 +64,7 @@
 
 #  include "WM_api.hh"
 
+#  include "FL_game_runtime.hh"
 #  include "FL_keymap_dump.hpp"
 #  include "FL_numinput_native.hh"
 #  include "FL_object_ops_selftest.hh"
@@ -2700,6 +2701,25 @@ static int arg_handle_fl_check_ui(int argc, const char **argv, void *data)
   fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
   return 0;
 }
+static const char arg_handle_fl_dump_runtime_doc[] =
+    "<bundle> [informe]\n"
+    "\tVuelca el estado observable de un juego ya exportado: estructura del\n"
+    "\tbundle, ficheros con su tamano, el .blend empotrado y los objetos con\n"
+    "\tpropiedad de juego `fl_component`. Sirve para comparar byte a byte el\n"
+    "\tentregable que produce el camino Python con el que produce el C++\n"
+    "\t(Carril J). Vale en --background.";
+static int arg_handle_fl_dump_runtime(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::game::runtime_dump(argv[1], (argc > 2) ? argv[2] : nullptr);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (argc > 2) ? 2 : 1;
+  }
+  fprintf(stderr, "\nError: falta la ruta del bundle despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 
 static const char arg_handle_fl_selftest_object_ops_doc[] =
     "<filepath>\n"
@@ -3285,6 +3305,7 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-convert-presets", CB(arg_handle_fl_convert_presets), C);
   BLI_args_add(ba, nullptr, "--fl-check-presets", CB(arg_handle_fl_check_presets), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-numinput", CB(arg_handle_fl_selftest_numinput), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-runtime", CB(arg_handle_fl_dump_runtime), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);
