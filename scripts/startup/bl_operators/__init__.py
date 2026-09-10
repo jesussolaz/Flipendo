@@ -11,7 +11,6 @@ if "bpy" in locals():
     del reload
 
 _modules = [
-    "add_mesh_torus",
     "anim",
     "assets",
     "bone_selection_sets",
