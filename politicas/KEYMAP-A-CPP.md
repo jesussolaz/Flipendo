@@ -105,14 +105,21 @@ interfaz de Preferencias › Teclado está vacía hasta que ese panel se migre c
 `FL_ui_registry`. Es una regresión de interfaz, no de comportamiento, y está aquí
 escrita para que no se olvide.
 
-### Dos guardas que siguen en pie, y por qué
+### Situación de las dos guardas históricas
 
-1. **Se espera a que Python haya arrancado** antes de construir el keymap. No es
-   inercia: el keymap todavía referencia operadores que siguen en Python (la familia
-   `wm.context_*`, el sistema de herramientas). Construirlo antes deja atajos sin sus
-   propiedades — se midió: 519 líneas de diferencia. La guarda cae cuando esos
-   operadores sean nativos.
+1. **La espera a que Python arrancase ya puede desaparecer por completo.** El camino
+   actual de `WM_keyconfig_reload` ya no contiene la guarda `CTX_py_init_get`, y B1
+   elimina la última premisa que se le atribuía: los 18 operadores `wm.context_*`
+   están registrados en C++. El verificador confirma que construir el keymap así
+   conserva exactamente 248 keymaps y 3.673 atajos. La diferencia de arranque que se
+   había observado al probar una fase más temprana no procedía de Python, sino de las
+   macros `MESH_OT_`, `NODE_OT_` y `OBJECT_OT_`, registradas después por
+   `ED_spacemacros_init`; si se adelanta otra vez la construcción habrá que expresar
+   esa fase de forma explícita, no volver a usar el estado del intérprete como señal.
 
-2. **El respaldo a `IDProperty`** cuando un operador aún no está registrado. Es lo
-   que hacía `setattr` en Python (`bl_keymap_utils/io.py:241`) y evita que un valor
-   se pierda en silencio. Se retira el mismo día que la guarda anterior.
+2. **El respaldo a `IDProperty` sigue siendo una red general**, no una dependencia de
+   `wm.context_*`. Reproduce el `setattr` de `bl_keymap_utils/io.py:241` cuando el
+   keymap menciona un operador o una macro todavía no registrados y evita perder
+   propiedades silenciosamente. Su retirada requiere demostrar que todos los tipos
+   referidos existen ya en la fase concreta donde se construye el mapa; B1, por sí
+   solo, no demuestra eso para las macros tardías.
