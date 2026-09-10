@@ -622,6 +622,8 @@ void operatortypes_register()
 {
   WM_operatortype_append(WM_OT_save_as_runtime);
   publishing_operatortypes_register();
+  character_operatortypes_register();
+  camera_cull_operatortypes_register();
 }
 
 /** \} */

@@ -30,6 +30,12 @@ void operatortypes_register();
 /** Operadores y panel de `fl_game_publishing.cc`; los llama `operatortypes_register()`. */
 void publishing_operatortypes_register();
 
+/** Operadores y panel de `fl_game_character.cc`; los llama `operatortypes_register()`. */
+void character_operatortypes_register();
+
+/** Operador y panel de `fl_game_camera_cull.cc`; los llama `operatortypes_register()`. */
+void camera_cull_operatortypes_register();
+
 /**
  * Ruta por defecto del Player, la misma que calculaba el addon de Python:
  * en macOS, el `Blenderplayer.app` que vive junto a `Blender.app`.

@@ -8,6 +8,7 @@
 
 set(INC
   ../include
+  ../../depsgraph
   ../../makesrna
 
   # dna_type_offsets.h
@@ -21,6 +22,8 @@ set(INC_SYS
 )
 
 set(SRC
+  fl_game_camera_cull.cc
+  fl_game_character.cc
   fl_game_publishing.cc
   fl_game_runtime.cc
 
@@ -32,6 +35,7 @@ set(LIB
   PRIVATE bf::blenlib
   PRIVATE bf::blenloader
   PRIVATE bf::blentranslation
+  PRIVATE bf::depsgraph
   PRIVATE bf::dna
   PRIVATE bf::intern::guardedalloc
   PRIVATE bf::windowmanager
