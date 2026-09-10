@@ -376,3 +376,51 @@ un menú Python que nunca se muestra (`WM_MT_toolsystem_catalog_keymaps`). Compr
 Se sospechó que la migración del keymap había dejado sin la bandera `KEYMAP_TOOL` a los
 keymaps de herramienta. Es cierto, pero no importa: esa bandera **no la lee nadie** en
 el motor. Las herramientas encuentran su keymap por nombre desde el runtime.
+
+---
+
+## Fases 4b y 4c: ajustes, cabecera, reserva, keymap de la barra y sus operadores
+
+Todo lo que dibujaba el sistema de herramientas desde Python pasa a C++:
+
+- **Los 36 `draw_settings` que faltaban**, transliterados por diez agentes (uno por familia)
+  y revisados línea a línea por otros diez. Sobre una capa (`FL_tool_settings_ui.hh`) que
+  reproduce `layout.prop/label/operator/popover/row` tal como los recibe RNA, traducción
+  incluida, para que ninguna transliteración reinvente `text=None` frente a `text=""`.
+- **La cabecera de herramienta, el panel "Active Tool", el popover y la tarta de reserva**
+  (`fl_toolbar_ui.cc`). Las cabeceras de `bl_ui`, que siguen en Python, los llaman por
+  cuatro plantillas RNA (`template_tool_*`): Python llamando a C++.
+- **El dibujo sobre la vista** (el círculo bajo el ratón) de las seis herramientas que lo
+  tienen. Una diferencia a propósito: el Python capturaba el `bToolRef` al activar y lo
+  usaba en cada dibujo; aquí se busca por su clave, así que no puede quedar colgando.
+- **El keymap del popup de la barra** (`keymap_from_toolbar.py`, 394 líneas) y los tres
+  operadores que lo usan: `wm.toolbar`, `wm.toolbar_fallback_pie`, `wm.toolbar_prompt`.
+  Verificado **912/912** contra el Python real.
+
+**Los nueve puentes C++ → Python del sistema de herramientas están cortados.** `wm.py` ya no
+contiene nada de él, y la deuda declarada es **cero**: ninguna herramienta con ajustes ni
+dibujo pendiente.
+
+### Una diferencia deliberada de aspecto
+
+`wm.toolbar_prompt` pintaba su aviso en la barra de estado **sustituyendo el método de
+dibujo** de la cabecera de estado. Eso no tiene equivalente en C++; lo idiomático es
+`WorkspaceStatus`, que es lo que usan todos los modales nativos. Mismo contenido (tecla
+inicial, y para cada herramienta sus modificadores, su tecla y su nombre); cambian la caja y
+el espaciado.
+
+### La verificación visual de la cabecera, y lo que enseñó
+
+819 capturas (cabecera y panel lateral de cada herramienta en los 30 espacios y modos).
+La primera comparación dio **819 de 819 distintas**, y no era el código:
+
+1. **La línea base de referencia no se reproducía a sí misma.** Una segunda ejecución de la
+   misma app de referencia salía distinta de la primera. Se descarta y se regenera, y ahora
+   se exige que dos ejecuciones coincidan antes de usarla.
+2. **El ratón.** El resaltado depende de dónde está el cursor real al abrirse la ventana.
+   El arnés ahora lo fija fuera de las regiones capturadas.
+3. Con eso aislado, en modo objeto quedaban **3 diferencias reales**, y eran mías: las filas
+   de modo de selección de la vista 3D no tenían su fila propia sin división, porque la
+   expresión regular que las corrigió usaba `[a-z_.]` y `view3d` lleva un dígito. Corregido.
+
+La comparación completa con la línea base regenerada está en curso.

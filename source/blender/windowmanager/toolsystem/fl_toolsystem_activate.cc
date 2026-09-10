@@ -324,6 +324,77 @@ bToolRef *tool_active_ref(const bContext *C, const int space_type, const bool cr
   return active_tref(C, CTX_wm_workspace(C), space_type, create);
 }
 
+bToolRef *tool_ref_for_mode(const bContext *C,
+                             const int space_type,
+                             const char *mode,
+                             const bool create)
+{
+  if (mode == nullptr) {
+    return active_tref(C, CTX_wm_workspace(C), space_type, create);
+  }
+  WorkSpace *workspace = CTX_wm_workspace(C);
+  if (workspace == nullptr) {
+    return nullptr;
+  }
+  /* El Python pasa el modo como cadena y RNA lo convierte con la enumeracion de cada
+   * espacio; aqui igual. */
+  bToolKey key{};
+  key.space_type = space_type;
+  int value = 0;
+  switch (space_type) {
+    case SPACE_VIEW3D:
+      if (!RNA_enum_value_from_id(rna_enum_context_mode_items, mode, &value)) {
+        return nullptr;
+      }
+      break;
+    case SPACE_IMAGE:
+      if (!RNA_enum_value_from_id(rna_enum_space_image_mode_all_items, mode, &value)) {
+        return nullptr;
+      }
+      break;
+    case SPACE_SEQ:
+      if (!RNA_enum_value_from_id(rna_enum_space_sequencer_view_type_items, mode, &value)) {
+        return nullptr;
+      }
+      break;
+    case SPACE_NODE:
+      value = 0;
+      break;
+    default:
+      return nullptr;
+  }
+  key.mode = value;
+  bToolRef *tref = nullptr;
+  if (create) {
+    WM_toolsystem_ref_ensure(workspace, &key, &tref);
+  }
+  else {
+    tref = WM_toolsystem_ref_find(workspace, &key);
+  }
+  if (tref != nullptr) {
+    WM_toolsystem_ref_sync_from_context(CTX_data_main(C), workspace, tref);
+  }
+  return tref;
+}
+
+const ToolDecl *tool_find_by_id_active(const bContext *C,
+                                       const ToolbarDecl &toolbar,
+                                       const char *mode,
+                                       const blender::StringRefNull idname)
+{
+  for (const ToolGroupView &group : tools_unexpanded_for_space_mode(C, toolbar, mode)) {
+    if (group.is_group()) {
+      if (idname == group.tools[0]->idname) {
+        return group.tools[group_active_index(toolbar.space_type, group)];
+      }
+    }
+    else if (idname == group.tools[0]->idname) {
+      return group.tools[0];
+    }
+  }
+  return nullptr;
+}
+
 /** El tipo de pincel en entero. Depende del modo de pintura de la herramienta: el
  * mismo nombre es otro numero en escultura que en pintura de vertices. */
 static int brush_type_value(const bToolRef *tref, const char *identifier)
@@ -342,6 +413,67 @@ static int brush_type_value(const bToolRef *tref, const char *identifier)
   fprintf(stderr, "Herramientas: tipo de pincel '%s' desconocido en este modo.\n", identifier);
   return -1;
 }
+
+/* -------------------------------------------------------------------- */
+/** \name Dibujo sobre la vista
+ *
+ * `_activate_by_item._cursor_draw_handle` del Python: un dibujo por tipo de espacio, que
+ * se quita siempre al activar otra herramienta en ese espacio y se pone si la nueva lo
+ * tiene. Sin condicion (`poll` nulo), como alli.
+ *
+ * Una diferencia a proposito: el Python captura el `tool` al activar y lo usa en cada
+ * dibujo, y si ese `bToolRef` se libera el puntero queda colgando. Aqui se guarda su
+ * CLAVE y en cada dibujo se busca la herramienta activa; si ya no es la misma, no se
+ * dibuja. Se busca sin sincronizar con el contexto: esto corre en cada movimiento.
+ * \{ */
+
+struct CursorDraw {
+  const ToolDecl *tool = nullptr;
+  bToolKey key{};
+};
+static CursorDraw g_cursor_draw[SPACE_TYPE_NUM];
+static wmPaintCursor *g_cursor_handle[SPACE_TYPE_NUM] = {nullptr};
+
+static void tool_cursor_draw(bContext *C,
+                             const blender::int2 &xy,
+                             const blender::float2 & /*tilt*/,
+                             void *customdata)
+{
+  const CursorDraw *draw = static_cast<const CursorDraw *>(customdata);
+  WorkSpace *workspace = CTX_wm_workspace(C);
+  if (draw->tool == nullptr || draw->tool->draw_cursor == nullptr || workspace == nullptr) {
+    return;
+  }
+  bToolRef *tref = WM_toolsystem_ref_find(workspace, &draw->key);
+  if (tref == nullptr || !STREQ(tref->idname, draw->tool->idname)) {
+    return;
+  }
+  draw->tool->draw_cursor(C, tref, xy);
+}
+
+static void cursor_draw_update(const bToolRef *tref, const ToolDecl &tool)
+{
+  const int space_type = tref->space_type;
+  if (space_type < 0 || space_type >= SPACE_TYPE_NUM) {
+    return;
+  }
+  if (g_cursor_handle[space_type] != nullptr) {
+    /* Busca el puntero en la lista del gestor antes de liberarlo: si ya no esta, no pasa
+     * nada. */
+    WM_paint_cursor_end(g_cursor_handle[space_type]);
+    g_cursor_handle[space_type] = nullptr;
+  }
+  if (tool.draw_cursor == nullptr) {
+    return;
+  }
+  g_cursor_draw[space_type].tool = &tool;
+  g_cursor_draw[space_type].key.space_type = tref->space_type;
+  g_cursor_draw[space_type].key.mode = tref->mode;
+  g_cursor_handle[space_type] = WM_paint_cursor_activate(
+      short(space_type), RGN_TYPE_WINDOW, nullptr, tool_cursor_draw, &g_cursor_draw[space_type]);
+}
+
+/** \} */
 
 /** Lo que hace `rna_WorkSpaceTool_setup`, mas las propiedades iniciales del gizmo. */
 static void activation_apply(bContext *C,
@@ -411,8 +543,7 @@ static void activation_apply(bContext *C,
     }
   }
 
-  /* El dibujo sobre la vista (`draw_cursor`) aun no esta: esas herramientas llevan
-   * `TOOL_PENDING_DRAW_CURSOR` y el verificador las lista. */
+  cursor_draw_update(tref, *args.tool);
 }
 
 static bool activate_by_item(bContext *C,

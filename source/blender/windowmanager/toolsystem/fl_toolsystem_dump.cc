@@ -16,6 +16,8 @@
 
 #include "MEM_guardedalloc.h"
 
+#include "BKE_context.hh"
+
 #include "BLI_fileops.h"
 #include "BLI_index_range.hh"
 #include "BLI_string.h"
@@ -29,6 +31,10 @@
 
 #include "DNA_space_types.h"
 
+#include "BLI_listbase.h"
+#include "WM_api.hh"
+#include "WM_keymap.hh"
+#include "DNA_windowmanager_types.h"
 #include "FL_toolsystem.hpp"
 #include "FL_toolsystem_dump.hpp"
 
@@ -422,6 +428,107 @@ bool dump_queries_native(const bContext *C, const char *filepath)
   }
   fclose(fp);
   printf("QUERIES_DUMP_NATIVE_OK %d\n", lines);
+  return true;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Volcado del keymap del popup de la barra
+ *
+ * Mismo formato que `tests/flipendo/toolsystem/dump_toolbar_keymaps_gui.py`. En modo
+ * grafico: el keymap parte del del usuario.
+ * \{ */
+
+static std::string enum_identifier(const EnumPropertyItem *items, const int value)
+{
+  const char *identifier = nullptr;
+  return RNA_enum_identifier(items, value, &identifier) && identifier ? identifier : "";
+}
+
+static std::string kmi_prop_str(wmKeyMapItem *kmi, const char *name)
+{
+  if (kmi->ptr == nullptr) {
+    return "-";
+  }
+  PropertyRNA *prop = RNA_struct_find_property(kmi->ptr, name);
+  if (prop == nullptr) {
+    return "-";
+  }
+  switch (RNA_property_type(prop)) {
+    case PROP_STRING: {
+      char *value = RNA_property_string_get_alloc(kmi->ptr, prop, nullptr, 0, nullptr);
+      std::string out = value;
+      MEM_freeN(value);
+      return out;
+    }
+    case PROP_BOOLEAN:
+      /* `str(True)` del Python. */
+      return RNA_property_boolean_get(kmi->ptr, prop) ? "True" : "False";
+    default:
+      return "?";
+  }
+}
+
+bool dump_toolbar_keymaps_native(bContext *C, const char *filepath)
+{
+  /* La busqueda de atajos (`WM_key_event_operator`) mira los manejadores del CONTEXTO.
+   * Desde la linea de ordenes puede no haber ventana; el arnes de Python corre con la
+   * primera ventana y sin area. Se reproduce ese mismo contexto. */
+  if (CTX_wm_window(C) == nullptr) {
+    wmWindowManager *wm = CTX_wm_manager(C);
+    if (wm != nullptr && wm->windows.first != nullptr) {
+      CTX_wm_window_set(C, static_cast<wmWindow *>(wm->windows.first));
+      printf("Volcado del keymap de la barra: sin ventana en el contexto; se usa la primera.\n");
+    }
+  }
+  FILE *fp = BLI_fopen(filepath, "w");
+  if (fp == nullptr) {
+    fprintf(stderr, "No se pudo abrir '%s' para escribir.\n", filepath);
+    return false;
+  }
+  int lines = 0;
+  for (const SpaceMode &sm : space_modes_ordered()) {
+    const char *label = sm.mode != nullptr ? sm.mode : "None";
+    const char *space = space_type_identifier(sm.toolbar->space_type);
+    wmKeyMap *km = toolbar_keymap_generate_in(C, *sm.toolbar, sm.mode, true, true);
+    if (km == nullptr) {
+      fprintf(fp, "K %s %s (sin keymap)\n", space, label);
+      lines++;
+      continue;
+    }
+    int i = 0;
+    LISTBASE_FOREACH (wmKeyMapItem *, kmi, &km->items) {
+      char idname_py[OP_MAX_TYPENAME];
+      WM_operator_py_idname(idname_py, kmi->idname);
+      const bool any = kmi->shift == KM_ANY && kmi->ctrl == KM_ANY && kmi->alt == KM_ANY &&
+                       kmi->oskey == KM_ANY && kmi->hyper == KM_ANY;
+      fprintf(fp,
+              "K %s %s %02d %s type=%s value=%s any=%d shift=%d ctrl=%d alt=%d oskey=%d "
+              "hyper=%d key_modifier=%s active=%d repeat=%d name=%s skip_depressed=%s\n",
+              space,
+              label,
+              i,
+              idname_py,
+              enum_identifier(rna_enum_event_type_items, kmi->type).c_str(),
+              enum_identifier(rna_enum_event_value_items, kmi->val).c_str(),
+              int(any),
+              int(kmi->shift),
+              int(kmi->ctrl),
+              int(kmi->alt),
+              int(kmi->oskey),
+              int(kmi->hyper),
+              enum_identifier(rna_enum_event_type_items, kmi->keymodifier).c_str(),
+              int((kmi->flag & KMI_INACTIVE) == 0),
+              int((kmi->flag & KMI_REPEAT_IGNORE) == 0),
+              kmi_prop_str(kmi, "name").c_str(),
+              kmi_prop_str(kmi, "skip_depressed").c_str());
+      i++;
+      lines++;
+    }
+  }
+  fclose(fp);
+  printf("TOOLBAR_KEYMAPS_DUMP_NATIVE_OK %d\n", lines);
   return true;
 }
 

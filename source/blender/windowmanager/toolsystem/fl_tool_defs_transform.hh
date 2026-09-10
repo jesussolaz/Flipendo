@@ -44,42 +44,11 @@ extern const blender::Span<PropRow> settings;
 
 }  // namespace view3d_ggt_xform_extrude
 
-/** `_template_widget.VIEW3D_GGT_xform_gizmo`. */
-namespace view3d_ggt_xform_gizmo {
-
-/**
- * Pinta el tipo de orientacion de la ranura `index` de la escena, o sea
- * `scene.transform_orientation_slots[index].type`.
- *
- * No puede ser una fila `PropRow` por dos motivos independientes: la propiedad no sale
- * de la herramienta ni de `tool_settings`, sino de un elemento de una coleccion de la
- * escena elegido por indice, y ademas el indice cambia en cada llamada. Tampoco puede
- * ser un `DrawSettingsFn`, porque ese contrato no lleva indice.
- *
- * Queda solo DECLARADA a proposito: las seis de este fichero que la usan van con
- * `settings_pending` (y la septima, el sesgado del lapiz de cera, va en otro fichero),
- * asi que hoy no la llama nadie e implementarla ahora seria escribir codigo de dibujo sin
- * nada que lo ejercite. Se implementa en la fase de dibujado.
- */
-void draw_settings_with_index(const bContext *C, uiLayout *layout, int index);
-
-}  // namespace view3d_ggt_xform_gizmo
-
 }  // namespace template_widget
 
 /** `_defs_transform`. Las siete de transformar, comunes a casi todos los modos de la
  * vista 3D. */
 namespace defs_transform {
-
-/**
- * `draw_transform_sculpt_tool_settings`: el modo de transformacion del escultor, que
- * solo se pinta cuando el modo es 'SCULPT'.
- *
- * Ese `if` sobre el modo es flujo de control, asi que no es una fila. Se declara para
- * que conste que existe y que cuatro herramientas la comparten; se implementa en la fase
- * de dibujado, junto con las que hoy llevan `settings_pending`.
- */
-void draw_transform_sculpt_tool_settings(const bContext *C, uiLayout *layout);
 
 extern const ToolDecl translate;
 extern const ToolDecl rotate;

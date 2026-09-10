@@ -15,15 +15,27 @@
  * Calcularlo por etiqueta daria un keymap que no existe y la herramienta se quedaria sin
  * atajos sin que nada avisara.
  *
- * Seis de las siete van con `settings_pending`, y todas por lo mismo: sus ajustes acaban
- * en `_template_widget.VIEW3D_GGT_xform_gizmo.draw_settings_with_index`, que pinta la
- * orientacion de una ranura de la escena elegida por indice y no cabe ni en una fila ni
- * en el contrato de `DrawSettingsFn`. El por que esta en el `.hh`.
+ * Seis de las siete tienen ajustes, y todos acaban en
+ * `_template_widget.VIEW3D_GGT_xform_gizmo.draw_settings_with_index`, que pinta la
+ * orientacion de una ranura de la escena elegida por indice. Eso no cabe en una fila, asi
+ * que las seis se pintan con codigo: `draw_transform_*` de
+ * `editors/interface/fl_tool_settings_transform.cc`, transliterados linea a linea.
  */
 
 #include "BLT_translation.hh"
 
 #include "fl_tool_defs_transform.hh"
+
+/* Los `draw_settings` de esta familia. Viven en `editors/interface`, que es donde esta el
+ * dibujo; aqui solo hace falta el puntero. */
+namespace flipendo::ui::settings {
+void draw_transform_translate(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_transform_rotate(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_transform_scale(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_transform_scale_cage(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_transform_shear(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_transform_transform(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}  // namespace flipendo::ui::settings
 
 namespace flipendo::toolsystem {
 
@@ -42,7 +54,9 @@ const blender::Span<PropRow> settings = span(settings_rows);
 }  // namespace template_widget::view3d_ggt_xform_extrude
 
 /* `template_widget::view3d_ggt_xform_gizmo::draw_settings_with_index` no se define aqui:
- * ver el `.hh`. */
+ * su transliteracion es `xform_gizmo_draw_settings_with_index`, `static` en
+ * `editors/interface/fl_tool_settings_transform.cc`, que es donde se dibuja. La
+ * declaracion del `.hh` (en este modulo y sin cuerpo) ya no la usa nadie. */
 
 /** \} */
 
@@ -54,8 +68,7 @@ namespace defs_transform {
 
 /* Mover, girar y escalar tienen el mismo `draw_settings` salvo el indice de la ranura
  * (1, 2 y 3): los ajustes del escultor y la orientacion de esa ranura. Ni lo uno ni lo
- * otro cabe en filas, asi que las tres van con `settings_pending` en vez de con unos
- * ajustes inventados que se le parezcan. */
+ * otro cabe en filas, asi que los tres se pintan con codigo. */
 
 const ToolDecl translate = {
     /*idname*/ "builtin.move",
@@ -72,9 +85,9 @@ const ToolDecl translate = {
     /*op*/ "transform.translate",
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_transform_translate,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl rotate = {
@@ -92,9 +105,9 @@ const ToolDecl rotate = {
     /*op*/ "transform.rotate",
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_transform_rotate,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl scale = {
@@ -112,13 +125,15 @@ const ToolDecl scale = {
     /*op*/ "transform.resize",
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_transform_scale,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* La jaula es una herramienta distinta de la de escalar (otro gizmo, otro icono), pero
- * comparte su keymap y su operador. Copiado de la linea base, no deducido del nombre. */
+ * comparte su keymap y su operador. Copiado de la linea base, no deducido del nombre.
+ * Tambien comparte la ranura de orientacion de escalar (la 3), pero no pinta los ajustes
+ * del escultor. */
 const ToolDecl scale_cage = {
     /*idname*/ "builtin.scale_cage",
     /*label*/ N_("Scale Cage"),
@@ -134,13 +149,13 @@ const ToolDecl scale_cage = {
     /*op*/ "transform.resize",
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_transform_scale_cage,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* El sesgado, como la jaula, no pinta los ajustes del escultor: solo la orientacion de
- * la ranura. Sigue sin caber en filas, asi que queda igual de pendiente. */
+ * la ranura, y la que usa es la de girar (la 2). */
 const ToolDecl shear = {
     /*idname*/ "builtin.shear",
     /*label*/ N_("Shear"),
@@ -156,9 +171,9 @@ const ToolDecl shear = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_transform_shear,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* La unica de las siete sin gizmo y sin ajustes, asi que no hay nada pendiente que
@@ -180,10 +195,10 @@ const ToolDecl bend = {
     /*options*/ TOOL_OPTION_NONE,
 };
 
-/* La de transformar tiene ademas una fila propia, `drag_action` del grupo de gizmos, pero
- * el Python solo la pinta si la herramienta no esta actuando de reserva. Esa condicion
- * forma parte del ajuste: declararla como fila fija cambiaria la interfaz de la reserva.
- * Por eso tambien queda pendiente entera. */
+/* La de transformar tiene ademas una fila propia, `drag_action` del grupo de gizmos, que
+ * el Python solo pinta si `tool_settings.workspace_tool_type` (el "Drag" de la cabecera)
+ * no es 'FALLBACK'; y en el panel lateral la precede el rotulo "Gizmos:". Las dos
+ * condiciones forman parte del ajuste: declararlo como filas fijas cambiaria la interfaz. */
 const ToolDecl transform = {
     /*idname*/ "builtin.transform",
     /*label*/ N_("Transform"),
@@ -199,9 +214,9 @@ const ToolDecl transform = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_transform_transform,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 }  // namespace defs_transform

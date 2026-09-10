@@ -19,8 +19,9 @@
  *
  * - `bevel` y `knife` miran el tipo de region para repartir sus ajustes entre la
  *   cabecera y el popover "extra", y `bevel` ademas cambia lo que pinta segun el
- *   modo de bisel y el tipo de perfil. Ninguna de las dos cabe en filas, asi que van
- *   con `settings_pending` para que la deuda salga listada en cada verificacion.
+ *   modo de bisel y el tipo de perfil. Ninguna de las dos cabe en filas, asi que se
+ *   pintan con codigo (`draw_settings`), transliterado en
+ *   `editors/interface/fl_tool_settings_edit_mesh.cc`.
  *
  * - `builtin.rip_region` y `builtin.extrude_to_cursor` existen tambien en el editor
  *   de imagen y en la edicion de esqueleto, pero son ToolDef DISTINTOS de otras
@@ -39,6 +40,12 @@
 #include "fl_tool_description.hh"
 
 #include "fl_tool_defs_edit_mesh.hh"
+
+/* Definidas en `editors/interface/fl_tool_settings_edit_mesh.cc`. */
+namespace flipendo::ui::settings {
+void draw_bevel(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_knife(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}  // namespace flipendo::ui::settings
 
 namespace flipendo::toolsystem {
 
@@ -274,14 +281,13 @@ const ToolDecl inset = {
 };
 
 /*
- * El bisel tiene los ajustes mas retorcidos del catalogo: reparte quince propiedades
+ * El bisel tiene los ajustes mas retorcidos del catalogo: reparte dieciseis propiedades
  * entre la cabecera y el popover "extra" segun `region.type`, apaga media columna
  * cuando el bisel no es de aristas, ensena `spread` solo si el remate interior es un
  * arco y saca una plantilla de curva si el perfil es personalizado.
  *
- * Nada de eso cabe en filas, y traducirlo a ojo seria inventarse una interfaz distinta
- * de la que hay hoy. Va marcado como pendiente para que el verificador lo recuerde en
- * cada pasada en vez de quedar como "no tiene ajustes".
+ * Nada de eso cabe en filas, asi que lo pinta `draw_bevel`, transliterado linea a linea
+ * del Python; las filas quedan vacias porque el despacho las ignora cuando hay funcion.
  */
 const ToolDecl bevel = {
     /*idname*/ "builtin.bevel",
@@ -298,9 +304,9 @@ const ToolDecl bevel = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_bevel,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /** \} */
@@ -559,7 +565,7 @@ const ToolDecl push_pull = {
 /*
  * Los ajustes del cuchillo tambien miran el tipo de region: en la cabecera pinta tres
  * casillas y un popover, y fuera de ella pinta ademas las medidas y el ajuste angular.
- * Como el bisel, no cabe en filas y queda marcada como pendiente.
+ * Como el bisel, no cabe en filas y lo pinta `draw_knife`.
  *
  * Es la unica de la malla que puede usarse como herramienta de reserva.
  */
@@ -578,9 +584,9 @@ const ToolDecl knife = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_KEYMAP_FALLBACK,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_knife,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 static const PropRow bisect_settings[] = {

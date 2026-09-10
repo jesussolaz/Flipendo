@@ -23,6 +23,13 @@
 
 #include "fl_tool_defs_paint.hh"
 
+/* Los `draw_settings` de pintado de pesos, en
+ * `source/blender/editors/interface/fl_tool_settings_paint.cc`. */
+namespace flipendo::ui::settings {
+void draw_sample_weight(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_gradient(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}  // namespace flipendo::ui::settings
+
 namespace flipendo::toolsystem {
 
 /* -------------------------------------------------------------------- */
@@ -255,8 +262,8 @@ const ToolDecl smear = {
 
 /* Sus ajustes son una etiqueta con el peso activo, y de donde sale ese peso depende de
  * si los ajustes unificados estan puestos y de si hay pincel; ademas es `layout.label`
- * con el numero ya formateado, no un `prop`. Nada de eso cabe en filas declarativas,
- * asi que queda pendiente en vez de traducido a medias. */
+ * con el numero ya formateado, no un `prop`. Nada de eso cabe en filas declarativas, asi
+ * que es codigo: `draw_sample_weight`, en `fl_tool_settings_paint.cc`. */
 const ToolDecl sample_weight = {
     /*idname*/ "builtin.sample_weight",
     /*label*/ N_("Sample Weight"),
@@ -272,9 +279,9 @@ const ToolDecl sample_weight = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_sample_weight,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl sample_weight_group = {
@@ -293,11 +300,10 @@ const ToolDecl sample_weight_group = {
     /*options*/ TOOL_OPTION_NONE,
 };
 
-/* Pendiente por partida doble: el peso y la fuerza los pinta `prop_unified`, que elige
- * entre la propiedad del pincel y la unificada segun un interruptor, y encima abre un
- * popover a `VIEW3D_PT_tools_weight_gradient`, que sigue siendo un panel de Python.
- * Solo la fila del tipo de degradado seria declarativa, y media traduccion es peor que
- * ninguna: parece completa y no lo esta. */
+/* No cabe en filas: el peso y la fuerza los pinta `prop_unified`, que elige entre la
+ * propiedad del pincel y la unificada segun un interruptor, y detras va un popover a
+ * `VIEW3D_PT_tools_weight_gradient`. Es codigo: `draw_gradient`, en
+ * `fl_tool_settings_paint.cc`, con `prop_unified` transliterado alli mismo. */
 const ToolDecl gradient = {
     /*idname*/ "builtin.gradient",
     /*label*/ N_("Gradient"),
@@ -313,9 +319,9 @@ const ToolDecl gradient = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ flipendo::ui::settings::draw_gradient,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 }  // namespace defs_weight_paint

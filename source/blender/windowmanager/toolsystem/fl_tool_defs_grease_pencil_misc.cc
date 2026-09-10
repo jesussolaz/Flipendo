@@ -20,6 +20,12 @@
 
 #include "fl_tool_defs_grease_pencil_misc.hh"
 
+/* Los `draw_settings` que pintan a mano viven en
+ * `editors/interface/fl_tool_settings_gp_edit.cc`. */
+namespace flipendo::ui::settings {
+void draw_shear(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}  // namespace flipendo::ui::settings
+
 namespace flipendo::toolsystem {
 
 /* -------------------------------------------------------------------- */
@@ -36,8 +42,7 @@ namespace defs_grease_pencil_edit {
  * Su unico ajuste es `_template_widget.VIEW3D_GGT_xform_gizmo.draw_settings_with_index(
  * context, layout, 2)`, que pinta el `type` de `scene.transform_orientation_slots[2]`.
  * No tiene flujo de control, pero tampoco cabe en una fila: `PropSource` no sabe nombrar
- * un elemento indexado de la escena, y inventarse la ruta seria adivinar. Queda marcado
- * como pendiente para que el verificador lo siga listando en cada pasada. */
+ * un elemento indexado de la escena. Por eso lo pinta `draw_shear`, a mano. */
 const ToolDecl shear = {
     /*idname*/ "builtin.shear",
     /*label*/ N_("Shear"),
@@ -53,9 +58,9 @@ const ToolDecl shear = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_NONE,
     /*settings*/ {},
-    /*draw_settings*/ nullptr,
+    /*draw_settings*/ ui::settings::draw_shear,
     /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 static const PropRow interpolate_settings[] = {

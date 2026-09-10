@@ -24,6 +24,7 @@ set(SRC
   intern/wm_context_ops.cc
   toolsystem/fl_toolsystem_registry.cc
   toolsystem/fl_toolsystem_activate.cc
+  toolsystem/fl_toolbar_keymap.cc
   toolsystem/fl_toolsystem_dump.cc
   toolsystem/fl_tool_description.cc
   toolsystem/fl_tool_defs_annotate.cc

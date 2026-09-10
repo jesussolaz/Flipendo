@@ -20,6 +20,18 @@
 
 #include "fl_tool_defs_uv_curves_sculpt.hh"
 
+/* Los `draw_settings` de las tres de UV, en `editors/interface/fl_tool_settings_uv_sculpt.cc`. */
+namespace flipendo::ui::settings {
+void draw_uv_sculpt_grab(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_uv_sculpt_relax(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+void draw_uv_sculpt_pinch(const bContext *C, uiLayout *layout, bToolRef *tref, bool extra);
+}  // namespace flipendo::ui::settings
+
+/* Definida en editors/interface/fl_tool_cursor_ui.cc: el circulo del pincel bajo el raton. */
+namespace flipendo::ui::cursor {
+void draw_uv_sculpt_brush(bContext *C, bToolRef *tref, const blender::int2 &xy);
+}  // namespace flipendo::ui::cursor
+
 namespace flipendo::toolsystem {
 
 /* -------------------------------------------------------------------- */
@@ -34,12 +46,11 @@ namespace defs_image_uv_sculpt {
  * comparten la tabla porque pintan exactamente lo mismo, y `relax` repite las dos
  * filas para poder anadir la suya.
  *
- * Lo que NO cabe aqui son los dos `layout.popover` que van detras
- * (`IMAGE_PT_uv_sculpt_curve` e `IMAGE_PT_uv_sculpt_options`): siguen siendo paneles
- * de Python, igual que le pasa a las anotaciones con `TOPBAR_PT_annotation_layers`.
- * Por eso las tres quedan marcadas con `settings_pending`, aunque sus filas ya esten
- * puestas: asi se pinta hoy lo que ya se puede pintar y la deuda sigue saliendo
- * listada en cada verificacion en vez de perderse. */
+ * Lo que NO cabe en estas filas son los dos `layout.popover` que van detras
+ * (`IMAGE_PT_uv_sculpt_curve` e `IMAGE_PT_uv_sculpt_options`). Por eso las tres pintan
+ * con su `draw_settings` (`editors/interface/fl_tool_settings_uv_sculpt.cc`), que
+ * incluye los popovers, y el despacho ignora estas filas en cuanto hay funcion. Se
+ * dejan como estaban, como descripcion declarativa de los ajustes. */
 static const PropRow uv_sculpt_common_settings[] = {
     {PropSource::ToolSettingsSub, "uv_sculpt", "size"},
     {PropSource::ToolSettingsSub, "uv_sculpt", "strength"},
@@ -60,15 +71,15 @@ const ToolDecl grab = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_KEYMAP_FALLBACK,
     /*settings*/ span(uv_sculpt_common_settings),
-    /*draw_settings*/ nullptr,
-    /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS | TOOL_PENDING_DRAW_CURSOR,
+    /*draw_settings*/ ui::settings::draw_uv_sculpt_grab,
+    /*draw_cursor*/ flipendo::ui::cursor::draw_uv_sculpt_brush,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 /* `relax` es la unica de las tres que ademas elige metodo, y ese si es una propiedad
- * del operador. En el Python la fila va DETRAS de los dos popovers; al no existir
- * todavia los popovers queda pegada a las otras dos, asi que cuando se hagan nativos
- * hay que reinsertarlos en medio y no al final. */
+ * del operador. En el Python la fila va DETRAS de los dos popovers, y asi la pinta
+ * `draw_uv_sculpt_relax`; en esta tabla, que ya no se usa para pintar, sale pegada a
+ * las otras dos. */
 static const PropRow relax_settings[] = {
     {PropSource::ToolSettingsSub, "uv_sculpt", "size"},
     {PropSource::ToolSettingsSub, "uv_sculpt", "strength"},
@@ -90,9 +101,9 @@ const ToolDecl relax = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_KEYMAP_FALLBACK,
     /*settings*/ span(relax_settings),
-    /*draw_settings*/ nullptr,
-    /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS | TOOL_PENDING_DRAW_CURSOR,
+    /*draw_settings*/ ui::settings::draw_uv_sculpt_relax,
+    /*draw_cursor*/ flipendo::ui::cursor::draw_uv_sculpt_brush,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 const ToolDecl pinch = {
@@ -110,9 +121,9 @@ const ToolDecl pinch = {
     /*op*/ nullptr,
     /*options*/ TOOL_OPTION_KEYMAP_FALLBACK,
     /*settings*/ span(uv_sculpt_common_settings),
-    /*draw_settings*/ nullptr,
-    /*draw_cursor*/ nullptr,
-    /*pending*/ TOOL_PENDING_SETTINGS | TOOL_PENDING_DRAW_CURSOR,
+    /*draw_settings*/ ui::settings::draw_uv_sculpt_pinch,
+    /*draw_cursor*/ flipendo::ui::cursor::draw_uv_sculpt_brush,
+    /*pending*/ TOOL_PENDING_NONE,
 };
 
 }  // namespace defs_image_uv_sculpt

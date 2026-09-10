@@ -791,16 +791,8 @@ class ToolSelectPanelHelper:
             *,
             is_horizontal_layout=False,
     ):
-        idname_fallback = tool.idname_fallback
-        space_type = tool.space_type
-        cls = ToolSelectPanelHelper._tool_class_from_space_type(space_type)
-        item_fallback, _index = cls._tool_get_by_id(context, idname_fallback)
-        if item_fallback is not None:
-            draw_settings = item_fallback.draw_settings
-            if draw_settings is not None:
-                if not is_horizontal_layout:
-                    layout.separator()
-                draw_settings(context, layout, tool)
+        # Dibujo nativo (C++, `FL_toolbar_ui.hh`).
+        layout.template_tool_fallback_settings(tool, is_horizontal_layout=is_horizontal_layout)
 
     @staticmethod
     def draw_active_tool_header(
@@ -809,153 +801,28 @@ class ToolSelectPanelHelper:
             show_tool_icon_always=False,
             tool_key=None,
     ):
+        # Dibujo nativo (C++, `FL_toolbar_ui.hh`): icono o etiqueta, ajustes de la
+        # herramienta y selector de reserva. Aqui solo se traducen los argumentos.
         if tool_key is None:
             space_type, mode = ToolSelectPanelHelper._tool_key_from_context(context)
         else:
             space_type, mode = tool_key
-
         if space_type is None:
             return None
+        return layout.template_tool_header(
+            show_tool_icon_always=show_tool_icon_always,
+            space_type=space_type,
+            mode=mode or "",
+        )
 
-        cls = ToolSelectPanelHelper._tool_class_from_space_type(space_type)
-        item, tool, icon_value = cls._tool_get_active(context, space_type, mode, with_icon=True)
-        if item is None:
-            return None
-        # NOTE: we could show `item.text` here but it makes the layout jitter when switching tools.
-        # Add some spacing since the icon is currently assuming regular small icon size.
-        if show_tool_icon_always:
-            layout.label(
-                text="    " + iface_(item.label, i18n_contexts.operator_default),
-                icon_value=icon_value,
-                translate=False,
-            )
-            layout.separator()
-        else:
-            if not context.space_data.show_region_toolbar:
-                layout.template_icon(icon_value=icon_value, scale=0.5)
-                layout.separator()
-
-        draw_settings = item.draw_settings
-        if draw_settings is not None:
-            draw_settings(context, layout, tool)
-
-        idname_fallback = tool.idname_fallback
-        if idname_fallback and idname_fallback != item.idname:
-            tool_settings = context.tool_settings
-
-            # Show popover which looks like an enum but isn't one.
-            if tool_settings.workspace_tool_type == 'FALLBACK':
-                tool_fallback_id = cls.tool_fallback_id
-                item, _select_index = cls._tool_get_by_id_active(context, tool_fallback_id)
-                label = item.label
-            else:
-                label = "Active Tool"
-
-            row = layout.row(heading="Drag", heading_ctxt=i18n_contexts.editor_view3d)
-            row.context_pointer_set("tool", tool)
-            row.popover(
-                panel="TOPBAR_PT_tool_fallback",
-                text=iface_(label, i18n_contexts.operator_default),
-                translate=False,
-            )
-
-        return tool
-
-    # Show a list of tools in the popover.
+    # Las opciones de la herramienta de reserva: dibujo nativo (C++, `FL_toolbar_ui.hh`).
     @staticmethod
     def draw_fallback_tool_items(layout, context):
-        space_type = context.space_data.type
-        if space_type == 'PROPERTIES':
-            space_type = 'VIEW_3D'
-
-        cls = ToolSelectPanelHelper._tool_class_from_space_type(space_type)
-        tool_fallback_id = cls.tool_fallback_id
-
-        _item, _select_index, item_group = cls._tool_get_by_id_active_with_group(context, tool_fallback_id)
-
-        if item_group is None:
-            # Could print comprehensive message - listing available items.
-            raise Exception("Fallback tool doesn't exist")
-
-        col = layout.column(align=True)
-        tool_settings = context.tool_settings
-        col.prop_enum(
-            tool_settings,
-            "workspace_tool_type",
-            value='DEFAULT',
-            text="Active Tool",
-        )
-        is_active_tool = (tool_settings.workspace_tool_type == 'DEFAULT')
-
-        col = layout.column(align=True)
-        if is_active_tool:
-            index_current = -1
-        else:
-            index_current = cls._tool_group_active_get_from_item(item_group)
-
-        for i, sub_item in enumerate(item_group):
-            is_active = (i == index_current)
-
-            props = col.operator(
-                "wm.tool_set_by_id",
-                text=sub_item.label,
-                depress=is_active,
-            )
-            props.name = sub_item.idname
-            props.as_fallback = True
-            props.space_type = space_type
+        layout.template_tool_fallback_items(pie=False)
 
     @staticmethod
     def draw_fallback_tool_items_for_pie_menu(layout, context):
-        space_type = context.space_data.type
-        if space_type == 'PROPERTIES':
-            space_type = 'VIEW_3D'
-
-        cls = ToolSelectPanelHelper._tool_class_from_space_type(space_type)
-        tool_fallback_id = cls.tool_fallback_id
-
-        _item, _select_index, item_group = cls._tool_get_by_id_active_with_group(context, tool_fallback_id)
-
-        if item_group is None:
-            # Could print comprehensive message - listing available items.
-            raise Exception("Fallback tool doesn't exist")
-
-        # Allow changing the active tool,
-        # even though this isn't the purpose of the pie menu
-        # it's confusing from a user perspective if we don't allow it.
-        is_fallback_group_active = getattr(
-            ToolSelectPanelHelper._tool_active_from_context(context, space_type),
-            "idname", None,
-        ) in (item.idname for item in item_group)
-
-        pie = layout.menu_pie()
-        tool_settings = context.tool_settings
-        pie.prop_enum(
-            tool_settings,
-            "workspace_tool_type",
-            value='DEFAULT',
-            text="Active Tool",
-            # Could use a less generic icon.
-            icon='TOOL_SETTINGS',
-        )
-        is_active_tool = (tool_settings.workspace_tool_type == 'DEFAULT')
-
-        if is_active_tool:
-            index_current = -1
-        else:
-            index_current = cls._tool_group_active_get_from_item(item_group)
-        for i, sub_item in enumerate(item_group):
-            is_active = (i == index_current)
-            props = pie.operator(
-                "wm.tool_set_by_id",
-                text=sub_item.label,
-                depress=is_active,
-                icon_value=ToolSelectPanelHelper._icon_value_from_icon_handle(sub_item.icon),
-            )
-            props.name = sub_item.idname
-            props.space_type = space_type
-            if not is_fallback_group_active:
-                props.as_fallback = True
+        layout.template_tool_fallback_items(pie=True)
 
 
 # `WM_MT_toolsystem_submenu`, el menu que abre un grupo al mantener pulsado su boton, lo
