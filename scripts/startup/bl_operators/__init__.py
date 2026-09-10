@@ -28,7 +28,6 @@ _modules = [
     "node",
     "object",
     "object_quick_effects",
-    "object_randomize_transform",
     "presets",
     "rigidbody",
     "screen_play_rendered_anim",

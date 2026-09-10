@@ -46,6 +46,11 @@ void OBJECT_OT_origin_set(wmOperatorType *ot);
 
 void OBJECT_OT_align(wmOperatorType *ot);
 
+/* `object_randomize_transform.cc` (Flipendo, carril C: migracion de
+ * bl_operators/object_randomize_transform.py) */
+
+void OBJECT_OT_randomize_transform(wmOperatorType *ot);
+
 /* `object_relations.cc` */
 
 void OBJECT_OT_parent_set(wmOperatorType *ot);
