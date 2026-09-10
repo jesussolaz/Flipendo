@@ -1239,89 +1239,6 @@ class WM_OT_properties_edit_value(Operator):
             col.prop(rna_item, '["{:s}"]'.format(escape_identifier(self.property_name)), text="")
 
 
-class WM_OT_properties_add(Operator):
-    """Add your own property to the data-block"""
-    bl_idname = "wm.properties_add"
-    bl_label = "Add Property"
-    bl_options = {'UNDO', 'INTERNAL'}
-
-    data_path: rna_path
-
-    def execute(self, context):
-        from rna_prop_ui import (
-            rna_idprop_ui_create,
-        )
-
-        data_path = self.data_path
-        item = eval("context.{:s}".format(data_path))
-
-        if (item.id_data and item.id_data.override_library and item.id_data.override_library.reference):
-            self.report({'ERROR'}, "Cannot add properties to override data")
-            return {'CANCELLED'}
-
-        def unique_name(names):
-            prop = "prop"
-            prop_new = prop
-            i = 1
-            while prop_new in names:
-                prop_new = prop + str(i)
-                i += 1
-
-            return prop_new
-
-        prop = unique_name({
-            *item.keys(),
-            *type(item).bl_rna.properties.keys(),
-        })
-
-        rna_idprop_ui_create(item, prop, default=1.0)
-
-        return {'FINISHED'}
-
-
-class WM_OT_properties_context_change(Operator):
-    """Jump to a different tab inside the properties editor"""
-    bl_idname = "wm.properties_context_change"
-    bl_label = ""
-    bl_options = {'INTERNAL'}
-
-    context: StringProperty(
-        name="Context",
-        maxlen=64,
-    )
-
-    def execute(self, context):
-        context.space_data.context = self.context
-        return {'FINISHED'}
-
-
-class WM_OT_properties_remove(Operator):
-    """Internal use (edit a property data_path)"""
-    bl_idname = "wm.properties_remove"
-    bl_label = "Remove Property"
-    bl_options = {'UNDO', 'INTERNAL'}
-
-    data_path: rna_path
-    property_name: rna_custom_property_name
-
-    def execute(self, context):
-        from rna_prop_ui import (
-            rna_idprop_ui_prop_update,
-        )
-        data_path = self.data_path
-        item = eval("context.{:s}".format(data_path))
-
-        if (item.id_data and item.id_data.override_library and item.id_data.override_library.reference):
-            self.report({'ERROR'}, "Cannot remove properties from override data")
-            return {'CANCELLED'}
-
-        name = self.property_name
-        rna_idprop_ui_prop_update(item, name)
-        del item[name]
-
-        return {'FINISHED'}
-
-
 class WM_OT_sysinfo(Operator):
     """Generate system information, saved into a text file"""
 
@@ -2660,11 +2577,8 @@ classes = (
     WM_OT_drop_blend_file,
     WM_OT_operator_cheat_sheet,
     WM_OT_operator_pie_enum,
-    WM_OT_properties_add,
-    WM_OT_properties_context_change,
     WM_OT_properties_edit,
     WM_OT_properties_edit_value,
-    WM_OT_properties_remove,
     WM_OT_sysinfo,
     WM_OT_owner_disable,
     WM_OT_owner_enable,

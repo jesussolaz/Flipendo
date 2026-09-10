@@ -24,3 +24,9 @@ bool FL_context_operators_selftest_schedule(bContext *C, const char *filepath);
 
 /** Exercise URL/document resolution and safe error branches of the native system operators. */
 bool FL_wm_system_operators_selftest(bContext *C, const char *filepath);
+
+/** Exercise add/remove/context-change on real custom properties and a Properties editor. */
+bool FL_wm_property_operators_selftest(bContext *C, const char *filepath);
+
+/** Wait for the graphical context required by the Properties editor test. */
+bool FL_wm_property_operators_selftest_schedule(bContext *C, const char *filepath);
