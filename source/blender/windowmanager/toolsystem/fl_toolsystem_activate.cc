@@ -272,7 +272,10 @@ bool activation_compute(const bContext *C,
  * encontrarlo se sincroniza con el contexto (`refresh_from_context`), que en los modos
  * de pincel puede cambiar la herramienta guardada.
  */
-static bToolRef *active_tref(bContext *C, WorkSpace *workspace, const int space_type, bool create)
+static bToolRef *active_tref(const bContext *C,
+                             WorkSpace *workspace,
+                             const int space_type,
+                             bool create)
 {
   if (workspace == nullptr) {
     return nullptr;
@@ -314,6 +317,11 @@ static bToolRef *active_tref(bContext *C, WorkSpace *workspace, const int space_
     WM_toolsystem_ref_sync_from_context(CTX_data_main(C), workspace, tref);
   }
   return tref;
+}
+
+bToolRef *tool_active_ref(const bContext *C, const int space_type, const bool create)
+{
+  return active_tref(C, CTX_wm_workspace(C), space_type, create);
 }
 
 /** El tipo de pincel en entero. Depende del modo de pintura de la herramienta: el

@@ -41,6 +41,7 @@
 
 #include "BLT_translation.hh"
 
+#include "FL_toolbar_ui.hh"
 #include "ED_image.hh"
 #include "ED_node.hh"
 #include "ED_node_preview.hh"
@@ -1921,6 +1922,8 @@ void ED_spacetype_node()
   art->snap_size = ED_region_generic_tools_region_snap_size;
   art->init = node_toolbar_region_init;
   art->draw = node_toolbar_region_draw;
+  /* La barra la dibuja el motor; antes era un panel de Python. */
+  flipendo::ui::toolbar_panels_register(art, SPACE_NODE);
   BLI_addhead(&st->regiontypes, art);
 
   WM_menutype_add(MEM_dupallocN<MenuType>(__func__, add_catalog_assets_menu_type()));

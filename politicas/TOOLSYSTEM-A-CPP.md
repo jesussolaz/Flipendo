@@ -337,3 +337,42 @@ Dos avisos sobre esa prueba:
   ejecuciones dan exactamente lo mismo.
 - **Las huellas dependen de la máquina** (resolución, escala, GPU). Sirven para comparar
   antes y después en el mismo equipo, no como referencia absoluta.
+
+---
+
+## Fase 4a: la barra, dibujada en C++
+
+Los cuatro paneles `*_PT_tools_active` y el menú `WM_MT_toolsystem_submenu` (el que se
+abre al mantener pulsado un grupo) son C++ (`editors/interface/fl_toolbar_ui.cc`), con
+los mismos identificadores. La barra ya no ejecuta Python en cada redibujado.
+
+**Verificación: 14 de 14 capturas idénticas píxel a píxel** a la línea base del Python
+(vista 3D en seis modos, editor de imagen en tres, nodos, secuenciador en tres). Y que
+sea la nativa la que pinta no es una suposición: un panel registrado desde Python
+aparece en `bpy.types`, y este ya no aparece.
+
+Dos cosas del Python que había que reproducir para acertar al píxel:
+
+- Las columnas son **corrutinas** (`yield`/`send`), no bucles. En modo de dos columnas el
+  cierre solo rellena la última fila si el índice cae en la última columna; si no, el
+  generador da una vuelta más y puede abrir una fila vacía. Se reproduce tal cual.
+- El ancho se compara con 80 y 120 en `double`, como el Python.
+
+Y una que habría roto el píxel: el Python pasa `text=""` a los botones de solo icono. En
+C++, pasar «sin texto» en vez de «texto vacío» hace que `op()` ponga el nombre del
+operador.
+
+### Pegamento transitorio
+
+Las clases Python de la barra siguen existiendo —su catálogo lo leen aún la cabecera, la
+reserva, el keymap de la barra y el editor de keymaps— pero ya no se registran como
+paneles. Su `register()`, sin embargo, sigue haciendo falta: convierte cada
+`keymap=()` en el *nombre* de su keymap, que es lo que esos lectores esperan. Lo dispara
+un menú Python que nunca se muestra (`WM_MT_toolsystem_catalog_keymaps`). Comprobado:
+362 de 362 keymaps convertidos. Se va con el fichero.
+
+### KEYMAP_TOOL no era una regresión
+
+Se sospechó que la migración del keymap había dejado sin la bandera `KEYMAP_TOOL` a los
+keymaps de herramienta. Es cierto, pero no importa: esa bandera **no la lee nadie** en
+el motor. Las herramientas encuentran su keymap por nombre desde el runtime.

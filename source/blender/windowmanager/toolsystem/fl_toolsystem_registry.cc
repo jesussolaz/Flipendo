@@ -254,6 +254,7 @@ blender::Vector<const ToolDecl *> tools_for_space_mode(const bContext *C,
  */
 static void entries_unexpanded(const bContext *C,
                                const blender::Span<ToolEntry> entries,
+                               const bool keep_separators,
                                blender::Vector<ToolGroupView> &out)
 {
   for (const ToolEntry &entry : entries) {
@@ -268,32 +269,50 @@ static void entries_unexpanded(const bContext *C,
       continue;
     }
     if (entry.tools.is_empty()) {
-      /* Separador. */
+      /* Separador: solo cuenta para el dibujo. */
+      if (keep_separators) {
+        out.append({});
+      }
       continue;
     }
     out.append({entry.tools});
   }
 }
 
-blender::Vector<ToolGroupView> tools_unexpanded_for_space_mode(const bContext *C,
-                                                               const ToolbarDecl &toolbar,
-                                                               const char *mode)
+static blender::Vector<ToolGroupView> entries_for_space_mode(const bContext *C,
+                                                             const ToolbarDecl &toolbar,
+                                                             const char *mode,
+                                                             const bool keep_separators)
 {
   blender::Vector<ToolGroupView> out;
   /* Mismo orden que `tools_for_space_mode`: comunes y luego las del modo. */
   for (const ModeTools &mode_tools : toolbar.modes) {
     if (mode_tools.mode == nullptr) {
-      entries_unexpanded(C, mode_tools.entries, out);
+      entries_unexpanded(C, mode_tools.entries, keep_separators, out);
     }
   }
   if (mode != nullptr) {
     for (const ModeTools &mode_tools : toolbar.modes) {
       if (mode_tools.mode != nullptr && STREQ(mode_tools.mode, mode)) {
-        entries_unexpanded(C, mode_tools.entries, out);
+        entries_unexpanded(C, mode_tools.entries, keep_separators, out);
       }
     }
   }
   return out;
+}
+
+blender::Vector<ToolGroupView> tools_unexpanded_for_space_mode(const bContext *C,
+                                                               const ToolbarDecl &toolbar,
+                                                               const char *mode)
+{
+  return entries_for_space_mode(C, toolbar, mode, false);
+}
+
+blender::Vector<ToolGroupView> toolbar_entries_for_space_mode(const bContext *C,
+                                                              const ToolbarDecl &toolbar,
+                                                              const char *mode)
+{
+  return entries_for_space_mode(C, toolbar, mode, true);
 }
 
 /* -------------------------------------------------------------------- */

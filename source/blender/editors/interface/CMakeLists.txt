@@ -28,6 +28,7 @@ set(SRC
   interface.cc
   interface_align.cc
   FL_ui_registry.cc
+  fl_toolbar_ui.cc
   interface_anim.cc
   interface_button_group.cc
   interface_button_sections.cc

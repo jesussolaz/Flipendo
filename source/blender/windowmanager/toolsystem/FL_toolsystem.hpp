@@ -393,11 +393,30 @@ struct ToolGroupView {
   {
     return tools.size() > 1;
   }
+  /** Solo en `toolbar_entries_for_space_mode`: un separador es una entrada vacia. */
+  bool is_separator() const
+  {
+    return tools.is_empty();
+  }
 };
 
 blender::Vector<ToolGroupView> tools_unexpanded_for_space_mode(const bContext *C,
                                                                const ToolbarDecl &toolbar,
                                                                const char *mode);
+
+/**
+ * Como la anterior, pero CONSERVANDO los separadores, como entradas vacias. Es lo que
+ * recorre el dibujo de la barra: alli un separador abre una columna nueva.
+ */
+blender::Vector<ToolGroupView> toolbar_entries_for_space_mode(const bContext *C,
+                                                              const ToolbarDecl &toolbar,
+                                                              const char *mode);
+
+/**
+ * `_tool_active_from_context`: el `bToolRef` del espacio y modo actuales, sincronizado
+ * con el contexto. `create` lo crea si no existe.
+ */
+bToolRef *tool_active_ref(const bContext *C, int space_type, bool create);
 
 /** \} */
 

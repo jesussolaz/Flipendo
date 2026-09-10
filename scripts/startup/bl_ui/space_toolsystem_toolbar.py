@@ -3739,11 +3739,38 @@ class SEQUENCER_PT_tools_active(ToolSelectPanelHelper, Panel):
     }
 
 
+# Los cuatro paneles de la barra los dibuja ya el motor (C++, `FL_toolbar_ui.hh`), con los
+# mismos identificadores, asi que no se registran aqui. Las clases siguen existiendo porque
+# su catalogo lo leen todavia la cabecera de herramienta, la reserva, el keymap de la barra
+# y el editor de keymaps.
+#
+# Y su `register()` sigue haciendo falta aunque no sean paneles: es el que convierte cada
+# `keymap=()` en el NOMBRE de su keymap, que es lo que esos lectores esperan. Este menu no
+# se muestra nunca; existe para que `bl_ui` lo registre y su `register()` ejecute los
+# cuatro. Pegamento transitorio: se va con este fichero.
+class WM_MT_toolsystem_catalog_keymaps(bpy.types.Menu):
+    bl_label = ""
+
+    @classmethod
+    def poll(cls, _context):
+        return False
+
+    def draw(self, _context):
+        pass
+
+    @classmethod
+    def register(cls):
+        for toolbar in (
+                IMAGE_PT_tools_active,
+                NODE_PT_tools_active,
+                VIEW3D_PT_tools_active,
+                SEQUENCER_PT_tools_active,
+        ):
+            toolbar.register()
+
+
 classes = (
-    IMAGE_PT_tools_active,
-    NODE_PT_tools_active,
-    VIEW3D_PT_tools_active,
-    SEQUENCER_PT_tools_active,
+    WM_MT_toolsystem_catalog_keymaps,
 )
 
 if __name__ == "__main__":  # only for live edit.

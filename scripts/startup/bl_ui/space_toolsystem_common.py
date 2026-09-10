@@ -958,44 +958,8 @@ class ToolSelectPanelHelper:
                 props.as_fallback = True
 
 
-# The purpose of this menu is to be a generic popup to select between tools
-# in cases when a single tool allows to select alternative tools.
-class WM_MT_toolsystem_submenu(Menu):
-    bl_label = ""
-
-    @staticmethod
-    def _tool_group_from_button(context):
-        # Lookup the tool definitions based on the space-type.
-        cls = ToolSelectPanelHelper._tool_class_from_space_type(context.space_data.type)
-        if cls is not None:
-            button_identifier = ToolSelectPanelHelper._tool_identifier_from_button(context)
-            for item_group in cls.tools_from_context(context):
-                if type(item_group) is tuple:
-                    for sub_item in item_group:
-                        if (sub_item is not None) and (sub_item.idname == button_identifier):
-                            return cls, item_group
-        return None, None
-
-    def draw(self, context):
-        layout = self.layout
-        layout.scale_y = 2.0
-
-        _cls, item_group = self._tool_group_from_button(context)
-        if item_group is None:
-            # Should never happen, just in case
-            layout.label(text="Unable to find toolbar group")
-            return
-
-        for item in item_group:
-            if item is None:
-                layout.separator()
-                continue
-            icon_value = ToolSelectPanelHelper._icon_value_from_icon_handle(item.icon)
-            layout.operator(
-                "wm.tool_set_by_id",
-                text=item.label,
-                icon_value=icon_value,
-            ).name = item.idname
+# `WM_MT_toolsystem_submenu`, el menu que abre un grupo al mantener pulsado su boton, lo
+# dibuja ya el motor (C++, `FL_toolbar_ui.hh`) con el mismo identificador.
 
 
 def _activate_by_item(context, space_type, item, index, *, as_fallback=False):
@@ -1247,9 +1211,7 @@ def _keymap_from_item(context, item):
     return None
 
 
-classes = (
-    WM_MT_toolsystem_submenu,
-)
+classes = ()
 
 if __name__ == "__main__":  # only for live edit.
     from bpy.utils import register_class

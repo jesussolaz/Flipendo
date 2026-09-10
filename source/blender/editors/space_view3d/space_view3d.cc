@@ -43,6 +43,7 @@
 #include "BKE_screen.hh"
 #include "BKE_viewer_path.hh"
 
+#include "FL_toolbar_ui.hh"
 #include "ED_asset_shelf.hh"
 #include "ED_geometry.hh"
 #include "ED_info.hh"
@@ -1649,6 +1650,8 @@ void ED_spacetype_view3d()
   art->snap_size = ED_region_generic_tools_region_snap_size;
   art->init = view3d_tools_region_init;
   art->draw = view3d_tools_region_draw;
+  /* La barra la dibuja el motor; antes era un panel de Python. */
+  flipendo::ui::toolbar_panels_register(art, SPACE_VIEW3D);
   BLI_addhead(&st->regiontypes, art);
 
   /* regions: tool header */

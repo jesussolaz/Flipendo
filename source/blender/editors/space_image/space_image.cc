@@ -34,6 +34,7 @@
 
 #include "IMB_imbuf_types.hh"
 
+#include "FL_toolbar_ui.hh"
 #include "ED_asset_shelf.hh"
 #include "ED_image.hh"
 #include "ED_mask.hh"
@@ -1263,6 +1264,8 @@ void ED_spacetype_image()
   art->snap_size = ED_region_generic_tools_region_snap_size;
   art->init = image_tools_region_init;
   art->draw = image_tools_region_draw;
+  /* La barra la dibuja el motor; antes era un panel de Python. */
+  flipendo::ui::toolbar_panels_register(art, SPACE_IMAGE);
   BLI_addhead(&st->regiontypes, art);
 
   /* regions: tool header */

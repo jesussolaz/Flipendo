@@ -35,6 +35,7 @@
 
 #include "GPU_state.hh"
 
+#include "FL_toolbar_ui.hh"
 #include "ED_markers.hh"
 #include "ED_screen.hh"
 #include "ED_sequencer.hh"
@@ -1180,6 +1181,8 @@ void ED_spacetype_sequencer()
   art->snap_size = ED_region_generic_tools_region_snap_size;
   art->init = sequencer_tools_region_init;
   art->draw = sequencer_tools_region_draw;
+  /* La barra la dibuja el motor; antes era un panel de Python. */
+  flipendo::ui::toolbar_panels_register(art, SPACE_SEQ);
   art->listener = sequencer_main_region_listener;
   BLI_addhead(&st->regiontypes, art);
 
