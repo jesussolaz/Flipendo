@@ -20,6 +20,7 @@ set(INC_SYS
 
 set(SRC
   add_modifier_assets.cc
+  fl_object_ops_selftest.cc
   object_add.cc
   object_align.cc
   object_bake.cc
