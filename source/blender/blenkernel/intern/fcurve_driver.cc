@@ -21,6 +21,7 @@
 #include "BLI_math_rotation.h"
 #include "BLI_math_vector.h"
 #include "BLI_mutex.hh"
+#include "BLI_set.hh"
 #include "BLI_string_utf8.h"
 #include "BLI_string_utils.hh"
 #include "BLI_utildefines.h"
@@ -51,9 +52,14 @@
 
 #include <algorithm>
 #include <cstring>
+#include <string>
 
 #ifdef WITH_PYTHON
 static blender::Mutex python_driver_lock;
+#else
+/* Flipendo: cerrojo del registro de drivers ya avisados. Ver
+ * `driver_report_unsupported_once()` mas abajo. */
+static blender::Mutex driver_unsupported_report_lock;
 #endif
 
 static CLG_LogRef LOG = {"bke.fcurve"};
@@ -1374,6 +1380,56 @@ static void evaluate_driver_min_max(const AnimationEvalContext *anim_eval_contex
   driver->curval = value;
 }
 
+#ifndef WITH_PYTHON
+/* Flipendo: avisa UNA VEZ por driver de que su expresion se sale del subconjunto
+ * nativo, y sigue.
+ *
+ * Antes esta rama era `UNUSED_VARS(anim_rna, anim_eval_context)`: como
+ * `driver_try_evaluate_simple_expr()` pone `*result = 0.0f` antes de intentar nada,
+ * el driver se quedaba clavado en 0.0 sin decir ni una palabra. Es peor que un error:
+ * el rig se mueve mal y parece que el `.blend` esta roto.
+ *
+ * Se sigue el precedente de `SCA_PythonController::Trigger()` en el build sin CPython:
+ * un aviso por pieza afectada, con su nombre y con que hacer, no uno por fotograma.
+ *
+ * El subconjunto que SI se evalua de forma nativa esta un poco mas arriba y no ha
+ * cambiado: `driver_try_evaluate_simple_expr()` con `BLI_expr_pylike`, mas los tipos
+ * de driver AVERAGE/SUM/MIN/MAX y los `driver_f-curve` simples, que ni pasan por aqui.
+ * Lo que cae en este aviso son las expresiones con `**`, `%`, `//`, llamadas a `bpy`,
+ * `self`, indexaciones, o cualquier otra cosa que solo CPython sabe hacer. */
+static void driver_report_unsupported_once(const PathResolvedRNA *anim_rna,
+                                           const ChannelDriver *driver_orig)
+{
+  const ID *owner = (anim_rna != nullptr) ? anim_rna->ptr.owner_id : nullptr;
+  const char *owner_name = (owner != nullptr) ? (owner->name + 2) : "?";
+  const char *prop_name = (anim_rna != nullptr && anim_rna->prop != nullptr) ?
+                              RNA_property_identifier(anim_rna->prop) :
+                              "?";
+
+  std::string key = std::string(owner_name) + "\x1f" + prop_name + "\x1f" +
+                    driver_orig->expression;
+
+  {
+    std::scoped_lock lock(driver_unsupported_report_lock);
+    static blender::Set<std::string> reported;
+    if (!reported.add(std::move(key))) {
+      return;
+    }
+  }
+
+  CLOG_WARN(&LOG,
+            "driver de '%s.%s': la expresion '%s' necesita CPython y este build no lo lleva. "
+            "El driver vale 0.0. Reescribela con el evaluador nativo (+ - * / parentesis, "
+            "pi, min max abs floor ceil trunc int round sin cos tan asin acos atan atan2 exp "
+            "log sqrt pow fmod lerp clamp smoothstep, comparaciones, and/or/not y el ternario "
+            "'a if c else b'); usa pow(a,b) en vez de a**b y fmod(a,b) en vez de a%%b. Si hace "
+            "falta logica de verdad, pasala a una variable de driver o a un componente nativo.",
+            owner_name,
+            prop_name,
+            driver_orig->expression);
+}
+#endif /* !WITH_PYTHON */
+
 static void evaluate_driver_python(PathResolvedRNA *anim_rna,
                                    ChannelDriver *driver,
                                    ChannelDriver *driver_orig,
@@ -1397,7 +1453,12 @@ static void evaluate_driver_python(PathResolvedRNA *anim_rna,
     driver->curval = BPY_driver_exec(anim_rna, driver, driver_orig, anim_eval_context);
 
 #else  /* WITH_PYTHON */
-    UNUSED_VARS(anim_rna, anim_eval_context);
+    UNUSED_VARS(anim_eval_context);
+    driver_report_unsupported_once(anim_rna, driver_orig);
+    /* Marca el driver como invalido en la copia evaluada, igual que hace
+     * `driver_evaluate_simple_expr()` con una division por cero: asi la interfaz lo
+     * pinta en rojo en vez de fingir que va bien. */
+    driver->flag |= DRIVER_FLAG_INVALID;
 #endif /* WITH_PYTHON */
   }
 }
