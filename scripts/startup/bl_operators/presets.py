@@ -277,7 +277,21 @@ class ExecutePreset(Operator):
             try:
                 bpy.ops.wm.preset_apply(filepath=filepath)
             except Exception as ex:
-                self.report({'ERROR'}, "Failed to execute the preset: " + repr(ex))
+                if ext != ".py":
+                    self.report({'ERROR'}, "Failed to execute the preset: " + repr(ex))
+                else:
+                    # Ultimo recurso, y solo para un `.py`: el lector nativo solo
+                    # entiende asignaciones, y un preset con logica de verdad
+                    # -- los cinco de FFmpeg con su condicional NTSC/PAL, o uno
+                    # que el usuario escribiera a mano -- lo rechaza. Mientras no
+                    # tenga sustituto nativo NO se puede perder: se ejecuta como
+                    # antes. Es el ultimo puente C++ -> Python de los presets, y
+                    # esta contado como deuda 2 en politicas/PRESETS-A-DATOS.md.
+                    print("Preset no convertible a datos, se ejecuta como script:", filepath)
+                    try:
+                        bpy.utils.execfile(filepath)
+                    except Exception as ex_exec:
+                        self.report({'ERROR'}, "Failed to execute the preset: " + repr(ex_exec))
 
         elif ext == ".xml":
             import rna_xml

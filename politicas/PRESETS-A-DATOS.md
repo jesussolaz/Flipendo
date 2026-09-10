@@ -284,3 +284,43 @@ menú de presets, en `scripts/modules/bpy_types.py` (`Menu.preset_extensions`),
 pasa de `{".py", ".xml"}` a `{".fpreset", ".py", ".xml"}`. Sin eso los menús no
 verían ni un preset. Es un **valor por defecto**: cualquier clase que ya lo
 sobrescriba se queda como estaba.
+
+---
+
+## Estado, con cifras
+
+| Qué | Cifra |
+|---|---:|
+| Presets `.py` de partida | 173 (10.287 líneas) |
+| Convertidos a `.fpreset` | **166** (165 por la herramienta + 1 a mano) |
+| Mismo estado por los dos caminos | **148 de 166 comparados, 0 distintos** |
+| `.fpreset` que leen y aplican sin un error | **151 de 166** (0 con error, 15 sin contexto) |
+| `.py` retirados | 166 |
+| `.py` que quedan | 7 (5 de FFmpeg + 2 de keyconfig) |
+
+Los artefactos están en `tests/flipendo/presets/`:
+`comparacion-python-cpp.txt` (la comparación de los dos caminos, congelada
+antes de retirar el Python — el día de la retirada esa prueba se queda sin
+material) y `aplicacion-nativa.txt`, que **sigue valiendo**: cada `.fpreset`
+se lee y se aplica, y caza lo que de verdad se rompe con el tiempo — un
+fichero mal escrito a mano o una ruta RNA que desaparece.
+
+Se reproduce con:
+
+```
+Blender --background --factory-startup \
+  --fl-check-presets scripts/presets tests/flipendo/presets/aplicacion-nativa.txt
+```
+
+### El puente que queda, y se ve
+
+Los cinco presets de FFmpeg siguen sin sustituto nativo, así que
+`ExecutePreset` conserva **un último recurso**: si el lector nativo rechaza
+un `.py`, se ejecuta como script, igual que antes. Retirarlo sin reemplazo
+habría sido una regresión — el condicional NTSC/PAL dejaría de aplicarse.
+Comprobado que siguen funcionando: con `fps=30` dan `gopsize=18` y con
+`fps=25` dan `gopsize=15`, que es exactamente lo que hacía el Python.
+
+Ese camino imprime en consola el motivo del rechazo y luego «Preset no
+convertible a datos, se ejecuta como script». Es ruidoso a propósito: son
+cinco ficheros contados y conviene que se noten.
