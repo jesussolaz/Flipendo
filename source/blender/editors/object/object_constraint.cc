@@ -2700,4 +2700,236 @@ void POSE_OT_ik_clear(wmOperatorType *ot)
 
 /** \} */
 
+/* ------------------------------------------------------------------- */
+/** \name Add/Remove Constraint Target Operators
+ *
+ * Ported from `scripts/startup/bl_operators/constraint.py` (Flipendo C2). These are small
+ * `INTERNAL`-only helpers used by the constraint UI panels (e.g. the Armature constraint's
+ * target list), so - like their Python originals - they read `context.constraint` directly at
+ * both poll and exec time instead of using the `edit_constraint_*` name/owner re-resolution
+ * machinery used by the searchable constraint operators above: they are only ever invoked
+ * immediately from a button press with a live UI context, never from the operator search menu
+ * or a redo panel.
+ * \{ */
+
+static bool constraint_context_poll(bContext *C)
+{
+  return CTX_data_pointer_get(C, "constraint").data != nullptr;
+}
+
+static wmOperatorStatus constraint_add_target_exec(bContext *C, wmOperator * /*op*/)
+{
+  PointerRNA ptr = CTX_data_pointer_get(C, "constraint");
+  bConstraint *con = static_cast<bConstraint *>(ptr.data);
+  if (con == nullptr || con->type != CONSTRAINT_TYPE_ARMATURE) {
+    return OPERATOR_CANCELLED;
+  }
+
+  Main *bmain = CTX_data_main(C);
+  Object *ob = (ptr.owner_id) ? (Object *)ptr.owner_id : context_active_object(C);
+  bArmatureConstraint *acon = static_cast<bArmatureConstraint *>(con->data);
+
+  bConstraintTarget *tgt = MEM_callocN<bConstraintTarget>("Constraint Target");
+  tgt->weight = 1.0f;
+  BLI_addtail(&acon->targets, tgt);
+
+  constraint_dependency_tag_update(bmain, ob, con);
+  WM_event_add_notifier(C, NC_OBJECT | ND_CONSTRAINT, ob);
+
+  return OPERATOR_FINISHED;
+}
+
+void CONSTRAINT_OT_add_target(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Add Target";
+  ot->idname = "CONSTRAINT_OT_add_target";
+  ot->description = "Add a target to the constraint";
+
+  /* callbacks */
+  ot->exec = constraint_add_target_exec;
+  ot->poll = constraint_context_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_UNDO | OPTYPE_INTERNAL;
+}
+
+static wmOperatorStatus constraint_remove_target_exec(bContext *C, wmOperator *op)
+{
+  PointerRNA ptr = CTX_data_pointer_get(C, "constraint");
+  bConstraint *con = static_cast<bConstraint *>(ptr.data);
+  if (con == nullptr || con->type != CONSTRAINT_TYPE_ARMATURE) {
+    return OPERATOR_CANCELLED;
+  }
+
+  Main *bmain = CTX_data_main(C);
+  Object *ob = (ptr.owner_id) ? (Object *)ptr.owner_id : context_active_object(C);
+  bArmatureConstraint *acon = static_cast<bArmatureConstraint *>(con->data);
+
+  int index = RNA_int_get(op->ptr, "index");
+  bConstraintTarget *tgt = static_cast<bConstraintTarget *>(BLI_findlink(&acon->targets, index));
+  if (tgt == nullptr) {
+    return OPERATOR_CANCELLED;
+  }
+
+  BLI_freelinkN(&acon->targets, tgt);
+
+  constraint_dependency_tag_update(bmain, ob, con);
+  WM_event_add_notifier(C, NC_OBJECT | ND_CONSTRAINT, ob);
+
+  return OPERATOR_FINISHED;
+}
+
+void CONSTRAINT_OT_remove_target(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Remove Target";
+  ot->idname = "CONSTRAINT_OT_remove_target";
+  ot->description = "Remove the target from the constraint";
+
+  /* callbacks */
+  ot->exec = constraint_remove_target_exec;
+  ot->poll = constraint_context_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_UNDO | OPTYPE_INTERNAL;
+
+  /* properties */
+  RNA_def_int(ot->srna, "index", 0, 0, INT_MAX, "Index", "", 0, INT_MAX);
+}
+
+static wmOperatorStatus constraint_normalize_target_weights_exec(bContext *C, wmOperator * /*op*/)
+{
+  PointerRNA ptr = CTX_data_pointer_get(C, "constraint");
+  bConstraint *con = static_cast<bConstraint *>(ptr.data);
+  if (con == nullptr || con->type != CONSTRAINT_TYPE_ARMATURE) {
+    return OPERATOR_CANCELLED;
+  }
+
+  Main *bmain = CTX_data_main(C);
+  Object *ob = (ptr.owner_id) ? (Object *)ptr.owner_id : context_active_object(C);
+  bArmatureConstraint *acon = static_cast<bArmatureConstraint *>(con->data);
+
+  float total = 0.0f;
+  LISTBASE_FOREACH (bConstraintTarget *, tgt, &acon->targets) {
+    total += tgt->weight;
+  }
+
+  if (total > 0.0f) {
+    LISTBASE_FOREACH (bConstraintTarget *, tgt, &acon->targets) {
+      tgt->weight = tgt->weight / total;
+    }
+  }
+
+  constraint_dependency_tag_update(bmain, ob, con);
+  WM_event_add_notifier(C, NC_OBJECT | ND_CONSTRAINT, ob);
+
+  return OPERATOR_FINISHED;
+}
+
+void CONSTRAINT_OT_normalize_target_weights(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Normalize Weights";
+  ot->idname = "CONSTRAINT_OT_normalize_target_weights";
+  ot->description = "Normalize weights of all target bones";
+
+  /* callbacks */
+  ot->exec = constraint_normalize_target_weights_exec;
+  ot->poll = constraint_context_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_UNDO | OPTYPE_INTERNAL;
+}
+
+/** \} */
+
+/* ------------------------------------------------------------------- */
+/** \name Disable Constraint and Keep Transform Operator
+ * \{ */
+
+static bool constraint_disable_keep_transform_poll(bContext *C)
+{
+  bConstraint *con = static_cast<bConstraint *>(CTX_data_pointer_get(C, "constraint").data);
+  return con != nullptr && con->enforce > 0.0f;
+}
+
+static wmOperatorStatus constraint_disable_keep_transform_exec(bContext *C, wmOperator * /*op*/)
+{
+  bConstraint *con = static_cast<bConstraint *>(CTX_data_pointer_get(C, "constraint").data);
+  if (con == nullptr) {
+    return OPERATOR_CANCELLED;
+  }
+
+  /* This works most of the time, but when there are multiple constraints active there could
+   * still be one that overrides the visual transform.
+   *
+   * Executing this operator and then increasing the constraint influence may move the object;
+   * this happens when the constraint is additive rather than replacing the transform entirely.
+   * (Same caveat as the ported Python original.) */
+
+  SpaceProperties *sbuts = CTX_wm_space_properties(C);
+  const bool is_bone_constraint = sbuts && sbuts->mainb == BCONTEXT_BONE_CONSTRAINT;
+  Object *ob = context_active_object(C);
+  bPoseChannel *pchan = static_cast<bPoseChannel *>(CTX_data_pointer_get(C, "pose_bone").data);
+
+  if (ob == nullptr || (is_bone_constraint && pchan == nullptr)) {
+    return OPERATOR_CANCELLED;
+  }
+
+  /* Get the matrix in world space (mirrors `mat = ob.matrix_world @ bone.matrix`, where
+   * `PoseBone.matrix` is `pchan->pose_mat`, already in armature-object space). */
+  float mat[4][4];
+  if (is_bone_constraint) {
+    mul_m4_m4m4(mat, ob->object_to_world().ptr(), pchan->pose_mat);
+  }
+  else {
+    copy_m4_m4(mat, ob->object_to_world().ptr());
+  }
+
+  con->enforce = 0.0f;
+
+  /* Set the matrix back, exactly reproducing what the RNA setters used by the Python original
+   * do: `PoseBone.matrix` converts a world-relative pose matrix back to bone space via
+   * BKE_armature_mat_pose_to_bone_ex() then bakes it into loc/rot/scale with
+   * BKE_pchan_apply_mat4(); `Object.matrix_world`'s update callback
+   * (rna_Object_matrix_world_update) bakes the world matrix into the object's loc/rot/scale via
+   * BKE_object_apply_mat4() with use_compat=false, use_parent=true. */
+  if (is_bone_constraint) {
+    float imat[4][4];
+    invert_m4_m4(imat, ob->object_to_world().ptr());
+    float values[4][4];
+    mul_m4_m4m4(values, imat, mat);
+    float tmat[4][4];
+    BKE_armature_mat_pose_to_bone_ex(nullptr, ob, pchan, values, tmat);
+    BKE_pchan_apply_mat4(pchan, tmat, false);
+  }
+  else {
+    BKE_object_apply_mat4(ob, mat, false, true);
+  }
+
+  WM_event_add_notifier(C, NC_OBJECT | ND_CONSTRAINT, ob);
+
+  return OPERATOR_FINISHED;
+}
+
+void CONSTRAINT_OT_disable_keep_transform(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Disable and Keep Transform";
+  ot->idname = "CONSTRAINT_OT_disable_keep_transform";
+  ot->description =
+      "Set the influence of this constraint to zero while trying to maintain the object's "
+      "transformation. Other active constraints can still influence the final transformation";
+
+  /* callbacks */
+  ot->exec = constraint_disable_keep_transform_exec;
+  ot->poll = constraint_disable_keep_transform_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_UNDO | OPTYPE_INTERNAL;
+}
+
+/** \} */
+
 }  // namespace blender::ed::object

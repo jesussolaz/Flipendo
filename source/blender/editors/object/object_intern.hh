@@ -287,6 +287,12 @@ void POSE_OT_ik_clear(wmOperatorType *ot);
 void CONSTRAINT_OT_delete(wmOperatorType *ot);
 void CONSTRAINT_OT_apply(wmOperatorType *ot);
 void CONSTRAINT_OT_copy(wmOperatorType *ot);
+
+/* Ported from `scripts/startup/bl_operators/constraint.py` (Flipendo C2). */
+void CONSTRAINT_OT_add_target(wmOperatorType *ot);
+void CONSTRAINT_OT_remove_target(wmOperatorType *ot);
+void CONSTRAINT_OT_normalize_target_weights(wmOperatorType *ot);
+void CONSTRAINT_OT_disable_keep_transform(wmOperatorType *ot);
 void CONSTRAINT_OT_copy_to_selected(wmOperatorType *ot);
 
 void CONSTRAINT_OT_move_up(wmOperatorType *ot);

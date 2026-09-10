@@ -178,6 +178,10 @@ void operatortypes_object()
   WM_operatortype_append(CONSTRAINT_OT_delete);
   WM_operatortype_append(CONSTRAINT_OT_apply);
   WM_operatortype_append(CONSTRAINT_OT_copy);
+  WM_operatortype_append(CONSTRAINT_OT_add_target);
+  WM_operatortype_append(CONSTRAINT_OT_remove_target);
+  WM_operatortype_append(CONSTRAINT_OT_normalize_target_weights);
+  WM_operatortype_append(CONSTRAINT_OT_disable_keep_transform);
   WM_operatortype_append(CONSTRAINT_OT_copy_to_selected);
   WM_operatortype_append(CONSTRAINT_OT_move_up);
   WM_operatortype_append(CONSTRAINT_OT_move_down);

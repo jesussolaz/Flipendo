@@ -17,7 +17,6 @@ _modules = [
     "clip",
     "connect_to_output",
     "console",
-    "constraint",
     "file",
     "geometry_nodes",
     "grease_pencil",
