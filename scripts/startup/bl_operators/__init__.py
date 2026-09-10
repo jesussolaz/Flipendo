@@ -27,7 +27,6 @@ _modules = [
     "mesh",
     "node",
     "object",
-    "object_align",
     "object_quick_effects",
     "object_randomize_transform",
     "presets",

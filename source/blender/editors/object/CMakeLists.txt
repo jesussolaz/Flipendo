@@ -21,6 +21,7 @@ set(INC_SYS
 set(SRC
   add_modifier_assets.cc
   object_add.cc
+  object_align.cc
   object_bake.cc
   object_bake_api.cc
   object_bake_simulation.cc

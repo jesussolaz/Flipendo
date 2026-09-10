@@ -42,6 +42,10 @@ void OBJECT_OT_parent_inverse_apply(wmOperatorType *ot);
 void OBJECT_OT_transform_axis_target(wmOperatorType *ot);
 void OBJECT_OT_origin_set(wmOperatorType *ot);
 
+/* `object_align.cc` (Flipendo, carril C: migracion de bl_operators/object_align.py) */
+
+void OBJECT_OT_align(wmOperatorType *ot);
+
 /* `object_relations.cc` */
 
 void OBJECT_OT_parent_set(wmOperatorType *ot);
