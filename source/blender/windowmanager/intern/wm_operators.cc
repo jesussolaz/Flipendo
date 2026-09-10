@@ -4180,6 +4180,7 @@ void WM_OT_context_set_value(wmOperatorType *ot);
 void WM_OT_context_cycle_array(wmOperatorType *ot);
 void WM_OT_context_menu_enum(wmOperatorType *ot);
 void WM_OT_context_pie_enum(wmOperatorType *ot);
+void WM_OT_operator_pie_enum(wmOperatorType *ot);
 void WM_OT_context_set_id(wmOperatorType *ot);
 void WM_OT_context_collection_boolean_set(wmOperatorType *ot);
 void WM_OT_context_modal_mouse(wmOperatorType *ot);
@@ -4215,6 +4216,7 @@ void wm_operatortypes_register()
   WM_operatortype_append(WM_OT_context_cycle_array);
   WM_operatortype_append(WM_OT_context_menu_enum);
   WM_operatortype_append(WM_OT_context_pie_enum);
+  WM_operatortype_append(WM_OT_operator_pie_enum);
   WM_operatortype_append(WM_OT_context_set_id);
   WM_operatortype_append(WM_OT_context_collection_boolean_set);
   WM_operatortype_append(WM_OT_context_modal_mouse);

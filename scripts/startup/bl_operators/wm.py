@@ -272,54 +272,6 @@ def execute_context_assign(self, context):
 
 
 
-class WM_OT_operator_pie_enum(Operator):
-    bl_idname = "wm.operator_pie_enum"
-    bl_label = "Operator Enum Pie"
-    # The menu items & UI logic handles undo.
-    bl_options = {'INTERNAL'}
-
-    data_path: StringProperty(
-        name="Operator",
-        description="Operator name (in Python as string)",
-        maxlen=1024,
-    )
-    prop_string: StringProperty(
-        name="Property",
-        description="Property name (as a string)",
-        maxlen=1024,
-    )
-
-    @classmethod
-    def description(cls, context, props):
-        return description_from_data_path(context, props.data_path, prefix=tip_("Pie Menu"))
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-
-        data_path = self.data_path
-        prop_attr = self.prop_string
-
-        # same as eval("bpy.ops." + data_path)
-        op_mod_str, ob_id_str = data_path.split(".", 1)
-        op = getattr(getattr(bpy.ops, op_mod_str), ob_id_str)
-        del op_mod_str, ob_id_str
-
-        try:
-            op_rna = op.get_rna_type()
-        except KeyError:
-            self.report({'ERROR'}, rpt_("Operator not found: bpy.ops.{:s}").format(data_path))
-            return {'CANCELLED'}
-
-        def draw_cb(self, context):
-            layout = self.layout
-            pie = layout.menu_pie()
-            pie.operator_enum(data_path, prop_attr)
-
-        wm.popup_menu_pie(draw_func=draw_cb, title=op_rna.name, event=event)
-
-        return {'FINISHED'}
-
-
 doc_id = StringProperty(
     name="Doc ID",
     maxlen=1024,
@@ -2545,7 +2497,6 @@ classes = (
     WM_OT_doc_view_manual,
     WM_OT_drop_blend_file,
     WM_OT_operator_cheat_sheet,
-    WM_OT_operator_pie_enum,
     WM_OT_properties_edit,
     WM_OT_properties_edit_value,
     WM_OT_sysinfo,

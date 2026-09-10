@@ -1311,6 +1311,87 @@ void WM_OT_context_pie_enum(wmOperatorType *ot)
   def_data_path_python(ot);
 }
 
+/* -------------------------------------------------------------------- */
+/** \name wm.operator_pie_enum
+ * \{ */
+
+static std::string operator_pie_enum_description(bContext * /*C*/,
+                                                 wmOperatorType * /*ot*/,
+                                                 PointerRNA *props)
+{
+  char data_path[1025];
+  RNA_string_get(props, "data_path", data_path);
+  wmOperatorType *target = WM_operatortype_find(data_path, true);
+  if (target == nullptr) {
+    return {};
+  }
+  const char *description = RNA_struct_ui_description(target->srna);
+  if (description == nullptr || description[0] == '\0') {
+    return {};
+  }
+  return fmt::format(fmt::runtime(TIP_("{:s}: {:s}")), TIP_("Pie Menu"), description);
+}
+
+static wmOperatorStatus operator_pie_enum_invoke(bContext *C,
+                                                 wmOperator *op,
+                                                 const wmEvent *event)
+{
+  char data_path[1025];
+  char prop_string[1025];
+  RNA_string_get(op->ptr, "data_path", data_path);
+  RNA_string_get(op->ptr, "prop_string", prop_string);
+
+  wmOperatorType *target = WM_operatortype_find(data_path, true);
+  if (target == nullptr) {
+    BKE_reportf(op->reports, RPT_ERROR, "Operator not found: bpy.ops.%s", data_path);
+    return OPERATOR_CANCELLED;
+  }
+
+  PointerRNA target_props;
+  WM_operator_properties_create_ptr(&target_props, target);
+  PropertyRNA *property = RNA_struct_find_property(&target_props, prop_string);
+  const bool is_enum = property != nullptr && RNA_property_type(property) == PROP_ENUM;
+  WM_operator_properties_free(&target_props);
+  if (!is_enum) {
+    BKE_reportf(op->reports,
+                RPT_ERROR,
+                "Enum property not found: bpy.ops.%s.%s",
+                data_path,
+                prop_string);
+    return OPERATOR_CANCELLED;
+  }
+
+  UI_pie_menu_invoke_from_operator_enum(
+      C, RNA_struct_ui_name(target->srna), data_path, prop_string, event);
+  /* El operador Python devolvia FINISHED aunque la tarta pasase a controlar la interfaz. */
+  return OPERATOR_FINISHED;
+}
+
+void WM_OT_operator_pie_enum(wmOperatorType *ot)
+{
+  ot->name = "Operator Enum Pie";
+  ot->idname = "WM_OT_operator_pie_enum";
+  ot->description = nullptr;
+  ot->invoke = operator_pie_enum_invoke;
+  ot->get_description = operator_pie_enum_description;
+  ot->flag = OPTYPE_INTERNAL;
+
+  RNA_def_string(ot->srna,
+                 "data_path",
+                 nullptr,
+                 1025,
+                 "Operator",
+                 "Operator name (in Python as string)");
+  RNA_def_string(ot->srna,
+                 "prop_string",
+                 nullptr,
+                 1025,
+                 "Property",
+                 "Property name (as a string)");
+}
+
+/** \} */
+
 /** \} */
 
 /* -------------------------------------------------------------------- */
