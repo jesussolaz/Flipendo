@@ -113,15 +113,6 @@ rna_relative_prop = BoolProperty(
     options={'SKIP_SAVE'},
 )
 
-rna_space_type_prop = EnumProperty(
-    name="Type",
-    items=tuple(
-        (e.identifier, e.name, "", e. value)
-        for e in bpy.types.Space.bl_rna.properties["type"].enum_items
-    ),
-    default='EMPTY',
-)
-
 # Note, this can be used for more operators,
 # currently not used for all "WM_OT_context_" operators.
 rna_module_prop = StringProperty(
@@ -2002,176 +1993,6 @@ class WM_OT_owner_disable(Operator):
         return {'FINISHED'}
 
 
-class WM_OT_tool_set_by_id(Operator):
-    """Set the tool by name (for key-maps)"""
-    bl_idname = "wm.tool_set_by_id"
-    bl_label = "Set Tool by Name"
-
-    name: StringProperty(
-        name="Identifier",
-        description="Identifier of the tool",
-    )
-    cycle: BoolProperty(
-        name="Cycle",
-        description="Cycle through tools in this group",
-        default=False,
-        options={'SKIP_SAVE'},
-    )
-    as_fallback: BoolProperty(
-        name="Set Fallback",
-        description="Set the fallback tool instead of the primary tool",
-        default=False,
-        options={'SKIP_SAVE', 'HIDDEN'},
-    )
-
-    space_type: rna_space_type_prop
-
-    @staticmethod
-    def space_type_from_operator(op, context):
-        if op.properties.is_property_set("space_type"):
-            space_type = op.space_type
-        else:
-            space = context.space_data
-            if space is None:
-                op.report({'WARNING'}, rpt_("Tool cannot be set with an empty space"))
-                return None
-            space_type = space.type
-        return space_type
-
-    def execute(self, context):
-        from bl_ui.space_toolsystem_common import (
-            activate_by_id,
-            activate_by_id_or_cycle,
-        )
-
-        if (space_type := WM_OT_tool_set_by_id.space_type_from_operator(self, context)) is None:
-            return {'CANCELLED'}
-
-        fn = activate_by_id_or_cycle if self.cycle else activate_by_id
-        if fn(context, space_type, self.name, as_fallback=self.as_fallback):
-            if self.as_fallback:
-                tool_settings = context.tool_settings
-                tool_settings.workspace_tool_type = 'FALLBACK'
-            return {'FINISHED'}
-        else:
-            self.report({'WARNING'}, rpt_("Tool {!r} not found for space {!r}").format(self.name, space_type))
-            return {'CANCELLED'}
-
-
-class WM_OT_tool_set_by_index(Operator):
-    """Set the tool by index (for key-maps)"""
-    bl_idname = "wm.tool_set_by_index"
-    bl_label = "Set Tool by Index"
-    index: IntProperty(
-        name="Index in Toolbar",
-        default=0,
-    )
-    cycle: BoolProperty(
-        name="Cycle",
-        description="Cycle through tools in this group",
-        default=False,
-        options={'SKIP_SAVE'},
-    )
-
-    expand: BoolProperty(
-        description="Include tool subgroups",
-        default=True,
-        options={'SKIP_SAVE'},
-    )
-
-    as_fallback: BoolProperty(
-        name="Set Fallback",
-        description="Set the fallback tool instead of the primary",
-        default=False,
-        options={'SKIP_SAVE', 'HIDDEN'},
-    )
-
-    space_type: rna_space_type_prop
-
-    def execute(self, context):
-        from bl_ui.space_toolsystem_common import (
-            activate_by_id,
-            activate_by_id_or_cycle,
-            item_from_index_active,
-            item_from_flat_index,
-        )
-
-        if (space_type := WM_OT_tool_set_by_id.space_type_from_operator(self, context)) is None:
-            return {'CANCELLED'}
-
-        fn = item_from_flat_index if self.expand else item_from_index_active
-        item = fn(context, space_type, self.index)
-        if item is None:
-            # Don't report, since the number of tools may change.
-            return {'CANCELLED'}
-
-        # Same as: WM_OT_tool_set_by_id
-        fn = activate_by_id_or_cycle if self.cycle else activate_by_id
-        if fn(context, space_type, item.idname, as_fallback=self.as_fallback):
-            if self.as_fallback:
-                tool_settings = context.tool_settings
-                tool_settings.workspace_tool_type = 'FALLBACK'
-            return {'FINISHED'}
-        else:
-            # Since we already have the tool, this can't happen.
-            raise Exception("Internal error setting tool")
-
-
-class WM_OT_tool_set_by_brush_type(Operator):
-    """Look up the most appropriate tool for the given brush type and activate that"""
-    bl_idname = "wm.tool_set_by_brush_type"
-    bl_label = "Set Tool by Brush Type"
-
-    brush_type: StringProperty(
-        name="Brush Type",
-        description="Brush type identifier for which the most appropriate tool will be looked up",
-    )
-
-    space_type: rna_space_type_prop
-
-    def execute(self, context):
-        from bl_ui.space_toolsystem_common import (
-            ToolSelectPanelHelper,
-            activate_by_id
-        )
-
-        if (space_type := WM_OT_tool_set_by_id.space_type_from_operator(self, context)) is None:
-            return {'CANCELLED'}
-
-        tool_helper_cls = ToolSelectPanelHelper._tool_class_from_space_type(space_type)
-        # Lookup a tool with a matching brush type (ignoring some specific ones).
-        tool_id = "builtin.brush"
-        for item in ToolSelectPanelHelper._tools_flatten(
-                tool_helper_cls.tools_from_context(context, mode=context.mode),
-        ):
-            if item is None:
-                continue
-
-            # Never automatically activate these tools, they use a brush type that we want to use
-            # the main brush for (e.g. grease pencil primitive tools use 'DRAW' brush type, which
-            # is the most general one).
-            if item.idname in {
-                    "builtin.arc",
-                    "builtin.curve",
-                    "builtin.line",
-                    "builtin.box",
-                    "builtin.circle",
-                    "builtin.polyline",
-            }:
-                continue
-
-            if item.options is not None and ('USE_BRUSHES' in item.options) and item.brush_type is not None:
-                if item.brush_type == self.brush_type:
-                    tool_id = item.idname
-                    break
-
-        if activate_by_id(context, space_type, tool_id):
-            return {'FINISHED'}
-        else:
-            self.report({'WARNING'}, rpt_("Tool {!r} not found for space {!r}").format(tool_id, space_type))
-            return {'CANCELLED'}
-
-
 class WM_OT_toolbar(Operator):
     bl_idname = "wm.toolbar"
     bl_label = "Toolbar"
@@ -3381,9 +3202,6 @@ classes = (
     WM_OT_owner_enable,
     WM_OT_url_open,
     WM_OT_url_open_preset,
-    WM_OT_tool_set_by_id,
-    WM_OT_tool_set_by_index,
-    WM_OT_tool_set_by_brush_type,
     WM_OT_toolbar,
     WM_OT_toolbar_fallback_pie,
     WM_OT_toolbar_prompt,

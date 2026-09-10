@@ -32,6 +32,12 @@ bool dump_native(const bContext *C, const char *filepath);
 /** Compara el catalogo nativo contra la linea base. Informa por stdout. */
 bool check_native(const bContext *C, const char *baseline_filepath);
 
+/**
+ * Escribe los argumentos con los que se activaria cada herramienta de cada modo, en el
+ * formato de `tests/flipendo/toolsystem/activation-python.txt`.
+ */
+bool dump_activation_native(const bContext *C, const char *filepath);
+
 }  // namespace flipendo::toolsystem
 
 #endif /* __FL_TOOLSYSTEM_DUMP_HPP__ */

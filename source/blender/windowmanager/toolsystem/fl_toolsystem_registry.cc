@@ -20,6 +20,7 @@
 #include "BKE_context.hh"
 
 #include "BLI_index_range.hh"
+#include "BLI_listbase.h"
 #include "BLI_map.hh"
 #include "BLI_string.h"
 #include "BLI_utildefines.h"
@@ -28,6 +29,8 @@
 #include "DNA_screen_types.h"
 #include "DNA_space_types.h"
 #include "DNA_windowmanager_types.h"
+
+#include "BLT_translation.hh"
 
 #include "RNA_access.hh"
 #include "RNA_prototypes.hh"
@@ -246,6 +249,53 @@ blender::Vector<const ToolDecl *> tools_for_space_mode(const bContext *C,
 
 /** \} */
 
+/**
+ * Las entradas tal como las recorre el Python ANTES de aplanar. Ver `ToolGroupView`.
+ */
+static void entries_unexpanded(const bContext *C,
+                               const blender::Span<ToolEntry> entries,
+                               blender::Vector<ToolGroupView> &out)
+{
+  for (const ToolEntry &entry : entries) {
+    if (entry.poll != nullptr && !entry.poll(C)) {
+      continue;
+    }
+    if (entry.generated != nullptr) {
+      const blender::Span<const ToolDecl *> tools = generated_tools(*entry.generated);
+      for (const int i : tools.index_range()) {
+        out.append({tools.slice(i, 1)});
+      }
+      continue;
+    }
+    if (entry.tools.is_empty()) {
+      /* Separador. */
+      continue;
+    }
+    out.append({entry.tools});
+  }
+}
+
+blender::Vector<ToolGroupView> tools_unexpanded_for_space_mode(const bContext *C,
+                                                               const ToolbarDecl &toolbar,
+                                                               const char *mode)
+{
+  blender::Vector<ToolGroupView> out;
+  /* Mismo orden que `tools_for_space_mode`: comunes y luego las del modo. */
+  for (const ModeTools &mode_tools : toolbar.modes) {
+    if (mode_tools.mode == nullptr) {
+      entries_unexpanded(C, mode_tools.entries, out);
+    }
+  }
+  if (mode != nullptr) {
+    for (const ModeTools &mode_tools : toolbar.modes) {
+      if (mode_tools.mode != nullptr && STREQ(mode_tools.mode, mode)) {
+        entries_unexpanded(C, mode_tools.entries, out);
+      }
+    }
+  }
+  return out;
+}
+
 /* -------------------------------------------------------------------- */
 /** \name Consultas
  * \{ */
@@ -291,14 +341,11 @@ blender::StringRefNull tool_label_for_id(const bContext *C,
 }
 
 /**
- * Los idnames del grupo al que pertenece una herramienta.
- *
- * Un grupo es una entrada con mas de una herramienta: comparten boton en la barra y se
- * cicla entre ellas. Si la herramienta no esta en un grupo se devuelve vacio, no una
- * lista de uno; asi el que llama distingue "suelta" de "grupo de una".
+ * `_tool_get_group_by_id`: el grupo que contiene la herramienta, en CUALQUIER posicion
+ * (no solo como lider). El primero que la contenga gana, igual que en el Python.
  */
 blender::Vector<blender::StringRefNull> tool_group_idnames_for_id(
-    const bContext *C, const int space_type, const blender::StringRefNull idname)
+    const bContext *C, const int space_type, const blender::StringRefNull idname, const bool coerce)
 {
   const ToolbarDecl *toolbar = toolbar_for_space(space_type);
   if (toolbar == nullptr) {
@@ -306,36 +353,92 @@ blender::Vector<blender::StringRefNull> tool_group_idnames_for_id(
   }
   const char *mode = toolbar->mode_from_context != nullptr ? toolbar->mode_from_context(C) :
                                                              nullptr;
-
-  for (const ModeTools &mode_tools : toolbar->modes) {
-    const bool is_common = mode_tools.mode == nullptr;
-    if (!is_common && (mode == nullptr || !STREQ(mode_tools.mode, mode))) {
-      continue;
-    }
-    for (const ToolEntry &entry : mode_tools.entries) {
-      if (entry.tools.size() <= 1) {
+  for (const ToolGroupView &group : tools_unexpanded_for_space_mode(C, *toolbar, mode)) {
+    for (const ToolDecl *tool : group.tools) {
+      if (idname != tool->idname) {
         continue;
       }
-      if (entry.poll != nullptr && !entry.poll(C)) {
-        continue;
+      if (!group.is_group() && !coerce) {
+        return {};
       }
-      bool found = false;
-      for (const ToolDecl *tool : entry.tools) {
-        if (idname == tool->idname) {
-          found = true;
-          break;
-        }
+      blender::Vector<blender::StringRefNull> out;
+      for (const ToolDecl *member : group.tools) {
+        out.append(blender::StringRefNull(member->idname));
       }
-      if (found) {
-        blender::Vector<blender::StringRefNull> out;
-        for (const ToolDecl *tool : entry.tools) {
-          out.append(blender::StringRefNull(tool->idname));
-        }
-        return out;
-      }
+      return out;
     }
   }
   return {};
+}
+
+/**
+ * `_keymap_from_item`: el keymap del USUARIO con ese nombre.
+ *
+ * Se busca solo por nombre, en cualquier espacio, porque asi lo hace el Python
+ * (`keyconfigs.user.keymaps.get(nombre)`). Es la configuracion del usuario y no la de
+ * por defecto: es la que tiene sus cambios de teclas.
+ */
+static wmKeyMap *user_keymap_by_name(const bContext *C, const char *name)
+{
+  if (name == nullptr || name[0] == '\0') {
+    return nullptr;
+  }
+  wmWindowManager *wm = CTX_wm_manager(C);
+  if (wm == nullptr || wm->userconf == nullptr) {
+    return nullptr;
+  }
+  LISTBASE_FOREACH (wmKeyMap *, km, &wm->userconf->keymaps) {
+    if (STREQ(km->idname, name)) {
+      return km;
+    }
+  }
+  return nullptr;
+}
+
+/**
+ * `description_from_id` (`space_toolsystem_common.py:1136`), en el mismo orden: la
+ * descripcion calculada, la literal y, si no hay ninguna, la del operador.
+ *
+ * El operador sale del campo `op` o, si no lo tiene, del primer atajo ACTIVO del keymap
+ * de la herramienta. Es lo que hace que la mayoria de herramientas tengan tooltip sin
+ * haber escrito ninguno.
+ */
+std::string tool_description_for_id(const bContext *C,
+                                    const int space_type,
+                                    const blender::StringRefNull idname,
+                                    const bool use_operator)
+{
+  const ToolDecl *item = tool_find_by_id(C, space_type, idname);
+  if (item == nullptr) {
+    return "";
+  }
+  if (item->description_fn != nullptr) {
+    return item->description_fn(C, user_keymap_by_name(C, item->keymap_name));
+  }
+  if (item->description != nullptr) {
+    return TIP_(item->description);
+  }
+  if (use_operator) {
+    const char *op = item->op;
+    if (op == nullptr) {
+      if (const wmKeyMap *km = user_keymap_by_name(C, item->keymap_name)) {
+        LISTBASE_FOREACH (const wmKeyMapItem *, kmi, &km->items) {
+          if ((kmi->flag & KMI_INACTIVE) == 0) {
+            op = kmi->idname;
+            break;
+          }
+        }
+      }
+    }
+    if (op != nullptr) {
+      if (const wmOperatorType *ot = WM_operatortype_find(op, true)) {
+        if (ot->description != nullptr) {
+          return TIP_(ot->description);
+        }
+      }
+    }
+  }
+  return "";
 }
 
 wmKeyMap *tool_keymap_for_id(const bContext *C,
@@ -386,6 +489,20 @@ void group_active_set(const int space_type,
                       const int index)
 {
   group_active_map().add_overwrite(group_active_key(space_type, group_leader_idname), index);
+}
+
+void group_active_clear(const int space_type)
+{
+  const std::string prefix = std::to_string(space_type) + "\n";
+  blender::Vector<std::string> keys;
+  for (const std::string &key : group_active_map().keys()) {
+    if (key.rfind(prefix, 0) == 0) {
+      keys.append(key);
+    }
+  }
+  for (const std::string &key : keys) {
+    group_active_map().remove(key);
+  }
 }
 
 /** \} */

@@ -43,6 +43,8 @@
 #include "WM_api.hh"
 #include "WM_message.hh"
 #include "WM_toolsystem.hh" /* Own include. */
+
+#include "toolsystem/FL_toolsystem.hpp"
 #include "WM_types.hh"
 
 static void toolsystem_reinit_with_toolref(bContext *C, WorkSpace * /*workspace*/, bToolRef *tref);
@@ -304,7 +306,7 @@ bool WM_toolsystem_activate_brush_and_tool(bContext *C, Paint *paint, Brush *bru
     }
     else if (!brush_type_matches_active_tool(C, *brush_type)) {
       const char *brush_type_name = brush_type_identifier_get(*brush_type, paint_mode);
-      /* Calls into .py to query available tools. */
+      /* Busca en el catalogo nativo la herramienta adecuada para el pincel. */
       toolsystem_ref_set_by_brush_type(C, brush_type_name);
     }
   }
@@ -923,12 +925,6 @@ static void toolsystem_refresh_screen_from_active_tool(Main *bmain,
 bToolRef *WM_toolsystem_ref_set_by_id_ex(
     bContext *C, WorkSpace *workspace, const bToolKey *tkey, const char *name, bool cycle)
 {
-  wmOperatorType *ot = WM_operatortype_find("WM_OT_tool_set_by_id", false);
-  /* On startup, Python operators are not yet loaded. */
-  if (ot == nullptr) {
-    return nullptr;
-  }
-
 /* Some contexts use the current space type (e.g. image editor),
  * ensure this is set correctly or there is no area. */
 #ifndef NDEBUG
@@ -939,17 +935,19 @@ bToolRef *WM_toolsystem_ref_set_by_id_ex(
   }
 #endif
 
-  PointerRNA op_props;
-  WM_operator_properties_create_ptr(&op_props, ot);
-  RNA_string_set(&op_props, "name", name);
-
   BLI_assert((1 << tkey->space_type) & WM_TOOLSYSTEM_SPACE_MASK);
 
-  RNA_enum_set(&op_props, "space_type", tkey->space_type);
-  RNA_boolean_set(&op_props, "cycle", cycle);
-
-  WM_operator_name_call_ptr(C, ot, WM_OP_EXEC_DEFAULT, &op_props, nullptr);
-  WM_operator_properties_free(&op_props);
+  /* Antes esto buscaba el operador de Python `wm.tool_set_by_id` y lo invocaba, y el
+   * operador le devolvia al motor los argumentos por `tool.setup()`. Ahora el catalogo
+   * y la activacion son nativos. Una consecuencia: al arrancar ya no se devuelve nulo
+   * "porque el operador de Python aun no esta cargado"; la herramienta se activa desde
+   * el primer momento. */
+  if (cycle) {
+    flipendo::toolsystem::activate_by_id_or_cycle(C, tkey->space_type, name);
+  }
+  else {
+    flipendo::toolsystem::activate_by_id(C, tkey->space_type, name);
+  }
 
   bToolRef *tref = WM_toolsystem_ref_find(workspace, tkey);
 
@@ -982,12 +980,6 @@ static void toolsystem_ref_set_by_brush_type(bContext *C, const char *brush_type
   const bToolKey tkey = toolsystem_key_from_context_or_view3d(scene, view_layer, area);
   WorkSpace *workspace = CTX_wm_workspace(C);
 
-  wmOperatorType *ot = WM_operatortype_find("WM_OT_tool_set_by_brush_type", false);
-  /* On startup, Python operators are not yet loaded. */
-  if (ot == nullptr) {
-    return;
-  }
-
 /* Some contexts use the current space type (e.g. image editor),
  * ensure this is set correctly or there is no area. */
 #ifndef NDEBUG
@@ -998,16 +990,10 @@ static void toolsystem_ref_set_by_brush_type(bContext *C, const char *brush_type
   }
 #endif
 
-  PointerRNA op_props;
-  WM_operator_properties_create_ptr(&op_props, ot);
-  RNA_string_set(&op_props, "brush_type", brush_type);
-
   BLI_assert((1 << tkey.space_type) & WM_TOOLSYSTEM_SPACE_MASK);
 
-  RNA_enum_set(&op_props, "space_type", tkey.space_type);
-
-  WM_operator_name_call_ptr(C, ot, WM_OP_EXEC_DEFAULT, &op_props, nullptr);
-  WM_operator_properties_free(&op_props);
+  /* Antes, el operador de Python `wm.tool_set_by_brush_type`. */
+  flipendo::toolsystem::activate_by_brush_type(C, tkey.space_type, brush_type);
 
   bToolRef *tref = WM_toolsystem_ref_find(workspace, &tkey);
 

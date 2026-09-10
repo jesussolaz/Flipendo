@@ -2568,6 +2568,22 @@ static int arg_handle_fl_check_tools(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_dump_tool_activation_doc[] =
+    "<filepath>\n"
+    "\tVuelca los argumentos con los que se activa cada herramienta y sale.\n"
+    "\tSe compara con tests/flipendo/toolsystem/activation-python.txt.";
+static int arg_handle_fl_dump_tool_activation(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::toolsystem::dump_activation_native(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_python_expr_run_doc[] =
     "<expression>\n"
     "\tRun the given expression as a Python script.";
@@ -3104,6 +3120,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-check-keymap", CB(arg_handle_fl_check_keymap), C);
   BLI_args_add(ba, nullptr, "--fl-dump-tools", CB(arg_handle_fl_dump_tools), C);
   BLI_args_add(ba, nullptr, "--fl-check-tools", CB(arg_handle_fl_check_tools), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-dump-tool-activation", CB(arg_handle_fl_dump_tool_activation), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

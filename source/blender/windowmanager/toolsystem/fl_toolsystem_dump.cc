@@ -9,6 +9,7 @@
  */
 
 #include <algorithm>
+#include <utility>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -25,6 +26,8 @@
 
 #include "RNA_access.hh"
 #include "RNA_enum_types.hh"
+
+#include "DNA_space_types.h"
 
 #include "FL_toolsystem.hpp"
 #include "FL_toolsystem_dump.hpp"
@@ -151,6 +154,47 @@ static const char *space_type_identifier(const int space_type)
 /** \name Recorrido del catalogo
  * \{ */
 
+struct SpaceMode {
+  const ToolbarDecl *toolbar;
+  /** `nullptr` en un espacio sin modos. */
+  const char *mode;
+};
+
+/**
+ * Espacios por nombre y, dentro, modos por nombre: el orden de las lineas base. Un
+ * espacio sin modos da una sola pareja con `mode == nullptr`.
+ */
+static blender::Vector<SpaceMode> space_modes_ordered()
+{
+  blender::Vector<const ToolbarDecl *> toolbars;
+  for (const ToolbarDecl *decl : toolbars_all()) {
+    toolbars.append(decl);
+  }
+  std::sort(toolbars.begin(), toolbars.end(), [](const ToolbarDecl *a, const ToolbarDecl *b) {
+    return strcmp(space_type_identifier(a->space_type), space_type_identifier(b->space_type)) < 0;
+  });
+
+  blender::Vector<SpaceMode> out;
+  for (const ToolbarDecl *toolbar : toolbars) {
+    blender::Vector<const char *> modes;
+    for (const ModeTools &mode_tools : toolbar->modes) {
+      if (mode_tools.mode != nullptr) {
+        modes.append(mode_tools.mode);
+      }
+    }
+    std::sort(modes.begin(), modes.end(), [](const char *a, const char *b) {
+      return strcmp(a, b) < 0;
+    });
+    if (modes.is_empty()) {
+      modes.append(nullptr);
+    }
+    for (const char *mode : modes) {
+      out.append({toolbar, mode});
+    }
+  }
+  return out;
+}
+
 struct Section {
   std::string header;
   blender::Vector<std::string> lines;
@@ -205,6 +249,134 @@ static blender::Vector<Section> sections_build(const bContext *C)
     }
   }
   return out;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Volcado de la activacion
+ *
+ * Mismo formato que `tests/flipendo/toolsystem/dump_activation_gui.py`, que lo saco
+ * interceptando `tool.setup()` en el Python real. Las dos reglas que hacen el
+ * resultado determinista son las mismas aqui: la memoria de grupos se vacia antes de
+ * cada activacion, y para activar como reserva la herramienta "activa" es la primera
+ * del modo.
+ * \{ */
+
+static const char *or_dash(const char *s)
+{
+  return (s != nullptr && s[0] != '\0') ? s : "-";
+}
+
+static std::string activation_line(const ActivationArgs &a)
+{
+  std::string options;
+  if (a.options & TOOL_OPTION_KEYMAP_FALLBACK) {
+    options += "KEYMAP_FALLBACK";
+  }
+  if (a.options & TOOL_OPTION_USE_BRUSHES) {
+    options += options.empty() ? "USE_BRUSHES" : ",USE_BRUSHES";
+  }
+  char buf[1024];
+  SNPRINTF(buf,
+           "index=%d keymap=%s cursor=%s options=%s gizmo=%s brush_type=%s data_block=%s op=%s "
+           "idname_fallback=%s keymap_fallback=%s",
+           a.index,
+           a.keymap,
+           a.cursor,
+           options.empty() ? "-" : options.c_str(),
+           or_dash(a.gizmo_group),
+           a.brush_type,
+           or_dash(a.data_block),
+           or_dash(a.op),
+           or_dash(a.idname_fallback),
+           or_dash(a.keymap_fallback.c_str()));
+  return buf;
+}
+
+static std::string gizmo_props_repr(const ToolDecl &tool)
+{
+  if (tool.gizmo_properties.is_empty()) {
+    return "-";
+  }
+  std::string out;
+  for (const GizmoProp &prop : tool.gizmo_properties) {
+    char buf[128];
+    /* `%g`, como el Python: 75.0 sale "75". */
+    SNPRINTF(buf, "%s=%g", prop.prop, double(prop.number));
+    out += out.empty() ? "" : ",";
+    out += buf;
+  }
+  return out;
+}
+
+bool dump_activation_native(const bContext *C, const char *filepath)
+{
+  FILE *fp = BLI_fopen(filepath, "w");
+  if (fp == nullptr) {
+    fprintf(stderr, "No se pudo abrir '%s' para escribir.\n", filepath);
+    return false;
+  }
+  int lines = 0;
+  for (const SpaceMode &sm : space_modes_ordered()) {
+    const ToolbarDecl &toolbar = *sm.toolbar;
+    const char *label = sm.mode != nullptr ? sm.mode : "None";
+    const char *space = space_type_identifier(toolbar.space_type);
+
+    blender::Vector<std::pair<const ToolDecl *, int>> flat;
+    for (const ToolGroupView &group : tools_unexpanded_for_space_mode(C, toolbar, sm.mode)) {
+      for (const int i : group.tools.index_range()) {
+        flat.append({group.tools[i], i});
+      }
+    }
+    if (flat.is_empty()) {
+      continue;
+    }
+    const char *active = flat[0].first->idname;
+
+    for (const auto &[tool, index] : flat) {
+      group_active_clear(toolbar.space_type);
+      ActivationArgs args;
+      if (!activation_compute(C, toolbar, sm.mode, *tool, index, false, "", "", args)) {
+        fprintf(fp, "ACT %s %s %s ERROR\n", space, label, tool->idname);
+        lines++;
+        continue;
+      }
+      const bool draw_cursor = tool->draw_cursor != nullptr ||
+                               (tool->pending & TOOL_PENDING_DRAW_CURSOR);
+      fprintf(fp,
+              "ACT %s %s %s %s gizmo_props=%s draw_cursor=%s\n",
+              space,
+              label,
+              tool->idname,
+              activation_line(args).c_str(),
+              gizmo_props_repr(*tool).c_str(),
+              draw_cursor ? "si" : "no");
+      lines++;
+    }
+
+    for (const ToolDecl *sub : fallback_group_tools(C, toolbar, sm.mode)) {
+      group_active_clear(toolbar.space_type);
+      ActivationArgs args;
+      if (!activation_compute(C, toolbar, sm.mode, *sub, 0, true, active, "", args)) {
+        fprintf(fp, "FALLBACK %s %s %s ERROR\n", space, label, sub->idname);
+        lines++;
+        continue;
+      }
+      fprintf(fp,
+              "FALLBACK %s %s %s activa=%s %s\n",
+              space,
+              label,
+              sub->idname,
+              active,
+              activation_line(args).c_str());
+      lines++;
+    }
+  }
+  fclose(fp);
+  group_active_clear(SPACE_VIEW3D);
+  printf("ACTIVATION_DUMP_NATIVE_OK %d\n", lines);
+  return true;
 }
 
 /** \} */

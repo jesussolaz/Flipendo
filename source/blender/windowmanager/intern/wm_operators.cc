@@ -4162,6 +4162,10 @@ static void WM_OT_stereo3d_set(wmOperatorType *ot)
 
 /* Definidos en wm_context_ops.cc (transliterados de bl_operators/wm.py). */
 void WM_OT_context_toggle(wmOperatorType *ot);
+/* wm_tool_ops.cc */
+void WM_OT_tool_set_by_id(wmOperatorType *ot);
+void WM_OT_tool_set_by_index(wmOperatorType *ot);
+void WM_OT_tool_set_by_brush_type(wmOperatorType *ot);
 void WM_OT_context_set_boolean(wmOperatorType *ot);
 void WM_OT_context_set_int(wmOperatorType *ot);
 void WM_OT_context_set_float(wmOperatorType *ot);
@@ -4176,6 +4180,9 @@ void WM_OT_context_scale_int(wmOperatorType *ot);
 void wm_operatortypes_register()
 {
   WM_operatortype_append(WM_OT_context_toggle);
+  WM_operatortype_append(WM_OT_tool_set_by_id);
+  WM_operatortype_append(WM_OT_tool_set_by_index);
+  WM_operatortype_append(WM_OT_tool_set_by_brush_type);
   WM_operatortype_append(WM_OT_context_set_boolean);
   WM_operatortype_append(WM_OT_context_set_int);
   WM_operatortype_append(WM_OT_context_set_float);

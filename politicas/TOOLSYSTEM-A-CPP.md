@@ -195,3 +195,73 @@ Los filtros de contexto del Python son todos de la forma
 `ToolEntry::poll`. El único matiz: un bloque filtrado puede contener varias entradas
 (cursor, separador y las de transformación, en `PAINT_WEIGHT`), y entonces el mismo
 filtro se repite en cada una, porque se aplica por entrada.
+
+---
+
+## Fase 2: la activación, en C++
+
+Cambiar de herramienta ya no pasa por Python. Antes el motor buscaba el operador
+`wm.tool_set_by_id` de Python y lo invocaba; el operador calculaba once argumentos y se
+los devolvía al motor por `tool.setup()`, que ya era C++. Ahora esos once argumentos se
+calculan en `toolsystem/fl_toolsystem_activate.cc`, y los tres operadores
+(`tool_set_by_id`, `tool_set_by_index`, `tool_set_by_brush_type`) son C++
+(`intern/wm_tool_ops.cc`), con el mismo identificador, propiedades y banderas, porque
+los nombran 148 atajos y cada botón de la barra.
+
+Dos de los nueve puentes quedan cortados: `wm_toolsystem.cc:926` y `:985`.
+
+### Cómo se verificó
+
+Tres niveles, cada uno cubriendo lo que el anterior no ve:
+
+1. **El cálculo**, contra el Python real. `tests/flipendo/toolsystem/activation-python.txt`
+   se sacó interceptando `tool.setup()` en el `_activate_by_item` de verdad, para cada
+   herramienta de cada modo, más las 58 activaciones como reserva. El nativo la
+   reproduce **474/474, byte a byte** (`--fl-dump-tool-activation`).
+2. **La aplicación**, diferencial. `smoke_tools_gui.py` activa cada herramienta por el
+   camino nativo y por el Python antiguo —que sigue cargado— sobre el mismo motor y el
+   mismo estado, y compara el resultado real: **0 diferencias** en las 20 herramientas
+   del modo objeto y las 43 de edición de malla.
+3. **En ejecución**: ciclo, posición, reserva, tipo de pincel, y reabrir un fichero
+   guardado (`check_reopen_gui.py`). Además se abrieron Molino, MolinoInterior y
+   T1_LaMancha de ÁNIMA.
+
+### Tres cosas que la línea base sola no habría enseñado
+
+**La reserva se borra, y es correcto.** Tras activar, 11 de 20 herramientas quedaban
+con `idname_fallback` vacío aunque el cálculo decía `builtin.select`. No era un fallo:
+`WM_toolsystem_ref_set_from_runtime` borra la reserva de toda herramienta que no use el
+keymap de reserva (ni opción `KEYMAP_FALLBACK` ni gizmo con esa bandera). El fallo era
+de la prueba, que comparaba el valor final en DNA con el argumento de `setup()`. Por
+eso la prueba buena es la diferencial: compara lo que queda de verdad.
+
+**La memoria de grupos estaba partida.** En el Python quien anota «qué variante de cada
+grupo se usó» es el *dibujo* de la barra, que sigue siendo Python y escribe en su
+diccionario. La activación nativa leía un mapa que nadie actualizaba, y el efecto era
+visible: con Select Box activa, la W saltaba a Tweak en vez de pasar a Select Circle.
+La prueba en ejecución falló exactamente ahí antes del arreglo — se ejecutó a propósito
+contra el binario sin arreglar, porque una prueba que nunca ha fallado no demuestra
+nada. Ahora la activación hace lo que hacía el dibujo. Diferencia, a favor: el Python
+solo lo anotaba con la barra a la vista.
+
+**El arranque cambia.** Antes, en el primer instante del arranque
+`WM_toolsystem_ref_set_by_id_ex` devolvía nulo porque el operador de Python aún no
+existía. Ahora la herramienta se activa desde el principio. Comprobado que abrir un
+fichero restaura herramienta *y* runtime (gizmo, keymap), no solo el nombre.
+
+### Lo que se replica a propósito, aunque parezca un error
+
+- `activate_by_id_or_cycle` recibe `as_fallback` y lo ignora, como el Python.
+- El tipo de pincel se busca con `context.mode` en todos los espacios, también en el
+  editor de imagen, cuyos modos se llaman de otra forma; allí solo ve las comunes.
+- La reserva se localiza usando una posición *dentro del grupo* como posición *de
+  entrada*. Funciona porque el grupo de selección es siempre la primera entrada.
+
+Arreglar cualquiera de las tres cambiaría qué herramienta o qué teclas obtiene el
+usuario, y eso no es una migración.
+
+### Quedan
+
+Siete puentes: las cinco consultas del tooltip y del menú contextual (fase 3), el keymap
+de la barra que el tooltip fabrica en cada apertura, y el dibujo de la barra (fase 4).
+Hasta la fase 4 el dibujo sigue en Python, y con él `space_toolsystem_common.py`.

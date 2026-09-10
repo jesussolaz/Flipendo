@@ -373,6 +373,32 @@ blender::Vector<const ToolDecl *> tools_for_space_mode(const bContext *C,
                                                        const ToolbarDecl &toolbar,
                                                        const char *mode);
 
+/**
+ * Una entrada de la barra tal como la recorre el Python ANTES de aplanar: una
+ * herramienta suelta o un grupo con ciclo. Los separadores no aparecen.
+ *
+ * La activacion necesita esta vista y no la aplanada, porque varias reglas del Python
+ * dependen de la posicion de la ENTRADA y no de la herramienta (`_tool_get_active_by_index`,
+ * la memoria de grupos, el ciclo). Una herramienta generada de una enumeracion es su
+ * propia entrada: el Python hace `yield from` sobre lo que devuelve la funcion, y lo
+ * que devuelve son herramientas sueltas, no una tupla.
+ *
+ * Un grupo de UNA herramienta (una tupla de uno en el Python) se trata como suelta. La
+ * unica diferencia observable seria el indice de grupo, y ninguna barra del catalogo
+ * tiene tuplas de uno.
+ */
+struct ToolGroupView {
+  blender::Span<const ToolDecl *> tools;
+  bool is_group() const
+  {
+    return tools.size() > 1;
+  }
+};
+
+blender::Vector<ToolGroupView> tools_unexpanded_for_space_mode(const bContext *C,
+                                                               const ToolbarDecl &toolbar,
+                                                               const char *mode);
+
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -390,6 +416,9 @@ blender::Vector<const ToolDecl *> tools_for_context(const bContext *C, int space
 
 const ToolDecl *tool_find_by_id(const bContext *C, int space_type, blender::StringRefNull idname);
 const ToolDecl *tool_find_by_index(const bContext *C, int space_type, int index);
+/** `item_from_index_active`: por posicion de BOTON en la barra, sin aplanar; un grupo
+ * cuenta como uno y devuelve su variante recordada. */
+const ToolDecl *tool_find_by_index_active(const bContext *C, int space_type, int index);
 
 blender::StringRefNull tool_label_for_id(const bContext *C,
                                          int space_type,
@@ -398,9 +427,13 @@ std::string tool_description_for_id(const bContext *C,
                                     int space_type,
                                     blender::StringRefNull idname,
                                     bool use_operator);
+/** Los idnames del grupo que contiene la herramienta, en cualquier posicion.
+ * `coerce`: una herramienta suelta devuelve una lista de una, en vez de vacia
+ * (`_tool_get_group_by_id(coerce=True)`, que es como la usa el tooltip). */
 blender::Vector<blender::StringRefNull> tool_group_idnames_for_id(const bContext *C,
                                                                   int space_type,
-                                                                  blender::StringRefNull idname);
+                                                                  blender::StringRefNull idname,
+                                                                  bool coerce = false);
 wmKeyMap *tool_keymap_for_id(const bContext *C, int space_type, blender::StringRefNull idname);
 
 /** \} */
@@ -424,6 +457,67 @@ bool activate_by_id_or_cycle(bContext *C,
                              bool as_fallback = false);
 
 /**
+ * `WM_OT_tool_set_by_brush_type`: activa la herramienta mas adecuada para un tipo de
+ * pincel, o `builtin.brush` si ninguna lo es.
+ *
+ * Replica una rareza del Python a proposito: busca con `context.mode` en TODOS los
+ * espacios, tambien en el editor de imagen, cuyos modos se llaman de otra forma
+ * ('PAINT', no 'PAINT_TEXTURE'). Alli solo ve las herramientas comunes. Arreglarlo
+ * cambiaria que herramienta se activa al elegir un pincel, y eso no es una migracion.
+ */
+/* `r_tool_id`: la herramienta que se intento activar, para el aviso del operador. */
+bool activate_by_brush_type(bContext *C,
+                            int space_type,
+                            blender::StringRefNull brush_type,
+                            const char **r_tool_id = nullptr);
+
+/**
+ * Lo que el Python entrega a `tool.setup(...)`: los once argumentos con los que el motor
+ * instala una herramienta. Las cadenas estan en la forma del Python ('DEFAULT', 'ANY',
+ * 'KEYMAP_FALLBACK'...); pasarlas a los enteros de DNA es cosa de la aplicacion, que
+ * es la unica parte que necesita un `bToolRef` real.
+ */
+struct ActivationArgs {
+  const ToolDecl *tool = nullptr;
+  int index = 0;
+  const char *keymap = "";
+  const char *cursor = "DEFAULT";
+  /** Solo `TOOL_OPTION_KEYMAP_FALLBACK` y `TOOL_OPTION_USE_BRUSHES`: son las que existen en DNA. */
+  int options = TOOL_OPTION_NONE;
+  const char *gizmo_group = "";
+  const char *brush_type = "ANY";
+  const char *data_block = "";
+  const char *op = "";
+  const char *idname_fallback = "";
+  std::string keymap_fallback;
+};
+
+/**
+ * Calcula los argumentos de `setup` SIN aplicarlos: la parte pura de `_activate_by_item`
+ * (`space_toolsystem_common.py:993`).
+ *
+ * `active_idname` y `stored_idname_fallback` son lo unico que el Python lee del
+ * `bToolRef` activo; se reciben explicitos para poder recorrer el catalogo entero sin
+ * ventanas, que es lo que hace el volcado. Toca la memoria de grupos igual que el
+ * Python. Devuelve false donde el Python lanzaria una excepcion.
+ */
+bool activation_compute(const bContext *C,
+                        const ToolbarDecl &toolbar,
+                        const char *mode,
+                        const ToolDecl &item,
+                        int index,
+                        bool as_fallback,
+                        const char *active_idname,
+                        const char *stored_idname_fallback,
+                        ActivationArgs &r_args);
+
+/** Las herramientas del grupo cuyo lider es la herramienta de reserva del espacio, o
+ * vacio si en ese modo no hay grupo de reserva. */
+blender::Vector<const ToolDecl *> fallback_group_tools(const bContext *C,
+                                                       const ToolbarDecl &toolbar,
+                                                       const char *mode);
+
+/**
  * Memoria de que variante de cada grupo se uso la ultima vez.
  *
  * No va a DNA a proposito: en el Python es un diccionario de clase que se pierde al
@@ -432,6 +526,9 @@ bool activate_by_id_or_cycle(bContext *C,
  */
 int group_active_get(int space_type, blender::StringRefNull group_leader_idname);
 void group_active_set(int space_type, blender::StringRefNull group_leader_idname, int index);
+/** Olvida la memoria de grupos de un espacio. La usa el volcado para que cada
+ * activacion parta del mismo estado. */
+void group_active_clear(int space_type);
 
 /** \} */
 

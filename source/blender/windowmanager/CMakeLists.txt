@@ -20,8 +20,10 @@ set(INC_SYS
 
 set(SRC
   intern/fl_keymap_dump.cc
+  intern/wm_tool_ops.cc
   intern/wm_context_ops.cc
   toolsystem/fl_toolsystem_registry.cc
+  toolsystem/fl_toolsystem_activate.cc
   toolsystem/fl_toolsystem_dump.cc
   toolsystem/fl_tool_description.cc
   toolsystem/fl_tool_defs_annotate.cc
