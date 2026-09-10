@@ -4192,6 +4192,8 @@ void WM_OT_doc_view(wmOperatorType *ot);
 void WM_OT_properties_add(wmOperatorType *ot);
 void WM_OT_properties_context_change(wmOperatorType *ot);
 void WM_OT_properties_remove(wmOperatorType *ot);
+void WM_OT_owner_enable(wmOperatorType *ot);
+void WM_OT_owner_disable(wmOperatorType *ot);
 
 void wm_operatortypes_register()
 {
@@ -4223,6 +4225,8 @@ void wm_operatortypes_register()
   WM_operatortype_append(WM_OT_properties_add);
   WM_operatortype_append(WM_OT_properties_context_change);
   WM_operatortype_append(WM_OT_properties_remove);
+  WM_operatortype_append(WM_OT_owner_enable);
+  WM_operatortype_append(WM_OT_owner_disable);
   WM_operatortype_append(WM_OT_window_close);
   WM_operatortype_append(WM_OT_window_new);
   WM_operatortype_append(WM_OT_window_new_main);

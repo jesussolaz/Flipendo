@@ -30,3 +30,6 @@ bool FL_wm_property_operators_selftest(bContext *C, const char *filepath);
 
 /** Wait for the graphical context required by the Properties editor test. */
 bool FL_wm_property_operators_selftest_schedule(bContext *C, const char *filepath);
+
+/** Exercise workspace owner tag insertion and removal through their operator idnames. */
+bool FL_wm_owner_operators_selftest(bContext *C, const char *filepath);

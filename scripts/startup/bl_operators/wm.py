@@ -1356,37 +1356,6 @@ class WM_OT_operator_cheat_sheet(Operator):
 # -----------------------------------------------------------------------------
 # Add-on Operators
 
-class WM_OT_owner_enable(Operator):
-    """Enable add-on for workspace"""
-    bl_idname = "wm.owner_enable"
-    bl_label = "Enable Add-on"
-
-    owner_id: StringProperty(
-        name="UI Tag",
-    )
-
-    def execute(self, context):
-        workspace = context.workspace
-        workspace.owner_ids.new(self.owner_id)
-        return {'FINISHED'}
-
-
-class WM_OT_owner_disable(Operator):
-    """Disable add-on for workspace"""
-    bl_idname = "wm.owner_disable"
-    bl_label = "Disable Add-on"
-
-    owner_id: StringProperty(
-        name="UI Tag",
-    )
-
-    def execute(self, context):
-        workspace = context.workspace
-        owner_id = workspace.owner_ids[self.owner_id]
-        workspace.owner_ids.remove(owner_id)
-        return {'FINISHED'}
-
-
 class WM_OT_toolbar(Operator):
     bl_idname = "wm.toolbar"
     bl_label = "Toolbar"
@@ -2580,8 +2549,6 @@ classes = (
     WM_OT_properties_edit,
     WM_OT_properties_edit_value,
     WM_OT_sysinfo,
-    WM_OT_owner_disable,
-    WM_OT_owner_enable,
     WM_OT_toolbar,
     WM_OT_toolbar_fallback_pie,
     WM_OT_toolbar_prompt,

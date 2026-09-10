@@ -2571,6 +2571,21 @@ static int arg_handle_fl_selftest_wm_property_ops(int argc, const char **argv, v
   return 0;
 }
 
+static const char arg_handle_fl_selftest_wm_owner_ops_doc[] =
+    "<filepath>\n"
+    "\tEjecuta enable/disable sobre las etiquetas del workspace real.";
+static int arg_handle_fl_selftest_wm_owner_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_wm_owner_operators_selftest(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_keymap_native_doc[] =
     "<filepath>\n"
     "\tVuelca el mapa de teclado NATIVO (C++) a un fichero y sale.\n"
@@ -3210,6 +3225,11 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
                nullptr,
                "--fl-selftest-wm-property-ops",
                CB(arg_handle_fl_selftest_wm_property_ops),
+               C);
+  BLI_args_add(ba,
+               nullptr,
+               "--fl-selftest-wm-owner-ops",
+               CB(arg_handle_fl_selftest_wm_owner_ops),
                C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap-native", CB(arg_handle_fl_dump_keymap_native), C);
   BLI_args_add(ba, nullptr, "--fl-check-keymap", CB(arg_handle_fl_check_keymap), C);

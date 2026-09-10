@@ -13,10 +13,13 @@
 #include <cstdio>
 #include <string>
 
+#include "MEM_guardedalloc.h"
+
 #include "DNA_ID.h"
 #include "DNA_screen_types.h"
 #include "DNA_space_types.h"
 #include "DNA_windowmanager_types.h"
+#include "DNA_workspace_types.h"
 
 #include "BLI_listbase.h"
 #include "BLI_string.h"
@@ -372,4 +375,120 @@ bool FL_wm_property_operators_selftest_schedule(bContext *C, const char *filepat
                      0.05,
                      false);
   return true;
+}
+
+namespace {
+
+wmOperatorStatus owner_enable_exec(bContext *C, wmOperator *op)
+{
+  WorkSpace *workspace = CTX_wm_workspace(C);
+  if (workspace == nullptr) {
+    return OPERATOR_CANCELLED;
+  }
+
+  char *name = RNA_string_get_alloc(op->ptr, "owner_id", nullptr, 0, nullptr);
+  wmOwnerID *owner_id = MEM_callocN<wmOwnerID>(__func__);
+  STRNCPY(owner_id->name, name);
+  MEM_freeN(name);
+  BLI_addtail(&workspace->owner_ids, owner_id);
+  WM_main_add_notifier(NC_WINDOW, nullptr);
+  return OPERATOR_FINISHED;
+}
+
+wmOperatorStatus owner_disable_exec(bContext *C, wmOperator *op)
+{
+  WorkSpace *workspace = CTX_wm_workspace(C);
+  if (workspace == nullptr) {
+    return OPERATOR_CANCELLED;
+  }
+
+  char *name = RNA_string_get_alloc(op->ptr, "owner_id", nullptr, 0, nullptr);
+  wmOwnerID *owner_id = static_cast<wmOwnerID *>(
+      BLI_findstring(&workspace->owner_ids, name, offsetof(wmOwnerID, name)));
+  MEM_freeN(name);
+  if (owner_id == nullptr) {
+    BKE_report(op->reports, RPT_ERROR, "UI tag is not enabled for this workspace");
+    return OPERATOR_CANCELLED;
+  }
+
+  BLI_remlink(&workspace->owner_ids, owner_id);
+  MEM_freeN(owner_id);
+  WM_main_add_notifier(NC_WINDOW, nullptr);
+  return OPERATOR_FINISHED;
+}
+
+void def_owner_id(wmOperatorType *ot)
+{
+  RNA_def_string(ot->srna, "owner_id", nullptr, 0, "UI Tag", "");
+}
+
+}  // namespace
+
+void WM_OT_owner_enable(wmOperatorType *ot)
+{
+  ot->name = "Enable Add-on";
+  ot->idname = "WM_OT_owner_enable";
+  ot->description = "Enable add-on for workspace";
+  ot->exec = owner_enable_exec;
+
+  def_owner_id(ot);
+}
+
+void WM_OT_owner_disable(wmOperatorType *ot)
+{
+  ot->name = "Disable Add-on";
+  ot->idname = "WM_OT_owner_disable";
+  ot->description = "Disable add-on for workspace";
+  ot->exec = owner_disable_exec;
+
+  def_owner_id(ot);
+}
+
+bool FL_wm_owner_operators_selftest(bContext *C, const char *filepath)
+{
+  WorkSpace *workspace = CTX_wm_workspace(C);
+  if (workspace == nullptr) {
+    return false;
+  }
+  constexpr const char *test_name = "flipendo.selftest";
+  if (wmOwnerID *existing = static_cast<wmOwnerID *>(
+          BLI_findstring(&workspace->owner_ids, test_name, offsetof(wmOwnerID, name))))
+  {
+    BLI_freelinkN(&workspace->owner_ids, existing);
+  }
+
+  PointerRNA props;
+  WM_operator_properties_create(&props, "WM_OT_owner_enable");
+  RNA_string_set(&props, "owner_id", test_name);
+  const wmOperatorStatus enable_status = WM_operator_name_call(
+      C, "WM_OT_owner_enable", WM_OP_EXEC_DEFAULT, &props, nullptr);
+  WM_operator_properties_free(&props);
+  const bool present_after_enable =
+      BLI_findstring(&workspace->owner_ids, test_name, offsetof(wmOwnerID, name)) != nullptr;
+
+  WM_operator_properties_create(&props, "WM_OT_owner_disable");
+  RNA_string_set(&props, "owner_id", test_name);
+  const wmOperatorStatus disable_status = WM_operator_name_call(
+      C, "WM_OT_owner_disable", WM_OP_EXEC_DEFAULT, &props, nullptr);
+  WM_operator_properties_free(&props);
+  const bool present_after_disable =
+      BLI_findstring(&workspace->owner_ids, test_name, offsetof(wmOwnerID, name)) != nullptr;
+
+  FILE *fp = std::fopen(filepath, "w");
+  if (fp == nullptr) {
+    return false;
+  }
+  std::fprintf(fp,
+               "enable status=%s present=%s\n",
+               status_string(enable_status),
+               present_after_enable ? "True" : "False");
+  std::fprintf(fp,
+               "disable status=%s present=%s\n",
+               status_string(disable_status),
+               present_after_disable ? "True" : "False");
+  const bool ok = std::fclose(fp) == 0;
+  if (ok) {
+    std::printf("Prueba de operadores owner -> %s\n", filepath);
+  }
+  return ok;
 }
