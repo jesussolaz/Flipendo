@@ -41,4 +41,7 @@ void view3d_object_menus_register();
 /** Familia 5: menus contextuales cortos y los del lapiz de cera. */
 void view3d_context_menus_register();
 
+/** Familia 6: los contextuales grandes de particulas, pose, curva y esqueleto. */
+void view3d_ctxmode_menus_register();
+
 }  // namespace blender::ed::view3d

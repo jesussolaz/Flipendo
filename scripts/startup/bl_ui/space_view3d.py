@@ -3794,61 +3794,6 @@ class VIEW3D_MT_particle(Menu):
         layout.operator("particle.delete")
 
 
-class VIEW3D_MT_particle_context_menu(Menu):
-    bl_label = "Particle"
-
-    def draw(self, context):
-        layout = self.layout
-        tool_settings = context.tool_settings
-
-        particle_edit = tool_settings.particle_edit
-
-        layout.operator("particle.rekey")
-
-        layout.separator()
-
-        layout.operator("particle.delete")
-
-        layout.separator()
-
-        layout.operator("particle.remove_doubles")
-        layout.operator("particle.unify_length")
-
-        if particle_edit.select_mode == 'POINT':
-            layout.operator("particle.subdivide")
-
-        layout.operator("particle.weight_set")
-
-        layout.separator()
-
-        layout.operator("particle.mirror")
-
-        if particle_edit.select_mode == 'POINT':
-            layout.separator()
-
-            layout.operator("particle.select_all", text="All").action = 'SELECT'
-            layout.operator("particle.select_all", text="None").action = 'DESELECT'
-            layout.operator("particle.select_all", text="Invert").action = 'INVERT'
-
-            layout.separator()
-
-            layout.operator("particle.select_roots")
-            layout.operator("particle.select_tips")
-
-            layout.separator()
-
-            layout.operator("particle.select_random")
-
-            layout.separator()
-
-            layout.operator("particle.select_more")
-            layout.operator("particle.select_less")
-
-            layout.separator()
-
-            layout.operator("particle.select_linked", text="Select Linked")
-
-
 class VIEW3D_MT_particle_showhide(ShowHideMenu, Menu):
     _operator_name = "particle"
 
@@ -4009,53 +3954,6 @@ class VIEW3D_MT_pose_names(Menu):
 
 class VIEW3D_MT_pose_showhide(ShowHideMenu, Menu):
     _operator_name = "pose"
-
-
-class VIEW3D_MT_pose_context_menu(Menu):
-    bl_label = "Pose"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        layout.operator("anim.keyframe_insert", text="Insert Keyframe")
-        layout.operator("anim.keyframe_insert_menu", text="Insert Keyframe with Keying Set").always_prompt = True
-
-        layout.separator()
-
-        layout.operator("pose.copy", icon='COPYDOWN')
-        layout.operator("pose.paste", icon='PASTEDOWN').flipped = False
-        layout.operator("pose.paste", icon='PASTEFLIPDOWN', text="Paste X-Flipped Pose").flipped = True
-
-        layout.separator()
-
-        props = layout.operator("wm.call_panel", text="Rename Active Bone...")
-        props.name = "TOPBAR_PT_name"
-        props.keep_open = False
-
-        layout.separator()
-
-        layout.operator("pose.push")
-        layout.operator("pose.relax")
-        layout.operator("pose.breakdown")
-        layout.operator("pose.blend_to_neighbor")
-
-        layout.separator()
-
-        layout.operator("pose.paths_calculate", text="Calculate Motion Paths")
-        layout.operator("pose.paths_clear", text="Clear Motion Paths")
-        layout.operator("pose.paths_update", text="Update Armature Motion Paths")
-        layout.operator("object.paths_update_visible", text="Update All Motion Paths")
-
-        layout.separator()
-
-        layout.operator("pose.hide").unselected = False
-        layout.operator("pose.reveal")
-
-        layout.separator()
-
-        layout.operator("pose.user_transforms_clear")
 
 
 class BoneOptions:
@@ -4612,62 +4510,6 @@ class VIEW3D_MT_edit_curve_clean(Menu):
         layout.operator("curve.decimate")
 
 
-class VIEW3D_MT_edit_curve_context_menu(Menu):
-    bl_label = "Curve"
-
-    def draw(self, _context):
-        # TODO(campbell): match mesh vertex menu.
-
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-
-        # Add
-        layout.operator("curve.subdivide")
-        layout.operator("curve.extrude_move")
-        layout.operator("curve.make_segment")
-        layout.operator("curve.duplicate_move")
-
-        layout.separator()
-
-        # Transform
-        layout.operator("transform.transform", text="Radius").mode = 'CURVE_SHRINKFATTEN'
-        layout.operator("transform.tilt")
-        layout.operator("curve.tilt_clear")
-        layout.operator("curve.smooth")
-        layout.operator("curve.smooth_tilt")
-        layout.operator("curve.smooth_radius")
-
-        layout.separator()
-
-        layout.menu("VIEW3D_MT_mirror")
-        layout.menu("VIEW3D_MT_snap")
-
-        layout.separator()
-
-        # Modify
-        layout.operator_menu_enum("curve.spline_type_set", "type")
-        layout.operator_menu_enum("curve.handle_type_set", "type")
-        layout.operator("curve.cyclic_toggle")
-        layout.operator("curve.switch_direction")
-
-        layout.separator()
-
-        layout.operator("curve.normals_make_consistent")
-        layout.operator("curve.spline_weight_set")
-        layout.operator("curve.radius_set")
-
-        layout.separator()
-
-        # Remove
-        layout.operator("curve.split")
-        layout.operator("curve.decimate")
-        layout.operator("curve.separate")
-        layout.operator("curve.dissolve_verts")
-        layout.operator("curve.delete", text="Delete Segment").type = 'SEGMENT'
-        layout.operator("curve.delete", text="Delete Point").type = 'VERT'
-
-
 class VIEW3D_MT_edit_curve_showhide(ShowHideMenu, Menu):
     _operator_name = "curve"
 
@@ -4896,50 +4738,6 @@ class VIEW3D_MT_edit_armature(Menu):
         layout.separator()
 
         layout.menu("VIEW3D_MT_edit_armature_delete")
-
-
-class VIEW3D_MT_armature_context_menu(Menu):
-    bl_label = "Armature"
-
-    def draw(self, context):
-        layout = self.layout
-
-        edit_object = context.edit_object
-        arm = edit_object.data
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        # Add
-        layout.operator("armature.subdivide", text="Subdivide")
-        layout.operator("armature.duplicate_move", text="Duplicate")
-        layout.operator("armature.extrude_move")
-        if arm.use_mirror_x:
-            layout.operator("armature.extrude_forked")
-
-        layout.separator()
-
-        layout.operator("armature.fill")
-
-        layout.separator()
-
-        # Modify
-        layout.menu("VIEW3D_MT_mirror")
-        layout.menu("VIEW3D_MT_snap")
-        layout.operator("armature.symmetrize")
-        layout.operator("armature.switch_direction", text="Switch Direction")
-        layout.menu("VIEW3D_MT_edit_armature_names")
-
-        layout.separator()
-
-        layout.menu("VIEW3D_MT_edit_armature_parent")
-
-        layout.separator()
-
-        # Remove
-        layout.operator("armature.split")
-        layout.operator("armature.separate")
-        layout.operator("armature.dissolve")
-        layout.operator("armature.delete")
 
 
 class VIEW3D_MT_edit_armature_names(Menu):
@@ -8121,7 +7919,6 @@ classes = (
     VIEW3D_MT_face_sets_init,
     VIEW3D_MT_random_mask,
     VIEW3D_MT_particle,
-    VIEW3D_MT_particle_context_menu,
     VIEW3D_MT_particle_showhide,
     VIEW3D_MT_pose,
     VIEW3D_MT_pose_transform,
@@ -8132,7 +7929,6 @@ classes = (
     VIEW3D_MT_pose_constraints,
     VIEW3D_MT_pose_names,
     VIEW3D_MT_pose_showhide,
-    VIEW3D_MT_pose_context_menu,
     VIEW3D_MT_bone_options_toggle,
     VIEW3D_MT_bone_options_enable,
     VIEW3D_MT_bone_options_disable,
@@ -8161,7 +7957,6 @@ classes = (
     VIEW3D_MT_edit_curve_ctrlpoints,
     VIEW3D_MT_edit_curve_segments,
     VIEW3D_MT_edit_curve_clean,
-    VIEW3D_MT_edit_curve_context_menu,
     VIEW3D_MT_edit_curve_showhide,
     VIEW3D_MT_edit_surface,
     VIEW3D_MT_edit_font,
@@ -8172,7 +7967,6 @@ classes = (
     VIEW3D_MT_edit_meta_showhide,
     VIEW3D_MT_edit_lattice,
     VIEW3D_MT_edit_armature,
-    VIEW3D_MT_armature_context_menu,
     VIEW3D_MT_edit_armature_parent,
     VIEW3D_MT_edit_armature_roll,
     VIEW3D_MT_edit_armature_names,
