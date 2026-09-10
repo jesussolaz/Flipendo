@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../asset
   ../include
   ../../makesrna
@@ -18,6 +19,9 @@ set(INC_SYS
 
 set(SRC
   drawobject.cc
+  fl_view3d_menus.cc
+  fl_view3d_menus_edit.cc
+  fl_view3d_menus_mesh.cc
   space_view3d.cc
   view3d_buttons.cc
   view3d_camera_control.cc
@@ -66,6 +70,7 @@ set(SRC
   view3d_utils.cc
   view3d_view.cc
 
+  FL_view3d_menus.hh
   view3d_intern.hh
   view3d_navigate.hh
 )

@@ -772,23 +772,6 @@ class GREASE_PENCIL_MT_snap_pie(Menu):
         pie.separator()
 
 
-class GREASE_PENCIL_MT_draw_delete(Menu):
-    bl_label = "Delete"
-
-    def draw(self, _context):
-        layout = self.layout
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        layout.operator(
-            "grease_pencil.delete_frame",
-            text="Delete Active Keyframe (Active Layer)",
-        ).type = 'ACTIVE_FRAME'
-        layout.operator(
-            "grease_pencil.delete_frame",
-            text="Delete Active Keyframes (All Layers)",
-        ).type = 'ALL_FRAMES'
-
-
 class GREASE_PENCIL_MT_stroke_simplify(Menu):
     bl_label = "Simplify Stroke"
 
@@ -808,7 +791,6 @@ classes = (
     GREASE_PENCIL_MT_snap,
     GREASE_PENCIL_MT_snap_pie,
 
-    GREASE_PENCIL_MT_draw_delete,
 
     GREASE_PENCIL_MT_stroke_simplify,
 
