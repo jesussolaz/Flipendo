@@ -17,9 +17,11 @@ set(INC
 )
 
 set(INC_SYS
+  ${ZLIB_INCLUDE_DIRS}
 )
 
 set(SRC
+  fl_game_publishing.cc
   fl_game_runtime.cc
 
   ../include/FL_game_runtime.hh
@@ -33,6 +35,8 @@ set(LIB
   PRIVATE bf::dna
   PRIVATE bf::intern::guardedalloc
   PRIVATE bf::windowmanager
+
+  ${ZLIB_LIBRARIES}
 )
 
 blender_add_lib(bf_editor_flipendo "${SRC}" "${INC}" "${INC_SYS}" "${LIB}")

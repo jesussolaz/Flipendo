@@ -90,7 +90,7 @@ static void path_strip_components(char *path, int count)
  * el directorio que contiene a `Blender.app`. Resto: el directorio del binario
  * + `blenderplayer` + la extension del propio binario.
  */
-static void default_player_path(char r_path[FILE_MAX])
+void default_player_path_get(char r_path[FILE_MAX])
 {
   char dir[FILE_MAX];
   STRNCPY(dir, BKE_appdir_program_path());
@@ -332,7 +332,7 @@ static void WM_OT_save_as_runtime(wmOperatorType *ot)
    * apuntando a memoria muerta. Por eso es `static`. */
   static char player_path[FILE_MAX] = {0};
   if (player_path[0] == '\0') {
-    default_player_path(player_path);
+    default_player_path_get(player_path);
   }
 
   /* Rotulo identico al `bl_label` del addon. El addon no declaraba
@@ -621,6 +621,7 @@ bool runtime_dump(const char *bundle_path, const char *filepath_out)
 void operatortypes_register()
 {
   WM_operatortype_append(WM_OT_save_as_runtime);
+  publishing_operatortypes_register();
 }
 
 /** \} */

@@ -27,6 +27,15 @@ namespace flipendo::game {
 /** Registra los operadores nativos de publicacion del juego. */
 void operatortypes_register();
 
+/** Operadores y panel de `fl_game_publishing.cc`; los llama `operatortypes_register()`. */
+void publishing_operatortypes_register();
+
+/**
+ * Ruta por defecto del Player, la misma que calculaba el addon de Python:
+ * en macOS, el `Blenderplayer.app` que vive junto a `Blender.app`.
+ */
+void default_player_path_get(char r_path[1024]);
+
 /**
  * Vuelca el estado observable de un bundle exportado y lo escribe en
  * `filepath_out` (o por `stdout` si es `nullptr`).
