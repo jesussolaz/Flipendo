@@ -1,0 +1,1 @@
+invoke status=['FINISHED'] target=mesh.select_mode property=type
