@@ -1399,32 +1399,6 @@ class VIEW3D_MT_mirror(Menu):
                 layout.separator()
 
 
-class VIEW3D_MT_uv_map(Menu):
-    bl_label = "UV Mapping"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.menu_contents("IMAGE_MT_uvs_unwrap")
-
-        layout.separator()
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-        layout.operator("uv.project_from_view").scale_to_bounds = False
-        layout.operator("uv.project_from_view", text="Project from View (Bounds)").scale_to_bounds = True
-
-        layout.separator()
-
-        layout.operator("mesh.mark_seam").clear = False
-        layout.operator("mesh.mark_seam", text="Clear Seam").clear = True
-
-        layout.separator()
-
-        layout.operator("uv.reset")
-
-        layout.template_node_operator_asset_menu_items(catalog_path="UV")
-
-
 # ********** View menus **********
 
 
@@ -3107,74 +3081,6 @@ class VIEW3D_MT_object_shading(Menu):
         layout.operator("object.shade_flat", text="Flat")
 
 
-class VIEW3D_MT_object_apply(Menu):
-    bl_label = "Apply"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        # Need invoke for the popup confirming the multi-user data operation
-        layout.operator_context = 'INVOKE_DEFAULT'
-
-        props = layout.operator("object.transform_apply", text="Location", text_ctxt=i18n_contexts.default)
-        props.location, props.rotation, props.scale = True, False, False
-
-        props = layout.operator("object.transform_apply", text="Rotation", text_ctxt=i18n_contexts.default)
-        props.location, props.rotation, props.scale = False, True, False
-
-        props = layout.operator("object.transform_apply", text="Scale", text_ctxt=i18n_contexts.default)
-        props.location, props.rotation, props.scale = False, False, True
-
-        props = layout.operator("object.transform_apply", text="All Transforms", text_ctxt=i18n_contexts.default)
-        props.location, props.rotation, props.scale = True, True, True
-
-        props = layout.operator("object.transform_apply", text="Rotation & Scale", text_ctxt=i18n_contexts.default)
-        props.location, props.rotation, props.scale = False, True, True
-
-        layout.separator()
-
-        layout.operator(
-            "object.transforms_to_deltas",
-            text="Location to Deltas",
-            text_ctxt=i18n_contexts.default,
-        ).mode = 'LOC'
-        layout.operator(
-            "object.transforms_to_deltas",
-            text="Rotation to Deltas",
-            text_ctxt=i18n_contexts.default,
-        ).mode = 'ROT'
-        layout.operator(
-            "object.transforms_to_deltas",
-            text="Scale to Deltas",
-            text_ctxt=i18n_contexts.default,
-        ).mode = 'SCALE'
-
-        layout.operator(
-            "object.transforms_to_deltas",
-            text="All Transforms to Deltas",
-            text_ctxt=i18n_contexts.default,
-        ).mode = 'ALL'
-        layout.operator("object.anim_transforms_to_deltas")
-
-        layout.separator()
-
-        layout.operator(
-            "object.visual_transform_apply",
-            text="Visual Transform",
-            text_ctxt=i18n_contexts.default,
-        )
-        layout.operator(
-            "object.convert",
-            text="Visual Geometry to Mesh",
-            text_ctxt=i18n_contexts.default,
-        ).target = 'MESH'
-        layout.operator("object.visual_geometry_to_objects")
-        layout.operator("object.duplicates_make_real")
-        layout.operator("object.parent_inverse_apply", text="Parent Inverse", text_ctxt=i18n_contexts.default)
-
-        layout.template_node_operator_asset_menu_items(catalog_path="Object/Apply")
-
-
 class VIEW3D_MT_object_parent(Menu):
     bl_label = "Parent"
     bl_translation_context = i18n_contexts.operator_default
@@ -3330,38 +3236,6 @@ class VIEW3D_MT_object_asset(Menu):
         layout.operator("asset.clear", text="Clear Asset (Set Fake User)").set_fake_user = True
 
 
-class VIEW3D_MT_make_single_user(Menu):
-    bl_label = "Make Single User"
-
-    def draw(self, _context):
-        layout = self.layout
-        layout.operator_context = 'EXEC_REGION_WIN'
-
-        props = layout.operator("object.make_single_user", text="Object")
-        props.object = True
-        props.obdata = props.material = props.animation = props.obdata_animation = False
-
-        props = layout.operator("object.make_single_user", text="Object & Data")
-        props.object = props.obdata = True
-        props.material = props.animation = props.obdata_animation = False
-
-        props = layout.operator("object.make_single_user", text="Object & Data & Materials")
-        props.object = props.obdata = props.material = True
-        props.animation = props.obdata_animation = False
-
-        props = layout.operator("object.make_single_user", text="Materials")
-        props.material = True
-        props.object = props.obdata = props.animation = props.obdata_animation = False
-
-        props = layout.operator("object.make_single_user", text="Object Animation")
-        props.animation = True
-        props.object = props.obdata = props.material = props.obdata_animation = False
-
-        props = layout.operator("object.make_single_user", text="Object Data Animation")
-        props.obdata_animation = props.obdata = True
-        props.object = props.material = props.animation = False
-
-
 class VIEW3D_MT_object_convert(Menu):
     bl_label = "Convert"
 
@@ -3385,38 +3259,6 @@ class VIEW3D_MT_object_convert(Menu):
             layout.operator("curves.convert_to_particle_system", text="Particle System")
 
         layout.template_node_operator_asset_menu_items(catalog_path="Object/Convert")
-
-
-class VIEW3D_MT_make_links(Menu):
-    bl_label = "Link/Transfer Data"
-
-    def draw(self, _context):
-        layout = self.layout
-        operator_context_default = layout.operator_context
-
-        if len(bpy.data.scenes) > 10:
-            layout.operator_context = 'INVOKE_REGION_WIN'
-            layout.operator("object.make_links_scene", text="Link Objects to Scene...", icon='OUTLINER_OB_EMPTY')
-        else:
-            layout.operator_context = 'EXEC_REGION_WIN'
-            layout.operator_menu_enum("object.make_links_scene", "scene", text="Link Objects to Scene")
-
-        layout.separator()
-
-        layout.operator_context = operator_context_default
-
-        layout.operator_enum("object.make_links_data", "type")  # inline
-
-        layout.operator("object.join_uvs", text="Copy UV Maps")
-
-        layout.separator()
-        layout.operator_context = 'INVOKE_DEFAULT'
-        layout.operator("object.data_transfer")
-        layout.operator("object.datalayout_transfer")
-
-        layout.separator()
-        layout.operator_menu_enum("object.light_linking_receivers_link", "link_state")
-        layout.operator_menu_enum("object.light_linking_blockers_link", "link_state")
 
 
 class VIEW3D_MT_object_game(Menu):
@@ -3460,58 +3302,6 @@ class VIEW3D_MT_paint_vertex(Menu):
 
         layout.operator("paint.vertex_color_set")
         layout.operator("paint.sample_color").merged = False
-
-
-class VIEW3D_MT_hook(Menu):
-    bl_label = "Hooks"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator_context = 'EXEC_AREA'
-        layout.operator("object.hook_add_newob")
-        layout.operator("object.hook_add_selob").use_bone = False
-        layout.operator("object.hook_add_selob", text="Hook to Selected Object Bone").use_bone = True
-
-        if any([mod.type == 'HOOK' for mod in context.active_object.modifiers]):
-            layout.separator()
-
-            layout.operator_menu_enum("object.hook_assign", "modifier")
-            layout.operator_menu_enum("object.hook_remove", "modifier")
-
-            layout.separator()
-
-            layout.operator_menu_enum("object.hook_select", "modifier")
-            layout.operator_menu_enum("object.hook_reset", "modifier")
-            layout.operator_menu_enum("object.hook_recenter", "modifier")
-
-
-class VIEW3D_MT_vertex_group(Menu):
-    bl_label = "Vertex Groups"
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.operator_context = 'EXEC_AREA'
-        layout.operator("object.vertex_group_assign_new")
-
-        ob = context.active_object
-        if ob.mode == 'EDIT' or (ob.mode == 'WEIGHT_PAINT' and ob.type == 'MESH' and ob.data.use_paint_mask_vertex):
-            if ob.vertex_groups.active:
-                layout.separator()
-
-                layout.operator("object.vertex_group_assign", text="Assign to Active Group")
-                layout.operator(
-                    "object.vertex_group_remove_from",
-                    text="Remove from Active Group",
-                ).use_all_groups = False
-                layout.operator("object.vertex_group_remove_from", text="Remove from All").use_all_groups = True
-
-        if ob.vertex_groups.active:
-            layout.separator()
-
-            layout.operator_menu_enum("object.vertex_group_set_active", "group", text="Set Active Group")
-            layout.operator("object.vertex_group_remove", text="Remove Active Group").all = False
-            layout.operator("object.vertex_group_remove", text="Remove All Groups").all = True
 
 
 class VIEW3D_MT_greasepencil_vertex_group(Menu):
@@ -4198,24 +3988,6 @@ class VIEW3D_MT_pose_slide(Menu):
         layout.operator("pose.blend_to_neighbor")
 
 
-class VIEW3D_MT_pose_propagate(Menu):
-    bl_label = "Propagate"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("pose.propagate", text="To Next Keyframe").mode = 'NEXT_KEY'
-        layout.operator("pose.propagate", text="To Last Keyframe (Make Cyclic)").mode = 'LAST_KEY'
-
-        layout.separator()
-
-        layout.operator("pose.propagate", text="On Selected Keyframes").mode = 'SELECTED_KEYS'
-
-        layout.separator()
-
-        layout.operator("pose.propagate", text="On Selected Markers").mode = 'SELECTED_MARKERS'
-
-
 class VIEW3D_MT_pose_motion(Menu):
     bl_label = "Motion Paths"
 
@@ -4287,22 +4059,6 @@ class VIEW3D_MT_pose_names(Menu):
 
 class VIEW3D_MT_pose_showhide(ShowHideMenu, Menu):
     _operator_name = "pose"
-
-
-class VIEW3D_MT_pose_apply(Menu):
-    bl_label = "Apply"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("pose.armature_apply").selected = False
-        layout.operator("pose.armature_apply", text="Apply Selected as Rest Pose").selected = True
-        layout.operator("pose.visual_transform_apply")
-
-        layout.separator()
-
-        props = layout.operator("object.assign_property_defaults")
-        props.process_bones = True
 
 
 class VIEW3D_MT_pose_context_menu(Menu):
@@ -8453,7 +8209,6 @@ classes = (
     VIEW3D_MT_transform_object,
     VIEW3D_MT_transform_armature,
     VIEW3D_MT_mirror,
-    VIEW3D_MT_uv_map,
     VIEW3D_MT_view,
     VIEW3D_MT_view_local,
     VIEW3D_MT_view_cameras,
@@ -8509,7 +8264,6 @@ classes = (
     VIEW3D_MT_object_context_menu,
     VIEW3D_MT_object_convert,
     VIEW3D_MT_object_shading,
-    VIEW3D_MT_object_apply,
     VIEW3D_MT_object_relations,
     VIEW3D_MT_object_liboverride,
     VIEW3D_MT_object_parent,
@@ -8520,12 +8274,8 @@ classes = (
     VIEW3D_MT_object_quick_effects,
     VIEW3D_MT_object_showhide,
     VIEW3D_MT_object_cleanup,
-    VIEW3D_MT_make_single_user,
-    VIEW3D_MT_make_links,
     VIEW3D_MT_object_game,
     VIEW3D_MT_paint_vertex,
-    VIEW3D_MT_hook,
-    VIEW3D_MT_vertex_group,
     VIEW3D_MT_greasepencil_vertex_group,
     VIEW3D_MT_paint_weight,
     VIEW3D_MT_paint_weight_lock,
@@ -8544,14 +8294,12 @@ classes = (
     VIEW3D_MT_pose,
     VIEW3D_MT_pose_transform,
     VIEW3D_MT_pose_slide,
-    VIEW3D_MT_pose_propagate,
     VIEW3D_MT_pose_motion,
     VIEW3D_MT_bone_collections,
     VIEW3D_MT_pose_ik,
     VIEW3D_MT_pose_constraints,
     VIEW3D_MT_pose_names,
     VIEW3D_MT_pose_showhide,
-    VIEW3D_MT_pose_apply,
     VIEW3D_MT_pose_context_menu,
     VIEW3D_MT_bone_options_toggle,
     VIEW3D_MT_bone_options_enable,

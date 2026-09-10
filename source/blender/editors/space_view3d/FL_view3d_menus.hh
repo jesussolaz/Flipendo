@@ -35,4 +35,7 @@ void view3d_edit_menus_register();
 /** Familia 3: los submenus de la edicion de malla (Ctrl-V, Ctrl-E, Ctrl-F, Alt-N...). */
 void view3d_mesh_menus_register();
 
+/** Familia 4: objeto, pose y mapeado UV (Ctrl-A, U, Ctrl-L, Ctrl-H, Ctrl-G, Alt-P). */
+void view3d_object_menus_register();
+
 }  // namespace blender::ed::view3d
