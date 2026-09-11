@@ -20,6 +20,7 @@
 #include <optional>
 
 #include "BLI_listbase.h"
+#include "BLI_vector.hh"
 #include "BLI_utildefines.h"
 
 #include "BKE_context.hh"
@@ -29,14 +30,17 @@
 
 #include "BLT_translation.hh"
 
+#include "DNA_camera_types.h"
+#include "DNA_light_types.h"
 #include "DNA_mesh_types.h"
+#include "DNA_view3d_types.h"
 #include "DNA_modifier_types.h"
 #include "DNA_object_types.h"
 #include "DNA_scene_types.h"
 
-#include "RNA_access.hh"
-
 #include "ED_geometry.hh"
+
+#include "RNA_access.hh"
 
 #include "UI_interface.hh"
 #include "UI_interface_layout.hh"
@@ -439,7 +443,285 @@ static void uv_map_draw(const bContext *C, Menu *menu)
 /** \name Registro
  * \{ */
 
+
+/* -------------------------------------------------------------------- */
+/** \name VIEW3D_MT_object_context_menu
+ *
+ * El boton derecho en modo objeto: el menu mas usado de Blender y el que mas
+ * ramas por tipo de objeto tiene. Casi todas ellas montan un
+ * `wm.context_modal_mouse`, que es el operador de «arrastra el raton para
+ * ajustar esto»; su rotulo de cabecera va por `RPT_()`, no por `IFACE_()`,
+ * porque es un mensaje de informe con formato (`%.3f`), no una etiqueta.
+ * \{ */
+
+/** `wm.context_modal_mouse` con sus cuatro propiedades. */
+static void modal_mouse_item(uiLayout *layout,
+                             const char *text,
+                             const char *data_path_item,
+                             const char *header_text,
+                             const float input_scale = 1.0f,
+                             const bool set_input_scale = false)
+{
+  PointerRNA props = layout->op("WM_OT_context_modal_mouse", IFACE_(text), ICON_NONE);
+  if (props.data == nullptr) {
+    return;
+  }
+  RNA_string_set(&props, "data_path_iter", "selected_editable_objects");
+  RNA_string_set(&props, "data_path_item", data_path_item);
+  if (set_input_scale) {
+    RNA_float_set(&props, "input_scale", input_scale);
+  }
+  RNA_string_set(&props, "header_text", RPT_(header_text));
+}
+
+static void object_context_menu_draw(const bContext *C, Menu *menu)
+{
+  uiLayout *layout = menu->layout;
+
+  const View3D *view = CTX_wm_view3d(C);
+  const Object *obj = CTX_data_active_object(C);
+  const int selected_objects_len = CTX_data_collection_get(C, "selected_objects").size();
+
+  /* La rama de «nada seleccionado» esta comentada en el Python; no se escribe. */
+
+  if (obj == nullptr) {
+    /* `pass` del Python. */
+  }
+  else if (obj->type == OB_CAMERA) {
+    const Camera *cam = static_cast<const Camera *>(obj->data);
+    uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+    layout->op("VIEW3D_OT_object_as_camera", IFACE_("Set Active Camera"), ICON_NONE);
+
+    if (cam->type == CAM_PERSP) {
+      modal_mouse_item(layout,
+                       N_("Adjust Focal Length"),
+                       "data.lens",
+                       /* `lens_unit` es un bitflag sobre `flag`: `MILLIMETERS` es 0 y `FOV` es
+                        * `CAM_ANGLETOGGLE` (`rna_camera.cc:659-665`). */
+                       ((cam->flag & CAM_ANGLETOGGLE) == 0) ?
+                           N_("Camera Focal Length: %.1fmm") :
+                           N_("Camera Focal Length: %.1f°"),
+                       0.1f,
+                       true);
+    }
+    else {
+      modal_mouse_item(layout,
+                       N_("Camera Lens Scale"),
+                       "data.ortho_scale",
+                       N_("Camera Lens Scale: %.3f"),
+                       0.01f,
+                       true);
+    }
+
+    if (cam->dof.focus_object == nullptr) {
+      const RegionView3D *rv3d = CTX_wm_region_view3d(C);
+      if (view != nullptr && view->camera == obj && rv3d != nullptr && rv3d->persp == RV3D_CAMOB) {
+        layout->op("UI_OT_eyedropper_depth", IFACE_("DOF Distance (Pick)"), ICON_NONE);
+      }
+      else {
+        modal_mouse_item(layout,
+                         N_("Adjust Focus Distance"),
+                         "data.dof.focus_distance",
+                         N_("Focus Distance: %.3f"),
+                         0.02f,
+                         true);
+      }
+    }
+
+    layout->separator();
+  }
+  else if (ELEM(obj->type, OB_CURVES_LEGACY, OB_FONT)) {
+    uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+    modal_mouse_item(
+        layout, N_("Adjust Extrusion"), "data.extrude", N_("Extrude: %.3f"), 0.01f, true);
+    modal_mouse_item(layout, N_("Adjust Offset"), "data.offset", N_("Offset: %.3f"), 0.01f, true);
+
+    layout->separator();
+  }
+  else if (obj->type == OB_EMPTY) {
+    uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+    modal_mouse_item(layout,
+                     N_("Adjust Empty Display Size"),
+                     "empty_display_size",
+                     N_("Empty Display Size: %.3f"),
+                     0.01f,
+                     true);
+
+    layout->separator();
+
+    if (obj->empty_drawtype == OB_EMPTY_IMAGE) {
+      layout->op("IMAGE_OT_convert_to_mesh_plane", IFACE_("Convert to Mesh Plane"), ICON_NONE);
+      layout->op("GREASE_PENCIL_OT_trace_image", std::nullopt, ICON_NONE);
+
+      layout->separator();
+    }
+  }
+  else if (obj->type == OB_LAMP) {
+    const Light *light = static_cast<const Light *>(obj->data);
+
+    uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+    modal_mouse_item(
+        layout, N_("Adjust Light Power"), "data.energy", N_("Light Power: %.3f"), 1.0f, true);
+
+    if (light->type == LA_AREA) {
+      if (ELEM(light->area_shape, LA_AREA_RECT, LA_AREA_ELLIPSE)) {
+        modal_mouse_item(
+            layout, N_("Adjust Area Light X Size"), "data.size", N_("Light Size X: %.3f"));
+        modal_mouse_item(
+            layout, N_("Adjust Area Light Y Size"), "data.size_y", N_("Light Size Y: %.3f"));
+      }
+      else {
+        modal_mouse_item(
+            layout, N_("Adjust Area Light Size"), "data.size", N_("Light Size: %.3f"));
+      }
+    }
+    else if (ELEM(light->type, LA_SPOT, LA_LOCAL)) {
+      modal_mouse_item(
+          layout, N_("Adjust Light Radius"), "data.shadow_soft_size", N_("Light Radius: %.3f"));
+    }
+    else if (light->type == LA_SUN) {
+      modal_mouse_item(
+          layout, N_("Adjust Sun Light Angle"), "data.angle", N_("Light Angle: %.3f"));
+    }
+
+    if (light->type == LA_SPOT) {
+      layout->separator();
+
+      modal_mouse_item(layout,
+                       N_("Adjust Spot Light Size"),
+                       "data.spot_size",
+                       N_("Spot Size: %.2f"),
+                       0.01f,
+                       true);
+      modal_mouse_item(layout,
+                       N_("Adjust Spot Light Blend"),
+                       "data.spot_blend",
+                       N_("Spot Blend: %.2f"),
+                       -0.01f,
+                       true);
+    }
+
+    layout->separator();
+  }
+
+  /* Comun a varios tipos. */
+  if (obj != nullptr) {
+    if (ELEM(obj->type, OB_MESH, OB_CURVES_LEGACY, OB_SURF)) {
+      layout->op("OBJECT_OT_shade_smooth", std::nullopt, ICON_NONE);
+      if (obj->type == OB_MESH) {
+        layout->op("OBJECT_OT_shade_auto_smooth", std::nullopt, ICON_NONE);
+      }
+      layout->op("OBJECT_OT_shade_flat", std::nullopt, ICON_NONE);
+
+      layout->separator();
+    }
+
+    if (ELEM(obj->type, OB_MESH, OB_CURVES_LEGACY, OB_SURF, OB_ARMATURE, OB_GREASE_PENCIL)) {
+      if (selected_objects_len > 1) {
+        layout->op("OBJECT_OT_join", std::nullopt, ICON_NONE);
+      }
+    }
+
+    if (ELEM(obj->type,
+             OB_MESH,
+             OB_CURVES_LEGACY,
+             OB_CURVES,
+             OB_SURF,
+             OB_POINTCLOUD,
+             OB_MBALL,
+             OB_FONT,
+             OB_GREASE_PENCIL))
+    {
+      menu_enum_o(layout, C, "OBJECT_OT_convert", "target");
+    }
+
+    if (ELEM(obj->type,
+             OB_MESH,
+             OB_CURVES_LEGACY,
+             OB_CURVES,
+             OB_SURF,
+             OB_GREASE_PENCIL,
+             OB_LATTICE,
+             OB_ARMATURE,
+             OB_MBALL,
+             OB_FONT,
+             OB_POINTCLOUD) ||
+        (obj->type == OB_EMPTY && obj->instance_collection != nullptr))
+    {
+      uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+      uiItemMenuEnumO(layout, C, "OBJECT_OT_origin_set", "type", IFACE_("Set Origin"), ICON_NONE);
+      uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_DEFAULT);
+
+      layout->separator();
+    }
+  }
+
+  /* Comun a todos. */
+  layout->op("VIEW3D_OT_copybuffer", IFACE_("Copy Objects"), ICON_COPYDOWN);
+  layout->op("VIEW3D_OT_pastebuffer", IFACE_("Paste Objects"), ICON_PASTEDOWN);
+
+  layout->separator();
+
+  layout->op("OBJECT_OT_duplicate_move", std::nullopt, ICON_DUPLICATE);
+  layout->op("OBJECT_OT_duplicate_move_linked", std::nullopt, ICON_NONE);
+
+  layout->separator();
+
+  PointerRNA props = layout->op("WM_OT_call_panel", IFACE_("Rename Active Object..."), ICON_NONE);
+  if (props.data) {
+    RNA_string_set(&props, "name", "TOPBAR_PT_name");
+    RNA_boolean_set(&props, "keep_open", false);
+  }
+
+  layout->separator();
+
+  layout->menu("VIEW3D_MT_mirror", std::nullopt, ICON_NONE);
+  layout->menu("VIEW3D_MT_snap", std::nullopt, ICON_NONE);
+  layout->menu("VIEW3D_MT_object_parent", std::nullopt, ICON_NONE);
+  uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+  if (view != nullptr && view->localvd != nullptr) {
+    layout->op("VIEW3D_OT_localview_remove_from", std::nullopt, ICON_NONE);
+  }
+  else {
+    layout->op("OBJECT_OT_move_to_collection", std::nullopt, ICON_NONE);
+  }
+
+  layout->separator();
+
+  layout->op("ANIM_OT_keyframe_insert", IFACE_("Insert Keyframe"), ICON_NONE);
+  props = layout->op(
+      "ANIM_OT_keyframe_insert_menu", IFACE_("Insert Keyframe with Keying Set"), ICON_NONE);
+  if (props.data) {
+    RNA_boolean_set(&props, "always_prompt", true);
+  }
+
+  layout->separator();
+
+  uiLayoutSetOperatorContext(layout, WM_OP_EXEC_REGION_WIN);
+  props = layout->op("OBJECT_OT_delete", IFACE_("Delete"), ICON_NONE);
+  if (props.data) {
+    RNA_boolean_set(&props, "use_global", false);
+  }
+
+  geometry::ui_template_node_operator_asset_menu_items(
+      *layout, *const_cast<bContext *>(C), "Object");
+}
+
+/** \} */
+
 static const flipendo::MenuDecl view3d_object_menus[] = {
+    {
+        /*idname*/ "VIEW3D_MT_object_context_menu",
+        /*label*/ N_("Object"),
+        /*description*/ nullptr,
+        /*translation_context*/ nullptr,
+        /*draw*/ object_context_menu_draw,
+    },
     {
         /*idname*/ "VIEW3D_MT_object_apply",
         /*label*/ N_("Apply"),
