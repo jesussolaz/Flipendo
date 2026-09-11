@@ -49,7 +49,11 @@ namespace flipendo::toolsystem {
  * vive en otra unidad de traduccion y tiene la suya; el dato duplicado que importa no
  * repetirlo es el de dentro del fichero. */
 static const PropRow xform_extrude_settings[] = {
-    {PropSource::GizmoGroup, "VIEW3D_GGT_xform_extrude", "axis_type", nullptr, PROP_ROW_EXPAND},
+    {PropSource::GizmoGroup,
+     "VIEW3D_GGT_xform_extrude",
+     "axis_type",
+     nullptr,
+     PROP_ROW_EXPAND | PROP_ROW_OWN_ROW | PROP_ROW_ALIGN},
 };
 
 /** \} */

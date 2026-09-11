@@ -504,6 +504,7 @@ static void prop_rows_draw(const bContext *C,
                            const blender::Span<ts::PropRow> rows,
                            const bool extra)
 {
+  uiLayout *fila_abierta = nullptr;
   for (const ts::PropRow &row : rows) {
     if (bool(row.flags & ts::PROP_ROW_EXTRA_ONLY) != extra) {
       continue;
@@ -512,7 +513,28 @@ static void prop_rows_draw(const bContext *C,
     if (ptr.data == nullptr) {
       continue;
     }
-    PropertyRNA *prop = RNA_struct_find_property(&ptr, row.prop);
+    PropertyRNA *prop = nullptr;
+    if (strchr(row.prop, '.') != nullptr) {
+      /* Sub-operador de una MACRO: `props.MESH_OT_loopcut.number_cuts`.
+       *
+       * Cinco filas del catalogo son asi (`mesh.rip_move`, `mesh.polybuild_*`,
+       * `mesh.extrude_region_shrink_fatten` y las dos de `mesh.loopcut_slide`), y son
+       * justo las herramientas cuyos ajustes viven en el operador de dentro de la macro,
+       * no en la macro. `RNA_struct_find_property` no resuelve rutas: devolvia nulo, la
+       * fila se saltaba y esas cuatro herramientas salian con la cabecera VACIA. Lo caza
+       * la comparacion visual, no el volcado del catalogo: el nombre de la fila si estaba
+       * en la tabla, solo que no se pintaba. */
+      PointerRNA sub;
+      if (RNA_path_resolve(&ptr, row.prop, &sub, &prop) && prop != nullptr) {
+        ptr = sub;
+      }
+      else {
+        prop = nullptr;
+      }
+    }
+    else {
+      prop = RNA_struct_find_property(&ptr, row.prop);
+    }
     if (prop == nullptr) {
       fprintf(stderr,
               "Herramientas: '%s' no tiene la propiedad '%s'.\n",
@@ -522,10 +544,18 @@ static void prop_rows_draw(const bContext *C,
     }
     uiLayout *target = layout;
     if (row.flags & ts::PROP_ROW_OWN_ROW) {
-      /* `layout.row()` desde Python: variante con encabezado vacio. */
-      target = &layout->row(false, "");
+      /* `layout.row(align=...)` desde Python: encabezado vacio, que es lo que RNA le pasa
+       * cuando el Python no da ninguno (`rna_uiLayoutRowWithHeading`). */
+      target = &layout->row((row.flags & ts::PROP_ROW_ALIGN) != 0, "");
       if (row.flags & ts::PROP_ROW_NO_SPLIT) {
         uiLayoutSetPropSep(target, false);
+      }
+      fila_abierta = target;
+    }
+    else if (row.flags & ts::PROP_ROW_SAME_ROW) {
+      /* Va en la fila que abrio la entrada anterior, no en una nueva. */
+      if (fila_abierta != nullptr) {
+        target = fila_abierta;
       }
     }
     eUI_Item_Flag flag = UI_ITEM_NONE;
@@ -587,18 +617,33 @@ static bool workspace_tool_type_is(const bContext *C, const char *identifier)
   return current != nullptr && STREQ(current, identifier);
 }
 
-/** `context.space_data.show_region_toolbar`. Sin esa propiedad, como si se viera: asi
- * no se pinta el icono de sustitucion. */
+/**
+ * `context.space_data.show_region_toolbar`.
+ *
+ * Se lee la region directamente, como hace el captador de RNA
+ * (`rna_Space_show_region_toolbar_get`): buscar la region `RGN_TYPE_TOOLS` del area y
+ * mirar `RGN_FLAG_HIDDEN`; sin esa region, se considera visible.
+ *
+ * La primera version preguntaba por RNA sobre `RNA_Space`, y era una rama muerta:
+ * `show_region_toolbar` NO existe en el tipo base, sino en cada tipo derivado
+ * (`rna_def_space_generic_show_region_toggles`, que el `Space` base solo llama para la
+ * cabecera; comprobado en ejecucion: `bpy.types.Space` no la tiene y `SpaceView3D` si).
+ * La propiedad no se encontraba nunca, la funcion devolvia siempre "visible" y el icono
+ * de sustitucion —el que aparece cuando la barra esta oculta— no se pintaba jamas.
+ *
+ * Esta NO la caza la comparacion visual, y conviene decirlo: el arnes deja la barra a la
+ * vista en las 30 combinaciones, asi que alli las dos ramas coinciden. Aparecio al ir a
+ * buscar el origen de las otras diferencias. Una rama que nunca se ejecuta no la
+ * encuentra ninguna captura; hay que leerla.
+ */
 static bool space_shows_toolbar(const bContext *C)
 {
-  SpaceLink *sl = CTX_wm_space_data(C);
-  if (sl == nullptr) {
+  const ScrArea *area = CTX_wm_area(C);
+  if (area == nullptr) {
     return true;
   }
-  bScreen *screen = CTX_wm_screen(C);
-  PointerRNA ptr = RNA_pointer_create_discrete(screen ? &screen->id : nullptr, &RNA_Space, sl);
-  PropertyRNA *prop = RNA_struct_find_property(&ptr, "show_region_toolbar");
-  return prop == nullptr || RNA_property_boolean_get(&ptr, prop);
+  const ARegion *region = BKE_area_find_region_type(const_cast<ScrArea *>(area), RGN_TYPE_TOOLS);
+  return region == nullptr || (region->flag & RGN_FLAG_HIDDEN) == 0;
 }
 
 /** \} */
@@ -619,16 +664,20 @@ bToolRef *tool_header_draw(const bContext *C,
       return nullptr;
     }
     space_type = sl->spacetype;
-    if (mode == nullptr) {
-      const ts::ToolbarDecl *tb = ts::toolbar_for_space(space_type);
-      if (tb != nullptr && tb->mode_from_context != nullptr) {
-        mode = tb->mode_from_context(C);
-      }
-    }
   }
   const ts::ToolbarDecl *toolbar = ts::toolbar_for_space(space_type);
   if (toolbar == nullptr) {
     return nullptr;
+  }
+  /* Sin modo, el del contexto. Antes esto solo pasaba cuando tampoco se daba el espacio,
+   * y era una trampa esperando: pedir la cabecera de la vista 3D desde el editor de
+   * Propiedades (el panel "Active Tool" de alli) da espacio explicito y ningun modo, y
+   * buscar entonces con `mode` nulo solo mira las herramientas COMUNES del espacio — en
+   * la vista 3D no hay ninguna, asi que la cabecera saldria vacia. El unico espacio sin
+   * modos es el de nodos, y alli `mode_from_context` es nulo, o sea que sigue dando el
+   * mismo nulo de antes. */
+  if (mode == nullptr && toolbar->mode_from_context != nullptr) {
+    mode = toolbar->mode_from_context(C);
   }
 
   bToolRef *tref = ts::tool_ref_for_mode(C, space_type, mode, false);

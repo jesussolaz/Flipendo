@@ -601,7 +601,11 @@ const ToolDecl mesh_filter = {
 static const PropRow cloth_filter_settings[] = {
     {PropSource::Operator, "sculpt.cloth_filter", "type"},
     {PropSource::Operator, "sculpt.cloth_filter", "strength"},
-    {PropSource::Operator, "sculpt.cloth_filter", "force_axis"},
+    {PropSource::Operator,
+     "sculpt.cloth_filter",
+     "force_axis",
+     nullptr,
+     PROP_ROW_OWN_ROW | PROP_ROW_ALIGN},
     {PropSource::Operator, "sculpt.cloth_filter", "orientation"},
     {PropSource::Operator, "sculpt.cloth_filter", "cloth_mass"},
     {PropSource::Operator, "sculpt.cloth_filter", "cloth_damping"},

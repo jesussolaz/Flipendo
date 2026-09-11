@@ -423,4 +423,61 @@ La primera comparación dio **819 de 819 distintas**, y no era el código:
    de modo de selección de la vista 3D no tenían su fila propia sin división, porque la
    expresión regular que las corrigió usaba `[a-z_.]` y `view3d` lleva un dígito. Corregido.
 
-La comparación completa con la línea base regenerada está en curso.
+### Y cómo se cerró: comparando el binario contra sí mismo
+
+La línea base de referencia se abandonó. El problema no era regenerarla mejor: es que dos
+ejecuciones distintas **no comparten estado** —escala de ventana, tema, orden en que se
+asientan las regiones, posición del ratón—, y ninguna de esas cosas tiene que ver con el
+dibujo que se quiere comparar.
+
+El arnés pasa a ser **diferencial**, como ya lo era `smoke_tools_gui.py` en la fase 2:
+`capture_tool_headers_gui.py` lleva dentro el cuerpo literal de
+`draw_active_tool_header` del commit 14294531f85, y para cada herramienta dibuja la misma
+región **dos veces seguidas**, en la misma ejecución y sobre el mismo estado: una con la
+plantilla nativa y otra con el Python de entonces. Misma región, misma posición, mismo
+tamaño, mismo instante: si la huella cambia, cambió el dibujo y nada más.
+
+El arnés se protege además de aprobar por accidente: marca cuando el oráculo Python ha
+dibujado de verdad, y si la interfaz deja de pasar por él —porque ya llame a la plantilla
+nativa directamente— lo dice y captura solo el lado nativo, en vez de comparar el dibujo
+nativo consigo mismo y salir verde.
+
+**819 huellas** (cabecera y panel lateral de cada herramienta en los 30 espacios y modos).
+La comparación dio **38 diferencias**, y se repartieron así:
+
+**22 eran del arnés, no del código.** La forma las delató: cada huella nativa era
+exactamente la huella *Python de la herramienta anterior*. La captura salía con la
+herramienta previa todavía pintada. Esperar a que la **geometría** de las regiones se
+asiente —lo que hacía— no dice nada del **contenido**. Ahora se exige que dos capturas
+seguidas den los mismos píxeles, que es lo único que no puede ir con retraso.
+
+**16 eran reales, y ninguna se veía en el volcado del catálogo**, porque las tres son
+fallos de *dibujo* sobre datos correctos:
+
+1. **Los ajustes que viven dentro de una macro no se pintaban.** Cinco filas del catálogo
+   apuntan a un sub-operador (`MESH_OT_loopcut.number_cuts`,
+   `MESH_OT_polybuild_face_at_cursor.create_quads`, `MESH_OT_rip.use_fill`,
+   `TRANSFORM_OT_shrink_fatten.use_even_offset`, `TRANSFORM_OT_edge_slide.correct_uv`).
+   `RNA_struct_find_property` no resuelve rutas con punto: devolvía nulo y la fila se
+   saltaba. **Loop Cut, Poly Build, Rip Region y Extrude Along Normals salían con la
+   cabecera vacía.** Ahora esas rutas se resuelven con `RNA_path_resolve`.
+
+2. **`layout.row(...)` no estaba modelado del todo.** `PROP_ROW_OWN_ROW` abría siempre una
+   fila *sin alinear*, y seis filas ni siquiera lo llevaban. Afectaba a Spin, Cloth Filter,
+   Blade y a las tres Extrude que comparten `VIEW3D_GGT_xform_extrude`: sus enumeraciones
+   expandidas salían sueltas en vez de pegadas. Se añade `PROP_ROW_ALIGN`.
+
+3. **Dos propiedades en la misma fila.** El `builtin.trim` del lápiz de grasa pinta dos
+   casillas en una fila sin división. Estaba escrito en el código como pendiente
+   («`PropRow` todavía no lo expresa»), que es la forma honrada de dejar una deuda… y la
+   comparación visual es la que la cobra. Se añade `PROP_ROW_SAME_ROW`.
+
+Y una cuarta, que la comparación **no** vio pero quedó a la vista al buscarlas:
+`space_shows_toolbar` preguntaba por `show_region_toolbar` al tipo RNA **base** `Space`,
+donde esa propiedad no existe —solo está en cada tipo derivado—. La rama nunca se
+cumplía, así que el icono que sustituye a la barra cuando está oculta no se pintaba jamás.
+Ahora se lee la región `RGN_TYPE_TOOLS` directamente, igual que hace el captador de RNA.
+
+> Lección, y es la misma de siempre en esta migración: **el volcado no ve el dibujo**. Los
+> nueve campos de la línea base decían que `builtin.loop_cut` tenía sus dos ajustes, y era
+> cierto: estaban en la tabla. Solo que no se pintaban.

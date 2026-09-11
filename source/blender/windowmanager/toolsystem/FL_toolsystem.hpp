@@ -87,6 +87,16 @@ enum PropRowFlag {
   PROP_ROW_OWN_ROW = 1 << 6,
   /** Con `PROP_ROW_OWN_ROW`: `row.use_property_split = False`. */
   PROP_ROW_NO_SPLIT = 1 << 7,
+  /** Con `PROP_ROW_OWN_ROW`: la fila es `layout.row(align=True)`.
+   *
+   * No es adorno: alineada, las opciones de una enumeracion expandida se pintan pegadas y
+   * como un solo control. Sin esto, `builtin.spin` y `builtin.cloth_filter` salian con los
+   * botones sueltos y separados. */
+  PROP_ROW_ALIGN = 1 << 8,
+  /** Va en la fila que abrio la entrada anterior con `PROP_ROW_OWN_ROW`, en vez de en una
+   * suya. El Python lo escribe como dos `row.prop(...)` seguidos sobre el mismo `row`, y
+   * sin esto se pintaban una debajo de otra (`builtin.trim` del lapiz de grasa). */
+  PROP_ROW_SAME_ROW = 1 << 9,
 };
 
 struct PropRow {
@@ -485,6 +495,44 @@ blender::Vector<blender::StringRefNull> tool_group_idnames_for_id(const bContext
                                                                   blender::StringRefNull idname,
                                                                   bool coerce = false);
 wmKeyMap *tool_keymap_for_id(const bContext *C, int space_type, blender::StringRefNull idname);
+
+/**
+ * `BrushAssetShelf.has_tool_with_brush_type` (`bl_ui/properties_paint_common.py:27`): si
+ * alguna herramienta visible en el contexto es de pincel y se limita al tipo dado.
+ *
+ * Dos detalles del Python que hay que reproducir, y no son adorno:
+ *
+ *   1. Las seis herramientas de trazo (`builtin.arc`, `curve`, `line`, `box`, `circle`,
+ *      `polyline`) se saltan por `idname`. Usan el pincel activo pero no fijan su tipo,
+ *      asi que contarlas haria desaparecer pinceles del estante.
+ *   2. El numero de tipo de pincel depende del MODO de pintura: el mismo nombre es otro
+ *      numero en escultura que en pintura de vertices. El Python lo resuelve con la
+ *      propiedad de `Brush` que declara cada estante (`sculpt_tool`, `vertex_tool`...);
+ *      aqui con la enumeracion del modo de pintura de la herramienta activa, que es la
+ *      misma tabla — el estante solo se dibuja en su propio modo.
+ */
+bool tool_with_brush_type_exists(const bContext *C, int space_type, int brush_type);
+
+/**
+ * `ToolSelectPanelHelper.keymap_ui_hierarchy` (`space_toolsystem_common.py:560`): los
+ * nombres de keymap de las herramientas de UN modo, sin repetir y en orden de catalogo.
+ * Lo usa el arbol del editor de keymaps (`bl_keymap_utils/keymap_hierarchy.py`).
+ *
+ * `mode` a `nullptr` da la lista COMUN del espacio, no "el modo del contexto": el
+ * Python recorre `tools_all()` y compara la clave con el modo pedido, y `None` es una
+ * clave mas. El arbol pregunta por las dos cosas ('VIEW_3D', 'OBJECT') y
+ * ('VIEW_3D', None), asi que confundirlas duplicaria unas ramas y vaciaria otras.
+ *
+ * Se saltan las entradas con `poll` y las generadas de una enumeracion, y no es un
+ * descuido: en el Python son objetos funcion, y `_tools_flatten` — el que usa esta
+ * consulta, a diferencia del registro de keymaps — devuelve `None` para ellos. Sus
+ * keymaps existen y funcionan; lo que no sale es su rama en el arbol del editor.
+ *
+ * Un modo que no este en el catalogo devuelve la lista vacia. Pasa de verdad: el arbol
+ * pide ('VIEW_3D', 'CURVES_SCULPT') y el catalogo lo llama 'SCULPT_CURVES'.
+ */
+blender::Vector<blender::StringRefNull> tool_keymap_names_for_mode(int space_type,
+                                                                   const char *mode);
 
 /** \} */
 

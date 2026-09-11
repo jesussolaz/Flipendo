@@ -227,7 +227,11 @@ const ToolDecl vert_slide = {
 static const PropRow spin_settings[] = {
     {PropSource::Operator, "mesh.spin", "steps"},
     {PropSource::Operator, "mesh.spin", "dupli"},
-    {PropSource::GizmoGroup, "MESH_GGT_spin", "axis", nullptr, PROP_ROW_EXPAND},
+    {PropSource::GizmoGroup,
+     "MESH_GGT_spin",
+     "axis",
+     nullptr,
+     PROP_ROW_EXPAND | PROP_ROW_OWN_ROW | PROP_ROW_ALIGN},
 };
 
 const ToolDecl spin = {
@@ -319,7 +323,11 @@ const ToolDecl bevel = {
  * una clase de herramientas sino un trozo de dibujo compartido; como es una sola fila,
  * se declara aqui en vez de darle nombre propio. */
 static const PropRow extrude_settings[] = {
-    {PropSource::GizmoGroup, "VIEW3D_GGT_xform_extrude", "axis_type", nullptr, PROP_ROW_EXPAND},
+    {PropSource::GizmoGroup,
+     "VIEW3D_GGT_xform_extrude",
+     "axis_type",
+     nullptr,
+     PROP_ROW_EXPAND | PROP_ROW_OWN_ROW | PROP_ROW_ALIGN},
 };
 
 /* El operador NO es el que extruye por defecto sino el mismo que la tecla `E`, para que
