@@ -57,6 +57,13 @@ bool dump_registry(const bContext *C, const char *filepath);
 bool dump_layout(bContext *C, const char *filepath);
 
 /**
+ * Dibuja con el C++ nativo el panel de presets de la familia `node_color` y lo
+ * serializa igual que `dump_layout`, para poder compararlo con lo que dibuja el
+ * Python sobre la MISMA carpeta llena. Ver `fl_ui_dump.cc`.
+ */
+bool dump_preset_panel(bContext *C, const char *filepath);
+
+/**
  * Compara contra una linea base — de registro o de dibujo, lo decide la marca de
  * la primera linea — e informa por stdout. Devuelve `true` si no hay diferencias.
  */

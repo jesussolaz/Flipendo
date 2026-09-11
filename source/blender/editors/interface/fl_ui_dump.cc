@@ -61,6 +61,7 @@
 #include "interface_intern.hh"
 
 #include "FL_ui_dump.hpp"
+#include "preset/FL_preset_ui.hpp"
 
 namespace flipendo::ui_dump {
 
@@ -1525,6 +1526,77 @@ static bool baseline_leer(const char *filepath, BaseLinea *out)
   }
   return true;
 }
+
+
+/* -------------------------------------------------------------------- */
+/** \name Verificacion del panel de presets nativo
+ *
+ * `--fl-dump-preset-panel <fichero>` dibuja con `flipendo::preset::ui::draw_panel()`
+ * la familia `node_color` —la misma que `NODE_PT_node_color_presets` del Python— y
+ * serializa el resultado con el MISMO serializador que usa `--fl-dump-ui-layout`.
+ * Asi los dos arboles se pueden comparar texto contra texto.
+ *
+ * Existe porque la trampa de los presets es fina: en una instalacion de fabrica la
+ * carpeta no existe y el Python solo pinta `* Missing Paths *`. Reproducir eso no
+ * demuestra nada. Con esta opcion se llena la carpeta de verdad, se vuelca lo que
+ * dibuja el Python y lo que dibuja el C++, y se comparan con ficheros dentro.
+ * \{ */
+
+bool dump_preset_panel(bContext *C, const char *filepath)
+{
+  wmWindowManager *wm = CTX_wm_manager(C);
+  if (wm == nullptr || BLI_listbase_is_empty(&wm->windows)) {
+    fprintf(stderr, "--fl-dump-preset-panel necesita modo grafico.\n");
+    return false;
+  }
+
+  wmWindow *win = nullptr;
+  ScrArea *area = nullptr;
+  if (!area_de_reserva(C, &win, &area)) {
+    fprintf(stderr, "No hay area donde dibujar.\n");
+    return false;
+  }
+  ARegion *region = region_de_tipo(area, RGN_TYPE_WINDOW);
+  if (region == nullptr) {
+    fprintf(stderr, "No hay region donde dibujar.\n");
+    return false;
+  }
+  contexto_poner(C, win, area, region);
+
+  /* La misma familia y los mismos operadores que declara `NODE_PT_node_color_presets`
+   * en `space_node.py`. */
+  flipendo::preset::ui::MenuSpec spec;
+  spec.subdir = "node_color";
+  spec.op = "SCRIPT_OT_execute_preset";
+  spec.menu_idname = "NODE_PT_node_color_presets";
+  spec.add_op = "NODE_OT_node_color_preset_add";
+
+  const uiStyle *style = UI_style_get_dpi();
+  uiBlock *block = UI_block_begin(
+      C, region, "FL_preset_panel", blender::ui::EmbossType::Emboss);
+  uiLayout *layout = UI_block_layout(
+      block, UI_LAYOUT_VERTICAL, UI_LAYOUT_PANEL, 0, 0, UI_UNIT_X * 20, 0, 0, style);
+
+  flipendo::preset::ui::draw_panel(C, layout, spec);
+
+  blender::Vector<std::string> lineas;
+  serializar_raiz(layout, C, "DRAW", lineas);
+  bloque_ui_liberar(C, region, block);
+
+  FILE *fp = BLI_fopen(filepath, "w");
+  if (fp == nullptr) {
+    fprintf(stderr, "No se pudo abrir '%s' para escribir.\n", filepath);
+    return false;
+  }
+  for (const std::string &linea : lineas) {
+    fprintf(fp, "%s\n", linea.c_str());
+  }
+  fclose(fp);
+  printf("PRESET_PANEL_DUMP_OK lineas=%d\n", int(lineas.size()));
+  return true;
+}
+
+/** \} */
 
 bool check(bContext *C, const char *baseline_filepath)
 {

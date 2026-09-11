@@ -473,3 +473,59 @@ módulo de presets, no el fichero de cada editor.
 enumere una carpeta de presets y dibuje el menú, en `source/blender/windowmanager/preset/`.
 Con ella, el editor de nodos queda cerrable de una sentada: los otros 29 tipos no tienen
 más obstáculo que escribirlos.
+
+## D4.1: el panel de presets, en C++ — desbloqueadas 17 clases
+
+`source/blender/windowmanager/preset/FL_preset_ui.{hpp,cc}`: el equivalente nativo de
+`Menu.path_menu()` + `Menu.draw_preset()` (`bpy_types.py`) y de `PresetPanel`
+(`bl_ui/utils.py`). Se apoya en el sistema de presets que ya estaba en C++
+(`FL_preset.hpp`, `PRESETS-A-DATOS.md`): eso migró los **datos**, esto migra el
+**dibujo**, que era lo que faltaba.
+
+Un panel de presets queda ahora en una declaración:
+
+```cpp
+static const flipendo::preset::ui::MenuSpec node_color = {
+    /*subdir*/ "node_color",
+    /*op*/ "SCRIPT_OT_execute_preset",
+    /*menu_idname*/ "NODE_PT_node_color_presets",
+    /*add_op*/ "NODE_OT_node_color_preset_add",
+};
+/* ...y en el draw del PanelDecl: */
+flipendo::preset::ui::draw_panel(C, panel->layout, node_color);
+```
+
+### Cómo se verificó, y por qué no vale hacerlo de la forma fácil
+
+La trampa estaba señalada de antemano: **en instalación de fábrica la carpeta de presets
+no existe**, así que lo que dibuja el Python es un `* Missing Paths *` y poco más.
+Escribir una función que pinte esa etiqueta habría pasado el verificador con la
+capacidad entera perdida.
+
+Así que se verificó con una carpeta **llena de verdad**, con seis ficheros elegidos para
+que cada uno probara una regla distinta:
+
+| Fichero | Qué prueba |
+|---|---|
+| `Azul_frio.fpreset` | el guion bajo pasa a espacio y **no** se pone en mayúsculas (`title_case=False`) |
+| `rojo_intenso.fpreset` | el orden es insensible a mayúsculas |
+| `Verde 3.fpreset` y `Verde 10.fpreset` | el **orden natural**: 3 antes que 10, no alfabético |
+| `amarillo_viejo.py` | los presets `.py` que el usuario guardó antes de la migración se siguen listando |
+| `.oculto.fpreset` | los ocultos no se listan |
+| `ignorame.txt` | las extensiones que no son de preset no se listan |
+
+Resultado, comparando el árbol de `uiLayout` del Python contra el del C++ con el mismo
+serializador (`--fl-dump-ui-layout` frente a `--fl-dump-preset-panel`):
+
+- **Carpeta llena: 23 de 23 líneas idénticas.** Mismo orden, mismos nombres, mismas
+  rutas, los dos operadores por fila con sus argumentos (`remove_name=True`), el
+  separador, el campo `preset_name` con su cambio de relieve y el botón de añadir.
+- **Carpeta vacía: 9 de 9 líneas idénticas**, incluido el `* Missing Paths *`.
+
+`--fl-dump-preset-panel` se queda en el árbol: es el arnés que permite repetir esta
+comprobación cuando alguien toque el listado.
+
+### Lo que esto desbloquea
+
+Las 17 clases de 12 ficheros que heredaban de `PresetPanel` ya no tienen impedimento.
+Y con ellas, el editor de nodos: era su único bloqueo.

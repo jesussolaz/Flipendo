@@ -27,6 +27,7 @@ set(SRC
   preset/fl_preset_ops.cc
   preset/fl_preset_apply.cc
   preset/fl_preset_check.cc
+  preset/fl_preset_ui.cc
   intern/wm_tool_ops.cc
   intern/wm_batch_rename.cc
   intern/wm_context_ops.cc
@@ -135,6 +136,7 @@ set(SRC
   FL_operator_dump.hpp
   manual/FL_manual_reference.hpp
   preset/FL_preset.hpp
+  preset/FL_preset_ui.hpp
   toolsystem/FL_toolsystem.hpp
   toolsystem/FL_toolsystem_dump.hpp
   toolsystem/fl_tool_defs.hh

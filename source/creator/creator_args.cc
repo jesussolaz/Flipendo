@@ -2787,8 +2787,11 @@ static int arg_handle_fl_check_presets(int argc, const char **argv, void *data)
 
 static const char arg_handle_fl_convert_manual_reference_doc[] =
     "<rna_manual_reference.py> <salida.txt>\n"
-    "\tConvierte la tabla del manual en linea de Python a datos.\n"
-    "\tGenero release/datafiles/manual/rna_manual_reference.txt. Vale en --background.";
+    "\tConvierte la tabla del manual en linea de Python a datos. Genero\n"
+    "\trelease/datafiles/manual/rna_manual_reference.txt, que es ya la unica copia\n"
+    "\tde la tabla en el arbol; el .py de entrada solo existe si se reimporta de\n"
+    "\tupstream con tools/utils_doc/rna_manual_reference_updater.py.\n"
+    "\tVale en --background.";
 static int arg_handle_fl_convert_manual_reference(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
@@ -2894,6 +2897,23 @@ static int arg_handle_fl_dump_ui_layout(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::ui_dump::dump_layout(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_dump_preset_panel_doc[] =
+    "<filepath>\n"
+    "\tDibuja con el C++ nativo el panel de presets de la familia node_color y lo\n"
+    "\tserializa igual que --fl-dump-ui-layout, para compararlo con el del Python.\n"
+    "\tNecesita modo grafico.";
+static int arg_handle_fl_dump_preset_panel(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::ui_dump::dump_preset_panel(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
@@ -3051,6 +3071,39 @@ static int arg_handle_fl_check_object_select(int argc, const char **argv, void *
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::object_select_selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_mirror_uv_doc[] =
+    "<filepath>\n"
+    "\tConstruye rejillas y cubos con UV deterministas, invoca `mesh.faces_mirror_uv`\n"
+    "\tpor su idname y vuelca las UV resultantes. Se compara con\n"
+    "\ttests/flipendo/mirroruv/baseline-python.txt (Carril C).";
+static int arg_handle_fl_selftest_mirror_uv(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::mesh_ops_selftest::dump_mirror_uv(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_mirror_uv_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-mirror-uv, pero compara con la linea base indicada. Sale con\n"
+    "\tcodigo 0 solo si no hay ni una diferencia (Carril C).";
+static int arg_handle_fl_check_mirror_uv(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::mesh_ops_selftest::check_mirror_uv(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
@@ -3704,9 +3757,13 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);
   BLI_args_add(
+      ba, nullptr, "--fl-dump-preset-panel", CB(arg_handle_fl_dump_preset_panel), C);
+  BLI_args_add(
       ba, nullptr, "--fl-selftest-object-ops", CB(arg_handle_fl_selftest_object_ops), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-mesh-ops", CB(arg_handle_fl_selftest_mesh_ops), C);
   BLI_args_add(ba, nullptr, "--fl-check-mesh-ops", CB(arg_handle_fl_check_mesh_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-selftest-mirror-uv", CB(arg_handle_fl_selftest_mirror_uv), C);
+  BLI_args_add(ba, nullptr, "--fl-check-mirror-uv", CB(arg_handle_fl_check_mirror_uv), C);
   BLI_args_add(
       ba, nullptr, "--fl-selftest-rigidbody-ops", CB(arg_handle_fl_selftest_rigidbody_ops), C);
   BLI_args_add(
