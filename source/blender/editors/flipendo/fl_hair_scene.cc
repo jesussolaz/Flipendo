@@ -25,11 +25,15 @@
 #include <cstdio>
 
 #include "BLI_listbase.h"
+#include "BLI_string.h"
 #include "BLI_math_vector_types.hh"
 #include "BLI_utildefines.h"
 
 #include "DNA_ID.h"
 #include "DNA_curves_types.h"
+#include "DNA_customdata_types.h"
+#include "DNA_mesh_types.h"
+#include "DNA_modifier_types.h"
 #include "DNA_layer_types.h"
 #include "DNA_object_types.h"
 #include "DNA_scene_types.h"
@@ -44,8 +48,13 @@
 #include "BKE_main.hh"
 #include "BKE_scene.hh"
 
+#include "BKE_customdata.hh"
+#include "BKE_mesh.hh"
+
 #include "DEG_depsgraph.hh"
 #include "DEG_depsgraph_query.hh"
+
+#include "ED_curves.hh"
 
 #include "RNA_access.hh"
 
@@ -146,7 +155,7 @@ static int views_to_camera(Main *bmain)
   return touched;
 }
 
-bool make_scene(bContext *C, const char *filepath)
+bool make_scene(bContext *C, const char *filepath, const bool pegada)
 {
   Main *bmain = CTX_data_main(C);
   Scene *scene = CTX_data_scene(C);
@@ -289,6 +298,46 @@ bool make_scene(bContext *C, const char *filepath)
     }
   }
 
+  /* VARIANTE «PEGADA»: el pelo cosido a la superficie de la cabeza, que es como se
+   * hace el pelo sobre un personaje de verdad.
+   *
+   * Es exactamente lo que monta `OBJECT_OT_curves_empty_hair_add`: objeto de
+   * superficie, mapa UV de enganche, el nodo *Deform Curves on Surface*, y la marca
+   * que obliga a la malla a llevar el atributo `rest_position` — sin el, el nodo no
+   * tiene contra que deformar. Se llama a la MISMA funcion del arbol
+   * (`ed::curves::ensure_surface_deformation_node_exists`) en vez de armar el arbol
+   * de nodos a mano, por lo de siempre: un dato construido por otro camino sale
+   * distinto del que sale por el normal.
+   *
+   * Se monta aparte porque el pelo suelto y el pelo pegado NO son el mismo caso para
+   * el motor: el pegado depende de la malla de la cabeza, y de esa malla si toma el
+   * control el motor (`BL_ConvertMesh`). Es el sitio donde hay que mirar si alguien
+   * ve pelo desaparecer de verdad. */
+  if (pegada) {
+    Object *hair = reinterpret_cast<Object *>(BKE_libblock_find_name(bmain, ID_OB, "Melena"));
+    Object *head = reinterpret_cast<Object *>(BKE_libblock_find_name(bmain, ID_OB, "Cabeza"));
+    if (hair == nullptr || head == nullptr || head->data == nullptr) {
+      fprintf(stderr, "fl-make-hair-scene: falta la melena o la cabeza para pegarlas.\n");
+      return false;
+    }
+    Curves *curves_id = static_cast<Curves *>(hair->data);
+    curves_id->surface = head;
+    Mesh *surface_mesh = static_cast<Mesh *>(head->data);
+    const char *uv_name = CustomData_get_active_layer_name(&surface_mesh->corner_data,
+                                                           CD_PROP_FLOAT2);
+    if (uv_name == nullptr) {
+      fprintf(stderr, "fl-make-hair-scene: la cabeza no tiene mapa UV; el pelo no se puede pegar.\n");
+      return false;
+    }
+    curves_id->surface_uv_map = BLI_strdup(uv_name);
+    blender::ed::curves::ensure_surface_deformation_node_exists(*C, *hair);
+    head->modifier_flag |= OB_MODIFIER_FLAG_ADD_REST_POSITION;
+    if (BLI_listbase_is_empty(&hair->modifiers)) {
+      fprintf(stderr, "fl-make-hair-scene: no quedo ningun modificador de deformacion en la melena.\n");
+      return false;
+    }
+  }
+
   const int views = views_to_camera(bmain);
   if (views == 0) {
     fprintf(stderr, "fl-make-hair-scene: ninguna vista 3D pasada a modo camara.\n");
@@ -308,7 +357,10 @@ bool make_scene(bContext *C, const char *filepath)
     return false;
   }
 
-  printf("FL_HAIR_SCENE_OK %s (%d vistas en modo camara)\n", filepath, views);
+  printf("FL_HAIR_SCENE_OK %s (%d vistas en modo camara, pelo %s)\n",
+         filepath,
+         views,
+         pegada ? "PEGADO a la superficie" : "SUELTO");
   return true;
 }
 

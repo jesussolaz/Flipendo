@@ -2975,19 +2975,26 @@ static int arg_handle_fl_check_keyconfig_io(int argc, const char **argv, void *d
 }
 
 static const char arg_handle_fl_make_hair_scene_doc[] =
-    "<filepath>\n"
+    "<filepath> [PEGADA]\n"
     "\tConstruye la ESCENA DE PELO del arnes y la guarda en <filepath>: una cabeza de\n"
-    "\tmalla y una melena de tipo Curves (500 mechones de 8 puntos, deterministas), con\n"
-    "\tla vista 3D en modo camara para que el Player dibuje por la camara. Es la escena\n"
-    "\tcon la que se comprueba que el pelo llega al juego. Vale en --background.";
+    "\tmalla con fisica que cae, y una melena de tipo Curves (500 mechones de 8 puntos,\n"
+    "\tdeterministas) emparentada a ella, con la vista 3D en modo camara para que el\n"
+    "\tPlayer dibuje por la camara. Es la escena con la que se comprueba que el pelo\n"
+    "\tllega al juego.\n"
+    "\tCon PEGADA, el pelo va ademas cosido a la superficie de la cabeza (mapa UV de\n"
+    "\tenganche + nodo Deform Curves on Surface + rest_position), que es como se hace\n"
+    "\tel pelo sobre un personaje y NO es el mismo caso para el motor: ahi el pelo\n"
+    "\tdepende de la malla de la cabeza, de la que el motor si toma el control.\n"
+    "\tVale en --background.";
 static int arg_handle_fl_make_hair_scene(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
-    const bool ok = flipendo::hair_scene::make_scene(C, argv[1]);
+    const bool pegada = (argc > 2) && STREQ(argv[2], "PEGADA");
+    const bool ok = flipendo::hair_scene::make_scene(C, argv[1], pegada);
     WM_exit(C,
             flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS : EXIT_FAILURE);
-    return 1;
+    return pegada ? 2 : 1;
   }
   return flipendo::harness::arg_missing(C, argv[0], "la ruta del .blend de salida");
 }

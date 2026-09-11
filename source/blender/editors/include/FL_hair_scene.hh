@@ -56,7 +56,7 @@ namespace flipendo::hair_scene {
  * exista o no termine: un andamio que falla en silencio deja creyendo que se ha
  * verificado algo.
  */
-bool make_scene(bContext *C, const char *filepath);
+bool make_scene(bContext *C, const char *filepath, bool pegada);
 
 /**
  * Vuelca el estado observable del pelo de la escena cargada: cuantos objetos

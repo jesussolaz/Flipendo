@@ -182,13 +182,27 @@ construye con la semilla por defecto, así que los 500 mechones salen iguales si
   órdenes; haría falta una bandera `--fl-game-start` que llame al operador con el
   contexto apañado. La verificación de este carril está hecha con el **Blenderplayer de
   las dos configuraciones**, que es el que se envía.
-- **No se ha investigado el caso del pelo PEGADO a una superficie**
-  (`OBJECT_OT_curves_empty_hair_add` + nodo *Deform Curves on Surface*), que es como se
-  hace el pelo de verdad sobre un personaje. Ahí el pelo depende de la malla de la
-  cabeza y del atributo `rest_position`, y el motor sí toma el control de esa malla
-  (`BL_ConvertMesh`). **Es el primer sitio donde mirar** si alguien ve pelo que
-  desaparece de verdad: lo que este carril ha medido es que un `Curves` suelto o
-  emparentado **no** desaparece.
+- **El pelo PEGADO a una superficie: probado a medias, y hay que decir hasta dónde.**
+  `--fl-make-hair-scene <fichero> PEGADA` monta la segunda escena
+  (`tests/flipendo/pelo/escena-pelo-pegada.blend`) con lo mismo que pone
+  `OBJECT_OT_curves_empty_hair_add`: objeto de superficie, mapa UV de enganche, el nodo
+  *Deform Curves on Surface* (por la propia función del árbol,
+  `ed::curves::ensure_surface_deformation_node_exists`) y la marca
+  `OB_MODIFIER_FLAG_ADD_REST_POSITION` en la cabeza.
+
+  Medido: **el pelo se sigue viendo** y el motor lo sigue teniendo (5 objetos, la
+  `Melena` dentro). Contra la escena de pelo suelto, la captura difiere en **8,55 %**
+  de los píxeles — otra vez **por debajo del 14,43 % del suelo de ruido**, o sea la
+  misma imagen.
+
+  **Lo que ESO no prueba**, y es importante: los mechones de esta escena salen de
+  `primitive_random_sphere`, no de esculpirlos sobre la cabeza, así que **no llevan el
+  atributo `surface_uv_coordinate`** con el que el nodo ancla cada raíz a un punto de
+  la malla. Sin ancla, el nodo de deformación es la identidad. Queda probado que la
+  cadena de modificadores **no rompe** el pelo en el juego; **no** queda probado que un
+  pelo de verdad anclado a la superficie siga a la malla cuando el motor toma el
+  control de ella (`BL_ConvertMesh`). Para eso hace falta una escena con pelo esculpido
+  —o generar el atributo de anclaje— y es lo siguiente que hay que medir aquí.
 
 ---
 
