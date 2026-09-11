@@ -55,6 +55,7 @@
 #include "ANIM_action.hh"
 #include "ANIM_animdata.hh"
 
+#include "FL_anim_menus.hh"
 #include "anim_intern.hh"
 
 /* -------------------------------------------------------------------- */
@@ -1357,6 +1358,9 @@ static void ANIM_OT_merge_animation(wmOperatorType *ot)
 
 void ED_operatortypes_anim()
 {
+  /* Menus nativos que el keymap abre por nombre (fl_anim_menus.cc). */
+  blender::ed::animation::menus_register();
+
   /* Animation Editors only -------------------------- */
   WM_operatortype_append(ANIM_OT_change_frame);
 

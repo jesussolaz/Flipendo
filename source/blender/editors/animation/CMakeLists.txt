@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../asset
   ../include
   ../space_graph
@@ -17,6 +18,7 @@ set(INC_SYS
 )
 
 set(SRC
+  fl_anim_menus.cc
   anim_asset_ops.cc
   anim_channels_defines.cc
   anim_channels_edit.cc
@@ -37,6 +39,7 @@ set(SRC
   keyingsets.cc
   time_scrub_ui.cc
 
+  FL_anim_menus.hh
   anim_intern.hh
   keyframes_general_intern.hh
 )

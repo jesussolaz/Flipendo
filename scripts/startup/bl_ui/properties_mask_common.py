@@ -368,19 +368,6 @@ class MASK_MT_mask(Menu):
         layout.operator("mask.delete")
 
 
-class MASK_MT_add(Menu):
-    bl_idname = "MASK_MT_add"
-    bl_label = "Add"
-    bl_translation_context = i18n_contexts.operator_default
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-        layout.operator("mask.primitive_circle_add", text="Circle", icon='MESH_CIRCLE')
-        layout.operator("mask.primitive_square_add", text="Square", icon='MESH_PLANE')
-
-
 class MASK_MT_visibility(Menu):
     bl_label = "Show/Hide"
 
@@ -452,7 +439,6 @@ class MASK_MT_select(Menu):
 classes = (
     MASK_UL_layers,
     MASK_MT_mask,
-    MASK_MT_add,
     MASK_MT_visibility,
     MASK_MT_transform,
     MASK_MT_animation,

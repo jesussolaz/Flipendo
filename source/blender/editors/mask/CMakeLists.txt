@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../../makesrna
 )
@@ -11,6 +12,7 @@ set(INC_SYS
 )
 
 set(SRC
+  fl_mask_menus.cc
   mask_add.cc
   mask_draw.cc
   mask_edit.cc
@@ -21,6 +23,7 @@ set(SRC
   mask_select.cc
   mask_shapekey.cc
 
+  FL_mask_menus.hh
   mask_intern.hh
 )
 

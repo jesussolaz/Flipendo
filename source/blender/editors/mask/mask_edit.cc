@@ -19,6 +19,7 @@
 
 #include "RNA_access.hh"
 
+#include "FL_mask_menus.hh"
 #include "mask_intern.hh" /* own include */
 
 /* -------------------------------------------------------------------- */
@@ -97,6 +98,9 @@ bool ED_maskedit_mask_visible_splines_poll(bContext *C)
 
 void ED_operatortypes_mask()
 {
+  /* Menus nativos que el keymap abre por nombre (fl_mask_menus.cc). */
+  blender::ed::mask::menus_register();
+
   WM_operatortype_append(MASK_OT_new);
 
   /* mask layers */
