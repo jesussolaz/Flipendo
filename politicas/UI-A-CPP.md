@@ -872,3 +872,68 @@ el binario y sin `addons_core`— y con ella el verificador dio un falso «4 dis
 6 faltan» de `bl_pkg`. Con `ditto` y comprobando que origen y copia tienen los
 mismos 4.193 ficheros, limpio. **Antes de creerse una diferencia, cuenta los
 ficheros de la copia.**
+
+## T2: el editor de imagen y UV, por la mitad que sí se puede — sus 11 menús
+
+La medición de D3 dejaba el editor de imagen «no cabe, y no es cuestión de tamaño»
+por dos obstáculos. Uno (`UIList`/`AssetShelf`) lo quitó D4.2; el otro
+—`properties_paint_common`, 1.965 líneas compartidas con otros dos carriles— **sigue
+en pie**. Pero ese obstáculo no cubre el editor entero.
+
+**Los menús no viven en una región.** Un `MenuType` va al registro global
+(`WM_menutype_add`), no a la lista de paneles de una región, así que migrar menús
+**no puede** mover ningún panel de sitio: no hay bloque `REGION` que se entere, y por
+tanto no hace falta ni la regla del prefijo ni tocar un solo panel. Es la unidad de
+migración más barata que tiene `bl_ui`, y conviene saberlo antes de aparcar un editor
+entero por culpa de sus paneles.
+
+Once de los doce menús de `space_image.py` están en
+`source/blender/editors/space_image/fl_image_ui.cc`: `IMAGE_MT_view`, `_view_zoom`,
+`_select`, `_select_linked`, `_image`, `_image_transform`, `_image_invert`, `_uvs`,
+`_uvs_showhide`, `_uvs_transform` y `_uvs_mirror`. Con los once que ya tenía
+`fl_image_menus.cc` (los del keymap), el fichero pierde **366 líneas**.
+
+| Comprobación | Cifra |
+|---|---|
+| Registro | 2.113 bloques, 2.110 idénticos, **3 distintos — los mismos 3 que ya había**, 0 faltan, 0 sobran |
+| Diseño | **2.004 bloques, 2.004 idénticos, 0 distintos**, 0 faltan, 0 sobran |
+| Reproducibilidad | Los dos volcados, byte a byte |
+| ¿Detecta? | Sí: cambiado a mano `'X Axis'` de `IMAGE_MT_uvs_mirror` en la línea base de diseño, sale el bloque con su línea y código 1 |
+
+### El doceavo menú, y la clase de dependencia que lo ata
+
+`IMAGE_MT_editor_menus` **no se migra**, y el motivo es de otro tipo que los
+habituales: `IMAGE_HT_header` —que sigue siendo Python, arrastrada por los paneles de
+pintura— lo invoca **como clase**,
+`IMAGE_MT_editor_menus.draw_collapsible(context, layout)`, no por nombre. Retirar la
+clase dejaría la cabecera rota en tiempo de ejecución, y el volcado no lo avisaría
+hasta dibujar la cabecera.
+
+Conviene generalizarlo: **antes de retirar una clase de Python, hay que buscar quién
+la nombra como clase, no solo quién la nombra como cadena.** Un `layout.menu("X")`
+sobrevive a la migración; un `X.draw_collapsible(...)` o un `X.draw_panel_header(...)`
+no.
+
+### Trampas nuevas
+
+- **`translate=False` es parte del contrato.** `IMAGE_MT_view_zoom` compone su texto
+  (`"12.5% (1:8)"`) y lo pasa sin traducir. En C++ eso es **no** envolverlo en
+  `IFACE_()`. El formato `{:g}% ({:d}:{:d})` de Python lo escribe `fmt` igual, así que
+  `bf_editor_space_image` gana `bf::extern::fmtlib`.
+- **`constraint_axis[i] = True` no tiene atajo**: no existe `RNA_boolean_set_index`;
+  hay que buscar la `PropertyRNA` y usar `RNA_property_boolean_set_index`.
+- **`context.area.ui_type` no se compara como cadena.** Para el editor de imagen,
+  `'IMAGE_EDITOR'` es `sima->mode != SI_MODE_UV` (ver `image_space_subtype_get`).
+- **`SpaceUVEditor` usa el propio `SpaceImage` como dato**, igual que
+  `SpaceNodeOverlay` con `SpaceNode`: el `RNA_def_struct_sdna` apunta al padre, no a
+  un sub-struct.
+- Las decisiones de plataforma del Python (`sys.platform`, `_ghost_backend()` para el
+  portapapeles de imagen) se escriben como condición de plataforma en C++, no se
+  borran: en macOS siempre es cierto, pero la rama queda a la vista.
+
+### Qué le queda al editor de imagen y UV
+
+46 paneles, 2 listas, 1 estantería, 2 cabeceras y `IMAGE_MT_editor_menus`. El bloqueo
+de fondo sigue siendo el mismo y no lo puede quitar este carril:
+**`properties_paint_common` hay que migrarlo como módulo compartido**, de acuerdo con
+los carriles de la vista 3D y de Propiedades.
