@@ -215,12 +215,25 @@ De `game_engine_add_basic_character.py` (que **tampoco registraba nada**):
 
 ### 4.3 Deuda que toca a otros carriles
 
-1. **Entrada de menú `File > Export > "Save as game runtime"`.** El addon la añadía con
-   `bpy.types.TOPBAR_MT_file_export.append()`. Ese menú lo dibuja
-   `scripts/startup/bl_ui/space_topbar.py`, **del carril G**, y desde C++ no hay API para
-   insertar en un menú de Python. El operador está registrado y es invocable, pero sin
-   entrada de menú. **Cuando `space_topbar.py` pase a nativo, hay que añadir
-   `wm.save_as_runtime` con el texto «Save as game runtime» al menú de exportación.**
+1. ~~**Entrada de menú `File > Export > "Save as game runtime"`.**~~ **PAGADA el
+   2026-09-11 a las 07:25, commit `318f306309c`.** El addon la añadía con
+   `bpy.types.TOPBAR_MT_file_export.append()`; ese menú lo dibujaba
+   `scripts/startup/bl_ui/space_topbar.py` y desde C++ no hay API para insertar en un
+   menú de Python, así que el operador quedó registrado e invocable pero sin entrada de
+   menú. Ahora `TOPBAR_MT_file_export` es C++
+   (`editors/space_topbar/fl_topbar_menus.cc`) y la fila vuelve a estar, **la última**,
+   que es donde `append()` la ponía.
+
+   Dos cosas que esta deuda enseñó y conviene no perder:
+
+   - **La línea base de interfaz había congelado la ausencia.** Se congeló después de
+     perder la fila, así que decía «idéntico» sobre un menú al que le faltaba una
+     capacidad. Hubo que **corregirla** —primera vez en esta migración— y está
+     justificado en el commit y en `MENUS-DEL-KEYMAP-A-CPP.md`. Una línea base puede
+     tener **de menos** algo que el programa debería tener, no solo de más.
+   - **Se verificó exportando de verdad**, no solo con el volcado: `ArpgNative.blend`
+     sale como bundle de 3.642 ficheros y 786.534.791 bytes, con los cinco componentes
+     nativos dentro, y el ejecutable arranca y sigue vivo a los 8 s.
 2. **La línea base de interfaz se mueve.** Retirar cuatro `.py` de `addons_core/` quita
    cuatro filas de Preferencias > Complementos, así que
    `tests/flipendo/ui/baseline-python-layout.txt` (**carril D**) deja de cuadrar. Es la

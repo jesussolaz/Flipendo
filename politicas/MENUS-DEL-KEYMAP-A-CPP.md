@@ -246,8 +246,14 @@ layout->op("WM_OT_save_as_runtime", IFACE_("Save as game runtime"), ICON_NONE);
 Ninguno de los 51 menús migrados hasta ahora es de Archivo ni de Exportar, así
 que no hay nada que reponer hacia atrás.
 
-#### Medido el 2026-09-11 a las 06:45: la fila sigue sin estar, y la línea base la
-#### tiene congelada como ausente
+#### RESUELTO el 2026-09-11 a las 07:25 (commit `318f306309c`)
+
+`TOPBAR_MT_file_export` ya es C++ y la fila está repuesta, la última, que es donde
+`append()` la ponía. Lo que sigue es la medida que lo motivó y las dos trampas que
+salieron; se deja escrito porque la segunda vale para toda la migración.
+
+#### Medido a las 06:45: la fila no estaba, y la línea base la tenía congelada como
+#### ausente
 
 `TOPBAR_MT_file_export` dibuja hoy **ocho** botones en la línea base
 (`alembic_export`, `usd_export`, los dos de lápiz de cera, `obj_export`, `ply_export`,
@@ -261,13 +267,52 @@ operador nativo `wm.save_as_runtime` sigue siendo alcanzable desde
 **Propiedades › Render › `RENDER_PT_publish`** (sale en la línea base de dibujo, línea
 20.974). Lo que falta es el punto de entrada histórico, el de Archivo › Exportar.
 
-Así que al migrar `TOPBAR_MT_file_export` hay que hacer **dos** cosas, no una:
+Así que al migrarlo hubo que hacer **dos** cosas, no una:
 
 1. añadir la fila `WM_OT_save_as_runtime` al final del `draw()`, y
-2. **decir en el parte que ese bloque difiere de la línea base a propósito**, con esta
-   nota como justificación, y pedir al carril D que vuelva a congelarlo. Es el mismo
-   caso que `OUTLINER_MT_context_menu` pero al revés: allí la línea base tenía de más
-   un fallo del Python, aquí tiene de menos una fila que el programa debería tener.
+2. **corregir la línea base**, porque lo que tenía congelado era una regresión nuestra y
+   no el comportamiento del Python original: con el addon vivo ese menú tenía nueve
+   filas. Es la primera vez en esta migración que se toca una línea base, y se hace por
+   eso y solo por eso.
+
+Es el caso **simétrico** de `OUTLINER_MT_context_menu`, y conviene tener los dos juntos
+porque la decisión correcta es la contraria en cada uno:
+
+| | `OUTLINER_MT_context_menu` | `TOPBAR_MT_file_export` |
+|---|---|---|
+| La línea base tiene… | **de más** un fallo del Python (se cayó a media faena) | **de menos** una fila que el programa debe tener |
+| Causa | artefacto del volcador (enumeración dinámica sin items) | regresión nuestra, al migrar el addon |
+| Decisión | **revertir** el C++ y volver a congelar | **corregir la línea base** y seguir |
+
+Lección: *«el bloque de la línea base no cuadra»* no tiene una sola respuesta. Hay que
+averiguar **por qué** no cuadra antes de decidir, y las dos respuestas —revertir el
+código o corregir la línea base— son legítimas en su caso y desastrosas en el otro.
+
+### Y dos trampas de la tanda
+
+1. **La opción de CMake se llama `WITH_OPENCOLLADA`; el macro, `WITH_COLLADA`.**
+   `if(WITH_COLLADA)` compila sin una queja y deja la fila de Collada fuera del menú en
+   silencio. Lo cantó el volcado de dibujo en la primera pasada. El aviso queda en el
+   `CMakeLists.txt` del editor, al lado del `if`.
+2. **`bl_owner_use_filter` no se transcribe.** Para un `Menu` no existe:
+   `rna_Menu_register` no lo lee y `MenuType` no tiene ese campo. Lo confirma el volcado
+   de registro, que sale idéntico sin ponerlo.
+
+### Cómo se verificó que exporta de verdad
+
+No basta el volcado: lo que había que probar es que **se puede exportar el juego**.
+
+| | |
+|---|---|
+| Exportación | `~/Flipendo/game/template/ArpgNative.blend` por `wm.save_as_runtime` → `{'FINISHED'}` |
+| Entregable | **3.642 ficheros, 786.534.791 bytes** |
+| `--fl-dump-runtime` | `PAYLOAD Contents/Resources/game.blend 421331` (el mismo tamaño que el `.blend` de partida) y **5 componentes nativos**: `Player PlayerController`, `GameCamera ThirdPersonCamera`, `Enemy0/1/2 EnemyAI` |
+| Arranque | `ArpgNative.app/Contents/MacOS/Blenderplayer` sigue vivo a los 8 s y no escribe ni un error |
+
+**Trampa del arnés:** la exportación falla con «The player could not be found!» si el
+binario no tiene `Blenderplayer.app` al lado — `default_player_path_get()` lo busca ahí.
+Copiar solo `Blender.app` para medir, que es lo que pide el resto de esta migración, no
+basta para esta prueba: hay que copiar los dos.
 
 ### Cuarta a séptima tanda: 32 menús más, y salida de la vista 3D (2026-09-11)
 
