@@ -30,6 +30,7 @@ set(SRC
   intern/wm_context_ops.cc
   intern/wm_property_ops.cc
   intern/wm_system_ops.cc
+  intern/wm_utility_ops.cc
   toolsystem/fl_toolsystem_registry.cc
   toolsystem/fl_toolsystem_activate.cc
   toolsystem/fl_toolbar_keymap.cc
@@ -157,6 +158,7 @@ set(SRC
   keymap/FL_keymap_params.hpp
   keymap/FL_keymap_default.hpp
   WM_api.hh
+  WM_manual.hpp
   WM_keymap.hh
   WM_message.hh
   WM_toolsystem.hh

@@ -362,81 +362,6 @@ def _wm_doc_get_id(doc_id, *, do_url=True, url_prefix="", report=None):
     return url if do_url else rna
 
 
-class WM_OT_doc_view_manual(Operator):
-    """Load online manual"""
-    bl_idname = "wm.doc_view_manual"
-    bl_label = "View Manual"
-
-    doc_id: doc_id
-
-    @staticmethod
-    def _find_reference(rna_id, url_mapping, *, verbose=True):
-        if verbose:
-            print("online manual check for: '{:s}'... ".format(rna_id))
-        from fnmatch import fnmatchcase
-        # XXX, for some reason all RNA ID's are stored lowercase
-        # Adding case into all ID's isn't worth the hassle so force lowercase.
-        rna_id = rna_id.lower()
-
-        # NOTE: `fnmatch` in Python is slow as it translates the string to a regular-expression
-        # which needs to be compiled (as of Python 3.11), this is slow enough to cause a noticeable
-        # delay when opening manual links (approaching half a second).
-        #
-        # Resolve by matching characters that have a special meaning to `fnmatch`.
-        # The characters that can occur as the first special character are `*?[`.
-        # If any of these are used we must let `fnmatch` run its own matching logic.
-        # However, in most cases a literal prefix is used making it considerably faster
-        # to do a simple `startswith` check before performing a full match.
-        # An alternative solution could be to use `fnmatch` from C which is significantly
-        # faster than Python's, see !104581 for details.
-        import re
-        re_match_non_special = re.compile(r"^[^?\*\[]+").match
-
-        for pattern, url_suffix in url_mapping:
-
-            # Simple optimization, makes a big difference (over 50x speedup).
-            # Even when `non_special.end()` is zero (resulting in an empty-string),
-            # the `startswith` check succeeds so there is no need to check for an empty match.
-            non_special = re_match_non_special(pattern)
-            if non_special is None or not rna_id.startswith(pattern[:non_special.end()]):
-                continue
-            # End simple optimization.
-
-            if fnmatchcase(rna_id, pattern):
-                if verbose:
-                    print("            match found: '{:s}' --> '{:s}'".format(pattern, url_suffix))
-                return url_suffix
-        if verbose:
-            print("match not found")
-        return None
-
-    @staticmethod
-    def _lookup_rna_url(rna_id, verbose=True):
-        for prefix, url_manual_mapping in bpy.utils.manual_map():
-            rna_ref = WM_OT_doc_view_manual._find_reference(rna_id, url_manual_mapping, verbose=verbose)
-            if rna_ref is not None:
-                url = prefix + rna_ref
-                return url
-
-    def execute(self, _context):
-        rna_id = _wm_doc_get_id(self.doc_id, do_url=False, report=self.report)
-        if rna_id is None:
-            return {'CANCELLED'}
-
-        url = self._lookup_rna_url(rna_id)
-
-        if url is None:
-            self.report(
-                {'WARNING'},
-                rpt_("No reference available {!r}, "
-                     "Update info in 'rna_manual_reference.py' "
-                     "or callback to bpy.utils.manual_map()").format(self.doc_id)
-            )
-            return {'CANCELLED'}
-        else:
-            return bpy.ops.wm.url_open(url=url)
-
-
 rna_path = StringProperty(
     name="Property Edit",
     description="Property data_path edit",
@@ -1189,120 +1114,6 @@ class WM_OT_properties_edit_value(Operator):
         else:
             col = layout.column(align=True)
             col.prop(rna_item, '["{:s}"]'.format(escape_identifier(self.property_name)), text="")
-
-
-class WM_OT_sysinfo(Operator):
-    """Generate system information, saved into a text file"""
-
-    bl_idname = "wm.sysinfo"
-    bl_label = "Save System Info"
-
-    filepath: StringProperty(
-        subtype='FILE_PATH',
-        options={'SKIP_SAVE'},
-    )
-
-    def execute(self, _context):
-        from _bpy_internal.system_info.text_generate_runtime import write
-        with open(self.filepath, "w", encoding="utf-8") as output:
-            try:
-                write(output)
-            except Exception as ex:
-                # Not expected to occur, simply forward the exception.
-                self.report({'ERROR'}, str(ex))
-
-                # Also write into the file (to avoid confusion).
-                output.write("ERROR: {:s}\n".format(str(ex)))
-                return {'CANCELLED'}
-
-        return {'FINISHED'}
-
-    def invoke(self, context, _event):
-        import os
-
-        if not self.filepath:
-            self.filepath = os.path.join(
-                os.path.expanduser("~"), "system-info.txt")
-
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-
-class WM_OT_blenderplayer_start(Operator):
-    """Launch the blender-player with the current blend-file"""
-    bl_idname = "wm.blenderplayer_start"
-    bl_label = "Start Game In Player"
-
-    def execute(self, context):
-        import os
-        import sys
-        import subprocess
-
-        gs = context.scene.game_settings
-
-        # these remain the same every execution
-        blender_bin_path = bpy.app.binary_path
-        blender_bin_dir = os.path.dirname(blender_bin_path)
-        ext = os.path.splitext(blender_bin_path)[-1]
-        player_path = os.path.join(blender_bin_dir, "blenderplayer" + ext)
-        # done static vars
-
-        if sys.platform == "darwin":
-            player_path = os.path.join(blender_bin_dir, "../../../Blenderplayer.app/Contents/MacOS/Blenderplayer")
-            # If BlenderPlayer is not found then we try a harcoded install location
-            if not os.path.exists(player_path):
-                player_path = "/Applications/UPBGE-0.3-Alpha/Blenderplayer.app/Contents/MacOS/Blenderplayer"
-
-        if not os.path.exists(player_path):
-            self.report({'ERROR'}, "Player path: %r not found" % player_path)
-            return {'CANCELLED'}
-
-        filepath = bpy.data.filepath + '~' if bpy.data.is_saved else os.path.join(bpy.app.tempdir, "game.blend")
-        bpy.ops.wm.save_as_mainfile('EXEC_DEFAULT', filepath=filepath, copy=True)
-
-        # start the command line call with the player path
-        args = [player_path]
-
-        # handle some UI options as command line arguments
-        args.extend([
-            "-g", "show_framerate", "=", "%d" % gs.show_framerate_profile,
-            "-g", "show_profile", "=", "%d" % gs.show_framerate_profile,
-            "-g", "show_properties", "=", "%d" % gs.show_debug_properties,
-            "-g", "ignore_deprecation_warnings", "=", "%d" % (not gs.use_deprecation_warnings),
-        ])
-
-        # finish the call with the path to the blend file
-        args.append(filepath)
-
-        subprocess.call(args)
-        os.remove(filepath)
-        return {'FINISHED'}
-
-class WM_OT_operator_cheat_sheet(Operator):
-    """List all the operators in a text-block, useful for scripting"""
-    bl_idname = "wm.operator_cheat_sheet"
-    bl_label = "Operator Cheat Sheet"
-
-    def execute(self, _context):
-        op_strings = []
-        tot = 0
-        for op_module_name in dir(bpy.ops):
-            op_module = getattr(bpy.ops, op_module_name)
-            for op_submodule_name in dir(op_module):
-                op = getattr(op_module, op_submodule_name)
-                text = repr(op)
-                if text.split("\n")[-1].startswith("bpy.ops."):
-                    op_strings.append(text)
-                    tot += 1
-
-            op_strings.append('')
-
-        textblock = bpy.data.texts.new("OperatorList.txt")
-        textblock.write("# {:d} Operators\n\n".format(tot))
-        textblock.write("\n".join(op_strings))
-        self.report({'INFO'}, "See OperatorList.txt text block")
-        return {'FINISHED'}
 
 
 # -----------------------------------------------------------------------------
@@ -2267,12 +2078,8 @@ class WM_MT_region_toggle_pie(Menu):
 
 
 classes = (
-    WM_OT_blenderplayer_start,
-    WM_OT_doc_view_manual,
-    WM_OT_operator_cheat_sheet,
     WM_OT_properties_edit,
     WM_OT_properties_edit_value,
-    WM_OT_sysinfo,
     BatchRenameAction,
     WM_OT_batch_rename,
     WM_MT_splash_quick_setup,
