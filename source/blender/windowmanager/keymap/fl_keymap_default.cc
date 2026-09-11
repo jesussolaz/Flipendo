@@ -170,8 +170,11 @@ void register_default(wmKeyConfig *kc)
 {
   /* Se leen las preferencias del usuario en cada reconstruccion; el keymap se
    * rehace entero cuando cambian. */
-  const Params params = params_from_preferences();
+  register_default_with_params(kc, params_from_preferences());
+}
 
+void register_default_with_params(wmKeyConfig *kc, const Params &params)
+{
   km_logic(kc);
 
   km_view3d_move_modal(kc);
