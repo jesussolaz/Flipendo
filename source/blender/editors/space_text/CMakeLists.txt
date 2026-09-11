@@ -22,6 +22,7 @@ set(SRC
   text_format_pov_ini.cc
   text_format_py.cc
   text_header.cc
+  fl_external_editor.cc
   text_ops.cc
   text_undo.cc
 

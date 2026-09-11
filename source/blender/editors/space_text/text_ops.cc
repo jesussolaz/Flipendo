@@ -58,6 +58,8 @@
 #  include "BPY_extern_run.hh"
 #endif
 
+#include "FL_external_editor.hh"
+
 #include "text_format.hh"
 #include "text_intern.hh"
 
@@ -3968,47 +3970,24 @@ void TEXT_OT_replace_set_selected(wmOperatorType *ot)
 /** \name Jump to File at Point
  * \{ */
 
-static bool text_jump_to_file_at_point_external(bContext *C,
+static bool text_jump_to_file_at_point_external(bContext * /*C*/,
                                                 ReportList *reports,
                                                 const char *filepath,
                                                 const int line_index,
                                                 const int column_index)
 {
-  bool success = false;
-#ifdef WITH_PYTHON
-  BPy_RunErrInfo err_info = {};
-  err_info.reports = reports;
-  err_info.report_prefix = "External editor";
-
-  const char *expr_imports[] = {"bl_text_utils", "bl_text_utils.external_editor", "os", nullptr};
-  std::string expr;
-  {
-    std::stringstream expr_stream;
-    expr_stream << "bl_text_utils.external_editor.open_external_editor(os.fsdecode(b'";
-    for (const char *ch = filepath; *ch; ch++) {
-      expr_stream << "\\x" << std::hex << int(*ch);
-    }
-    expr_stream << "'), " << std::dec << line_index << ", " << std::dec << column_index << ")";
-    expr = expr_stream.str();
+  /* Antes esto construia una expresion Python, escapaba la ruta byte a byte en
+   * hexadecimal y llamaba a `bl_text_utils.external_editor.open_external_editor()`.
+   * Era uno de los cinco puentes C++ -> Python vivos del arbol. Ahora es nativo:
+   * ver `FL_external_editor.hh` y politicas/MODULES-Y-EL-INTERPRETE.md. */
+  const std::string error = flipendo::text::open_external_editor(
+      filepath, line_index, column_index);
+  if (error.empty()) {
+    BKE_reportf(reports, RPT_INFO, "See '%s' in the external editor", BLI_path_basename(filepath));
+    return true;
   }
-
-  char *expr_result = nullptr;
-  if (BPY_run_string_as_string(C, expr_imports, expr.c_str(), &err_info, &expr_result)) {
-    /* No error. */
-    if (expr_result[0] == '\0') {
-      BKE_reportf(
-          reports, RPT_INFO, "See '%s' in the external editor", BLI_path_basename(filepath));
-      success = true;
-    }
-    else {
-      BKE_report(reports, RPT_ERROR, expr_result);
-    }
-    MEM_freeN(expr_result);
-  }
-#else
-  UNUSED_VARS(C, reports, filepath, line_index, column_index);
-#endif /* WITH_PYTHON */
-  return success;
+  BKE_report(reports, RPT_ERROR, error.c_str());
+  return false;
 }
 
 static bool text_jump_to_file_at_point_internal(bContext *C,

@@ -28,7 +28,8 @@ Comprobación: 6.961 + 18.932 + 4.272 = 30.165 ✓ · 17 + 79 + 1 = 97 ✓
 > `bpy_extras/mesh_utils.py`, `bpy_extras/id_map_utils.py`,
 > `bpy_extras/wm_utils/progress_report.py` y `graphviz_export.py` (873 líneas)—,
 > todas demostradas sin una sola referencia en el árbol, el directorio queda en
-> **90 ficheros y 28.873 líneas**. Son **1.292 líneas retiradas**, ninguna con
+> **88 ficheros y 28.819 líneas**, contando ya la migración de
+> `bl_text_utils/` a C++ (§4.2b). Son **1.346 líneas retiradas**, ninguna con
 > pérdida de capacidad.
 
 La distinción importa porque las tres tienen **coste y riesgo distintos**, y
@@ -61,7 +62,7 @@ No por lectura. Cuatro barridos sobre el árbol:
 | `bpy.utils._on_exit()` | `wm_init_exit.cc:636` | Vivo |
 | `bl_app_template_utils.reset()` | `wm_files.cc:752` | Vivo |
 | `addon_utils.disable_all()` / `.reset_all()` | `wm_files.cc:758,1317`, `bpy_interface.cc:556` | Vivo |
-| `bl_text_utils.external_editor.open_external_editor()` | `text_ops.cc:3987` | Vivo. **Es el único que implementa capacidad de usuario** (54 líneas) |
+| `bl_text_utils.external_editor.open_external_editor()` | `text_ops.cc:3987` | **Cortado.** Era el único que implementaba capacidad de usuario; hoy es `flipendo::text::open_external_editor()` (§4.2b) |
 
 Y uno **muerto que conviene saber que está muerto**: `wm_platform.cc:64` importa
 `_bpy_internal.freedesktop`, **que no existe en el árbol**. No rompe nada porque
@@ -153,7 +154,9 @@ trampa que afecta también a los `.fpreset`: hoy están en `scripts/presets/` y 
 
 ## 4. (b) Capacidad de verdad — 79 ficheros, 18.932 líneas
 
-### 4.1 Lo que se migra a C++ — 49 ficheros, 8.604 líneas
+### 4.1 Lo que se migra a C++ — 47 ficheros, 8.550 líneas
+
+(Eran 49 y 8.604: `bl_text_utils/` ya está migrado, §4.2b.)
 
 | Bloque | Fich | Líneas | Por qué es capacidad | Quién la usa hoy |
 |---|---:|---:|---|---|
@@ -165,7 +168,6 @@ trampa que afecta también a los `.fpreset`: hoy están en `scripts/presets/` y 
 | `bl_previews_utils/` | 1 | 536 | Generación de previsualizaciones en lote | `bl_operators/file.py` |
 | `keyingsets_utils.py` | 1 | 296 | Sondeo y generación de los keying sets de fábrica | `keyingsets_builtins.py`, `bl_operators/anim.py` |
 | `bl_app_template_utils.py` | 1 | 177 | Activar/desactivar la plantilla de aplicación | **Puente C++ vivo** (`wm_files.cc:752`) |
-| `bl_text_utils/` | 2 | 54 | Abrir un texto en el editor externo | **Puente C++ vivo** (`text_ops.cc:3987`) |
 | `animsys_refactor.py` | 1 | 225 | Reescribir rutas de animación al renombrar propiedades | `bl_operators/anim.py:390` (`ANIM_OT_update_animated_transform_constraints`) |
 
 ### 4.2 Lo que se retira, con el motivo escrito — 30 ficheros, 10.328 líneas
@@ -211,32 +213,48 @@ desde el sistema de compilación. Comprobado después: el editor arranca limpio 
   exista el extractor en C++ es perder capacidad sin sustituto, que es
   exactamente lo que la doctrina prohíbe.
 
-### 4.2b `bl_text_utils/external_editor.py`: la migración más barata que queda aquí
+### 4.2b `bl_text_utils/external_editor.py` — **migrado a C++**
 
-Son 54 líneas y es **uno de los cinco puentes C++ → Python vivos**, y el único de
-ellos que implementa capacidad de usuario: `TEXT_OT_jump_to_file_at_point`
-(`text_ops.cc:3971-4010`) construye una expresión Python, escapa la ruta byte a
-byte en hexadecimal y llama a `open_external_editor(filepath, line, column)`.
+Eran 54 líneas y **uno de los cinco puentes C++ → Python vivos**, el único de
+ellos que implementaba capacidad de usuario: `TEXT_OT_jump_to_file_at_point`
+(`text_ops.cc`) construía una expresión Python, escapaba la ruta byte a byte en
+hexadecimal y llamaba a `open_external_editor(filepath, line, column)`.
 
-Para reponerlo en C++ hay que reproducir **cuatro** semánticas, y ninguna es
-«llamar a `system()`»:
+Sustituto: `source/blender/editors/space_text/fl_external_editor.cc` +
+`source/blender/editors/include/FL_external_editor.hh`. Hubo que reproducir
+**cuatro** semánticas, y ninguna es «llamar a `system()`»:
 
-1. `U.text_editor` vacío -> lo comprueba el llamador; `U.text_editor_args` vacío
-   -> mensaje traducible concreto; sin `$filepath` dentro -> otro mensaje
-   concreto. Los tres textos son `rpt_()` y tienen que ser los mismos.
-2. `shlex.split(text_editor_args)` en modo POSIX: comillas simples y dobles,
-   barra invertida, concatenación sin espacio.
-3. `string.Template.substitute` con exactamente cinco variables: `$filepath`,
-   `$line` y `$column` (base 1) y `$line0` y `$column0` (base 0). Incluye la
-   forma `${nombre}` y `$$` como `$` literal, y **lanza excepción** si aparece
-   una variable que no está: eso hoy produce «Exception parsing template: …».
-4. `subprocess.run(args, check=True)`: `fork` + `execvp` + `waitpid`, con el
-   código de salida distinto de cero convertido en el mensaje de error. El
-   ayudante que ya existe en `fileops_c.cc:1245` **no vale**: está dentro del
-   camino de papelera de Linux (`kioclient5`/`gio`), no es un API general.
+1. Los tres mensajes de error del Python, literales (`RPT_`): sin
+   `text_editor_args`, sin `$filepath` dentro, y los dos «Exception …».
+2. `shlex.split()` en modo POSIX. **La trampa está en las comillas dobles:**
+   dentro de `"…"` la barra invertida escapa **solo** `"` y `\`; ante cualquier
+   otro carácter la barra **se queda**. Fuera de comillas escapa lo que sea. Las
+   comillas simples no escapan nada. Comilla sin cerrar o barra final →
+   `ValueError`, con su texto exacto.
+3. `string.Template.substitute()` con cinco variables (`$filepath`, `$line` y
+   `$column` en base 1, `$line0` y `$column0` en base 0), la forma `${nombre}`,
+   `$$` y los errores de marcador inválido y de clave que falta. El mensaje de
+   marcador inválido lleva línea y columna, y se calculan como las calcula
+   Python: sobre `template[:i]` donde `i` es la posición **siguiente** al `$`,
+   porque el grupo `invalid` de su expresión regular es de anchura cero.
+4. `subprocess.run(args, check=True)` = `fork` + `execvp` + `waitpid`, con el
+   código de salida convertido en mensaje. El ayudante que ya existía en
+   `fileops_c.cc:1245` **no valía**: está dentro del camino de papelera de Linux
+   (`kioclient5`/`gio`), no es un API general.
 
-Se deja escrito en vez de escrito a medias: hacerlo sin poder compilar ni
-comparar contra el Python vivo es justo lo que la doctrina prohíbe.
+**Verificado:** `--fl-dump-external-editor` y `--fl-check-external-editor`
+vuelcan y comparan el `argv` resultante sin lanzar ningún proceso, contra una
+línea base congelada con el `shlex` y el `string.Template` de Python
+(`tests/flipendo/externaleditor/baseline-python.txt`): **4.326 casos, 4.326
+idénticos, 0 distintos**, incluyendo los `repr()` de las excepciones. Y ocho
+casos extremo a extremo con proceso real (`/bin/echo`, `/usr/bin/false`, un
+ejecutable que no existe), con la ruta con espacios llegando como **un solo**
+argumento.
+
+**Lo que cambia a propósito, y se dice:** el mensaje de `CalledProcessError`
+lleva solo el código de salida (`CalledProcessError(1)`), no la lista de
+argumentos que Python metía en su `repr`. Reproducir el `repr` de una lista de
+Python en un mensaje de error no aporta nada y ata el C++ a una sintaxis ajena.
 
 ### 4.3 `bpy_extras`: la sorpresa de la medición
 
@@ -321,8 +339,9 @@ No por tamaño: por dependencias.
    extraer los textos del C++.
 5. **`bpy_extras` sin llamador (1.705)** — se van cuando se acepte por escrito
    que el API de addons no continúa.
-6. **`bl_text_utils/` (54)** — es un puente C++ vivo y trivial: el candidato más
-   barato a migración real que queda aquí.
+6. **`bl_text_utils/` (54)** — **hecho**: migrado a C++ y retirado (§4.2b). Era
+   el candidato más barato a migración real que quedaba aquí, y el único puente
+   C++ → Python de este directorio que implementaba capacidad de usuario.
 7. **`bgui/` (2.391) + `gpu_extras/` (190)** — capacidad del Player, no del
    editor. Es un agujero abierto: sin CPython, un juego distribuido **no tiene
    sistema de interfaz de serie**.
