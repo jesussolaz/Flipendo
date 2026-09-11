@@ -17,6 +17,7 @@ set(INC_SYS
 
 set(SRC
   fl_image_menus.cc
+  fl_image_ui.cc
   image_buttons.cc
   image_draw.cc
   image_edit.cc
@@ -26,6 +27,7 @@ set(SRC
   space_image.cc
 
   FL_image_menus.hh
+  FL_image_ui.hh
   image_intern.hh
 )
 
@@ -44,6 +46,7 @@ set(LIB
   PRIVATE bf::imbuf
   PRIVATE bf::imbuf::movie
   PRIVATE bf::intern::clog
+  PRIVATE bf::extern::fmtlib
   PRIVATE bf::intern::guardedalloc
   PRIVATE bf::nodes
   PRIVATE bf::render

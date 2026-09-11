@@ -57,6 +57,7 @@
 #include "DRW_engine.hh"
 
 #include "FL_image_menus.hh"
+#include "FL_image_ui.hh"
 #include "image_intern.hh"
 
 /**************************** common state *****************************/
@@ -1326,6 +1327,7 @@ void ED_spacetype_image()
   BLI_addhead(&st->regiontypes, art);
 
   blender::ed::image::image_menus_register();
+  blender::ed::image::image_ui_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }
