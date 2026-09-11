@@ -64,3 +64,45 @@ Blender y UPBGE son el material de origen; Flipendo es el resultado unificado.
 
 > El plan por fases y el estado de la migración están en
 > [`MIGRACION-CPP.md`](MIGRACION-CPP.md) (generado del análisis del repo).
+
+---
+
+## Decisión del 2026-09-11: full C++ significa TODO, no «todo lo razonable»
+
+Jesús ha decidido, con el coste sobre la mesa: **full C++ incluye el Objective-C++ y
+los cuerpos de shader**. Esta sección deroga lo que decían `MIGRACION-CPP.md` §3.3 y §4
+sobre ObjC++ como «plataforma legítima que no se persigue» y sobre GLSL como
+«inviable de golpe». Siguen siendo caros; dejan de ser aceptables.
+
+**Objetivo:** cero Python, cero C propio (cumplido), cero Objective-C++, cero shell
+propio, cero GLSL escrito a mano, y las cabeceras `.h` heredadas convertidas a `.hpp`
+según se reescriba su subsistema.
+
+**Única excepción, y es doctrinal:** `extern/` y `lib/` son terceros vendorizados. Se
+mantienen verbatim y se actualizan desde upstream. Reescribir a mano lzma, ufbx o
+nanosvg no es propiedad del código, es asumir el mantenimiento de bibliotecas ajenas
+sin ganar nada. Quedan marcados como `linguist-vendored` para que ni GitHub los
+atribuya a Flipendo.
+
+### Por qué el Objective-C++ sí se puede, contra lo que decía la política anterior
+
+La política afirmaba que AppKit «no tiene binding C++ → imposible C++ puro». **Es
+falso y queda corregido.** El runtime de Objective-C es una biblioteca de C
+(`objc_getClass`, `sel_registerName`, `objc_msgSend`, `objc_allocateClassPair`,
+`class_addMethod`): cualquier programa C++ puede llamar a cualquier método de Cocoa sin
+que intervenga un compilador de Objective-C. La prueba es que **`metal-cpp`, el binding
+oficial de Apple, es exactamente eso**: cabeceras que envuelven `objc_msgSend`.
+
+Lo que cambia no es la posibilidad sino quién escribe el pegamento. En un `.mm` lo
+genera el compilador; en C++ puro lo escribimos y lo mantenemos nosotros, con estas
+trampas que hay que tener presentes y **verificar**:
+
+- `objc_msgSend` se castea a la firma exacta de cada método. Mal casteado es
+  comportamiento indefinido, y en x86_64 hay variantes (`_stret`, `_fpret`).
+- Los delegados exigen **fabricar clases Objective-C en tiempo de ejecución** con sus
+  codificaciones de tipo correctas.
+- Los bloques son extensión de Clang, no C++ estándar.
+- Sin ARC: `retain`/`release` y pools de autoliberación explícitos.
+
+Por eso cada pieza migrada aquí necesita **más** verificación que una de interfaz, no
+menos: el compilador deja de avisar.
