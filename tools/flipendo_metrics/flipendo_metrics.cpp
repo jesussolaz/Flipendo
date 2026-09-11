@@ -1524,11 +1524,31 @@ static Battery run_battery(const std::string &root,
      * determinista). Un rojo se repite antes de firmarlo: si la segunda pasada
      * sale verde, lo que hay no es un fallo, es un verificador INESTABLE, y eso
      * se dice con esas palabras en vez de esconderlo en un rojo o en un verde. */
-    /* Un verificador lento no se repite tres veces: `--fl-check-ui` de dibujo
-     * tarda minutos y triplicarlo convertiría la batería en media hora. Si es
-     * lento, el rojo se firma con una sola pasada y el informe lo dice. */
+    /* Un verificador lento tampoco puede firmar un rojo a la primera. Esta
+     * excepción existía —«si tarda más de un minuto, el rojo se firma con una
+     * sola pasada»— y el 11 de septiembre firmó como ROJO el volcado de diseño
+     * (2 bloques de 2.004) cuando la medición manual inmediata daba CERO bloques
+     * distintos: era un transitorio. Un rojo sin confirmar es tan malo como un
+     * verde sin comprobar, y precisamente el comprobador más lento es el más
+     * expuesto a transitorios.
+     *
+     * No se triplica, que convertiría la batería en media hora: se repite UNA
+     * vez, que es cuanto hace falta para que un transitorio no firme nada. */
     if (v.verdict == "ROJO" && v.secs > 60.0) {
-      v.detail += sfmt("  [una sola pasada: tarda %.0f s y no se repite]", v.secs);
+      const std::string primera = v.detail;
+      const double primera_secs = v.secs;
+      execute(v);
+      v.secs += primera_secs;
+      if (v.verdict == "ROJO") {
+        v.detail = primera + sfmt("  [reproducido en 2 pasadas de %.0f s]", primera_secs);
+      }
+      else {
+        v.verdict = "INESTABLE";
+        v.detail = sfmt("la primera pasada dio rojo y la segunda verde con el mismo "
+                        "binario: es un transitorio, no un fallo. Pasada en rojo: %s. "
+                        "Pasada en verde: %s",
+                        primera.c_str(), v.detail.c_str());
+      }
     }
     else if (v.verdict == "ROJO") {
       const std::string first = v.detail;

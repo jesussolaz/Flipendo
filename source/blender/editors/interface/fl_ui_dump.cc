@@ -1193,6 +1193,14 @@ static bool dibujar_cabecera(bContext *C,
   Header header = {nullptr};
   header.type = ht;
   header.layout = layout;
+
+  /* Justo antes de dibujar, no una vez al arrancar. La barra de estado pinta las
+   * pistas contextuales del raton ("Resize", "Options" y sus iconos) y esas se
+   * REPUEBLAN segun donde este el puntero en el instante del dibujado: limpiarlas
+   * al principio del volcado no basta, y se midio -- a mano salia limpio y desde
+   * la bateria salia con las pistas dentro, segun donde hubiera quedado el raton.
+   * Un volcado que cambia con la posicion fisica del raton no es una linea base. */
+  ED_workspace_status_text(C, nullptr);
   ht->draw(C, &header);
 
   serializar_raiz(layout, C, "DRAW", out);
