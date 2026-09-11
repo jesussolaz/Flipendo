@@ -33,6 +33,7 @@
 #include "GPU_immediate.hh"
 #include "GPU_matrix.hh"
 
+#include "FL_UiCanvas.hpp"
 #include "KX_Camera.hpp"
 #include "KX_Globals.hpp"
 #include "KX_KetsjiEngine.hpp"
@@ -131,6 +132,12 @@ void RAS_OpenGLDebugDraw::Flush(RAS_Rasterizer *rasty,
      * (Post processing draw callbacks can have modify gpu states) */
     blender::draw::command::StateSet::set();
     GPU_depth_test(GPU_DEPTH_ALWAYS);
+
+    /* Flipendo: interfaz de juego NATIVA. Va justo aqui, en el mismo punto en el
+     * que se llamaba a los callbacks POST_DRAW de Python y con el estado de GPU
+     * ya restaurado, pero SIN guarda de Python: un juego exportado sin interprete
+     * tambien tiene que poder pintar su HUD. Ver politicas/UI-JUEGO-NATIVA.md. */
+    flipendo::FL_UiDrawAll(canvas->GetWidth(), canvas->GetHeight());
 
     /* The Performances profiler */
     const unsigned int height = canvas->GetHeight();

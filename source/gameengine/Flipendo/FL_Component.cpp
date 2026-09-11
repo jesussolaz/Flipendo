@@ -7,6 +7,7 @@
 #include "EXP_ListValue.hpp"
 #include "CM_Message.hpp"
 #include "FL_RenderToTexture.hpp"
+#include "FL_UiCanvas.hpp"
 
 namespace flipendo {
 
@@ -84,8 +85,10 @@ void FL_ComponentManager::Tick(KX_Scene *scene, float dt)
 {
   AttachScene(scene);
 
-  /* Sonda de verificacion de render a textura (no hace nada sin FL_RTT_PROBE). */
+  /* Sondas de verificacion: no hacen nada si no estan sus variables de entorno.
+   * Van en Tick y no en AttachScene porque cuentan frames. */
   FL_RttProbeTick(scene);
+  FL_UiProbeTick();
 
   EXP_ListValue<KX_GameObject> *objs = scene->GetObjectList();
   for (auto it = m_instances.begin(); it != m_instances.end();) {

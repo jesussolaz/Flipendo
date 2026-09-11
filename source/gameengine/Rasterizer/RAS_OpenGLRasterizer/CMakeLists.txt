@@ -30,6 +30,7 @@ set(INC
   ../../Common
   ../../Expressions
   ../../GameLogic
+  ../../Flipendo
   ../../Ketsji
   ../../Physics/Common
   # >>>
