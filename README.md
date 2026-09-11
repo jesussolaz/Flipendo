@@ -10,7 +10,7 @@
   <img alt="macOS Intel con Metal" src="https://img.shields.io/badge/plataforma-macOS%20Intel%20%C2%B7%20Metal-111111">
   <img alt="C++17" src="https://img.shields.io/badge/C%2B%2B-17-00599C">
   <img alt="Cero Python en el juego exportado" src="https://img.shields.io/badge/Python%20en%20el%20juego-0%20ficheros-2ea44f">
-  <img alt="47 verificadores integrados en el binario" src="https://img.shields.io/badge/verificadores-47-orange">
+  <img alt="46 verificadores integrados en el binario" src="https://img.shields.io/badge/verificadores-46-orange">
 </p>
 
 <p align="center">
@@ -77,21 +77,26 @@ Cuatro, en este orden.
 
 Ni una línea de Python en el motor. No es una limpieza estética: mientras el keymap por defecto salga de un script, **el juego exportado tiene que cargar un intérprete entero** para saber qué hace la tecla `G`.
 
-Estado real, medido y verificable en el propio binario:
+Estado real. Las cifras de abajo están medidas el **2026-09-11** sobre el commit
+`bdf77abfbba`, con `git` y no con el contador del proyecto (ver la nota al pie):
 
 | | |
 |---|---|
-| C mantenido (fuera de `extern/`) | **0 ficheros** |
+| C propio (fuera de `extern/` y `lib/`) | **0 ficheros** |
+| Shell propio y presets en `.py` | **0 ficheros** |
 | Componentes de gameplay | **100% C++** (`FL_Component`; el sistema Python fue eliminado) |
-| Mapa de teclado por defecto | **248/248 keymaps en C++**, idénticos a los que generaba Python |
-| Sistema de herramientas | **100% C++, sin una sola línea de Python**: catálogo, activación, consultas, operadores, barra, ajustes, cabecera, reserva y keymap del popup. Verificado contra el Python real (416 + 474 + 416 + 912 casos), la barra y la cabecera píxel a píxel. Retiradas 5.606 líneas de Python |
-| El build necesita Python | **no** (el último generador pasó a C++) |
-| Player sin CPython | **compila y juega** — 0 símbolos `_Py`, 536 MB frente a 771 MB |
-| Python restante | **191.224 líneas**, todas del editor (eran 493.742 al empezar el proyecto) |
-| Ficheros `.py` dentro del juego exportado | **0** |
-| Objective-C++ | 30.304 líneas; la capa de cabeceras de Metal ya es C++ puro y el resto son **441 envíos de mensaje**, no 21.000 líneas |
-| C, shell y presets propios | **0** |
-| Verificadores integrados en el binario | **47** opciones `--fl-check-*` / `--fl-dump-*` |
+| Mapa de teclado por defecto | **248/248 keymaps en C++** y **3.673/3.673 atajos**, idénticos a los que generaba Python |
+| Sistema de herramientas | **100% C++, sin una sola línea de Python**: catálogo, activación, consultas, operadores, barra, ajustes, cabecera, reserva y keymap del popup. Verificado contra el Python real (416 + 474 + 416 + 912 casos), la barra y la cabecera píxel a píxel |
+| Editor de nodos | `space_node.py` pasa de **1.063 líneas y 34 clases a 84 y 7**; los otros **27 tipos** viven en `fl_node_ui.cc`. Verificado: diseño **2.004/2.004** bloques idénticos, registro **2.110/2.113** |
+| Presets | **172 ficheros de datos `.fpreset`, 0 de código**. Eran 173 `.py`, que el editor ejecutaba con `bpy.utils.execfile` |
+| Publicar y exportar el juego | **operadores nativos en C++** (`source/blender/editors/flipendo/`, 1.965 líneas) en lugar de los cinco add-ons Python, dos de ellos rotos desde 2019 |
+| Interfaz de juego nativa | lienzo en C++ (`FL_UiCanvas`) y **4 de los 9 widgets** de `bgui` (`Frame`, `Label`, `FrameButton`, `Image`). **Aún no cubre la capacidad entera** |
+| El build necesita Python | **no** para `--target install`: ninguna orden de `build.ninja` invoca un intérprete. Solo lo usa el target `package_archive`, que no compila nada |
+| Player sin CPython | **compila y juega** — 0 símbolos `_Py`, 538 MB frente a 762 MB |
+| Ficheros `.py` dentro del juego exportado | **0** (el Player con Python lleva 2.022) |
+| Python restante | **191.224 líneas en 613 ficheros**. De ellas, 119.105 son el editor (`scripts/`), 44.842 los tests, 14.649 las herramientas de desarrollo y 12.628 el resto. Al empezar el proyecto eran **492.366**: **−61,2 %** |
+| Objective-C++ | **22.289 líneas en 25 ficheros**. El frente vivo es el backend Metal: **11 ficheros, 12.703 líneas**; la capa de cabeceras ya es C++ puro, y lo que hay que reescribir son envíos de mensaje, no líneas |
+| Verificadores integrados en el binario | **46**: 16 `--fl-check-*`, 14 `--fl-dump-*` y 16 `--fl-selftest-*`, de **50 opciones `--fl-*`** registradas en `creator_args.cc` |
 
 **Cómo se verifica.** Nada se da por migrado leyendo el código: se congela lo que produce el Python y el C++ tiene que reproducirlo exactamente. Para la interfaz, eso significa capturas. Cada par de columnas es la barra de herramientas del mismo editor y modo, dibujada por **Python a la izquierda** y por **C++ a la derecha** — vista 3D en modo objeto, edición y escultura; editor UV, nodos y secuenciador:
 
@@ -100,6 +105,13 @@ Estado real, medido y verificable en el propio binario:
 *Las seis parejas son idénticas píxel a píxel. La barra ya no ejecuta Python en cada redibujado.*
 
 Lo que queda es el editor: paneles, operadores y el puente CPython. La infraestructura para migrarlo ya existe (`FL_ui_registry`) y el editor de lógica es el piloto que la valida.
+
+> **Cómo leer estas cifras.** Se miden con `git` a un commit nombrado, nunca al árbol
+> de trabajo, porque el árbol tiene trabajo a medias de varios frentes a la vez. Las
+> cifras que circularon por el repositorio hasta el 10 de septiembre van **ligeramente
+> altas**: el contador del proyecto sumaba una línea de más por fichero. Ya está
+> corregido; el método, y qué decía cada cifra antes, están en
+> [`politicas/METRICAS.md`](politicas/METRICAS.md).
 
 ### 2. Velocidad, y ganarle a la competencia en Mac
 
@@ -168,7 +180,7 @@ Cómo se usa y de dónde sale: [`examples/kingdom_hearts_look/`](examples/kingdo
 
 - Árbol base: snapshot de UPBGE en el commit upstream `3c7b891a` (Blender 4.5.0 alpha).
 - Cada mejora es un commit encima, con la explicación técnica en el mensaje.
-- Doctrina y estado de la migración: [`politicas/`](politicas/) — 35 documentos que explican qué se migró, cómo se verificó y qué trampas aparecieron.
+- Doctrina y estado de la migración: [`politicas/`](politicas/) — 37 documentos que explican qué se migró, cómo se verificó y qué trampas aparecieron.
 - Ejemplos de uso del motor: [`examples/`](examples/).
 - Registro de versiones: [`CHANGELOG-FLIPENDO.md`](CHANGELOG-FLIPENDO.md).
 
@@ -250,4 +262,5 @@ El juego se **hace** con el editor y se **envía** con el Player sin CPython. El
 
 ## Licencia
 
-GPL-2.0-or-later, heredada de Blender/UPBGE.
+GPL-2.0-or-later, heredada de Blender/UPBGE. El texto completo, en
+[`COPYING`](COPYING).
