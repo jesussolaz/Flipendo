@@ -17,6 +17,7 @@ set(SRC
   buttons_context.cc
   fl_properties_data_shaderfx.cc
   fl_properties_ui.cc
+  fl_properties_ui_scene.cc
   fl_properties_collection.cc
   fl_properties_data_lattice.cc
   fl_properties_data_metaball.cc

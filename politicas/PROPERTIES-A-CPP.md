@@ -356,3 +356,121 @@ de esta pestaña: `REGION PROPERTIES WINDOW` (la deuda de orden global) y
 **Las dos escenas hacían falta**: entre `muted=False` y `muted=True` cambian 6 líneas del
 volcado, en 3 bloques. Medir solo el caso por defecto habría dejado sin probar los tres
 `uiLayoutSetActive`, que es justo donde estaba el riesgo.
+
+## `--fl-ui-scene`: el andamio que hace medible a toda esta familia
+
+Las dos unidades anteriores dejaron el problema señalado: para las pestañas de datos, el
+volcado de diseño sobre la escena de fábrica **certifica la ausencia, no el dibujo**. Y la
+medición que lo arreglaba montaba la escena con `--python-expr`, o sea con la muleta que
+este proyecto está quitando.
+
+`source/blender/editors/space_buttons/fl_properties_ui_scene.cc` la sustituye:
+
+```
+Blender --factory-startup --fl-ui-scene METABALL:CUBE --fl-dump-ui-layout <salida>
+Blender --factory-startup --fl-ui-scene SPEAKER:MUTED --fl-dump-ui-layout <salida>
+```
+
+Familias: `METABALL[:BALL|CAPSULE|PLANE|ELLIPSOID|CUBE]`, `SPEAKER[:MUTED]`, `LATTICE`,
+`VOLUME`, `CURVES`. Se declaran en `FL_properties_ui.hpp` y la opción se registra en
+`ARG_PASS_FINAL`, así que corre **antes** del volcado si va antes en la línea de órdenes.
+
+**No toca el volcador.** `fl_ui_dump.cc` es de otro carril y no hace falta cambiarlo: el
+andamio solo deja la escena en el estado en que esos `poll` dicen que sí, y el volcado de
+siempre hace el resto.
+
+### Las tres decisiones que lo hacen honesto
+
+1. **Monta el dato llamando a los mismos operadores que llamaría el usuario**
+   (`OBJECT_OT_metaball_add` + `OBJECT_OT_editmode_toggle`, `OBJECT_OT_speaker_add`,
+   `OBJECT_OT_add(type='LATTICE')`, `OBJECT_OT_volume_add`,
+   `OBJECT_OT_curves_empty_hair_add`), **no fabricándolo a mano**.
+   `ED_mball_add_primitive()` escala el elemento por el diámetro de la vista, así que un
+   metaball construido con `BKE_mball_element_add()` daría números distintos y la
+   comparación byte a byte fallaría por el andamio, no por el código.
+2. **Grita y sale con error** si el operador no existe, no termina, o la familia no se
+   reconoce. Un andamio que falla en silencio deja la pestaña sin cubrir y el volcado
+   vuelve a decir `NO-CUBIERTO motivo=poll`: un falso verde indistinguible del bueno.
+3. **Se verificó contra lo que sustituye.** El criterio no es «funciona», es «da
+   exactamente lo mismo que el andamio de Python que ya se había usado para certificar
+   Metaball y Altavoz».
+
+### Y ya se ha cobrado su primera pieza
+
+La primera versión usaba `CTX_data_active_object()` para comprobar que el objeto había
+quedado activo. En `--background` funcionaba; **en modo gráfico devolvía `nullptr`**, porque
+cuando corre esta opción todavía no hay área activa en el contexto y esa ruta pasa por el
+callback de contexto de la pantalla. O sea: el caso que importa —el volcado de diseño, que
+necesita modo gráfico— era justo el que fallaba, y el barato de probar era el que pasaba.
+
+Sin la regla 2 esto habría salido como un volcado sin los bloques de la pestaña, que al
+compararlo contra un extracto vacío habría dado «0 diferencias». Con ella salió como
+`fl-ui-scene: el altavoz no quedo activo` y código de salida 1. La cura: mirar la capa de
+vista (`BKE_view_layer_synced_ensure` + `BKE_view_layer_active_object_get`), que no depende
+de la pantalla.
+
+**Lección para el resto del árbol:** un arnés probado solo en `--background` no está
+probado. En modo gráfico el contexto tiene ventana, pantalla y área, y en la línea de
+órdenes esas tres cosas no están todas puestas todavía.
+
+### Verificado, contra el andamio que sustituye
+
+Siete escenas, comparando los bloques de la pestaña byte a byte contra el volcado que había
+producido el andamio de `--python-expr`:
+
+| Escena | Bloques | Resultado |
+|---|---:|---|
+| `METABALL:BALL` | 173 líneas | **idéntico** |
+| `METABALL:CUBE` | 203 líneas | **idéntico** |
+| `METABALL:CAPSULE` | 183 líneas | **idéntico** |
+| `METABALL:PLANE` | 193 líneas | **idéntico** |
+| `METABALL:ELLIPSOID` | 203 líneas | **idéntico** |
+| `SPEAKER` | 148 líneas | **idéntico** |
+| `SPEAKER:MUTED` | 148 líneas | **idéntico** |
+
+Y que **detecta**: con una familia inventada (`--fl-ui-scene DESCONOCIDA`) escribe la lista
+de familias conocidas y sale con código 1, en vez de seguir y volcar una escena de fábrica
+que parecería correcta.
+
+Prueba de humo de las otras tres familias en `--background`: `LATTICE`, `VOLUME` y `CURVES`
+dejan su objeto activo (tipos 22, 29 y 27). **Lo que no está medido y se dice**: sus
+pestañas todavía no se han comparado contra nada, porque todavía no se han migrado; el
+andamio está listo para cuando se haga.
+
+### Cómo se registra la opción (pendiente de integrar)
+
+`source/creator/creator_args.cc` tenía, cuando se cerró este turno, trabajo a medias de otro
+carril (un `--fl-make-ui-scene` propio). Con el índice compartido, commitear ese fichero
+habría metido el trabajo ajeno en este commit, que es el accidente de las 01:05. Así que la
+opción **queda escrita y verificada en el árbol de trabajo pero fuera de este commit**. Son
+tres cosas, y están probadas:
+
+```cpp
+#  include "FL_properties_ui.hpp"                       /* con los demás FL_*. */
+
+/* ...el manejador, junto a arg_handle_fl_dump_ui... */
+static int arg_handle_fl_ui_scene(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    if (!flipendo::properties_ui::scene_setup(C, argv[1])) {
+      fprintf(stderr, "\nError: --fl-ui-scene no pudo montar '%s'.\n", argv[1]);
+      WM_exit(C, EXIT_FAILURE);
+    }
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la especificacion de escena despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+/* ...y el alta, en ARG_PASS_FINAL, antes de la de --fl-dump-ui: */
+BLI_args_add(ba, nullptr, "--fl-ui-scene", CB(arg_handle_fl_ui_scene), C);
+```
+
+**Y cómo convive con `--fl-make-ui-scene`**, que otro carril estaba escribiendo a la vez: no
+son lo mismo y no se estorban. Aquél construye **una** escena rica (cámara, luz, curva,
+texto, vacío, esqueleto en pose, partículas, el cubo en edición) y la guarda en un `.blend`.
+Éste parametriza **por tipo de objeto** y lo deja **activo**, que es lo que exigen las
+pestañas de datos: `context.meta_ball`, `context.speaker` y compañía salen del objeto
+activo, y activo solo puede haber uno. Una escena rica no puede tener a la vez el metaball y
+el altavoz de activos; por eso hacen falta las dos herramientas.

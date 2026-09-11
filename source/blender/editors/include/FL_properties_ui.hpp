@@ -50,6 +50,21 @@ void draw_animation_panel(const bContext *C, uiLayout *layout, ID *id);
  * `data_path` es la ruta que reciben los operadores `WM_OT_properties_*`
  * (`"object"`, `"collection"`, `"world"`...), o sea el `_context_path` del mixin.
  */
+/**
+ * Andamio de medicion: monta en la escena el dato que una pestana de datos
+ * necesita para que su `poll` diga que si, llamando a los mismos operadores que
+ * llamaria el usuario. Lo usa `--fl-ui-scene <spec>` antes de
+ * `--fl-dump-ui-layout`, para que el volcado de diseno cubra de verdad los
+ * paneles que la escena de fabrica deja en `NO-CUBIERTO motivo=poll`.
+ *
+ * `spec` es `FAMILIA` o `FAMILIA:VARIANTE`:
+ * `METABALL[:BALL|CAPSULE|PLANE|ELLIPSOID|CUBE]`, `SPEAKER[:MUTED]`, `LATTICE`,
+ * `VOLUME`, `CURVES`. Devuelve false y escribe el motivo si algo falla; un
+ * andamio que falla en silencio deja la pestana sin cubrir y el volcado vuelve a
+ * decir `NO-CUBIERTO`, que es un falso verde.
+ */
+bool scene_setup(bContext *C, const char *spec);
+
 void draw_custom_properties(
     const bContext *C, uiLayout *layout, PointerRNA *ptr, ID *id, const char *data_path);
 
