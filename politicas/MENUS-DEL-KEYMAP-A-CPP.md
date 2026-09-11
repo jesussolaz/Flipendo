@@ -206,3 +206,42 @@ migrados** — que tienen que salir idénticos, sin excusa — y además da el n
 global diciendo qué bloques cambiaron y de quién son. Un `0 distintos` global en
 un árbol que comparten cuatro carriles a la vez no es alcanzable, y fingir que
 sí lo es sería peor que no medir.
+
+## Antes de retirar un menú: mirar quién le añade filas
+
+Un menú de Python puede tener filas que **no están en su `draw()`**: cualquier
+código puede hacer `bpy.types.<MENU>.append(func)` o `.prepend(func)` y la fila
+aparece igual. Al pasar el menú a C++ esas filas **desaparecen sin avisar**,
+porque desde C++ no hay forma de insertar en un menú de Python ni al revés.
+
+Por eso, antes de borrar la clase:
+
+```
+grep -rnE "\.(append|prepend)\(" scripts --include='*.py' | grep -E "_MT_|_PT_|_HT_"
+```
+
+Hecho para las siete familias de esta migración (51 menús): **ninguno de los 51
+tiene un añadidor vivo**. Los únicos `append` del árbol sobre menús son los de
+`scripts/templates_py/` —plantillas de script, texto que no se ejecuta— y los de
+`addons_core/bl_pkg` sobre menús de Preferencias (`USERPREF_*`), que no están en
+esta lista.
+
+### La fila que sí hay que reponer, y a quién le toca
+
+El carril J migró los addons del motor a C++ y dejó una deuda apuntada
+(`politicas/ADDONS-MOTOR-A-CPP.md` §4.3): el addon del *runtime* añadía
+**File › Export › «Save as game runtime»** con
+`bpy.types.TOPBAR_MT_file_export.append()`. El operador ya es nativo
+(`WM_OT_save_as_runtime`), pero la fila del menú no existe hoy.
+
+`TOPBAR_MT_file_export` **no está entre los 133** de esta política (el keymap no
+lo abre por nombre), pero vive en `space_topbar.py`, que sí tiene cuatro de los
+133. Así que queda escrito aquí también: **el día que `TOPBAR_MT_file_export`
+pase a C++, su `draw()` tiene que terminar con**
+
+```cpp
+layout->op("WM_OT_save_as_runtime", IFACE_("Save as game runtime"), ICON_NONE);
+```
+
+Ninguno de los 51 menús migrados hasta ahora es de Archivo ni de Exportar, así
+que no hay nada que reponer hacia atrás.
