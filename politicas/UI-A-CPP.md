@@ -529,3 +529,35 @@ comprobación cuando alguien toque el listado.
 
 Las 17 clases de 12 ficheros que heredaban de `PresetPanel` ya no tienen impedimento.
 Y con ellas, el editor de nodos: era su único bloqueo.
+
+## B8.1: la pestaña Mundo completa, en C++
+
+Los 11 paneles que registraba `properties_world.py` viven ahora en
+`source/blender/editors/space_buttons/fl_world_buttons.cc`. Se retiraron juntos del
+registro Python, incluida la animacion, las propiedades personalizadas, la superficie
+y el volumen por nodos y todos los subpaneles de ajustes de EEVEE.
+
+Verificacion contra las dos lineas base congeladas con el Python activo:
+
+- Registro: los 11 bloques de Mundo son identicos; ninguno falta ni sobra. El bloque
+  global `REGION PROPERTIES WINDOW` cambia de orden porque el registro nativo ocurre
+  antes que el de los paneles Python restantes, la misma diferencia transitoria ya
+  documentada para `properties_game.py`.
+- Dibujo: los 11 de 11 arboles `uiLayout` son identicos; ninguno falta ni sobra.
+  El parte global fue 1.972 de 2.004 bloques identicos, con 32 diferencias y 9
+  ausencias, todas ajenas a Mundo y procedentes de otras migraciones ya integradas.
+- Build completa `nb-codex install`: enlace verde.
+
+`WORLD_PT_viewport_display` tiene ademas un clon en el editor de nodos. Su dibujo C++
+se expone desde `FL_properties_ui.hpp`, para que la futura migracion de `space_node.py`
+lo reutilice sin duplicar logica. Hasta que ese editor se migre, queda en
+`properties_world.py` solo la declaracion Python que importa `space_node.py`; el modulo
+ya no figura en `bl_ui.__init__` y por tanto no registra ningun panel de la pestaña
+Mundo.
+
+Durante la integracion aparecieron dos opciones de linea de comandos de Mirror UV que
+llamaban a `dump_mirror_uv()` y `check_mirror_uv()`, nombres inexistentes en
+`FL_mesh_ops_selftest.hh`. Las unicas funciones reales, `dump()` y `check()`, prueban
+`paint.vertex_color_dirt` y no son equivalentes. Las opciones se dejaron desactivadas
+con un `TODO(Carril C)` explicito hasta que exista el arnes especifico; conectarlas al
+test equivocado habria producido evidencia falsa.

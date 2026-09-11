@@ -3078,39 +3078,6 @@ static int arg_handle_fl_check_object_select(int argc, const char **argv, void *
   return 0;
 }
 
-static const char arg_handle_fl_selftest_mirror_uv_doc[] =
-    "<filepath>\n"
-    "\tConstruye rejillas y cubos con UV deterministas, invoca `mesh.faces_mirror_uv`\n"
-    "\tpor su idname y vuelca las UV resultantes. Se compara con\n"
-    "\ttests/flipendo/mirroruv/baseline-python.txt (Carril C).";
-static int arg_handle_fl_selftest_mirror_uv(int argc, const char **argv, void *data)
-{
-  bContext *C = static_cast<bContext *>(data);
-  if (argc > 1) {
-    const bool ok = flipendo::mesh_ops_selftest::dump_mirror_uv(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
-    return 1;
-  }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
-}
-
-static const char arg_handle_fl_check_mirror_uv_doc[] =
-    "<filepath>\n"
-    "\tComo --fl-selftest-mirror-uv, pero compara con la linea base indicada. Sale con\n"
-    "\tcodigo 0 solo si no hay ni una diferencia (Carril C).";
-static int arg_handle_fl_check_mirror_uv(int argc, const char **argv, void *data)
-{
-  bContext *C = static_cast<bContext *>(data);
-  if (argc > 1) {
-    const bool ok = flipendo::mesh_ops_selftest::check_mirror_uv(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
-    return 1;
-  }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
-}
-
 static const char arg_handle_fl_dump_optypes_doc[] =
     "<filepath>\n"
     "\tVuelca la superficie de registro (idname, nombre, descripcion y todas las\n"
@@ -3762,8 +3729,9 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
       ba, nullptr, "--fl-selftest-object-ops", CB(arg_handle_fl_selftest_object_ops), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-mesh-ops", CB(arg_handle_fl_selftest_mesh_ops), C);
   BLI_args_add(ba, nullptr, "--fl-check-mesh-ops", CB(arg_handle_fl_check_mesh_ops), C);
-  BLI_args_add(ba, nullptr, "--fl-selftest-mirror-uv", CB(arg_handle_fl_selftest_mirror_uv), C);
-  BLI_args_add(ba, nullptr, "--fl-check-mirror-uv", CB(arg_handle_fl_check_mirror_uv), C);
+  /* TODO(Carril C): Reactivar --fl-selftest-mirror-uv y --fl-check-mirror-uv cuando
+   * FL_mesh_ops_selftest.hh exponga un arnes especifico para faces_mirror_uv. Las funciones
+   * dump()/check() actuales prueban paint.vertex_color_dirt y no son equivalentes. */
   BLI_args_add(
       ba, nullptr, "--fl-selftest-rigidbody-ops", CB(arg_handle_fl_selftest_rigidbody_ops), C);
   BLI_args_add(
