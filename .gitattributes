@@ -99,3 +99,14 @@
 *.pdf filter=lfs diff=lfs merge=lfs -text
 *.dat filter=lfs diff=lfs merge=lfs -text
 *.csv filter=lfs diff=lfs merge=lfs -text
+
+# --- Clasificacion para las estadisticas de lenguaje de GitHub (linguist) ---
+# extern/ y lib/ son terceros vendorizados: se mantienen verbatim y no son codigo
+# de Flipendo. Sin esto, GitHub atribuye a este proyecto el C de lzma, nanosvg,
+# xxhash o curve_fit_nd, que no hemos escrito ni vamos a reescribir.
+extern/** linguist-vendored
+lib/** linguist-vendored
+# Documentacion, no codigo.
+doc/** linguist-documentation
+# Datos empaquetados como fuente.
+release/datafiles/** linguist-generated
