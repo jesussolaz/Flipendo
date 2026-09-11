@@ -771,3 +771,104 @@ reducido a ellas: sin colisión de `idname` y con el resto en C++.
 
 Lo único que se pierde de verdad al migrar: la rama `nodeitems_utils` de `NODE_MT_add`,
 que dibuja categorías de nodos de add-ons de terceros. Sin intérprete no hay add-ons.
+
+## T2: el editor de nodos, cerrado — 27 de sus 34 tipos en C++
+
+`scripts/startup/bl_ui/space_node.py` pasa de **1.063 líneas y 34 clases
+registradas a 84 líneas y 7**. Los 27 tipos propios viven en
+`source/blender/editors/space_node/fl_node_ui.cc`: `NODE_HT_header`, 8 menús, los
+6 paneles emergentes de la cabecera, los 11 de la barra lateral y
+`NODE_PT_node_color_presets`. Con `fl_node_menus.cc` (los tres del keymap) el
+editor queda entero salvo los clones de otro dominio.
+
+### Las cifras
+
+Sobre una **copia privada** del bundle recién instalado (`ditto`, 4.193 ficheros,
+0 `.py` huérfanos respecto al repo):
+
+| Volcado | Bloques | Resultado |
+|---|---:|---|
+| Registro (`--fl-dump-ui`) | **2.113** | 2.110 idénticos, **3 distintos**, 0 faltan, 0 sobran |
+| Diseño (`--fl-dump-ui-layout`) | **2.004** | **2.004 idénticos, 0 distintos**, 0 faltan, 0 sobran |
+
+Y los 27 tipos migrados, comparados uno a uno: **27/27 idénticos en el registro y
+27/27 en el diseño**. Los dos volcados se reproducen byte a byte. El verificador
+sigue detectando: cambiada a mano la etiqueta de `NODE_PT_backdrop` en una copia de
+la línea base, la caza con su bloque y su línea y sale con código 1.
+
+Las **3 diferencias del registro son bloques `REGION`**, o sea listas que cambian
+de orden sin que cambie ningún campo —la trampa de `order` ya documentada—, y una
+de ellas ni siquiera es de este cambio:
+
+1. `REGION NODE_EDITOR UI`: mismo conjunto, dos intercambios. `NODE_PT_annotation`
+   baja del puesto 10 al 11 (sigue siendo Python, así que se registra después) y
+   `NODE_WORLD_PT_viewport_display` adelanta a `NODE_MATERIAL_PT_viewport` (los dos
+   con `order` 10). **No cumple la regla del prefijo** de
+   `MENUS-DEL-KEYMAP-A-CPP.md`: lo que queda en Python no es el sufijo de la lista,
+   está intercalado. Desaparece cuando se migren los 7 que faltan.
+2. `REGION PROPERTIES HEADER`: `NODE_PT_node_color_presets` pasa del puesto 15 al 1
+   entre 18 paneles de preset que siguen siendo Python.
+3. `REGION PROPERTIES WINDOW`: **ajena**. Viene de tres commits del carril de
+   Propiedades posteriores a la línea base (`3b961a50532`, `dfdaeebe94c`,
+   `d94d9da8b97`). Se comprobó mirando los commits, no suponiéndolo.
+
+### La función compartida se usó en cuanto existió
+
+De los 8 tipos que la medición de D3 dejó fuera «porque son de otro dominio»,
+**uno ya tenía su función compartida escrita** y por eso entra:
+`NODE_WORLD_PT_viewport_display` llama a
+`flipendo::properties_ui::world_viewport_display_draw()`, que dejó el carril de
+Propiedades al migrar la pestaña Mundo. Ni una línea duplicada. Es la prueba de que
+la regla «función compartida, nunca copia» no es un freno: en cuanto la función
+existe, el clon se migra en cuatro líneas.
+
+Los otros **7 siguen en Python** —sin colisión de `idname`, porque el C++ no
+declara ninguno—: los 4 de `properties_material.py`, los 2 de
+`properties_data_light.py` y `NODE_PT_annotation`, que hereda `AnnotationDataPanel`
+de `properties_grease_pencil_common.py`. Reimplementarlos aquí serían ~285 líneas
+duplicadas a sabiendas.
+
+Efecto lateral que conviene saber: **`properties_world.py` ya no lo importa nadie**.
+Solo lo hacía `space_node.py`, para ese clon. No se borra desde aquí porque es
+fichero de otro carril.
+
+### Trampas nuevas, las que costaron tiempo
+
+**Hay `draw()` de Python que revientan a medias, y la línea base recoge el medio
+dibujo.** En la escena de fábrica `snode.node_tree` es `None`, así que
+`NODE_PT_geometry_node_tool_object_types` y `..._mode` dejaban dibujada la columna
+y nada más (la excepción salta en `col.active = group.is_tool`, después de crear la
+columna), `..._options` no dibujaba nada, y
+`NODE_MT_node_tree_interface_context_menu` salía vacío. **El C++ tiene que cortar
+exactamente donde cortaba la excepción**, ni antes ni después. Sin eso el volcado de
+diseño no habría dado 2.004/2.004.
+
+Esto no es «codificar un fallo» en el sentido de `OUTLINER_MT_context_menu`: ahí el
+dibujo se corta por un artefacto del volcador; aquí se corta porque la escena no
+tiene los datos, y con datos no se corta. El corte está marcado en cada sitio del
+`.cc` con su motivo.
+
+**`'GPENCIL'` ya no existe.** El conjunto `types_that_support_material` de la
+cabecera lo lleva, pero el identificador de RNA en 4.5 es `'GREASEPENCIL'`: hoy los
+objetos de lápiz de cera **no** están en ese conjunto. Se copia tal cual,
+comparando identificadores de RNA, para no cambiar el comportamiento a escondidas
+de una migración. Arreglarlo es otro cambio, con su línea base regenerada.
+
+**Un panel de presets vive en el editor de Propiedades.** `PresetPanel` tiene
+`bl_space_type = 'PROPERTIES'` y `bl_region_type = 'HEADER'`, así que
+`NODE_PT_node_color_presets` —y los otros 16 herederos— se registran en la cabecera
+del editor de Propiedades, no en la de su editor. Y `ED_spacetype_node()` corre
+**antes** que `ED_spacetype_buttons()`, así que esa región todavía no existe: hay
+que registrarlo desde `ED_spacetypes_init()` después del segundo. Quien migre otro
+`PresetPanel` se encontrará lo mismo.
+
+**`operator_menu_enum` sin texto no cabe en `uiItemMenuEnumO()`**, que exige un
+`StringRefNull`. Para que el nombre lo ponga el operador (el "Lasso Select" de
+`NODE_MT_select`) hay que bajar a `uiItemMenuEnumFullO_ptr()` con `std::nullopt`.
+
+**La regla de medir sobre una copia vale también para el `cp`.** Un `cp -R` del
+bundle lanzado mientras otro carril instalaba produjo una copia **incompleta** —sin
+el binario y sin `addons_core`— y con ella el verificador dio un falso «4 distintos,
+6 faltan» de `bl_pkg`. Con `ditto` y comprobando que origen y copia tienen los
+mismos 4.193 ficheros, limpio. **Antes de creerse una diferencia, cuenta los
+ficheros de la copia.**
