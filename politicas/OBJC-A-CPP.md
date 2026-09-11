@@ -565,3 +565,197 @@ patron preferente (§11-bis).
 `.cc`, se borra su rama `__OBJC__` y las cabeceras se quedan con los tipos de
 metal-cpp a secas. Mientras tanto, la rama `__OBJC__` es lo que permite que el arbol
 compile despues de cada paso en vez de estar roto veinte ficheros seguidos.
+
+---
+
+# Parte II — GHOST y AppKit (carril GHOST, 2026-09-11)
+
+> La parte I cubre `source/blender/gpu/metal`, donde hay binding oficial (metal-cpp).
+> Aqui no lo hay: **metal-cpp no cubre AppKit**. Esta parte no reescribe nada de la
+> anterior; anade lo que cambia cuando el binding no existe.
+
+## 17. La regla que hace barata la frontera: los punteros a CLASE manglan igual
+
+Es el hallazgo central de esta fase y **deroga la impresion, razonable pero falsa, de
+que sin binding hay que neutralizar firmas**. Medido con `nm` sobre dos objetos
+compilados con las flags reales del arbol:
+
+    .mm :  @class NSView;  void Foo::take(bool, NSView *, CAMetalLayer *, int)
+    .cc :   class NSView;  void Foo::take(bool, NSView *, CAMetalLayer *, int)
+
+    los DOS exportan  __ZN3Foo4takeEbP6NSViewP12CAMetalLayeri
+
+Un puntero a clase de Objective-C y un puntero a una clase C++ **declarada y no
+definida con el mismo nombre** producen el mismo simbolo. Consecuencia practica: para
+las clases de Cocoa basta con declarar el mismo nombre de las dos formas segun el modo
+y **la frontera de enlazado desaparece sin perder tipado y sin castear nada**.
+
+Es mejor de lo que se pudo hacer en `gpu/metal`, donde el choque era `id<MTLDevice>`
+contra `MTL::Device *`: dos nombres DISTINTOS, y por eso alli hubo que neutralizar 8
+firmas. Aqui no hizo falta neutralizar ninguna por ese motivo.
+
+### Donde NO vale: los protocolos
+
+    id<MTLTexture>  ->  PU21objcproto10MTLTexture11objc_object
+    MTL::Texture *  ->  PN3MTL7TextureE
+    id              ->  P11objc_object      (en los DOS modos)
+
+El protocolo entra en el simbolo mangleado. Un `id<T>` en un PARAMETRO que cruce la
+frontera compila en los dos lados y no enlaza. Salidas, por orden de preferencia:
+
+1. Quitar el tipo de la firma (§11-bis), que sigue siendo lo mejor.
+2. `id` pelado, que mangla igual en los dos modos.
+
+### Y donde da igual: los tipos de RETORNO
+
+El ABI de Itanium **no mangla el tipo de retorno** de las funciones que no son
+plantilla. Por eso un alias de doble modo en el retorno es gratis: `GHOST_ObjCCompat.hh`
+deja `id<MTLTexture>` para los `.mm` que quedan y `MTL::Texture *` para los `.cc`, y
+ninguno de los dos lados pierde tipado. **En los parametros, jamas.**
+
+## 18. Trampa: los nombres `MTL*` a secas ya estan ocupados en modo C++
+
+`mtl_objc_compat.hh` aliasa cientos de nombres al espacio de metal-cpp
+(`using MTLDevice = MTL::Device;`). Declarar en otra cabecera una clase opaca global con
+ese mismo nombre revienta en cuanto un `.cc` incluye las dos —que es justo el caso que se
+queria desbloquear— con «redefinition of 'MTLDevice' as a different kind of symbol».
+Por eso `GHOST_ObjCCompat.hh` **no declara ningun `MTL*` global**: en modo C++ los
+declara dentro de `namespace MTL` (donde metal-cpp los pone) y en modo Objective-C como
+los `@protocol` que realmente son. De paso se retiro el apaño heredado de Blender de
+escribir `@class MTLDevice;`, que era una clase FALSA con el nombre de un protocolo.
+
+## 19. Llamar a AppKit desde C++: `GHOST_ObjCRuntime.hh`
+
+El runtime de Objective-C es una biblioteca de C, asi que cualquier `.cc` puede mandar
+cualquier mensaje. Lo que hay que escribir a mano es el reparto de `objc_msgSend`, que
+en x86_64 **no es una sola funcion**:
+
+- Agregado de **mas de 16 bytes** → `objc_msgSend_stret`, con puntero oculto al hueco
+  del resultado como PRIMER argumento. `NSRect` son 32 bytes y cae aqui. `NSPoint`,
+  `NSSize` y `NSRange` son 16 y NO caen: vuelven en registros con el envio normal.
+- `long double` → `objc_msgSend_fpret`. **Aqui se discrepa de metal-cpp a proposito:**
+  metal-cpp manda por `fpret` todo lo que sea coma flotante, y en x86_64 eso no hace
+  falta para `float` ni `double` (vuelven en `xmm0`); la documentacion de Apple reserva
+  `fpret` para `long double`.
+- Todo lo demas → `objc_msgSend`.
+
+Equivocarse no da error de compilacion: da basura. Comprobado empiricamente con una
+`NSView` real: `convertSizeToBacking:(37,11)` devuelve `74x22`, el factor 2x de esta
+pantalla.
+
+**`@autoreleasepool` NO se traduce con `NSAutoreleasePool`.** Mirando los simbolos
+indefinidos de un `.mm` original se ve que el compilador emite
+`objc_autoreleasePoolPush`/`Pop`: esa pareja es la traduccion literal. El otro camino da
+el mismo resultado observable por otro mecanismo, y en una migracion eso no vale.
+
+## 20. Las constantes escritas a mano son el punto ciego, y tienen cura
+
+Al quitar `<Foundation/Foundation.h>` hay que escribir los valores de los enumerados.
+**Un 13 en vez de un 14 devuelve la carpeta equivocada sin un solo aviso.** Cura barata:
+una sonda `.mm` con `static_assert` contra los simbolos reales del SDK, que falla al
+compilar si Apple cambia un valor. En esta fase: **19 de 19 comprobados** (8
+`NSSearchPathDirectory`, 2 mascaras de dominio, `NSASCIIStringEncoding`,
+`NSOrderedAscending`, y los tamanos de `NSUInteger`, `BOOL`, `NSComparisonResult`,
+`NSRect`, `NSSize`, `NSPoint` y `NSRange`, de los que depende el reparto de msgSend).
+
+Y para los selectores, que es lo otro que el compilador deja de mirar: una sonda que
+crea los objetos REALES y pregunta `respondsToSelector:` por cada uno. En
+`GHOST_ContextCGL`: **54 comprobados, 0 fallos**, contra un dispositivo Metal de verdad.
+
+Otras trampas medidas en esta fase:
+
+- `[NSString stringWithFormat:]` es **variadico** y su ABI no se puede describir con una
+  firma fija de `objc_msgSend`. Se formatea con `snprintf` y se crea la cadena ya hecha.
+- `desc.colorAttachments[0]` **no es un array de C**: es
+  `[[desc colorAttachments] objectAtIndexedSubscript:0]`.
+- `MTLClearColor` son 32 bytes que se pasan **por valor**.
+- `CAEdgeAntialiasingMask` es `unsigned int`, **no** `NSUInteger`: pasar 8 bytes donde el
+  metodo espera 4 deja basura en la parte alta del registro.
+- `MIN(...)` llegaba por `<Foundation/Foundation.h>` → `<sys/param.h>`. Al quitar
+  Foundation desaparece.
+- CoreFoundation y CoreGraphics **son C puro**: se incluyen desde un `.cc` sin arrastrar
+  AppKit. Conviene usar sus simbolos de verdad (`kCFBundleVersionKey`) en vez de escribir
+  la cadena a mano: si Apple los cambia, lo dice el enlazador.
+
+## 21. Recibir mensajes: fabricar clases en tiempo de ejecucion. PROBADO
+
+Es lo que bloquea `GHOST_WindowCocoa` y `GHOST_SystemCocoa`: ahi GHOST deja de mandar
+mensajes y pasa a **recibirlos**. Se hizo un piloto y **funciona: 5 de 5 devoluciones de
+llamada desde C++ puro**.
+
+    Class c = objc_allocateClassPair(objc_getClass("NSObject"), "FlipendoWindowDelegate", 0);
+    class_addMethod(c, sel_registerName("windowDidResize:"),   (IMP)imp_resize, "v@:@");
+    class_addMethod(c, sel_registerName("windowShouldClose:"), (IMP)imp_close,  "c@:@");
+    if (Protocol *p = objc_getProtocol("NSWindowDelegate")) class_addProtocol(c, p);
+    objc_registerClassPair(c);
+
+Lo que hay que tener presente:
+
+- La implementacion es una funcion de C normal, pero **los dos primeros parametros
+  ocultos (`self`, `_cmd`) se escriben a mano**: en Objective-C los pone el compilador.
+- La **codificacion de tipo** describe el retorno y TODOS los parametros, empezando por
+  `self` (`@`) y `_cmd` (`:`). `v@:@` = void con un objeto. `c@:@` = `BOOL` con un
+  objeto. Para `drawRect:`, que recibe un `NSRect` por valor, la que funciona es
+  **`"v@:{CGRect={CGPoint=dd}{CGSize=dd}}"`**. Escribirla mal **no da error**.
+- Funciona igual para **subclasear** (`NSWindow` → `canBecomeKeyWindow`, `NSView` →
+  `drawRect:`, `keyDown:`), no solo para delegados.
+- `class_addProtocol` hace que `conformsToProtocol:` devuelva SI, que es lo que consulta
+  parte de AppKit.
+
+Verificado: `windowDidResize:` 1, `windowDidMove:` 1, `windowShouldClose:` 1,
+`canBecomeKeyWindow` 4, `drawRect:` 1, sobre una `NSWindow` real movida y redimensionada.
+
+## 22. Como se verifica GHOST, que NO se parece a verificar el backend de Metal
+
+`gpu/metal` se verificaba con un render a fichero. **Eso no vale aqui**: el render en
+`--background` no abre ventana, asi que no ejecuta ni una linea de `GHOST_ContextCGL`.
+La verificacion de este carril es la interfaz de verdad, y tiene dos trampas que costaron
+una hora:
+
+1. **`screencapture -l<ventana>` NO incluye el contenido de una `CAMetalLayer`.** Devuelve
+   la ventana vacia: solo marco, botones y titulo. Todas las comparaciones daban «0
+   pixeles distintos» y parecia que el teclado no llegaba y que Blender no dibujaba. La
+   captura de **PANTALLA COMPLETA** si compone la capa Metal. **Nunca verificar una
+   ventana Metal con captura por ventana.**
+2. **Un `kill -9` sobre Blender envenena el arranque siguiente.** macOS abre su dialogo
+   «la ultima vez se cerro inesperadamente, ¿reabro las ventanas?», que es MODAL y **se
+   queda con todo el teclado**. Mientras estuvo delante, ninguna tecla llego a Blender.
+   **Cerrar siempre con SIGTERM o Cmd+Q.**
+
+**La regla general que sale de aqui, y vale para cualquier carril:** ante un observable
+que no cambia, lo primero es probar el arnes contra algo que se sabe que funciona. Aqui
+se probaron las mismas teclas sinteticas sobre TextEdit, que cambio 19.843 pixeles. El
+arnes funcionaba; lo que fallaba era el arnes.
+
+Bateria minima para dar por bueno un cambio en GHOST:
+
+| Comprobacion | Como |
+|---|---|
+| Dibuja | captura de PANTALLA COMPLETA con la vista 3D visible |
+| Teclado | `T` y `N` sobre la vista cambian pixeles (medido: 68.737 y 466.996) |
+| Raton | la rueda sobre la vista cambia pixeles (medido: 2.833.074) |
+| Ventana | mover, redimensionar, minimizar/restaurar, pantalla completa |
+| Cerrar | `Cmd+Q` termina el proceso |
+| Player | `ArpgNative.blend` ata 5/5 y dibuja |
+| Regresion del motor | render EEVEE 1920x1080, 0 pixeles contra la linea base |
+
+## 23. Estado de `intern/ghost`
+
+| Fichero | Lineas | Estado |
+|---|---:|---|
+| `GHOST_ContextCGL.hh` | — | **cabecera legible desde C++**; desbloquea los 5 `.mm` de Metal |
+| `GHOST_ObjCCompat.hh` | nuevo | puente de doble modo para las cabeceras |
+| `GHOST_ObjCRuntime.hh` | nuevo | `msg<>`, `msg_super`, `AutoreleasePool`, cadenas, retain/release |
+| `GHOST_SystemPathsCocoa` | 127 | **migrado** |
+| `GHOST_NDOFManagerCocoa` | 280 | **migrado** |
+| `GHOST_ContextCGL` | 434 | **migrado** |
+| `GHOST_WindowCocoa.mm` | 1.300 | pendiente: 3 clases, 32 metodos, 111 envios |
+| `GHOST_WindowViewCocoa.hh` | 534 | pendiente: 1 clase con `NSTextInputClient`, 37 metodos |
+| `GHOST_SystemCocoa.mm` | 2.199 | pendiente: 1 clase, 20 metodos, 129 envios |
+
+Objective-C++ en `intern/ghost`: **4.340 → 3.499**. En todo el arbol: **17.362 → 16.518**.
+
+**Los tres pendientes van juntos o no van:** la ventana, su vista y su delegado se crean
+a la vez y no se pueden partir. Son 89 metodos con codificacion de tipo escrita a mano
+en el camino de entrada del programa. La tecnica ya esta probada (§21); lo que queda es
+volumen y cuidado.
