@@ -31,9 +31,11 @@
 #include "DNA_windowmanager_types.h"
 
 #include "BLI_listbase.h"
+#include "BLI_path_utils.hh"
 #include "BLI_string.h"
 #include "BLI_timer.h"
 
+#include "BKE_appdir.hh"
 #include "BKE_context.hh"
 #include "BKE_main.hh"
 #include "BKE_screen.hh"
@@ -47,6 +49,8 @@
 #include "WM_types.hh"
 
 #include "wm_event_system.hh"
+
+#include "FL_selftest_compare.hh"
 
 namespace {
 
@@ -797,3 +801,77 @@ bool FL_context_operators_selftest_schedule(bContext *C, const char *filepath)
                      false);
   return true;
 }
+
+/* -------------------------------------------------------------------------- */
+/** \name --fl-check-context-ops: veredicto, no solo volcado
+ *
+ * `--fl-selftest-context-ops` solo ESCRIBE un fichero; quien juzgaba era un comparador
+ * de fuera, byte a byte, contra `tests/flipendo/operators/execution-python.txt`. Como el
+ * C++ corrige a proposito un fallo del Python en `wm.context_cycle_array` (el Python
+ * cortaba la tupla y no rotaba nada), esa comparacion quedaba **roja para siempre**, y un
+ * rojo permanente acaba en que nadie mira los rojos.
+ *
+ * Aqui hay un comprobador de verdad: ejecuta la misma prueba y compara con la linea base
+ * del Python, que NO se toca —es la prueba de lo que hacia—, leyendo la divergencia
+ * declarada en `execution-python.txt.divergencias`. Verde solo si el C++ da exactamente
+ * el valor corregido que se declaro; si vuelve al valor del Python, es una regresion y
+ * sale en rojo diciendolo.
+ * \{ */
+
+namespace {
+
+struct ContextCheckTimerData {
+  bContext *C;
+  std::string baseline_path;
+  int attempts = 0;
+};
+
+double context_check_timer(uintptr_t /*uuid*/, void *user_data)
+{
+  ContextCheckTimerData *data = static_cast<ContextCheckTimerData *>(user_data);
+  data->attempts++;
+
+  wmWindow *win = CTX_wm_window(data->C);
+  if (win == nullptr || WM_window_get_active_screen(win) == nullptr) {
+    if (data->attempts < 100) {
+      return 0.05;
+    }
+    std::fprintf(stderr, "fl-check-context-ops: la interfaz no llego a estar lista\n");
+    WM_exit(data->C, EXIT_FAILURE);
+    return -1.0;
+  }
+
+  char actual_path[FILE_MAX];
+  BLI_path_join(
+      actual_path, sizeof(actual_path), BKE_tempdir_session(), "fl-check-context-ops-actual.txt");
+
+  if (!FL_context_operators_selftest(data->C, actual_path)) {
+    std::fprintf(stderr,
+                 "fl-check-context-ops: la prueba no llego a volcar nada en '%s'\n",
+                 actual_path);
+    WM_exit(data->C, EXIT_FAILURE);
+    return -1.0;
+  }
+
+  const bool ok = flipendo::selftest::compare_to_baseline(
+      "fl-check-context-ops", actual_path, data->baseline_path.c_str());
+  WM_exit(data->C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  return -1.0;
+}
+
+void context_check_timer_free(uintptr_t /*uuid*/, void *user_data)
+{
+  delete static_cast<ContextCheckTimerData *>(user_data);
+}
+
+}  // namespace
+
+bool FL_context_operators_check_schedule(bContext *C, const char *baseline_path)
+{
+  ContextCheckTimerData *data = new ContextCheckTimerData{C, baseline_path};
+  BLI_timer_register(
+      uintptr_t(data), context_check_timer, data, context_check_timer_free, 0.05, false);
+  return true;
+}
+
+/** \} */

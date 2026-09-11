@@ -1,0 +1,22 @@
+# Divergencias deliberadas de tests/flipendo/operators/execution-python.txt
+# Carril ARNES, 2026-09-11. La lee source/blender/editors/include/FL_selftest_compare.hh,
+# a traves de --fl-check-context-ops.
+#
+# QUE ES ESTO Y POR QUE NO SE TOCA LA LINEA BASE
+# ----------------------------------------------
+# `execution-python.txt` es la foto de lo que hacia el Python, congelada con el interprete
+# todavia vivo. Es la PRUEBA: reescribirla para que el comprobador se calle seria borrar la
+# evidencia. Pero dejar el comprobador en rojo para siempre tampoco vale, porque un rojo
+# permanente termina en que nadie mira los rojos.
+#
+# Solucion: la linea base se queda como esta y la diferencia se declara aqui, con su motivo.
+# El comprobador entonces exige el valor CORREGIDO del C++, ni el del Python ni otro:
+#  - si el C++ da el valor declarado -> verde, y lo dice con el motivo;
+#  - si vuelve al valor del Python   -> ROJO por regresion;
+#  - si da cualquier otra cosa       -> ROJO;
+#  - si la divergencia deja de ocurrir -> ROJO, porque entonces esta declaracion sobra.
+
+linea 2
+python:context_cycle_array status=4 cursor=[1,2,3]
+cpp:context_cycle_array status=4 cursor=[2,3,1]
+razon:El Python de wm.context_cycle_array hacia array[:] y luego append/pop, pero en esta version bpy_prop_array y mathutils.Vector devuelven una TUPLA al cortar: levantaba AttributeError y no rotaba nada, aunque devolviera OPERATOR_FINISHED. El C++ (wm_context_ops.cc, carril B) ejecuta la rotacion que el operador promete: [1,2,3] -> [2,3,1]. Decision del carril B, documentada en ~/Flipendo/dev/noche/informes/B1-context-ops.md.

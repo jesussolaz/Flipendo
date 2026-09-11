@@ -22,6 +22,15 @@ bool FL_context_operators_selftest(bContext *C, const char *filepath);
 /** Espera al primer ciclo de interfaz antes de ejecutar la prueba real. */
 bool FL_context_operators_selftest_schedule(bContext *C, const char *filepath);
 
+/**
+ * Como el anterior, pero ademas COMPARA con la linea base y da veredicto.
+ *
+ * Lee las divergencias deliberadas declaradas en `<linea-base>.divergencias`, para que la
+ * correccion consciente de `wm.context_cycle_array` no deje un rojo permanente sin dejar
+ * de vigilar que el C++ siga dando el valor corregido.
+ */
+bool FL_context_operators_check_schedule(bContext *C, const char *baseline_path);
+
 /** Exercise URL/document resolution and safe error branches of the native system operators. */
 bool FL_wm_system_operators_selftest(bContext *C, const char *filepath);
 
