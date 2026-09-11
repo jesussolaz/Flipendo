@@ -212,8 +212,31 @@ Trampa ya conocida y pagada en VideoTexture, que aquí también aplica: **el
 
 ## 8. Lo que este documento NO dice
 
-- No se ha escrito todavía una línea de la interfaz nativa: esto es el inventario
-  y el plan, hecho leyendo los 15 ficheros y la capa de dibujo del rasterizador.
+- El **paso 1 ya está hecho** (`FL_UiCanvas` y el gancho nativo de dibujado,
+  commit «Interfaz de juego: el lienzo 2D nativo, primera pieza del sustituto de
+  bgui»). Verificado con captura de pantalla en los dos binarios: en la zona que
+  pinta el lienzo, 749 píxeles distintos de 63.000 (1,19 %, delta medio 1,22), y
+  eso es el 3D que se ve por debajo del panel translúcido; en el resto de la
+  pantalla, donde no pinta nadie, la diferencia es tres veces mayor (3,48 %).
+  Del paso 2 en adelante no hay todavía ni una línea.
 - Las cifras de tamaño son estimaciones, no medidas.
 - `doc/python_api/rst/bgui/` (la documentación de la API) tendrá que reescribirse
   o retirarse con la librería; no se ha contado en las 2.391 líneas.
+
+---
+
+## 9. Sonda de verificación ya disponible
+
+```
+FL_UI_DEMO=1 FL_UI_SHOT=<png> FL_UI_SHOT_FRAME=60 FL_UI_EXIT=1 \
+  <Blenderplayer> -w 800 600 100 100 <escena.blend>
+```
+
+`FL_UI_DEMO` registra un dibujante de demostración que pinta un panel con
+degradado de cuatro esquinas, borde, título, texto de dos líneas y barra de
+progreso; `FL_UI_SHOT` captura la pantalla al frame indicado. Sirve para la línea
+base de cada widget que se vaya añadiendo.
+
+**Trampa pagada:** la captura se *encola* y el motor la vuelca en `EndFrame`,
+después de dibujar. Pedirla y salir en el mismo tic la deja sin escribir, y el log
+dice que se ha capturado. La sonda espera 15 frames antes de salir.
