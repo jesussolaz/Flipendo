@@ -371,3 +371,74 @@ su mismo contenido, antes que los de Python en vez de después.
 La lección para el resto de `bl_ui`: **migrar por pestañas o por editores completos, no
 panel suelto a panel suelto.** Un editor entero migrado de una vez no tiene vecinos
 Python con los que desempatar, y el orden sale exacto.
+
+## D3: los dos editores de ÁNIMA, medidos antes de tocarlos
+
+La norma que salió de D2 —migrar editores completos, no paneles sueltos— obliga a medir
+el editor entero antes de empezar. Medidos los dos que pide el flujo de ÁNIMA:
+
+| | `space_node.py` | `space_image.py` |
+|---|---:|---:|
+| Líneas | 1.209 | 1.585 |
+| Tipos que registra | 30 | 60 |
+| Cabeceras | 1 | 2 |
+| Menús | 11 | 9 |
+| Paneles | 18 | 46 |
+| **UIList** | 0 | **2** |
+| **AssetShelf** | 0 | **1** |
+| Superficie ajena a reimplementar | ~285 líneas | ~1.965 líneas compartidas |
+
+### El editor de nodos **sí** cabe entero
+
+Los 30 tipos son todos `Panel`, `Menu` o `Header`, que es exactamente lo que
+`FL_ui_registry` sabe declarar. Todas las llamadas de dibujo tienen equivalente C++
+comprobado: `uiTemplateID`, `uiTemplateHeader`, `uiTemplateNodeTreeInterface`,
+`uiItemPopoverPanel`, `uiItemMenuEnumO`, `uiItemMContents` (el `menu_contents` del
+Python) y `uiItemSpacer` (el `separator_spacer`).
+
+Su superficie ajena son **7 paneles clonados** con la factoría `node_panel()`, que copia
+una clase de las pestañas de Propiedades y la re-registra como `NODE_<nombre>` en la
+barra lateral, categoría "Options": `EEVEE_NEXT_MATERIAL_PT_settings` (+`_surface`,
++`_volume`), `MATERIAL_PT_viewport`, `WORLD_PT_viewport_display`, `DATA_PT_light` y
+`DATA_PT_EEVEE_light` — 187 líneas en total — más `AnnotationDataPanel` (98).
+
+**Dónde está la línea de propiedad:** los originales viven en las pestañas de
+Propiedades y son de otro carril; los clones `NODE_*` son del editor de nodos y por
+tanto de este. Reimplementar sus siete `draw()` aquí duplica lógica a sabiendas, y hay
+que escribirlo: cuando las pestañas de Propiedades sean C++, los dos sitios se unifican
+en una función compartida. Duplicar sin decirlo es como se desincronizan las cosas.
+
+Lo único que se pierde de verdad es la rama `nodeitems_utils` de `NODE_MT_add`, que
+dibuja las categorías de nodos de add-ons de terceros. Sin intérprete no hay add-ons,
+así que esa capacidad ya estaba condenada; los cuatro árboles de nodos integrados
+(geometría, composición, sombreado y textura) van por `menu_contents` y no dependen de
+ella.
+
+### El editor de imagen/UV **no** cabe, y no es cuestión de tamaño
+
+Dos obstáculos duros, ninguno resoluble escribiendo más rápido:
+
+1. **`FL_ui_registry` no sabe declarar `UIList` ni `AssetShelf`.** `space_image.py`
+   registra `IMAGE_UL_render_slots`, `IMAGE_UL_udim_tiles` y `IMAGE_AST_brush_paint`.
+   El motor tiene `uiListType` y `AssetShelfType`, así que es posible, pero hay que
+   añadir `UIListDecl` y `AssetShelfDecl` al registro **antes** de intentar el editor.
+   Es el primer trabajo del que lo coja.
+2. **14 llamadas a `properties_paint_common`** (1.965 líneas): `brush_settings`,
+   `brush_texture_settings`, `brush_basic_texpaint_settings`, `draw_color_settings` y
+   los mixins `UnifiedPaintPanel`, `BrushSelectPanel`, `ClonePanel`, `StrokePanel`,
+   `FalloffPanel`, `DisplayPanel`… Ese módulo lo comparten los modos de pintura de la
+   vista 3D y las pestañas de Propiedades, o sea **otros dos carriles**. Migrarlo desde
+   aquí sería pisar dos dominios a la vez, y migrar solo el trozo que usa el editor de
+   imagen lo dejaría duplicado.
+
+**Orden recomendado para el editor de imagen/UV**, cuando se acometa:
+
+1. Añadir `UIListDecl` y `AssetShelfDecl` a `FL_ui_registry`, con su volcado
+   correspondiente en `--fl-dump-ui` (hoy no salen en el registro: el volcador recorre
+   `paneltypes` y `headertypes`, y los `uiListType` viven en otro sitio). **Esto es
+   deuda del propio verificador y conviene saberla**: un `UIList` migrado hoy no lo
+   vería nadie.
+2. Migrar `properties_paint_common` a C++ como módulo compartido, coordinado con el
+   carril de la vista 3D y el de Propiedades.
+3. Entonces, y solo entonces, el editor de imagen/UV entero: 46 paneles, 9 menús,
+   2 cabeceras, 2 listas y una estantería de recursos.
