@@ -75,6 +75,11 @@ void types_register(ARegionType *region_type, const int space_type);
  * \{ */
 
 void type_register(std::unique_ptr<AssetShelfType> type);
+/**
+ * Todos los tipos de estanteria dados de alta. Existe para que el volcado de interfaz
+ * pueda verlos: sin esto, una estanteria migrada a C++ no la veria nadie.
+ */
+blender::Span<std::unique_ptr<AssetShelfType>> types_all();
 void type_unregister(const AssetShelfType &shelf_type);
 /**
  * Poll an asset shelf type for display as a popup. Doesn't check for space-type (the type's

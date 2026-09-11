@@ -1355,6 +1355,12 @@ void WM_operator_type_modal_from_exec_for_object_edit_coords(wmOperatorType *ot)
  */
 void WM_uilisttype_init();
 uiListType *WM_uilisttype_find(blender::StringRef idname, bool quiet);
+/**
+ * Todos los `uiListType` dados de alta. Existe para que el volcado de interfaz pueda
+ * verlos: sin esto, una lista migrada a C++ no la veria nadie, que es justo el falso
+ * positivo que este proyecto se comprometio a no tener. Ver `FL_ui_dump.hpp`.
+ */
+blender::Span<uiListType *> WM_uilisttypes_registered_get();
 bool WM_uilisttype_add(uiListType *ult);
 void WM_uilisttype_remove_ptr(Main *bmain, uiListType *ult);
 void WM_uilisttype_free();

@@ -59,6 +59,11 @@ uiListType *WM_uilisttype_find(const StringRef idname, bool quiet)
   return nullptr;
 }
 
+blender::Span<uiListType *> WM_uilisttypes_registered_get()
+{
+  return get_list_type_map();
+}
+
 bool WM_uilisttype_add(uiListType *ult)
 {
   get_list_type_map().add(ult);

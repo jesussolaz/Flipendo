@@ -61,6 +61,11 @@ static Vector<std::unique_ptr<AssetShelfType>> &static_shelf_types()
   return shelf_types;
 }
 
+blender::Span<std::unique_ptr<AssetShelfType>> types_all()
+{
+  return static_shelf_types();
+}
+
 void type_register(std::unique_ptr<AssetShelfType> type)
 {
   Vector<std::unique_ptr<AssetShelfType>> &shelf_types = static_shelf_types();

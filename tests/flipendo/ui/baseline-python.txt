@@ -463,6 +463,7 @@ header=PROPERTIES_HT_header
 panel=PROPERTIES_PT_navigation_bar
 === REGION PROPERTIES WINDOW
 panel=PROPERTIES_PT_context
+panel=DATA_PT_shader_fx
 panel=OBJECT_PT_constraints
 panel=BONE_PT_constraints
 panel=DATA_PT_context_arm
@@ -477,7 +478,6 @@ panel=DATA_PT_context_mesh
 panel=DATA_PT_context_metaball
 panel=DATA_PT_modifiers
 panel=DATA_PT_context_pointcloud
-panel=DATA_PT_shader_fx
 panel=DATA_PT_context_lightprobe
 panel=DATA_PT_context_speaker
 panel=DATA_PT_context_volume
@@ -489,6 +489,20 @@ panel=PHYSICS_PT_add
 panel=RENDER_PT_context
 panel=TEXTURE_PT_context
 panel=WORLD_PT_context_world
+panel=SCENE_PT_game_physics
+panel=SCENE_PT_game_blender_physics
+panel=SCENE_PT_game_physics_obstacles
+panel=SCENE_PT_game_navmesh
+panel=SCENE_PT_game_hysteresis
+panel=SCENE_PT_game_console
+panel=OBJECT_PT_activity_culling
+panel=OBJECT_PT_levels_of_detail
+panel=GAME_PT_game_object
+panel=GAME_PT_game_components
+panel=GAME_PT_game_properties
+panel=PHYSICS_PT_game_physics
+panel=PHYSICS_PT_game_collision_bounds
+panel=PHYSICS_PT_game_obstacles
 panel=MOD_PT_Subdivision
 panel=MOD_PT_Lattice
 panel=MOD_PT_Curve
@@ -828,14 +842,6 @@ panel=DATA_PT_volume_file
 panel=DATA_PT_volume_viewport_display
 panel=DATA_PT_volume_viewport_display_slicing
 panel=DATA_PT_volume_render
-panel=SCENE_PT_game_physics
-panel=SCENE_PT_game_blender_physics
-panel=SCENE_PT_game_physics_obstacles
-panel=SCENE_PT_game_navmesh
-panel=SCENE_PT_game_hysteresis
-panel=SCENE_PT_game_console
-panel=OBJECT_PT_activity_culling
-panel=OBJECT_PT_levels_of_detail
 panel=MATERIAL_PT_preview
 panel=EEVEE_MATERIAL_PT_surface
 panel=EEVEE_MATERIAL_PT_volume
@@ -1195,12 +1201,6 @@ panel=DATA_PT_custom_props_metaball
 panel=DATA_PT_custom_props_pointcloud
 panel=DATA_PT_custom_props_speaker
 panel=DATA_PT_custom_props_volume
-panel=GAME_PT_game_object
-panel=GAME_PT_game_components
-panel=GAME_PT_game_properties
-panel=PHYSICS_PT_game_physics
-panel=PHYSICS_PT_game_collision_bounds
-panel=PHYSICS_PT_game_obstacles
 panel=MATERIAL_PT_custom_props
 panel=MATERIAL_PT_gpencil_custom_props
 panel=OBJECT_PT_custom_props
@@ -32848,14 +32848,6 @@ label='Quick Setup'
 owner_id=''
 poll=no
 translation_context='*'
-=== MENU WM_MT_toolsystem_catalog_keymaps
-description=None
-draw=si
-flag=[]
-label=''
-owner_id=''
-poll=si
-translation_context='*'
 === MENU WM_MT_toolsystem_submenu
 description=None
 draw=si
@@ -32864,3 +32856,307 @@ label=''
 owner_id=''
 poll=no
 translation_context='*'
+=== UILIST ASSETBROWSER_UL_metadata_tags
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST CLIP_UL_tracking_objects
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST CURVES_UL_attributes
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=no
+=== UILIST DATA_UL_bone_collections
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST FILEBROWSER_UL_dir
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST GPENCIL_UL_annotation_layer
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST GPENCIL_UL_layer
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST GPENCIL_UL_masks
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST GPENCIL_UL_matslots
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST GREASE_PENCIL_UL_attributes
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=no
+=== UILIST GREASE_PENCIL_UL_masks
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST IMAGE_UL_render_slots
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST IMAGE_UL_udim_tiles
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST MASK_UL_layers
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST MATERIAL_UL_matslots
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST MESH_UL_attributes
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=no
+=== UILIST MESH_UL_color_attributes
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=no
+=== UILIST MESH_UL_color_attributes_selector
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=no
+=== UILIST MESH_UL_shape_keys
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST MESH_UL_uvmaps
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST MESH_UL_vgroups
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST MOD_UL_grease_pencil_dash_modifier_segments
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST MOD_UL_grease_pencil_time_modifier_segments
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST PARTICLE_UL_particle_systems
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST PHYSICS_UL_dynapaint_surfaces
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST POINTCLOUD_UL_attributes
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=no
+=== UILIST POSE_UL_selection_set
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST RENDER_UL_renderviews
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST SCENE_UL_gltf2_filter_action
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST SCENE_UL_keying_set_paths
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST TEXTURE_UL_texpaintslots
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST TEXTURE_UL_texslots
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST UI_UL_asset_view
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=si
+=== UILIST UI_UL_cache_file_layers
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST UI_UL_list
+draw_filter=no
+draw_item=no
+filter_items=no
+listener=no
+=== UILIST USERPREF_UL_asset_libraries
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST USERPREF_UL_extension_repos
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=no
+=== UILIST VIEWLAYER_UL_aov
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST VIEWLAYER_UL_linesets
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST VOLUME_UL_grids
+draw_filter=no
+draw_item=si
+filter_items=no
+listener=no
+=== UILIST WORKSPACE_UL_addons_items
+draw_filter=no
+draw_item=si
+filter_items=si
+listener=no
+=== ASSETSHELF IMAGE_AST_brush_paint
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=7
+get_active_asset=si
+poll=si
+space=IMAGE_EDITOR
+=== ASSETSHELF VIEW3D_AST_brush_gpencil_paint
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=7
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_brush_gpencil_sculpt
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=7
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_brush_gpencil_vertex
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=5
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_brush_gpencil_weight
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=5
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_brush_sculpt
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=7
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_brush_sculpt_curves
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=7
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_brush_texture_paint
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=7
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_brush_vertex_paint
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=7
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_brush_weight_paint
+activate_operator='BRUSH_OT_asset_activate'
+asset_poll=si
+default_preview_size=48
+draw_context_menu=si
+flag=5
+get_active_asset=si
+poll=si
+space=VIEW_3D
+=== ASSETSHELF VIEW3D_AST_pose_library
+activate_operator=''
+asset_poll=si
+default_preview_size=0
+draw_context_menu=si
+flag=1
+get_active_asset=no
+poll=si
+space=VIEW_3D

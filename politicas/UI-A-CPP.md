@@ -529,3 +529,41 @@ comprobación cuando alguien toque el listado.
 
 Las 17 clases de 12 ficheros que heredaban de `PresetPanel` ya no tienen impedimento.
 Y con ellas, el editor de nodos: era su único bloqueo.
+
+## D4.2: listas y estanterías — cerrada la deuda del propio verificador
+
+Hasta ahora `--fl-dump-ui` recorría `paneltypes` y `headertypes` de cada región, más el
+registro global de menús. Los `uiListType` y los `AssetShelfType` **viven en registros
+aparte**, así que no salían: una lista migrada a C++ no la habría visto nadie, y el
+verificador habría dicho "0 diferencias" con una capacidad entera perdida. Era deuda
+mía, y la peor clase: la que hace que una herramienta de verificación mienta.
+
+Crecen las dos cosas a la vez, que es la única forma de que esto no vuelva a pasar:
+
+- **`FL_ui_registry`**: `UIListDecl` + `uilists_register()` y `AssetShelfDecl` +
+  `asset_shelves_register()`.
+- **El volcado**: bloques `UILIST <idname>` (con qué callbacks tiene: `draw_item`,
+  `draw_filter`, `filter_items`, `listener`) y `ASSETSHELF <idname>` (espacio, operador
+  de activación, banderas, tamaño de previsualización y sus cuatro callbacks).
+- Dos iteradores que no existían: `WM_uilisttypes_registered_get()` y
+  `ed::asset::shelf::types_all()`.
+
+Cifras: el volcado de registro pasa de **2.072 a 2.123 bloques** — aparecen **41 listas
+y 11 estanterías** que antes eran invisibles.
+
+**Verificado que detecta**, que es lo único que importa en un verificador: se renombró a
+mano `IMAGE_UL_render_slots` en la copia instalada y la comprobación lo cazó,
+
+```
+SOBRA   UILIST IMAGE_UL_render_slots_CAMBIADO (no esta en la linea base)
+FALTA   UILIST IMAGE_UL_render_slots (esta en la linea base y ya no se registra)
+Interfaz (registro): 2123 bloques, 2122 identicos, 0 distintos, 1 faltan, 1 sobran.
+```
+
+con código de salida 1. Deshecho el cambio, vuelve a 2.123/2.123.
+
+Queda pendiente, y se dice: el volcado de **dibujo** no ejecuta el `draw_item` de una
+lista ni el contenido de una estantería. Para una lista habría que fabricar un elemento
+de datos que dibujar, y eso es inventarse el dato — el mismo motivo por el que los
+paneles instanciados salen `NO-CUBIERTO`. Lo que sí queda cubierto es que la lista
+**existe, con los callbacks que debe tener**, que es donde estaba el agujero.

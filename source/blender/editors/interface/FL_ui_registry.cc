@@ -28,6 +28,10 @@
 
 #include "WM_api.hh"
 
+#include "../asset/ED_asset_shelf.hh"
+
+#include <memory>
+
 namespace flipendo {
 
 /* La categoria vacia haria que el panel saliera en TODAS las pestanas, asi que
@@ -178,6 +182,45 @@ void headers_register(ARegionType *art,
     ht->poll = decl.poll;
 
     BLI_addtail(&art->headertypes, ht);
+  }
+}
+
+void uilists_register(blender::Span<const UIListDecl> decls)
+{
+  for (const UIListDecl &decl : decls) {
+    BLI_assert(decl.idname != nullptr);
+
+    uiListType *ult = MEM_callocN<uiListType>(__func__);
+    STRNCPY(ult->idname, decl.idname);
+    ult->draw_item = decl.draw_item;
+    ult->draw_filter = decl.draw_filter;
+    ult->filter_items = decl.filter_items;
+    ult->listener = decl.listener;
+
+    WM_uilisttype_add(ult);
+  }
+}
+
+void asset_shelves_register(blender::Span<const AssetShelfDecl> decls)
+{
+  for (const AssetShelfDecl &decl : decls) {
+    BLI_assert(decl.idname != nullptr);
+
+    /* El registro de estanterias posee el tipo, asi que se le entrega uno propio. */
+    std::unique_ptr<AssetShelfType> type = std::make_unique<AssetShelfType>();
+    STRNCPY(type->idname, decl.idname);
+    type->space_type = decl.space_type;
+    if (decl.activate_operator != nullptr) {
+      type->activate_operator = decl.activate_operator;
+    }
+    type->flag = AssetShelfTypeFlag(decl.flag);
+    type->default_preview_size = decl.default_preview_size;
+    type->poll = decl.poll;
+    type->asset_poll = decl.asset_poll;
+    type->draw_context_menu = decl.draw_context_menu;
+    type->get_active_asset = decl.get_active_asset;
+
+    blender::ed::asset::shelf::type_register(std::move(type));
   }
 }
 

@@ -44,7 +44,11 @@
 
 #include "BLI_span.hh"
 
+#include "BKE_screen.hh"
+
 struct ARegionType;
+struct AssetShelfType;
+struct AssetWeakReference;
 struct bContext;
 struct Header;
 struct HeaderType;
@@ -135,5 +139,59 @@ void headers_register(ARegionType *art,
                       int space_type,
                       int region_type,
                       blender::Span<const HeaderDecl> decls);
+
+/**
+ * Declaracion de una lista (`SPACE_UL_nombre`).
+ *
+ * Las listas viven en su propio registro global (`WM_uilisttype_add`), no en la
+ * region: `uiTemplateList` las busca por `idname` desde el `draw()` de quien las
+ * pinta.
+ */
+struct UIListDecl {
+  /** `SPACE_UL_nombre`. Obligatorio. */
+  const char *idname = nullptr;
+
+  /** Dibuja una fila. Es el equivalente de `draw_item` del Python. */
+  uiListDrawItemFunc draw_item = nullptr;
+  /** Dibuja los controles de filtrado (opcional). */
+  uiListDrawFilterFunc draw_filter = nullptr;
+  /** Filtra y ordena los elementos (opcional). */
+  uiListFilterItemsFunc filter_items = nullptr;
+  /** Redibujado ante notificaciones (opcional). */
+  uiListListener listener = nullptr;
+};
+
+/** Da de alta listas en el registro global. */
+void uilists_register(blender::Span<const UIListDecl> decls);
+
+/**
+ * Declaracion de una estanteria de recursos (`SPACE_AST_nombre`).
+ *
+ * Tambien tiene registro propio (`ed::asset::shelf::type_register`), y el tipo lo
+ * posee ese registro: por eso se construye una copia por declaracion.
+ */
+struct AssetShelfDecl {
+  /** `SPACE_AST_nombre`. Obligatorio. */
+  const char *idname = nullptr;
+  /** El `SPACE_*` en el que aparece. */
+  int space_type = 0;
+  /** Operador que se lanza al activar un elemento. */
+  const char *activate_operator = nullptr;
+  /** `ASSET_SHELF_TYPE_FLAG_*`. */
+  int flag = 0;
+  short default_preview_size = 0;
+
+  bool (*poll)(const bContext *C, const AssetShelfType *shelf_type) = nullptr;
+  bool (*asset_poll)(const AssetShelfType *shelf_type,
+                     const blender::asset_system::AssetRepresentation *asset) = nullptr;
+  void (*draw_context_menu)(const bContext *C,
+                            const AssetShelfType *shelf_type,
+                            const blender::asset_system::AssetRepresentation *asset,
+                            uiLayout *layout) = nullptr;
+  const AssetWeakReference *(*get_active_asset)(const AssetShelfType *shelf_type) = nullptr;
+};
+
+/** Da de alta estanterias en el registro de recursos. */
+void asset_shelves_register(blender::Span<const AssetShelfDecl> decls);
 
 }  // namespace flipendo

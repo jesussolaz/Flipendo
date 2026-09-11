@@ -63,6 +63,10 @@
 #include "FL_ui_dump.hpp"
 #include "preset/FL_preset_ui.hpp"
 
+#include "../asset/ED_asset_shelf.hh"
+
+#include <memory>
+
 namespace flipendo::ui_dump {
 
 /** Marca de la primera linea: dice a `--fl-check-ui` que linea base tiene delante. */
@@ -535,6 +539,50 @@ static Bloque region_bloque(const SpaceType &st, const ARegionType &art)
   return bloque;
 }
 
+/**
+ * Bloque de una lista.
+ *
+ * Las listas no cuelgan de ninguna region: viven en su propio registro global y
+ * `uiTemplateList` las busca por `idname`. Hasta que este volcado existio, una lista
+ * migrada a C++ no la veia nadie — el volcador recorria `paneltypes` y `headertypes`
+ * y nada mas. Ese es exactamente el falso positivo que este proyecto se comprometio a
+ * no tener, y por eso el registro y el volcado crecieron a la vez.
+ */
+static Bloque uilist_bloque(const uiListType *ult)
+{
+  Bloque bloque;
+  bloque.clave = std::string("UILIST ") + ult->idname;
+  bloque.orden = clave_orden(4, "", "", "", ult->idname);
+
+  bloque.lineas.append(std::string("draw_filter=") + si_no(ult->draw_filter != nullptr));
+  bloque.lineas.append(std::string("draw_item=") + si_no(ult->draw_item != nullptr));
+  bloque.lineas.append(std::string("filter_items=") + si_no(ult->filter_items != nullptr));
+  bloque.lineas.append(std::string("listener=") + si_no(ult->listener != nullptr));
+  return bloque;
+}
+
+/** Bloque de una estanteria de recursos. */
+static Bloque asset_shelf_bloque(const AssetShelfType &type)
+{
+  const char *space = space_type_identifier(type.space_type);
+
+  Bloque bloque;
+  bloque.clave = std::string("ASSETSHELF ") + type.idname;
+  bloque.orden = clave_orden(5, space, "", "", type.idname);
+
+  bloque.lineas.append("activate_operator=" + quoted(type.activate_operator.c_str()));
+  bloque.lineas.append(std::string("asset_poll=") + si_no(type.asset_poll != nullptr));
+  bloque.lineas.append("default_preview_size=" + entero(type.default_preview_size));
+  bloque.lineas.append(std::string("draw_context_menu=") +
+                       si_no(type.draw_context_menu != nullptr));
+  bloque.lineas.append("flag=" + entero(int(type.flag)));
+  bloque.lineas.append(std::string("get_active_asset=") + si_no(type.get_active_asset != nullptr));
+  bloque.lineas.append(std::string("poll=") + si_no(type.poll != nullptr));
+  bloque.lineas.append(std::string("space=") + space);
+  return bloque;
+}
+
+
 static blender::Vector<Bloque> registro_bloques()
 {
   blender::Vector<Bloque> bloques;
@@ -560,6 +608,16 @@ static blender::Vector<Bloque> registro_bloques()
     bloques.append(menu_bloque(mt));
   }
 
+  /* Las listas, tampoco. */
+  for (const uiListType *ult : WM_uilisttypes_registered_get()) {
+    bloques.append(uilist_bloque(ult));
+  }
+
+  /* Y las estanterias de recursos tienen su propio registro. */
+  for (const std::unique_ptr<AssetShelfType> &type : blender::ed::asset::shelf::types_all()) {
+    bloques.append(asset_shelf_bloque(*type));
+  }
+
   bloques_ordenar(bloques);
   return bloques;
 }
@@ -571,7 +629,7 @@ bool dump_registry(const bContext * /*C*/, const char *filepath)
     return false;
   }
 
-  int paneles = 0, menus = 0, cabeceras = 0, regiones = 0;
+  int paneles = 0, menus = 0, cabeceras = 0, regiones = 0, listas = 0, estanterias = 0;
   for (const Bloque &bloque : bloques) {
     if (bloque.clave.rfind("PANEL ", 0) == 0) {
       paneles++;
@@ -582,16 +640,26 @@ bool dump_registry(const bContext * /*C*/, const char *filepath)
     else if (bloque.clave.rfind("HEADER ", 0) == 0) {
       cabeceras++;
     }
+    else if (bloque.clave.rfind("UILIST ", 0) == 0) {
+      listas++;
+    }
+    else if (bloque.clave.rfind("ASSETSHELF ", 0) == 0) {
+      estanterias++;
+    }
     else {
       regiones++;
     }
   }
-  printf("UI_DUMP_OK bloques=%d paneles=%d menus=%d cabeceras=%d regiones=%d\n",
-         int(bloques.size()),
-         paneles,
-         menus,
-         cabeceras,
-         regiones);
+  printf(
+      "UI_DUMP_OK bloques=%d paneles=%d menus=%d cabeceras=%d regiones=%d listas=%d "
+      "estanterias=%d\n",
+      int(bloques.size()),
+      paneles,
+      menus,
+      cabeceras,
+      regiones,
+      listas,
+      estanterias);
   return true;
 }
 
