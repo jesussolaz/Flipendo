@@ -269,3 +269,98 @@ golpe».
 
 Esta decisión **deroga** dos secciones de `politicas/MIGRACION-CPP.md` (§3.3 y §4),
 que quedan marcadas en su sitio con la fecha y el motivo en lugar de borrarse.
+
+---
+
+## El día 11 de septiembre · el Objective-C++ compilado baja a cero
+
+La decisión de la mañana se ejecutó el mismo día. **Flipendo ya no compila una sola
+línea de Objective-C++.**
+
+| | Antes | Después |
+|---|---:|---:|
+| ObjC++ que el binario compila | 25.476 | **0** |
+| ObjC++ en el árbol | 30.536 | 5.060 — todos de Cycles, que está apagado |
+| `source/blender/gpu/metal` | 20 `.mm` | **21 `.cc`, ningún `.mm`** |
+| `intern/ghost/intern` | 4.340 líneas | **0** |
+
+La ventana, el teclado, el ratón, el portapapeles, los menús y el backend gráfico
+entero hablan con macOS desde C++ puro.
+
+**Cómo se hizo sin perder la red.** El backend de Metal fue con `metal-cpp`, el binding
+oficial de Apple, vendorizado en `extern/`. Para AppKit, que no tiene binding, se usa
+el runtime de Objective-C —que es una biblioteca de C— y las clases que macOS necesita
+llamar (delegados de ventana y de aplicación) **se fabrican en tiempo de ejecución**.
+
+La parte peligrosa eran las codificaciones de tipo: una errata en un selector no da
+error de compilación, revienta en ejecución. La solución fue **no escribir ninguna**:
+de las 68 que hacían falta, 65 se le piden al propio runtime y el constructor de clases
+**aborta si nadie conoce el selector**. Eso convierte el fallo silencioso más probable
+en un fallo ruidoso antes de dibujar un píxel.
+
+**Tres hallazgos técnicos que abarataron el trabajo:**
+
+- Un puntero a clase de Objective-C y una clase C++ declarada-no-definida con el mismo
+  nombre **manglan igual** (`P6NSView` en los dos, comprobado con `nm`). La frontera de
+  enlazado desaparece sin castear y sin perder tipado. No vale con protocolos.
+- En cambio, **el mangling sí manda en las funciones**: mismo puntero no es misma firma,
+  así que una función declarada en cabecera común, definida en un `.mm` y llamada desde
+  un `.cc` genera dos símbolos, compila en los dos lados y no enlaza. La migración sigue
+  el grafo de llamadas, no la densidad de Objective-C.
+- La mejor salida no es castear sino **quitar el tipo de la firma**: `set_label(NSString*)`
+  pasó a `set_label(const char*)` y la frontera desapareció para siempre.
+
+**Tres fallos reales que cazó la verificación y que ningún compilador habría dado:** un
+selector partido en dos líneas dentro de una macro sale con un espacio dentro y mata la
+aplicación al cambiar el cursor; una clase que nunca llegaba a registrarse habría dejado
+la ventana sin delegado; y `NSBitmapFormatFloatingPointSamples` no es `1<<3` sino `1<<2`.
+
+**Verificado:** 307 selectores comprobados contra las 26.293 clases cargadas, 74
+constantes con `static_assert` contra el SDK, render EEVEE 1920×1080 con **0 píxeles
+distintos de 2.073.600**, Player atando 5/5 componentes, y la ventana probada de verdad
+—abrir, mover, redimensionar, minimizar, pantalla completa y cerrar con Cmd+Q—.
+
+### Y el arnés, que era un sello de goma
+
+El mismo día se midió la batería de verificación completa por primera vez, y el
+resultado obligó a parar: **58 de las 59 opciones `--fl-*` salían con código 0 sin haber
+comprobado nada**. El patrón era idéntico en todas — al faltar un argumento devolvían
+`return 0`, que para el analizador significa «he consumido cero argumentos», y el
+programa terminaba en verde. Peor aún, **seis comprobadores salían verdes habiendo
+comparado cero casos**, porque contaban diferencias y cero elementos comparados dan cero
+diferencias.
+
+Y una ceguera real: `--fl-check-keymap` reconstruía una línea cortando por `flag=`, así
+que cualquier campo nuevo al final de esa cabecera **no se habría comparado jamás**.
+
+Todo corregido, con cinco guardas en `source/creator/creator_fl_harness.hh` y la regla
+**si no pudo comprobar, es fallo, y dice por qué**. Demostrado ejecutándolos en las
+condiciones malas: línea base inexistente 14/14 en rojo, vacía 14/14 en rojo, alterada a
+mano 14/14 en rojo nombrando qué difiere. Las reglas quedan en
+`politicas/ARNES-A-PRUEBA.md`.
+
+**Dos soluciones que merecen constar.** La diferencia deliberada de
+`wm.context_cycle_array` —el C++ corrige un fallo del Python al rotar tuplas— no se tapó
+tocando la línea base, que es la prueba: se declara aparte y **se exige en las dos
+direcciones**, de modo que volver al valor del Python sale como REGRESIÓN. Y la
+inestabilidad de `--fl-check-mesh-ops` se resolvió con una **tolerancia declarada** de
+2e-5 (4,3× la desviación medida) en vez de cuantizando, porque a 5 decimales los valores
+siguen difiriendo y a 4 se tirarían cifras válidas de los 13.111 estables.
+
+### El estado del proyecto deja de escribirse a mano
+
+`politicas/ESTADO.md` lo **genera** `tools/flipendo_metrics` (C++) midiendo el árbol a un
+commit nombrado, nunca al disco. Existe porque `METRICAS.md` publicó el 8 de septiembre
+una cifra medida el 5 —entre medias habían caído 109.442 líneas sin registrarse— y
+porque el contador del proyecto sumaba una línea de más por fichero, lo que inflaba todas
+las cifras históricas. Un documento a mano envejece en horas cuando hay siete carriles
+trabajando.
+
+### Lo demás del día
+
+`presets.py` de 1.022 a 443 líneas · `rna_xml` nativo, con el mismo md5 que el volcado de
+Python en 6.839 casos · los tres operadores de nivel de detalle a C++, y con ellos 70
+líneas que estaban declaradas dos veces y no ejecutaba nadie · las pestañas de Volumen y
+Sonda de luz del editor de Propiedades · y las instrucciones de compilar del README, que
+**no funcionaban**: mandaban clonar las librerías en `lib/macos_x64`, que git trata como
+submódulo y convierte en directorio vacío en cuanto toca el índice.
