@@ -479,3 +479,40 @@ texto, vacío, esqueleto en pose, partículas, el cubo en edición) y la guarda 
 pestañas de datos: `context.meta_ball`, `context.speaker` y compañía salen del objeto
 activo, y activo solo puede haber uno. Una escena rica no puede tener a la vez el metaball y
 el altavoz de activos; por eso hacen falta las dos herramientas.
+
+## Aviso al cerrar el turno: la línea base de diseño lleva dentro los ficheros recientes
+
+La comprobación final del turno, sobre el árbol ya entregado, dio **dos** diferencias de
+diseño que no existían hora y media antes:
+
+```
+DIFIERE MENU TOPBAR_MT_file_open_recent
+DIFIERE MENU WM_MT_splash
+Interfaz (diseno): 2004 bloques, 2002 identicos, 2 distintos, 0 faltan, 0 sobran.
+```
+
+**No son de ninguna migración.** Los dos bloques dibujan la **lista de ficheros recientes**
+del usuario, con sus rutas absolutas dentro del argumento del operador:
+
+```
+BUTTON ... op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/T1_LaMancha.blend", ...)' text='T1_LaMancha.blend' ...
+```
+
+Y esa lista vive en `~/Library/Application Support/UPBGE/4.5/config/recent-files.txt`, que
+**`--factory-startup` no reinicia**. Cualquier Blender que abra o guarde un `.blend` en esta
+máquina —el de otro carril, o el propio arnés de alguien— empuja tres entradas nuevas
+arriba y desplaza las demás. Comprobado: el fichero se tocó a las 07:16 y ahora encabeza con
+tres `rica-*.blend` que no estaban cuando se congeló la línea base.
+
+Es **el mismo defecto que D6** («la línea base no puede llevar dentro dónde está instalado el
+programa») y que la fecha de compilación del menú «Acerca de»: *lo que no es del árbol, no
+entra en la línea base*. Aquí lo que se cuela no es la ruta de instalación sino el historial
+del usuario, que además cambia solo.
+
+**Consecuencia práctica, y por eso queda escrito:** quien mida a partir de ahora se va a
+encontrar dos diferencias en rojo que no ha causado él. La tentación es regenerar la línea
+base, y eso taparía el problema en vez de arreglarlo —el sello de goma otra vez—. La cura es
+la misma que se aplicó a las rutas de presets: que el volcado **sustituya la lista de
+recientes por una marca**, o que estos dos menús se declaren dependientes del entorno y se
+excluyan diciéndolo. El fichero del volcador (`interface/fl_ui_dump.cc`) es de otro carril,
+así que aquí queda el diagnóstico con su prueba, no el parche.
