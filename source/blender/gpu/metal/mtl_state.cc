@@ -591,17 +591,17 @@ void MTLStateManager::issue_barrier(eGPUBarrier barrier_bits)
 MTLFence::~MTLFence()
 {
   if (mtl_event_) {
-    [mtl_event_ release];
-    mtl_event_ = nil;
+    mtl_event_->release();
+    mtl_event_ = nullptr;
   }
 }
 
 void MTLFence::signal()
 {
-  if (mtl_event_ == nil) {
+  if (mtl_event_ == nullptr) {
     MTLContext *ctx = MTLContext::get();
     BLI_assert(ctx);
-    mtl_event_ = [ctx->device newEvent];
+    mtl_event_ = ctx->device->newEvent();
   }
   MTLContext *ctx = MTLContext::get();
   BLI_assert(ctx);
@@ -613,7 +613,7 @@ void MTLFence::signal()
 void MTLFence::wait()
 {
   /* do not attempt to wait if event has not yet been signalled for the first time. */
-  if (mtl_event_ == nil) {
+  if (mtl_event_ == nullptr) {
     return;
   }
 

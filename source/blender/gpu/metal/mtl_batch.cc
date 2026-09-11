@@ -711,7 +711,7 @@ void MTLBatch::draw_advanced_indirect(GPUStorageBuf *indirect_buf, intptr_t offs
   MTLBufferPtr mtl_indirect_buf = mtlssbo->get_metal_buffer();
   BLI_assert(mtl_indirect_buf != nullptr);
   if (mtl_indirect_buf == nullptr) {
-    MTL_LOG_WARNING("Metal Indirect Draw Storage Buffer is nullptr.");
+    MTL_LOG_WARNING("Metal Indirect Draw Storage Buffer is nil.");
 
     /* End of draw. */
     this->unbind(rec);

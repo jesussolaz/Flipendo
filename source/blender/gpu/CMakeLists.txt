@@ -342,9 +342,9 @@ set(VULKAN_SRC
 set(METAL_SRC
   metal/mtl_backend.cc
   metal/mtl_batch.cc
-  metal/mtl_command_buffer.mm
+  metal/mtl_command_buffer.cc
   metal/mtl_cpp_impl.cc
-  metal/mtl_context.mm
+  metal/mtl_context.cc
   metal/mtl_debug.cc
   metal/mtl_framebuffer.cc
   metal/mtl_immediate.cc
@@ -355,9 +355,9 @@ set(METAL_SRC
   metal/mtl_shader_generator.cc
   metal/mtl_shader_interface.cc
   metal/mtl_shader_log.cc
-  metal/mtl_state.mm
-  metal/mtl_storage_buffer.mm
-  metal/mtl_texture.mm
+  metal/mtl_state.cc
+  metal/mtl_storage_buffer.cc
+  metal/mtl_texture.cc
   metal/mtl_texture_util.cc
   metal/mtl_uniform_buffer.cc
   metal/mtl_vertex_buffer.cc

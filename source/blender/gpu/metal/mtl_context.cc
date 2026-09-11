@@ -95,8 +95,8 @@ void MTLContext::set_ghost_context(GHOST_ContextHandle ghostCtxHandle)
 
   /* Release old MTLTexture handle */
   if (default_fbo_mtltexture_) {
-    [default_fbo_mtltexture_ release];
-    default_fbo_mtltexture_ = nil;
+    default_fbo_mtltexture_->release();
+    default_fbo_mtltexture_ = nullptr;
   }
 
   /* Release Framebuffer attachments */
@@ -127,7 +127,7 @@ void MTLContext::set_ghost_context(GHOST_ContextHandle ghostCtxHandle)
       }
 
       /* Retain handle */
-      [default_fbo_mtltexture_ retain];
+      default_fbo_mtltexture_->retain();
 
       /*** Create front and back-buffers ***/
       /* Create gpu::MTLTexture objects */
@@ -138,7 +138,7 @@ void MTLContext::set_ghost_context(GHOST_ContextHandle ghostCtxHandle)
       mtl_front_left->add_color_attachment(default_fbo_gputexture_, 0, 0, 0);
       mtl_back_left->add_color_attachment(default_fbo_gputexture_, 0, 0, 0);
 #ifndef NDEBUG
-      this->label = default_fbo_mtltexture_.label;
+      this->label = default_fbo_mtltexture_->label();
 #endif
     }
     else {
@@ -156,7 +156,7 @@ void MTLContext::set_ghost_context(GHOST_ContextHandle ghostCtxHandle)
           ghost_cgl_ctx,
           this);
 #ifndef NDEBUG
-      this->label = @"Offscreen Metal Context";
+      this->label = mtl_string("Offscreen Metal Context");
 #endif
     }
   }
@@ -203,11 +203,11 @@ MTLContext::MTLContext(void *ghost_window, void *ghost_context)
   current_frame_index_ = 0;
 
   /* Prepare null data buffer. */
-  null_buffer_ = nil;
-  null_attribute_buffer_ = nil;
+  null_buffer_ = nullptr;
+  null_attribute_buffer_ = nullptr;
 
   /* Zero-initialize MTL textures. */
-  default_fbo_mtltexture_ = nil;
+  default_fbo_mtltexture_ = nullptr;
   default_fbo_gputexture_ = nullptr;
 
   /** Fetch GHOSTContext and fetch Metal device/queue. */
@@ -221,20 +221,20 @@ MTLContext::MTLContext(void *ghost_window, void *ghost_context)
   }
   BLI_assert(ghost_context);
   this->ghost_context_ = static_cast<GHOST_ContextCGL *>(ghost_context);
-  this->queue = (id<MTLCommandQueue>)this->ghost_context_->metalCommandQueue();
-  this->device = (id<MTLDevice>)this->ghost_context_->metalDevice();
+  this->queue = (MTLCommandQueuePtr)this->ghost_context_->metalCommandQueue();
+  this->device = (MTLDevicePtr)this->ghost_context_->metalDevice();
   BLI_assert(this->queue);
   BLI_assert(this->device);
-  [this->queue retain];
-  [this->device retain];
+  this->queue->retain();
+  this->device->retain();
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wobjc-method-access"
   /* Enable increased concurrent shader compiler limit.
    * NOTE: Disable warning for missing method when building on older OS's, as compiled code will
    * still work correctly when run on a system with the API available. */
-  if (@available(macOS 13.3, *)) {
-    [this->device setShouldMaximizeConcurrentCompilation:YES];
+  if (__builtin_available(macOS 13.3, *)) {
+    this->device->setShouldMaximizeConcurrentCompilation(YES);
   }
 #pragma clang diagnostic pop
 
@@ -267,7 +267,7 @@ MTLContext::MTLContext(void *ghost_window, void *ghost_context)
 
   /* Bound Samplers struct. */
   for (int i = 0; i < MTL_MAX_TEXTURE_SLOTS; i++) {
-    samplers_.mtl_sampler[i] = nil;
+    samplers_.mtl_sampler[i] = nullptr;
     samplers_.mtl_sampler_flags[i] = DEFAULT_SAMPLER_STATE;
   }
 
@@ -300,8 +300,8 @@ MTLContext::~MTLContext()
     default_fbo_gputexture_ = nullptr;
   }
   if (default_fbo_mtltexture_) {
-    [default_fbo_mtltexture_ release];
-    default_fbo_mtltexture_ = nil;
+    default_fbo_mtltexture_->release();
+    default_fbo_mtltexture_ = nullptr;
   }
 
   /* Release Memory Manager */
@@ -341,9 +341,9 @@ MTLContext::~MTLContext()
   for (int extend_yz_i = 0; extend_yz_i < GPU_SAMPLER_EXTEND_MODES_COUNT; extend_yz_i++) {
     for (int extend_x_i = 0; extend_x_i < GPU_SAMPLER_EXTEND_MODES_COUNT; extend_x_i++) {
       for (int filtering_i = 0; filtering_i < GPU_SAMPLER_FILTERING_TYPES_COUNT; filtering_i++) {
-        if (sampler_state_cache_[extend_yz_i][extend_x_i][filtering_i] != nil) {
-          [sampler_state_cache_[extend_yz_i][extend_x_i][filtering_i] release];
-          sampler_state_cache_[extend_yz_i][extend_x_i][filtering_i] = nil;
+        if (sampler_state_cache_[extend_yz_i][extend_x_i][filtering_i] != nullptr) {
+          sampler_state_cache_[extend_yz_i][extend_x_i][filtering_i]->release();
+          sampler_state_cache_[extend_yz_i][extend_x_i][filtering_i] = nullptr;
         }
       }
     }
@@ -351,9 +351,9 @@ MTLContext::~MTLContext()
 
   /* Release Custom Sampler States. */
   for (int i = 0; i < GPU_SAMPLER_CUSTOM_TYPES_COUNT; i++) {
-    if (custom_sampler_state_cache_[i] != nil) {
-      [custom_sampler_state_cache_[i] release];
-      custom_sampler_state_cache_[i] = nil;
+    if (custom_sampler_state_cache_[i] != nullptr) {
+      custom_sampler_state_cache_[i]->release();
+      custom_sampler_state_cache_[i] = nullptr;
     }
   }
 
@@ -365,10 +365,10 @@ MTLContext::~MTLContext()
 
   /* Free null buffers. */
   if (null_buffer_) {
-    [null_buffer_ release];
+    null_buffer_->release();
   }
   if (null_attribute_buffer_) {
-    [null_attribute_buffer_ release];
+    null_attribute_buffer_->release();
   }
 
   /* Release memory manager reference. */
@@ -376,10 +376,10 @@ MTLContext::~MTLContext()
 
   /* Free Metal objects. */
   if (this->queue) {
-    [this->queue release];
+    this->queue->release();
   }
   if (this->device) {
-    [this->device release];
+    this->device->release();
   }
 
   this->process_frame_timings();
@@ -493,7 +493,7 @@ void MTLContext::framebuffer_restore()
   this->active_fb = this->back_left;
 }
 
-id<MTLRenderCommandEncoder> MTLContext::ensure_begin_render_pass()
+MTLRenderCommandEncoderPtr MTLContext::ensure_begin_render_pass()
 {
   BLI_assert(this);
 
@@ -536,7 +536,7 @@ id<MTLRenderCommandEncoder> MTLContext::ensure_begin_render_pass()
 
     /* Begin RenderCommandEncoder on main CommandBuffer. */
     bool new_render_pass = false;
-    id<MTLRenderCommandEncoder> new_enc =
+    MTLRenderCommandEncoderPtr new_enc =
         this->main_command_buffer.ensure_begin_render_command_encoder(
             static_cast<MTLFrameBuffer *>(this->active_fb), true, &new_render_pass);
     if (new_render_pass) {
@@ -565,9 +565,9 @@ MTLShader *MTLContext::get_active_shader()
   return this->pipeline_state.active_shader;
 }
 
-id<MTLBuffer> MTLContext::get_null_buffer()
+MTLBufferPtr MTLContext::get_null_buffer()
 {
-  if (null_buffer_ != nil) {
+  if (null_buffer_ != nullptr) {
     return null_buffer_;
   }
 
@@ -577,34 +577,32 @@ id<MTLBuffer> MTLContext::get_null_buffer()
    * buffer. The null buffer needs to at least cover the size of these
    * UBOs to avoid any GPU memory issues. */
   static const int null_buffer_size = 20480;
-  null_buffer_ = [this->device newBufferWithLength:null_buffer_size
-                                           options:MTLResourceStorageModeManaged];
-  [null_buffer_ retain];
+  null_buffer_ = this->device->newBuffer(null_buffer_size, MTLResourceStorageModeManaged);
+  null_buffer_->retain();
   uint32_t *null_data = (uint32_t *)calloc(1, null_buffer_size);
-  memcpy([null_buffer_ contents], null_data, null_buffer_size);
-  [null_buffer_ didModifyRange:NSMakeRange(0, null_buffer_size)];
+  memcpy(null_buffer_->contents(), null_data, null_buffer_size);
+  null_buffer_->didModifyRange(NS::Range::Make(0, null_buffer_size));
   free(null_data);
 
-  BLI_assert(null_buffer_ != nil);
+  BLI_assert(null_buffer_ != nullptr);
   return null_buffer_;
 }
 
-id<MTLBuffer> MTLContext::get_null_attribute_buffer()
+MTLBufferPtr MTLContext::get_null_attribute_buffer()
 {
-  if (null_attribute_buffer_ != nil) {
+  if (null_attribute_buffer_ != nullptr) {
     return null_attribute_buffer_;
   }
 
   /* Allocate Null buffer if it has not yet been created.
    * Min buffer size is 256 bytes -- though we only need 64 bytes of data. */
   static const int null_buffer_size = 256;
-  null_attribute_buffer_ = [this->device newBufferWithLength:null_buffer_size
-                                                     options:MTLResourceStorageModeManaged];
-  BLI_assert(null_attribute_buffer_ != nil);
-  [null_attribute_buffer_ retain];
+  null_attribute_buffer_ = this->device->newBuffer(null_buffer_size, MTLResourceStorageModeManaged);
+  BLI_assert(null_attribute_buffer_ != nullptr);
+  null_attribute_buffer_->retain();
   float data[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-  memcpy([null_attribute_buffer_ contents], data, sizeof(float) * 4);
-  [null_attribute_buffer_ didModifyRange:NSMakeRange(0, null_buffer_size)];
+  memcpy(null_attribute_buffer_->contents(), data, sizeof(float) * 4);
+  null_attribute_buffer_->didModifyRange(NS::Range::Make(0, null_buffer_size));
 
   return null_attribute_buffer_;
 }
@@ -978,10 +976,10 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
 
     /* Fetch render command encoder. A render pass should already be active.
      * This will be NULL if invalid. */
-    id<MTLRenderCommandEncoder> rec =
+    MTLRenderCommandEncoderPtr rec =
         this->main_command_buffer.get_active_render_command_encoder();
     BLI_assert(rec);
-    if (rec == nil) {
+    if (rec == nullptr) {
       MTL_LOG_ERROR("ensure_render_pipeline_state called while render pass is not active.");
       return false;
     }
@@ -989,7 +987,7 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
     /* Bind Render Pipeline State. */
     BLI_assert(pipeline_state_instance->pso);
     if (rps.bound_pso != pipeline_state_instance->pso) {
-      [rec setRenderPipelineState:pipeline_state_instance->pso];
+      rec->setRenderPipelineState(pipeline_state_instance->pso);
       rps.bound_pso = pipeline_state_instance->pso;
     }
 
@@ -1031,7 +1029,7 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
         viewport.znear = this->pipeline_state.depth_stencil_state.depth_range_near;
         viewport.zfar = this->pipeline_state.depth_stencil_state.depth_range_far;
       }
-      [rec setViewports:viewports count:this->pipeline_state.num_active_viewports];
+      rec->setViewports(viewports, this->pipeline_state.num_active_viewports);
     }
     else {
       /* Single Viewport. */
@@ -1042,7 +1040,7 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
       viewport.height = (double)this->pipeline_state.viewport_height[0];
       viewport.znear = this->pipeline_state.depth_stencil_state.depth_range_near;
       viewport.zfar = this->pipeline_state.depth_stencil_state.depth_range_far;
-      [rec setViewport:viewport];
+      rec->setViewport(viewport);
     }
 
     /* State: Scissor. */
@@ -1066,9 +1064,9 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
                                      max_ii(render_fb->get_default_width() - (int)(scissor.x), 0));
         scissor.height = (uint)min_ii(
             scissor.height, max_ii(render_fb->get_default_height() - (int)(scissor.y), 0));
-        BLI_assert(scissor.width > 0 &&
-                   (scissor.x + scissor.width <= render_fb->get_default_width()));
-        BLI_assert(scissor.height > 0 && (scissor.height <= render_fb->get_default_height()));
+        BLI_assert(scissor->width() > 0 &&
+                   (scissor.x + scissor->width() <= render_fb->get_default_width()));
+        BLI_assert(scissor->height() > 0 && (scissor->height() <= render_fb->get_default_height()));
       }
       else {
         /* Scissor is disabled, reset to default size as scissor state may have been previously
@@ -1087,7 +1085,7 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
       /* Scissor state can still be flagged as changed if it is toggled on and off, without
        * parameters changing between draws. */
       if (memcmp(&scissor, &rps.last_scissor_rect, sizeof(MTLScissorRect)) != 0) {
-        [rec setScissorRect:scissor];
+        rec->setScissorRect(scissor);
         rps.last_scissor_rect = scissor;
       }
       this->pipeline_state.dirty_flags = (this->pipeline_state.dirty_flags &
@@ -1101,7 +1099,7 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
       MTLWinding winding = (this->pipeline_state.front_face == GPU_CLOCKWISE) ?
                                MTLWindingClockwise :
                                MTLWindingCounterClockwise;
-      [rec setFrontFacingWinding:winding];
+      rec->setFrontFacingWinding(winding);
       this->pipeline_state.dirty_flags = (this->pipeline_state.dirty_flags &
                                           ~MTL_PIPELINE_STATE_FRONT_FACING_FLAG);
     }
@@ -1126,7 +1124,7 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
             break;
         }
       }
-      [rec setCullMode:mode];
+      rec->setCullMode(mode);
       this->pipeline_state.dirty_flags = (this->pipeline_state.dirty_flags &
                                           ~MTL_PIPELINE_STATE_CULLMODE_FLAG);
     }
@@ -1140,7 +1138,7 @@ bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
 /* Bind UBOs and SSBOs to an active render command encoder using the rendering state of the
  * current context -> Active shader, Bound UBOs). */
 bool MTLContext::ensure_buffer_bindings(
-    id<MTLRenderCommandEncoder> /*rec*/,
+    MTLRenderCommandEncoderPtr /*rec*/,
     const MTLShaderInterface *shader_interface,
     const MTLRenderPipelineStateInstance *pipeline_state_instance)
 {
@@ -1197,7 +1195,7 @@ bool MTLContext::ensure_buffer_bindings(
       const uint32_t ubo_location = ubo.location;
       /* buffer(N) index of where to bind the UBO. */
       const uint32_t buffer_index = ubo.buffer_index;
-      id<MTLBuffer> ubo_buffer = nil;
+      MTLBufferPtr ubo_buffer = nullptr;
       size_t ubo_size = 0;
 
       bool bind_dummy_buffer = false;
@@ -1209,11 +1207,11 @@ bool MTLContext::ensure_buffer_bindings(
 
         /* Use dummy zero buffer if no buffer assigned -- this is an optimization to avoid
          * allocating zero buffers. */
-        if (ubo_buffer == nil) {
+        if (ubo_buffer == nullptr) {
           bind_dummy_buffer = true;
         }
         else {
-          BLI_assert(ubo_buffer != nil);
+          BLI_assert(ubo_buffer != nullptr);
           BLI_assert(ubo_size > 0);
 
           if (pipeline_state_instance->reflection_data_available) {
@@ -1276,10 +1274,10 @@ bool MTLContext::ensure_buffer_bindings(
       if (bind_dummy_buffer) {
         /* Perform Dummy binding. */
         ubo_buffer = this->get_null_buffer();
-        ubo_size = [ubo_buffer length];
+        ubo_size = ubo_buffer->length();
       }
 
-      if (ubo_buffer != nil) {
+      if (ubo_buffer != nullptr) {
 
         uint32_t buffer_bind_index = pipeline_state_instance->base_uniform_buffer_index +
                                      buffer_index;
@@ -1319,7 +1317,7 @@ bool MTLContext::ensure_buffer_bindings(
       const uint32_t ssbo_location = ssbo.location;
       /* buffer(N) index of where to bind the SSBO. */
       const uint32_t buffer_index = ssbo.buffer_index;
-      id<MTLBuffer> ssbo_buffer = nil;
+      MTLBufferPtr ssbo_buffer = nullptr;
       size_t ssbo_size = 0;
       UNUSED_VARS_NDEBUG(ssbo_size);
 
@@ -1330,7 +1328,7 @@ bool MTLContext::ensure_buffer_bindings(
         ssbo_size = this->pipeline_state.ssbo_bindings[ssbo_location].ssbo->get_size();
 
         /* For SSBOs, we always need to ensure the buffer exists, as it may be written to. */
-        BLI_assert(ssbo_buffer != nil);
+        BLI_assert(ssbo_buffer != nullptr);
         BLI_assert(ssbo_size > 0);
       }
       else {
@@ -1346,11 +1344,11 @@ bool MTLContext::ensure_buffer_bindings(
 
 #if DEBUG_BIND_NULL_BUFFER_FOR_MISSING_SSBO == 1
         ssbo_buffer = this->get_null_buffer();
-        ssbo_size = [ssbo_buffer length];
+        ssbo_size = ssbo_buffer->length();
 #endif
       }
 
-      if (ssbo_buffer != nil) {
+      if (ssbo_buffer != nullptr) {
         uint32_t buffer_bind_index = pipeline_state_instance->base_storage_buffer_index +
                                      buffer_index;
 
@@ -1385,7 +1383,7 @@ bool MTLContext::ensure_buffer_bindings(
 /* Variant for compute. Bind UBOs and SSBOs to an active compute command encoder using the
  * rendering state of the current context -> Active shader, Bound UBOs). */
 bool MTLContext::ensure_buffer_bindings(
-    id<MTLComputeCommandEncoder> /*rec*/,
+    MTLComputeCommandEncoderPtr /*rec*/,
     const MTLShaderInterface *shader_interface,
     const MTLComputePipelineStateInstance *pipeline_state_instance)
 {
@@ -1427,7 +1425,7 @@ bool MTLContext::ensure_buffer_bindings(
       const uint32_t ubo_location = ubo.location;
       /* buffer(N) index of where to bind the UBO. */
       const uint32_t buffer_index = ubo.buffer_index;
-      id<MTLBuffer> ubo_buffer = nil;
+      MTLBufferPtr ubo_buffer = nullptr;
       size_t ubo_size = 0;
 
       bool bind_dummy_buffer = false;
@@ -1440,11 +1438,11 @@ bool MTLContext::ensure_buffer_bindings(
 
         /* Use dummy zero buffer if no buffer assigned -- this is an optimization to avoid
          * allocating zero buffers. */
-        if (ubo_buffer == nil) {
+        if (ubo_buffer == nullptr) {
           bind_dummy_buffer = true;
         }
         else {
-          BLI_assert(ubo_buffer != nil);
+          BLI_assert(ubo_buffer != nullptr);
           BLI_assert(ubo_size > 0);
         }
       }
@@ -1463,10 +1461,10 @@ bool MTLContext::ensure_buffer_bindings(
       if (bind_dummy_buffer) {
         /* Perform Dummy binding. */
         ubo_buffer = this->get_null_buffer();
-        ubo_size = [ubo_buffer length];
+        ubo_size = ubo_buffer->length();
       }
 
-      if (ubo_buffer != nil) {
+      if (ubo_buffer != nullptr) {
         uint32_t buffer_bind_index = pipeline_state_instance->base_uniform_buffer_index +
                                      buffer_index;
 
@@ -1498,7 +1496,7 @@ bool MTLContext::ensure_buffer_bindings(
       const uint32_t ssbo_location = ssbo.location;
       /* buffer(N) index of where to bind the SSBO. */
       const uint32_t buffer_index = ssbo.buffer_index;
-      id<MTLBuffer> ssbo_buffer = nil;
+      MTLBufferPtr ssbo_buffer = nullptr;
       int ssbo_size = 0;
 
       if (this->pipeline_state.ssbo_bindings[ssbo_location].bound) {
@@ -1509,7 +1507,7 @@ bool MTLContext::ensure_buffer_bindings(
         UNUSED_VARS_NDEBUG(ssbo_size);
 
         /* For SSBOs, we always need to ensure the buffer exists, as it may be written to. */
-        BLI_assert(ssbo_buffer != nil);
+        BLI_assert(ssbo_buffer != nullptr);
         BLI_assert(ssbo_size > 0);
       }
       else {
@@ -1525,11 +1523,11 @@ bool MTLContext::ensure_buffer_bindings(
 
 #if DEBUG_BIND_NULL_BUFFER_FOR_MISSING_SSBO == 1
         ssbo_buffer = this->get_null_buffer();
-        ssbo_size = [ssbo_buffer length];
+        ssbo_size = ssbo_buffer->length();
 #endif
       }
 
-      if (ssbo_buffer != nil) {
+      if (ssbo_buffer != nullptr) {
         uint32_t buffer_bind_index = pipeline_state_instance->base_storage_buffer_index +
                                      buffer_index;
 
@@ -1557,18 +1555,20 @@ bool MTLContext::ensure_buffer_bindings(
 
 /* Ensure texture bindings are correct and up to date for current draw call. */
 void MTLContext::ensure_texture_bindings(
-    id<MTLRenderCommandEncoder> rec,
+    MTLRenderCommandEncoderPtr rec,
     MTLShaderInterface *shader_interface,
     const MTLRenderPipelineStateInstance *pipeline_state_instance)
 {
-  BLI_assert(shader_interface != nil);
-  BLI_assert(rec != nil);
+  BLI_assert(shader_interface != nullptr);
+  BLI_assert(rec != nullptr);
   UNUSED_VARS_NDEBUG(rec);
 
   /* Fetch Render Pass state. */
   MTLRenderPassState &rps = this->main_command_buffer.get_render_pass_state();
 
-  @autoreleasepool {
+  {
+    /* Equivalente de @autoreleasepool: el pool se drena al salir del ambito. */
+    MTLAutoreleasePoolScope pool_scope;
     int vertex_arg_buffer_bind_index = -1;
     int fragment_arg_buffer_bind_index = -1;
 
@@ -1619,7 +1619,7 @@ void MTLContext::ensure_texture_bindings(
           if (shader_texture_info.type == bound_texture->type_) {
             /* Bind texture and sampler if the bound texture matches the type expected by the
              * shader. */
-            id<MTLTexture> tex = bound_texture->get_metal_handle();
+            MTLTexturePtr tex = bound_texture->get_metal_handle();
 
             if (bool(shader_texture_info.stage_mask & ShaderStage::VERTEX)) {
               rps.bind_vertex_texture(tex, slot);
@@ -1725,7 +1725,7 @@ void MTLContext::ensure_texture_bindings(
       for (const uint i : IndexRange(shader_interface->get_max_texture_index() + 1)) {
         const MTLShaderTexture &texture = shader_interface->get_texture(i);
         if (texture.used) {
-          BLI_assert(this->samplers_.mtl_sampler[i] != nil);
+          BLI_assert(this->samplers_.mtl_sampler[i] != nullptr);
         }
       }
 #endif
@@ -1742,11 +1742,10 @@ void MTLContext::ensure_texture_bindings(
         int arg_buffer_idx = (pipeline_state_instance->base_uniform_buffer_index +
                               vertex_arg_buffer_bind_index);
         assert(arg_buffer_idx < 32);
-        id<MTLArgumentEncoder> argument_encoder = shader_interface->find_argument_encoder(
+        MTLArgumentEncoderPtr argument_encoder = shader_interface->find_argument_encoder(
             arg_buffer_idx);
-        if (argument_encoder == nil) {
-          argument_encoder = [pipeline_state_instance->vert
-              newArgumentEncoderWithBufferIndex:arg_buffer_idx];
+        if (argument_encoder == nullptr) {
+          argument_encoder = pipeline_state_instance->vert->newArgumentEncoder(arg_buffer_idx);
           shader_interface->insert_argument_encoder(arg_buffer_idx, argument_encoder);
         }
 
@@ -1766,8 +1765,8 @@ void MTLContext::ensure_texture_bindings(
         }
         else {
           /* Populate argument buffer with current global sampler bindings. */
-          size_t size = [argument_encoder encodedLength];
-          size_t alignment = max_uu([argument_encoder alignment], 256);
+          size_t size = argument_encoder->encodedLength();
+          size_t alignment = max_uu(argument_encoder->alignment(), 256);
           size_t size_align_delta = (size % alignment);
           size_t aligned_alloc_size = ((alignment > 1) && (size_align_delta > 0)) ?
                                           size + (alignment - (size % alignment)) :
@@ -1778,10 +1777,8 @@ void MTLContext::ensure_texture_bindings(
                                                                              true);
           BLI_assert(encoder_buffer);
           BLI_assert(encoder_buffer->get_metal_buffer());
-          [argument_encoder setArgumentBuffer:encoder_buffer->get_metal_buffer() offset:0];
-          [argument_encoder
-              setSamplerStates:this->samplers_.mtl_sampler
-                     withRange:NSMakeRange(0, shader_interface->get_max_texture_index() + 1)];
+          argument_encoder->setArgumentBuffer(encoder_buffer->get_metal_buffer(), 0);
+          argument_encoder->setSamplerStates(this->samplers_.mtl_sampler, NS::Range::Make(0, shader_interface->get_max_texture_index() + 1));
           encoder_buffer->flush();
 
           /* Insert into cache. */
@@ -1809,18 +1806,20 @@ void MTLContext::ensure_texture_bindings(
 /* Texture binding variant for compute command encoder.
  * Ensure bound texture resources are bound to the active MTLComputeCommandEncoder. */
 void MTLContext::ensure_texture_bindings(
-    id<MTLComputeCommandEncoder> rec,
+    MTLComputeCommandEncoderPtr rec,
     MTLShaderInterface *shader_interface,
     const MTLComputePipelineStateInstance *pipeline_state_instance)
 {
-  BLI_assert(shader_interface != nil);
-  BLI_assert(rec != nil);
+  BLI_assert(shader_interface != nullptr);
+  BLI_assert(rec != nullptr);
   UNUSED_VARS_NDEBUG(rec);
 
   /* Fetch Render Pass state. */
   MTLComputeState &cs = this->main_command_buffer.get_compute_state();
 
-  @autoreleasepool {
+  {
+    /* Equivalente de @autoreleasepool: el pool se drena al salir del ambito. */
+    MTLAutoreleasePoolScope pool_scope;
     int compute_arg_buffer_bind_index = -1;
 
     /* Argument buffers are used for samplers, when the limit of 16 is exceeded.
@@ -1869,7 +1868,7 @@ void MTLContext::ensure_texture_bindings(
           if (shader_texture_info.type == bound_texture->type_) {
             /* Bind texture and sampler if the bound texture matches the type expected by the
              * shader. */
-            id<MTLTexture> tex = bound_texture->get_metal_handle();
+            MTLTexturePtr tex = bound_texture->get_metal_handle();
 
             /* If texture resource is an image binding and has a non-default swizzle mask, we need
              * to bind the source texture resource to retain image write access. */
@@ -1968,7 +1967,7 @@ void MTLContext::ensure_texture_bindings(
       for (const uint i : IndexRange(shader_interface->get_max_texture_index() + 1)) {
         const MTLShaderTexture &texture = shader_interface->get_texture(i);
         if (texture.used) {
-          BLI_assert(this->samplers_.mtl_sampler[i] != nil);
+          BLI_assert(this->samplers_.mtl_sampler[i] != nullptr);
         }
       }
 #endif
@@ -1985,11 +1984,10 @@ void MTLContext::ensure_texture_bindings(
         int arg_buffer_idx = (pipeline_state_instance->base_uniform_buffer_index +
                               compute_arg_buffer_bind_index);
         assert(arg_buffer_idx < 32);
-        id<MTLArgumentEncoder> argument_encoder = shader_interface->find_argument_encoder(
+        MTLArgumentEncoderPtr argument_encoder = shader_interface->find_argument_encoder(
             arg_buffer_idx);
-        if (argument_encoder == nil) {
-          argument_encoder = [pipeline_state_instance->compute
-              newArgumentEncoderWithBufferIndex:arg_buffer_idx];
+        if (argument_encoder == nullptr) {
+          argument_encoder = pipeline_state_instance->compute->newArgumentEncoder(arg_buffer_idx);
           shader_interface->insert_argument_encoder(arg_buffer_idx, argument_encoder);
         }
 
@@ -2009,8 +2007,8 @@ void MTLContext::ensure_texture_bindings(
         }
         else {
           /* Populate argument buffer with current global sampler bindings. */
-          size_t size = [argument_encoder encodedLength];
-          size_t alignment = max_uu([argument_encoder alignment], 256);
+          size_t size = argument_encoder->encodedLength();
+          size_t alignment = max_uu(argument_encoder->alignment(), 256);
           size_t size_align_delta = (size % alignment);
           size_t aligned_alloc_size = ((alignment > 1) && (size_align_delta > 0)) ?
                                           size + (alignment - (size % alignment)) :
@@ -2021,10 +2019,8 @@ void MTLContext::ensure_texture_bindings(
                                                                              true);
           BLI_assert(encoder_buffer);
           BLI_assert(encoder_buffer->get_metal_buffer());
-          [argument_encoder setArgumentBuffer:encoder_buffer->get_metal_buffer() offset:0];
-          [argument_encoder
-              setSamplerStates:this->samplers_.mtl_sampler
-                     withRange:NSMakeRange(0, shader_interface->get_max_texture_index() + 1)];
+          argument_encoder->setArgumentBuffer(encoder_buffer->get_metal_buffer(), 0);
+          argument_encoder->setSamplerStates(this->samplers_.mtl_sampler, NS::Range::Make(0, shader_interface->get_max_texture_index() + 1));
           encoder_buffer->flush();
 
           /* Insert into cache. */
@@ -2051,7 +2047,7 @@ void MTLContext::ensure_depth_stencil_state(uint64_t prim_type_raw)
   }
 
   /* Fetch render command encoder. */
-  id<MTLRenderCommandEncoder> rec = this->main_command_buffer.get_active_render_command_encoder();
+  MTLRenderCommandEncoderPtr rec = this->main_command_buffer.get_active_render_command_encoder();
   BLI_assert(rec);
 
   /* Fetch Render Pass state. */
@@ -2069,74 +2065,60 @@ void MTLContext::ensure_depth_stencil_state(uint64_t prim_type_raw)
 
     /* Check if current MTLContextDepthStencilState maps to an existing state object in
      * the Depth-stencil state cache. */
-    id<MTLDepthStencilState> ds_state = nil;
-    id<MTLDepthStencilState> *depth_stencil_state_lookup =
+    MTLDepthStencilStatePtr ds_state = nullptr;
+    MTLDepthStencilStatePtr *depth_stencil_state_lookup =
         this->depth_stencil_state_cache.lookup_ptr(this->pipeline_state.depth_stencil_state);
 
     /* If not, populate DepthStencil state descriptor. */
     if (depth_stencil_state_lookup == nullptr) {
 
-      MTLDepthStencilDescriptor *ds_state_desc = [[[MTLDepthStencilDescriptor alloc] init]
-          autorelease];
+      MTLDepthStencilDescriptor *ds_state_desc =
+          MTL::DepthStencilDescriptor::alloc()->init()->autorelease();
 
       if (hasDepthTarget) {
-        ds_state_desc.depthWriteEnabled =
-            this->pipeline_state.depth_stencil_state.depth_write_enable;
-        ds_state_desc.depthCompareFunction =
-            this->pipeline_state.depth_stencil_state.depth_test_enabled ?
+        ds_state_desc->setDepthWriteEnabled(this->pipeline_state.depth_stencil_state.depth_write_enable);
+        ds_state_desc->setDepthCompareFunction(this->pipeline_state.depth_stencil_state.depth_test_enabled ?
                 this->pipeline_state.depth_stencil_state.depth_function :
-                MTLCompareFunctionAlways;
+                MTLCompareFunctionAlways);
       }
 
       if (hasStencilTarget) {
-        ds_state_desc.backFaceStencil.readMask =
-            this->pipeline_state.depth_stencil_state.stencil_read_mask;
-        ds_state_desc.backFaceStencil.writeMask =
-            this->pipeline_state.depth_stencil_state.stencil_write_mask;
-        ds_state_desc.backFaceStencil.stencilFailureOperation =
-            this->pipeline_state.depth_stencil_state.stencil_op_back_stencil_fail;
-        ds_state_desc.backFaceStencil.depthFailureOperation =
-            this->pipeline_state.depth_stencil_state.stencil_op_back_depth_fail;
-        ds_state_desc.backFaceStencil.depthStencilPassOperation =
-            this->pipeline_state.depth_stencil_state.stencil_op_back_depthstencil_pass;
-        ds_state_desc.backFaceStencil.stencilCompareFunction =
-            (this->pipeline_state.depth_stencil_state.stencil_test_enabled) ?
+        ds_state_desc->backFaceStencil()->setReadMask(this->pipeline_state.depth_stencil_state.stencil_read_mask);
+        ds_state_desc->backFaceStencil()->setWriteMask(this->pipeline_state.depth_stencil_state.stencil_write_mask);
+        ds_state_desc->backFaceStencil()->setStencilFailureOperation(this->pipeline_state.depth_stencil_state.stencil_op_back_stencil_fail);
+        ds_state_desc->backFaceStencil()->setDepthFailureOperation(this->pipeline_state.depth_stencil_state.stencil_op_back_depth_fail);
+        ds_state_desc->backFaceStencil()->setDepthStencilPassOperation(this->pipeline_state.depth_stencil_state.stencil_op_back_depthstencil_pass);
+        ds_state_desc->backFaceStencil()->setStencilCompareFunction((this->pipeline_state.depth_stencil_state.stencil_test_enabled) ?
                 this->pipeline_state.depth_stencil_state.stencil_func :
-                MTLCompareFunctionAlways;
+                MTLCompareFunctionAlways);
 
-        ds_state_desc.frontFaceStencil.readMask =
-            this->pipeline_state.depth_stencil_state.stencil_read_mask;
-        ds_state_desc.frontFaceStencil.writeMask =
-            this->pipeline_state.depth_stencil_state.stencil_write_mask;
-        ds_state_desc.frontFaceStencil.stencilFailureOperation =
-            this->pipeline_state.depth_stencil_state.stencil_op_front_stencil_fail;
-        ds_state_desc.frontFaceStencil.depthFailureOperation =
-            this->pipeline_state.depth_stencil_state.stencil_op_front_depth_fail;
-        ds_state_desc.frontFaceStencil.depthStencilPassOperation =
-            this->pipeline_state.depth_stencil_state.stencil_op_front_depthstencil_pass;
-        ds_state_desc.frontFaceStencil.stencilCompareFunction =
-            (this->pipeline_state.depth_stencil_state.stencil_test_enabled) ?
+        ds_state_desc->frontFaceStencil()->setReadMask(this->pipeline_state.depth_stencil_state.stencil_read_mask);
+        ds_state_desc->frontFaceStencil()->setWriteMask(this->pipeline_state.depth_stencil_state.stencil_write_mask);
+        ds_state_desc->frontFaceStencil()->setStencilFailureOperation(this->pipeline_state.depth_stencil_state.stencil_op_front_stencil_fail);
+        ds_state_desc->frontFaceStencil()->setDepthFailureOperation(this->pipeline_state.depth_stencil_state.stencil_op_front_depth_fail);
+        ds_state_desc->frontFaceStencil()->setDepthStencilPassOperation(this->pipeline_state.depth_stencil_state.stencil_op_front_depthstencil_pass);
+        ds_state_desc->frontFaceStencil()->setStencilCompareFunction((this->pipeline_state.depth_stencil_state.stencil_test_enabled) ?
                 this->pipeline_state.depth_stencil_state.stencil_func :
-                MTLCompareFunctionAlways;
+                MTLCompareFunctionAlways);
       }
 
       /* Bake new DS state. */
-      ds_state = [this->device newDepthStencilStateWithDescriptor:ds_state_desc];
+      ds_state = this->device->newDepthStencilState(ds_state_desc);
 
       /* Store state in cache. */
-      BLI_assert(ds_state != nil);
+      BLI_assert(ds_state != nullptr);
       this->depth_stencil_state_cache.add_new(this->pipeline_state.depth_stencil_state, ds_state);
     }
     else {
       ds_state = *depth_stencil_state_lookup;
-      BLI_assert(ds_state != nil);
+      BLI_assert(ds_state != nullptr);
     }
 
     /* Bind Depth Stencil State to render command encoder. */
-    BLI_assert(ds_state != nil);
-    if (ds_state != nil) {
+    BLI_assert(ds_state != nullptr);
+    if (ds_state != nullptr) {
       if (rps.bound_ds_state != ds_state) {
-        [rec setDepthStencilState:ds_state];
+        rec->setDepthStencilState(ds_state);
         rps.bound_ds_state = ds_state;
       }
     }
@@ -2148,7 +2130,7 @@ void MTLContext::ensure_depth_stencil_state(uint64_t prim_type_raw)
               this->pipeline_state.depth_stencil_state.stencil_ref :
               0;
       if (stencil_ref_value != rps.last_used_stencil_ref_value) {
-        [rec setStencilReferenceValue:stencil_ref_value];
+        rec->setStencilReferenceValue(stencil_ref_value);
         rps.last_used_stencil_ref_value = stencil_ref_value;
       }
     }
@@ -2168,9 +2150,7 @@ void MTLContext::ensure_depth_stencil_state(uint64_t prim_type_raw)
           doBias = this->pipeline_state.depth_stencil_state.depth_bias_enabled_for_points;
           break;
       }
-      [rec setDepthBias:(doBias) ? this->pipeline_state.depth_stencil_state.depth_bias : 0
-             slopeScale:(doBias) ? this->pipeline_state.depth_stencil_state.depth_slope_scale : 0
-                  clamp:0];
+      rec->setDepthBias((doBias) ? this->pipeline_state.depth_stencil_state.depth_bias : 0, (doBias) ? this->pipeline_state.depth_stencil_state.depth_slope_scale : 0, 0);
     }
   }
 }
@@ -2212,7 +2192,7 @@ const MTLComputePipelineStateInstance *MTLContext::ensure_compute_pipeline_state
   const MTLComputePipelineStateInstance *compute_pso_inst =
       active_shader->bake_compute_pipeline_state(this, compute_pipeline_descriptor);
 
-  if (compute_pso_inst == nullptr || compute_pso_inst->pso == nil) {
+  if (compute_pso_inst == nullptr || compute_pso_inst->pso == nullptr) {
     MTL_LOG_WARNING("No valid compute PSO for compute dispatch!", );
     return nullptr;
   }
@@ -2237,9 +2217,9 @@ void MTLContext::compute_dispatch(int groups_x_len, int groups_y_len, int groups
   BLI_assert(compute_pso_inst != nullptr);
 
   /* Begin compute encoder. */
-  id<MTLComputeCommandEncoder> compute_encoder =
+  MTLComputeCommandEncoderPtr compute_encoder =
       this->main_command_buffer.ensure_begin_compute_encoder();
-  BLI_assert(compute_encoder != nil);
+  BLI_assert(compute_encoder != nullptr);
 
   /* Bind PSO. */
   MTLComputeState &cs = this->main_command_buffer.get_compute_state();
@@ -2261,12 +2241,11 @@ void MTLContext::compute_dispatch(int groups_x_len, int groups_y_len, int groups
   /* Dispatch compute. */
   const MTLComputePipelineStateCommon &compute_state_common =
       this->pipeline_state.active_shader->get_compute_common_state();
-  [compute_encoder dispatchThreadgroups:MTLSizeMake(max_ii(groups_x_len, 1),
+  compute_encoder->dispatchThreadgroups(MTL::Size::Make(max_ii(groups_x_len, 1),
                                                     max_ii(groups_y_len, 1),
-                                                    max_ii(groups_z_len, 1))
-                  threadsPerThreadgroup:MTLSizeMake(compute_state_common.threadgroup_x_len,
+                                                    max_ii(groups_z_len, 1)), MTL::Size::Make(compute_state_common.threadgroup_x_len,
                                                     compute_state_common.threadgroup_y_len,
-                                                    compute_state_common.threadgroup_z_len)];
+                                                    compute_state_common.threadgroup_z_len));
 #if MTL_DEBUG_SINGLE_DISPATCH_PER_ENCODER == 1
   GPU_flush();
 #endif
@@ -2287,9 +2266,9 @@ void MTLContext::compute_dispatch_indirect(StorageBuf *indirect_buf)
   MTLShaderInterface *shader_interface = this->pipeline_state.active_shader->get_interface();
 
   /* Begin compute encoder. */
-  id<MTLComputeCommandEncoder> compute_encoder =
+  MTLComputeCommandEncoderPtr compute_encoder =
       this->main_command_buffer.ensure_begin_compute_encoder();
-  BLI_assert(compute_encoder != nil);
+  BLI_assert(compute_encoder != nullptr);
 
   /* Bind PSO. */
   MTLComputeState &cs = this->main_command_buffer.get_compute_state();
@@ -2310,9 +2289,9 @@ void MTLContext::compute_dispatch_indirect(StorageBuf *indirect_buf)
 
   /* Indirect Dispatch compute. */
   MTLStorageBuf *mtlssbo = static_cast<MTLStorageBuf *>(indirect_buf);
-  id<MTLBuffer> mtl_indirect_buf = mtlssbo->get_metal_buffer();
-  BLI_assert(mtl_indirect_buf != nil);
-  if (mtl_indirect_buf == nil) {
+  MTLBufferPtr mtl_indirect_buf = mtlssbo->get_metal_buffer();
+  BLI_assert(mtl_indirect_buf != nullptr);
+  if (mtl_indirect_buf == nullptr) {
     MTL_LOG_WARNING("Metal Indirect Compute dispatch storage buffer does not exist.");
     return;
   }
@@ -2320,12 +2299,9 @@ void MTLContext::compute_dispatch_indirect(StorageBuf *indirect_buf)
   /* Indirect Compute dispatch. */
   const MTLComputePipelineStateCommon &compute_state_common =
       this->pipeline_state.active_shader->get_compute_common_state();
-  [compute_encoder
-      dispatchThreadgroupsWithIndirectBuffer:mtl_indirect_buf
-                        indirectBufferOffset:0
-                       threadsPerThreadgroup:MTLSizeMake(compute_state_common.threadgroup_x_len,
+  compute_encoder->dispatchThreadgroups(mtl_indirect_buf, 0, MTL::Size::Make(compute_state_common.threadgroup_x_len,
                                                          compute_state_common.threadgroup_y_len,
-                                                         compute_state_common.threadgroup_z_len)];
+                                                         compute_state_common.threadgroup_z_len));
 #if MTL_DEBUG_SINGLE_DISPATCH_PER_ENCODER == 1
   GPU_flush();
 #endif
@@ -2454,7 +2430,7 @@ void MTLContext::texture_unbind_all(bool is_image)
   }
 }
 
-id<MTLSamplerState> MTLContext::get_sampler_from_state(MTLSamplerState sampler_state)
+MTLSamplerStatePtr MTLContext::get_sampler_from_state(MTLSamplerState sampler_state)
 {
   /* Internal sampler states are signal values and do not correspond to actual samplers. */
   BLI_assert(sampler_state.state.type != GPU_SAMPLER_STATE_TYPE_INTERNAL);
@@ -2498,75 +2474,75 @@ void MTLContext::sampler_state_cache_init()
       for (int filtering_i = 0; filtering_i < GPU_SAMPLER_FILTERING_TYPES_COUNT; filtering_i++) {
         const GPUSamplerFiltering filtering = GPUSamplerFiltering(filtering_i);
 
-        MTLSamplerDescriptor *descriptor = [[MTLSamplerDescriptor alloc] init];
-        descriptor.normalizedCoordinates = true;
-        descriptor.sAddressMode = extend_s;
-        descriptor.tAddressMode = extend_t;
-        descriptor.rAddressMode = extend_t;
-        descriptor.borderColor = MTLSamplerBorderColorTransparentBlack;
-        descriptor.minFilter = (filtering & GPU_SAMPLER_FILTERING_LINEAR) ?
+        MTLSamplerDescriptor *descriptor = MTL::SamplerDescriptor::alloc()->init();
+        descriptor->setNormalizedCoordinates(true);
+        descriptor->setSAddressMode(extend_s);
+        descriptor->setTAddressMode(extend_t);
+        descriptor->setRAddressMode(extend_t);
+        descriptor->setBorderColor(MTLSamplerBorderColorTransparentBlack);
+        descriptor->setMinFilter((filtering & GPU_SAMPLER_FILTERING_LINEAR) ?
                                    MTLSamplerMinMagFilterLinear :
-                                   MTLSamplerMinMagFilterNearest;
-        descriptor.magFilter = (filtering & GPU_SAMPLER_FILTERING_LINEAR) ?
+                                   MTLSamplerMinMagFilterNearest);
+        descriptor->setMagFilter((filtering & GPU_SAMPLER_FILTERING_LINEAR) ?
                                    MTLSamplerMinMagFilterLinear :
-                                   MTLSamplerMinMagFilterNearest;
-        descriptor.mipFilter = (filtering & GPU_SAMPLER_FILTERING_MIPMAP) ?
+                                   MTLSamplerMinMagFilterNearest);
+        descriptor->setMipFilter((filtering & GPU_SAMPLER_FILTERING_MIPMAP) ?
                                    MTLSamplerMipFilterLinear :
-                                   MTLSamplerMipFilterNotMipmapped;
-        descriptor.lodMinClamp = -1000;
-        descriptor.lodMaxClamp = 1000;
+                                   MTLSamplerMipFilterNotMipmapped);
+        descriptor->setLodMinClamp(-1000);
+        descriptor->setLodMaxClamp(1000);
         float aniso_filter = max_ff(16, U.anisotropic_filter);
-        descriptor.maxAnisotropy = (filtering & GPU_SAMPLER_FILTERING_MIPMAP) ? aniso_filter : 1;
-        descriptor.compareFunction = MTLCompareFunctionAlways;
-        descriptor.supportArgumentBuffers = true;
+        descriptor->setMaxAnisotropy((filtering & GPU_SAMPLER_FILTERING_MIPMAP) ? aniso_filter : 1);
+        descriptor->setCompareFunction(MTLCompareFunctionAlways);
+        descriptor->setSupportArgumentBuffers(true);
 
-        id<MTLSamplerState> state = [this->device newSamplerStateWithDescriptor:descriptor];
+        MTLSamplerStatePtr state = this->device->newSamplerState(descriptor);
         sampler_state_cache_[extend_yz_i][extend_x_i][filtering_i] = state;
 
-        BLI_assert(state != nil);
-        [descriptor autorelease];
+        BLI_assert(state != nullptr);
+        descriptor->autorelease();
       }
     }
   }
 
   /* Compare sampler for depth textures. */
   {
-    MTLSamplerDescriptor *descriptor = [[MTLSamplerDescriptor alloc] init];
-    descriptor.minFilter = MTLSamplerMinMagFilterLinear;
-    descriptor.magFilter = MTLSamplerMinMagFilterLinear;
-    descriptor.compareFunction = MTLCompareFunctionLessEqual;
-    descriptor.lodMinClamp = -1000;
-    descriptor.lodMaxClamp = 1000;
-    descriptor.supportArgumentBuffers = true;
+    MTLSamplerDescriptor *descriptor = MTL::SamplerDescriptor::alloc()->init();
+    descriptor->setMinFilter(MTLSamplerMinMagFilterLinear);
+    descriptor->setMagFilter(MTLSamplerMinMagFilterLinear);
+    descriptor->setCompareFunction(MTLCompareFunctionLessEqual);
+    descriptor->setLodMinClamp(-1000);
+    descriptor->setLodMaxClamp(1000);
+    descriptor->setSupportArgumentBuffers(true);
 
-    id<MTLSamplerState> compare_state = [this->device newSamplerStateWithDescriptor:descriptor];
+    MTLSamplerStatePtr compare_state = this->device->newSamplerState(descriptor);
     custom_sampler_state_cache_[GPU_SAMPLER_CUSTOM_COMPARE] = compare_state;
 
-    BLI_assert(compare_state != nil);
-    [descriptor autorelease];
+    BLI_assert(compare_state != nullptr);
+    descriptor->autorelease();
   }
 
   /* Custom sampler for icons. The icon texture is sampled within the shader using a -0.5f LOD
    * bias. */
   {
-    MTLSamplerDescriptor *descriptor = [[MTLSamplerDescriptor alloc] init];
-    descriptor.minFilter = MTLSamplerMinMagFilterLinear;
-    descriptor.magFilter = MTLSamplerMinMagFilterLinear;
-    descriptor.mipFilter = MTLSamplerMipFilterNearest;
-    descriptor.lodMinClamp = 0;
-    descriptor.lodMaxClamp = 1;
+    MTLSamplerDescriptor *descriptor = MTL::SamplerDescriptor::alloc()->init();
+    descriptor->setMinFilter(MTLSamplerMinMagFilterLinear);
+    descriptor->setMagFilter(MTLSamplerMinMagFilterLinear);
+    descriptor->setMipFilter(MTLSamplerMipFilterNearest);
+    descriptor->setLodMinClamp(0);
+    descriptor->setLodMaxClamp(1);
 
-    id<MTLSamplerState> icon_state = [this->device newSamplerStateWithDescriptor:descriptor];
+    MTLSamplerStatePtr icon_state = this->device->newSamplerState(descriptor);
     custom_sampler_state_cache_[GPU_SAMPLER_CUSTOM_ICON] = icon_state;
 
-    BLI_assert(icon_state != nil);
-    [descriptor autorelease];
+    BLI_assert(icon_state != nullptr);
+    descriptor->autorelease();
   }
 }
 
-id<MTLSamplerState> MTLContext::get_default_sampler_state()
+MTLSamplerStatePtr MTLContext::get_default_sampler_state()
 {
-  if (default_sampler_state_ == nil) {
+  if (default_sampler_state_ == nullptr) {
     default_sampler_state_ = this->get_sampler_from_state({GPUSamplerState::default_sampler()});
   }
   return default_sampler_state_;
@@ -2578,9 +2554,9 @@ id<MTLSamplerState> MTLContext::get_default_sampler_state()
 /** \name Compute Utils Implementation
  * \{ */
 
-id<MTLComputePipelineState> MTLContextComputeUtils::get_buffer_clear_pso()
+MTLComputePipelineStatePtr MTLContextComputeUtils::get_buffer_clear_pso()
 {
-  if (buffer_clear_pso_ != nil) {
+  if (buffer_clear_pso_ != nullptr) {
     return buffer_clear_pso_;
   }
 
@@ -2588,7 +2564,9 @@ id<MTLComputePipelineState> MTLContextComputeUtils::get_buffer_clear_pso()
   MTLContext *ctx = MTLContext::get();
   BLI_assert(ctx);
 
-  @autoreleasepool {
+  {
+    /* Equivalente de @autoreleasepool: el pool se drena al salir del ambito. */
+    MTLAutoreleasePoolScope pool_scope;
     /* Source as NSString. */
     const char *src =
         "\
@@ -2601,46 +2579,42 @@ id<MTLComputePipelineState> MTLContextComputeUtils::get_buffer_clear_pso()
     {\
       output_data[position] = params.clear_value;\
     }";
-    NSString *compute_buffer_clear_src = [NSString stringWithUTF8String:src];
+    NSString *compute_buffer_clear_src = mtl_string(src);
 
     /* Prepare shader library for buffer clearing. */
-    MTLCompileOptions *options = [[[MTLCompileOptions alloc] init] autorelease];
-    options.languageVersion = MTLLanguageVersion2_2;
+    MTLCompileOptions *options = MTL::CompileOptions::alloc()->init()->autorelease();
+    options->setLanguageVersion(MTLLanguageVersion2_2);
 
     NSError *error = nullptr;
-    id<MTLLibrary> temp_lib = [[ctx->device newLibraryWithSource:compute_buffer_clear_src
-                                                         options:options
-                                                           error:&error] autorelease];
+    MTLLibraryPtr temp_lib = ctx->device->newLibrary(compute_buffer_clear_src, options, &error)->autorelease();
     if (error) {
       /* Only exit out if genuine error and not warning. */
-      if ([[error localizedDescription] rangeOfString:@"Compilation succeeded"].location ==
-          NSNotFound)
+      if (error->localizedDescription()->rangeOfString(mtl_string("Compilation succeeded"), NS::StringCompareOptions(0)).location ==
+          NS::NotFound)
       {
-        NSLog(@"Compile Error - Metal Shader Library error %@ ", error);
+        MTL_LOG_ERROR("Compile Error - Metal Shader Library error %s ", error->localizedDescription()->utf8String());
         BLI_assert(false);
-        return nil;
+        return nullptr;
       }
     }
 
     /* Fetch compute function. */
-    BLI_assert(temp_lib != nil);
-    id<MTLFunction> temp_compute_function = [[temp_lib newFunctionWithName:@"compute_buffer_clear"]
-        autorelease];
+    BLI_assert(temp_lib != nullptr);
+    MTLFunctionPtr temp_compute_function = temp_lib->newFunction(mtl_string("compute_buffer_clear"))->autorelease();
     BLI_assert(temp_compute_function);
 
     /* Compile compute PSO */
-    buffer_clear_pso_ = [ctx->device newComputePipelineStateWithFunction:temp_compute_function
-                                                                   error:&error];
-    if (error || buffer_clear_pso_ == nil) {
-      NSLog(@"Failed to prepare compute_buffer_clear MTLComputePipelineState %@", error);
+    buffer_clear_pso_ = ctx->device->newComputePipelineState(temp_compute_function, &error);
+    if (error || buffer_clear_pso_ == nullptr) {
+      MTL_LOG_ERROR("Failed to prepare compute_buffer_clear MTLComputePipelineState %s", error->localizedDescription()->utf8String());
       BLI_assert(false);
-      return nil;
+      return nullptr;
     }
 
-    [buffer_clear_pso_ retain];
+    buffer_clear_pso_->retain();
   }
 
-  BLI_assert(buffer_clear_pso_ != nil);
+  BLI_assert(buffer_clear_pso_ != nullptr);
   return buffer_clear_pso_;
 }
 
@@ -2650,8 +2624,22 @@ id<MTLComputePipelineState> MTLContextComputeUtils::get_buffer_clear_pso()
 /** \name Swap-chain management and Metal presentation.
  * \{ */
 
-void present(id blit_descriptor, id blit_pso, id swapchain_texture, id drawable)
+void present(id blit_descriptor_id, id blit_pso_id, id swapchain_texture_id, id drawable_id)
 {
+  /* Los cuatro parametros llegan como `id` PELADO porque esta es la unica firma de
+   * GHOST_ContextCGL que cruza la frontera entre Objective-C++ y C++ puro, y en un
+   * parametro la grafia SI entra en el simbolo mangleado (`id<MTLTexture>` da
+   * `PU21objcproto10MTLTexture11objc_object` y `MTL::Texture *` da `PN3MTL7TextureE`).
+   * Ver la explicacion medida en intern/ghost/intern/GHOST_ObjCCompat.hh.
+   *
+   * El precio es que el tipo se recupera aqui a mano y el compilador no puede
+   * comprobarlo: si GHOST cambiara el orden de los argumentos, esto seguiria
+   * compilando. Es el unico sitio del backend donde eso pasa. */
+  MTLRenderPassDescriptor *blit_descriptor = reinterpret_cast<MTLRenderPassDescriptor *>(
+      blit_descriptor_id);
+  MTLRenderPipelineStatePtr blit_pso = reinterpret_cast<MTLRenderPipelineStatePtr>(blit_pso_id);
+  MTLTexturePtr swapchain_texture = reinterpret_cast<MTLTexturePtr>(swapchain_texture_id);
+  CAMetalDrawablePtr drawable = reinterpret_cast<CAMetalDrawablePtr>(drawable_id);
 
   MTLContext *ctx = MTLContext::get();
   BLI_assert(ctx);
@@ -2683,19 +2671,19 @@ void present(id blit_descriptor, id blit_pso, id swapchain_texture, id drawable)
   /* Present is submitted in its own CMD Buffer to ensure drawable reference released as early as
    * possible. This command buffer is separate as it does not utilize the global state
    * for rendering as the main context does. */
-  id<MTLCommandBuffer> cmdbuf = [ctx->queue commandBuffer];
+  MTLCommandBufferPtr cmdbuf = ctx->queue->commandBuffer();
   ctx->main_command_buffer.inc_active_command_buffer_count();
 
   /* Do Present Call and final Blit to MTLDrawable. */
-  id<MTLRenderCommandEncoder> enc = [cmdbuf renderCommandEncoderWithDescriptor:blit_descriptor];
-  [enc setRenderPipelineState:blit_pso];
-  [enc setFragmentTexture:swapchain_texture atIndex:0];
-  [enc drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
-  [enc endEncoding];
+  MTLRenderCommandEncoderPtr enc = cmdbuf->renderCommandEncoder(blit_descriptor);
+  enc->setRenderPipelineState(blit_pso);
+  enc->setFragmentTexture(swapchain_texture, 0);
+  enc->drawPrimitives(MTLPrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+  enc->endEncoding();
 
   /* Present drawable. */
   BLI_assert(drawable);
-  [cmdbuf presentDrawable:drawable];
+  cmdbuf->presentDrawable(drawable);
 
   /* Ensure freed buffers have usage tracked against active CommandBuffer submissions. */
   MTLSafeFreeList *cmd_free_buffer_list =
@@ -2708,38 +2696,49 @@ void present(id blit_descriptor, id blit_pso, id swapchain_texture, id drawable)
 
   /* Increment free pool reference and decrement upon command buffer completion. */
   cmd_free_buffer_list->increment_reference();
-  [cmdbuf addCompletedHandler:^(id<MTLCommandBuffer> /*cb*/) {
-    /* Flag freed buffers associated with this CMD buffer as ready to be freed. */
-    cmd_free_buffer_list->decrement_reference();
+  /* El bloque `^(id<MTLCommandBuffer>){...}` de Objective-C pasa a una lambda de C++.
+   * metal-cpp acepta `MTL::HandlerFunction`, que es un std::function.
+   *
+   * OJO CON LAS CAPTURAS: un bloque de Objective-C captura las variables locales POR
+   * VALOR de forma implicita. Una lambda no captura nada si no se lo dices, asi que
+   * las cuatro que usaba el bloque (`cmd_free_buffer_list`, `ctx`, `submission_time` y
+   * `perf_max_drawables`) se capturan explicitamente por valor para conservar la misma
+   * semantica. Capturar por referencia aqui seria un fallo de uso-despues-de-liberar:
+   * el manejador se ejecuta cuando la GPU termina, mucho despues de que esta funcion
+   * haya vuelto y su marco de pila haya desaparecido. */
+  cmdbuf->addCompletedHandler(MTL::HandlerFunction(
+      [cmd_free_buffer_list, ctx, submission_time, perf_max_drawables](MTL::CommandBuffer *) {
+        /* Flag freed buffers associated with this CMD buffer as ready to be freed. */
+        cmd_free_buffer_list->decrement_reference();
 
-    /* Decrement count */
-    ctx->main_command_buffer.dec_active_command_buffer_count();
+        /* Decrement count */
+        ctx->main_command_buffer.dec_active_command_buffer_count();
 
-    MTL_LOG_INFO("Active command buffers: %d",
-                 int(MTLCommandBufferManager::num_active_cmd_bufs_in_system));
+        MTL_LOG_INFO("Active command buffers: %d",
+                     int(MTLCommandBufferManager::num_active_cmd_bufs_in_system));
 
-    /* Drawable count and latency management. */
-    MTLContext::max_drawables_in_flight--;
-    std::chrono::time_point completion_time = std::chrono::high_resolution_clock::now();
-    int64_t microseconds_per_frame = std::chrono::duration_cast<std::chrono::microseconds>(
-                                         completion_time - submission_time)
-                                         .count();
-    MTLContext::latency_resolve_average(microseconds_per_frame);
+        /* Drawable count and latency management. */
+        MTLContext::max_drawables_in_flight--;
+        std::chrono::time_point completion_time = std::chrono::high_resolution_clock::now();
+        int64_t microseconds_per_frame = std::chrono::duration_cast<std::chrono::microseconds>(
+                                             completion_time - submission_time)
+                                             .count();
+        MTLContext::latency_resolve_average(microseconds_per_frame);
 
-    MTL_LOG_INFO("Frame Latency: %f ms  (Rolling avg: %f ms Drawables: %d)",
-                 ((float)microseconds_per_frame) / 1000.0f,
-                 ((float)MTLContext::avg_drawable_latency_us) / 1000.0f,
-                 perf_max_drawables);
-  }];
+        MTL_LOG_INFO("Frame Latency: %f ms  (Rolling avg: %f ms Drawables: %d)",
+                     ((float)microseconds_per_frame) / 1000.0f,
+                     ((float)MTLContext::avg_drawable_latency_us) / 1000.0f,
+                     perf_max_drawables);
+      }));
 
-  [cmdbuf commit];
+  cmdbuf->commit();
 
   /* When debugging, fetch advanced command buffer errors. */
   if (G.debug & G_DEBUG_GPU) {
-    [cmdbuf waitUntilCompleted];
-    NSError *error = [cmdbuf error];
-    if (error != nil) {
-      NSLog(@"%@", error);
+    cmdbuf->waitUntilCompleted();
+    NSError *error = cmdbuf->error();
+    if (error != nullptr) {
+      MTL_LOG_ERROR("%s", error->localizedDescription()->utf8String());
       BLI_assert(false);
     }
   }

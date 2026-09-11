@@ -91,9 +91,9 @@ MTLStorageBuf::~MTLStorageBuf()
     has_data_ = false;
   }
 
-  if (gpu_write_fence_ != nil) {
-    [gpu_write_fence_ release];
-    gpu_write_fence_ = nil;
+  if (gpu_write_fence_ != nullptr) {
+    gpu_write_fence_->release();
+    gpu_write_fence_ = nullptr;
   }
 
   /* Ensure SSBO is not bound to active CTX.
@@ -141,7 +141,7 @@ void MTLStorageBuf::init()
   metal_buffer_->set_label(label);
 #endif
   BLI_assert(metal_buffer_ != nullptr);
-  BLI_assert(metal_buffer_->get_metal_buffer() != nil);
+  BLI_assert(metal_buffer_->get_metal_buffer() != nullptr);
 
   has_data_ = false;
 }
@@ -185,20 +185,16 @@ void MTLStorageBuf::update(const void *data)
           size_in_bytes_, true);
       memcpy(staging_buf->get_host_ptr(), data, size_in_bytes_);
       staging_buf->flush_range(0, size_in_bytes_);
-      id<MTLBuffer> staging_buf_mtl = staging_buf->get_metal_buffer();
-      BLI_assert(staging_buf_mtl != nil);
+      MTLBufferPtr staging_buf_mtl = staging_buf->get_metal_buffer();
+      BLI_assert(staging_buf_mtl != nullptr);
 
       /* Ensure destination buffer. */
-      id<MTLBuffer> dst_buf = this->metal_buffer_->get_metal_buffer();
-      BLI_assert(dst_buf != nil);
+      MTLBufferPtr dst_buf = this->metal_buffer_->get_metal_buffer();
+      BLI_assert(dst_buf != nullptr);
 
-      id<MTLBlitCommandEncoder> blit_encoder =
+      MTLBlitCommandEncoderPtr blit_encoder =
           ctx->main_command_buffer.ensure_begin_blit_encoder();
-      [blit_encoder copyFromBuffer:staging_buf_mtl
-                      sourceOffset:0
-                          toBuffer:dst_buf
-                 destinationOffset:0
-                              size:size_in_bytes_];
+      blit_encoder->copyFromBuffer(staging_buf_mtl, 0, dst_buf, 0, size_in_bytes_);
       staging_buf->free();
     }
     else {
@@ -206,7 +202,7 @@ void MTLStorageBuf::update(const void *data)
       BLI_assert(data != nullptr);
       BLI_assert(!(metal_buffer_->get_resource_options() & MTLResourceStorageModePrivate));
       BLI_assert(size_in_bytes_ <= metal_buffer_->get_size());
-      BLI_assert(size_in_bytes_ <= [metal_buffer_->get_metal_buffer() length]);
+      BLI_assert(size_in_bytes_ <= metal_buffer_->get_metal_buffer()->length());
       memcpy(metal_buffer_->get_host_ptr(), data, size_in_bytes_);
       metal_buffer_->flush_range(0, size_in_bytes_);
     }
@@ -297,24 +293,21 @@ void MTLStorageBuf::clear(uint32_t clear_value)
                                    (clear_byte == ((clear_value >> 16) & 0xFF)) &&
                                    (clear_byte == ((clear_value >> 24) & 0xFF));
     if (clear_value_bytes_equal) {
-      id<MTLBlitCommandEncoder> blit_encoder =
+      MTLBlitCommandEncoderPtr blit_encoder =
           ctx->main_command_buffer.ensure_begin_blit_encoder();
-      [blit_encoder fillBuffer:metal_buffer_->get_metal_buffer()
-                         range:NSMakeRange(0, size_in_bytes_)
-                         value:clear_byte];
+      blit_encoder->fillBuffer(metal_buffer_->get_metal_buffer(), NS::Range::Make(0, size_in_bytes_), clear_byte);
     }
     else {
       /* We need a special compute routine to update 32 bit values efficiently. */
-      id<MTLComputePipelineState> pso = ctx->get_compute_utils().get_buffer_clear_pso();
-      id<MTLComputeCommandEncoder> compute_encoder =
+      MTLComputePipelineStatePtr pso = ctx->get_compute_utils().get_buffer_clear_pso();
+      MTLComputeCommandEncoderPtr compute_encoder =
           ctx->main_command_buffer.ensure_begin_compute_encoder();
 
       MTLComputeState &cs = ctx->main_command_buffer.get_compute_state();
       cs.bind_pso(pso);
       cs.bind_compute_bytes(&clear_value, sizeof(uint32_t), 0);
       cs.bind_compute_buffer(metal_buffer_->get_metal_buffer(), 0, 1);
-      [compute_encoder dispatchThreads:MTLSizeMake(size_in_bytes_ / sizeof(uint32_t), 1, 1)
-                 threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+      compute_encoder->dispatchThreads(MTL::Size::Make(size_in_bytes_ / sizeof(uint32_t), 1, 1), MTL::Size::Make(128, 1, 1));
     }
   }
 }
@@ -339,17 +332,13 @@ void MTLStorageBuf::copy_sub(VertBuf *src_, uint dst_offset, uint src_offset, ui
   BLI_assert(ctx);
 
   /* Fetch Metal buffers. */
-  id<MTLBuffer> src_buf = src->vbo_->get_metal_buffer();
-  id<MTLBuffer> dst_buf = dst->metal_buffer_->get_metal_buffer();
-  BLI_assert(src_buf != nil);
-  BLI_assert(dst_buf != nil);
+  MTLBufferPtr src_buf = src->vbo_->get_metal_buffer();
+  MTLBufferPtr dst_buf = dst->metal_buffer_->get_metal_buffer();
+  BLI_assert(src_buf != nullptr);
+  BLI_assert(dst_buf != nullptr);
 
-  id<MTLBlitCommandEncoder> blit_encoder = ctx->main_command_buffer.ensure_begin_blit_encoder();
-  [blit_encoder copyFromBuffer:src_buf
-                  sourceOffset:src_offset
-                      toBuffer:dst_buf
-             destinationOffset:dst_offset
-                          size:copy_size];
+  MTLBlitCommandEncoderPtr blit_encoder = ctx->main_command_buffer.ensure_begin_blit_encoder();
+  blit_encoder->copyFromBuffer(src_buf, src_offset, dst_buf, dst_offset, copy_size);
 }
 
 void MTLStorageBuf::async_flush_to_host()
@@ -365,8 +354,8 @@ void MTLStorageBuf::async_flush_to_host()
   MTLContext *ctx = MTLContext::get();
   BLI_assert(ctx);
 
-  if (gpu_write_fence_ == nil) {
-    gpu_write_fence_ = [ctx->device newSharedEvent];
+  if (gpu_write_fence_ == nullptr) {
+    gpu_write_fence_ = ctx->device->newSharedEvent();
   }
 
   if (metal_buffer_ == nullptr) {
@@ -374,10 +363,10 @@ void MTLStorageBuf::async_flush_to_host()
   }
 
   /* For discrete memory systems, explicitly flush GPU-resident memory back to host. */
-  id<MTLBuffer> storage_buf_mtl = this->metal_buffer_->get_metal_buffer();
-  if (storage_buf_mtl.storageMode == MTLStorageModeManaged) {
-    id<MTLBlitCommandEncoder> blit_encoder = ctx->main_command_buffer.ensure_begin_blit_encoder();
-    [blit_encoder synchronizeResource:storage_buf_mtl];
+  MTLBufferPtr storage_buf_mtl = this->metal_buffer_->get_metal_buffer();
+  if (storage_buf_mtl->storageMode() == MTLStorageModeManaged) {
+    MTLBlitCommandEncoderPtr blit_encoder = ctx->main_command_buffer.ensure_begin_blit_encoder();
+    blit_encoder->synchronizeResource(storage_buf_mtl);
   }
 
   /* Encode event signal and flush command buffer to ensure GPU work is in the pipeline for future
@@ -408,21 +397,17 @@ void MTLStorageBuf::read(void *data)
     /* Prepare staging buffer. */
     gpu::MTLBuffer *staging_buf = MTLContext::get_global_memory_manager()->allocate(size_in_bytes_,
                                                                                     true);
-    id<MTLBuffer> staging_buf_mtl = staging_buf->get_metal_buffer();
-    BLI_assert(staging_buf_mtl != nil);
+    MTLBufferPtr staging_buf_mtl = staging_buf->get_metal_buffer();
+    BLI_assert(staging_buf_mtl != nullptr);
 
     /* Ensure destination buffer. */
-    id<MTLBuffer> storage_buf_mtl = this->metal_buffer_->get_metal_buffer();
-    BLI_assert(storage_buf_mtl != nil);
+    MTLBufferPtr storage_buf_mtl = this->metal_buffer_->get_metal_buffer();
+    BLI_assert(storage_buf_mtl != nullptr);
 
-    id<MTLBlitCommandEncoder> blit_encoder = ctx->main_command_buffer.ensure_begin_blit_encoder();
-    [blit_encoder copyFromBuffer:storage_buf_mtl
-                    sourceOffset:0
-                        toBuffer:staging_buf_mtl
-               destinationOffset:0
-                            size:size_in_bytes_];
-    if (staging_buf_mtl.storageMode == MTLStorageModeManaged) {
-      [blit_encoder synchronizeResource:staging_buf_mtl];
+    MTLBlitCommandEncoderPtr blit_encoder = ctx->main_command_buffer.ensure_begin_blit_encoder();
+    blit_encoder->copyFromBuffer(storage_buf_mtl, 0, staging_buf_mtl, 0, size_in_bytes_);
+    if (staging_buf_mtl->storageMode() == MTLStorageModeManaged) {
+      blit_encoder->synchronizeResource(staging_buf_mtl);
     }
 
     /* Device-only reads will always stall the GPU pipe. */
@@ -439,9 +424,9 @@ void MTLStorageBuf::read(void *data)
     /** Direct storage buffer read. */
     /* If we have a synchronization event from a prior memory sync, ensure memory is fully synced.
      * Otherwise, assume read is synchronous and stall until in-flight work is complete. */
-    if (gpu_write_fence_ != nil) {
+    if (gpu_write_fence_ != nullptr) {
       /* Ensure the GPU updates are visible to the host before reading. */
-      while (gpu_write_fence_.signaledValue < host_read_signal_value_) {
+      while (gpu_write_fence_->signaledValue() < host_read_signal_value_) {
         BLI_time_sleep_ms(1);
       }
     }
@@ -457,9 +442,9 @@ void MTLStorageBuf::read(void *data)
       BLI_assert(ctx);
 
       /* Ensure GPU updates are flushed back to CPU. */
-      id<MTLBlitCommandEncoder> blit_encoder =
+      MTLBlitCommandEncoderPtr blit_encoder =
           ctx->main_command_buffer.ensure_begin_blit_encoder();
-      [blit_encoder synchronizeResource:metal_buffer_->get_metal_buffer()];
+      blit_encoder->synchronizeResource(metal_buffer_->get_metal_buffer());
 
       /* Wait for the blit to finish. */
       GPU_finish();
@@ -470,7 +455,7 @@ void MTLStorageBuf::read(void *data)
   }
 }
 
-id<MTLBuffer> MTLStorageBuf::get_metal_buffer()
+MTLBufferPtr MTLStorageBuf::get_metal_buffer()
 {
 
   gpu::MTLBuffer *source_buffer = nullptr;
@@ -506,8 +491,8 @@ id<MTLBuffer> MTLStorageBuf::get_metal_buffer()
     case MTL_STORAGE_BUF_TYPE_TEXTURE: {
       BLI_assert(texture_);
       /* Fetch metal texture to ensure it has been initialized. */
-      id<MTLTexture> tex = texture_->get_metal_handle_base();
-      BLI_assert(tex != nil);
+      MTLTexturePtr tex = texture_->get_metal_handle_base();
+      BLI_assert(tex != nullptr);
       UNUSED_VARS_NDEBUG(tex);
       source_buffer = texture_->backing_buffer_;
     }
