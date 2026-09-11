@@ -3851,9 +3851,14 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
       ba, nullptr, "--fl-selftest-object-ops", CB(arg_handle_fl_selftest_object_ops), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-mesh-ops", CB(arg_handle_fl_selftest_mesh_ops), C);
   BLI_args_add(ba, nullptr, "--fl-check-mesh-ops", CB(arg_handle_fl_check_mesh_ops), C);
-  /* TODO(Carril C): Reactivar --fl-selftest-mirror-uv y --fl-check-mirror-uv cuando
-   * FL_mesh_ops_selftest.hh exponga un arnes especifico para faces_mirror_uv. Las funciones
-   * dump()/check() actuales prueban paint.vertex_color_dirt y no son equivalentes. */
+  /* Nota: `--fl-selftest-mirror-uv` / `--fl-check-mirror-uv` SI tienen arnes propio.
+   * No llaman a `dump()`/`check()` (que son los de paint.vertex_color_dirt) sino a
+   * `dump_mirror_uv()`/`check_mirror_uv()`, declarados aparte en
+   * `FL_mesh_ops_selftest.hh` y con su propia linea base en
+   * `tests/flipendo/mirroruv/baseline-python.txt`. Estuvieron desregistrados un rato por
+   * una resolucion de conflicto de otro carril; se reponen aqui. */
+  BLI_args_add(ba, nullptr, "--fl-selftest-mirror-uv", CB(arg_handle_fl_selftest_mirror_uv), C);
+  BLI_args_add(ba, nullptr, "--fl-check-mirror-uv", CB(arg_handle_fl_check_mirror_uv), C);
   BLI_args_add(
       ba, nullptr, "--fl-selftest-find-adjacent", CB(arg_handle_fl_selftest_find_adjacent), C);
   BLI_args_add(

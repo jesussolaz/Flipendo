@@ -64,12 +64,60 @@ y `total_edge_sel`) se trasladó rama a rama y está comentada en el C++ junto a
 condición delYthon original, incluidos los dos casos con comentario propio: con una sola
 arista NO se fija `orient_type` (#61637) ni se restringe el eje.
 
-## Lo que queda
+## Lo que queda: los tres `FileHandler`, medidos y planificados
 
-- Los tres `FileHandler` (`VIEW3D_FH_empty_image`, `VIEW3D_FH_camera_background_image`,
-  `VIEW3D_FH_vdb_volume`) siguen en `view3d.py`, que se queda en 63 líneas. No son
-  operadores: necesitan `bke::file_handler_add()` con un `FileHandlerType` en C++, y sus
-  extensiones salen de `imb_ext_image`/`imb_ext_movie`, que ya son C. Es la próxima pieza
-  de este fichero.
+`view3d.py` se queda en 63 líneas con `VIEW3D_FH_empty_image`,
+`VIEW3D_FH_camera_background_image` y `VIEW3D_FH_vdb_volume`. **No se migran esta noche a
+propósito**: el trabajo de escribirlos es pequeño, pero no tengo forma de verificarlos con
+el método del carril, y no voy a retirar Python a cambio de código no verificado.
+
+### El camino ya está trazado (no hay que inventar nada)
+
+El árbol **ya tiene** el patrón en C++, en `source/blender/editors/io/`. Por ejemplo
+`io_alembic.cc:726`:
+
+```cpp
+auto fh = std::make_unique<blender::bke::FileHandlerType>();
+STRNCPY(fh->idname, "IO_FH_alembic");
+STRNCPY(fh->import_operator, "WM_OT_alembic_import");
+STRNCPY(fh->label, "Alembic");
+STRNCPY(fh->file_extensions_str, ".abc");
+fh->poll_drop = poll_file_object_drop;
+bke::file_handler_add(std::move(fh));
+```
+
+Y se registran desde `ED_operatortypes_io()` en `io_ops.cc`. Lo mismo vale para estos tres:
+
+| idname | `import_operator` | extensiones | `poll_drop` |
+|---|---|---|---|
+| `VIEW3D_FH_empty_image` | `OBJECT_OT_empty_image_add` | imagen + vídeo | espacio VIEW_3D y `rv3d->persp` en (PERSP, ORTHO) |
+| `VIEW3D_FH_camera_background_image` | `VIEW3D_OT_camera_background_image_add` | imagen + vídeo | espacio VIEW_3D y `rv3d->persp == RV3D_CAMOB` |
+| `VIEW3D_FH_vdb_volume` | `OBJECT_OT_volume_import` | `.vdb` | espacio VIEW_3D |
+
+Las extensiones de imagen y vídeo **ya son C**: `imb_ext_image` e `imb_ext_movie`, que es
+justo de donde las saca el Python (`bpy.path.extensions_image` se construye en
+`bpy_path.cc:41` con `PyC_FrozenSetFromStrings(imb_ext_image)`).
+
+### Por qué no se cierran hoy: no se pueden verificar con este método
+
+1. El original las junta con `";".join((*extensions_image, *extensions_movie))`, y esos son
+   **frozensets**: el orden de la cadena resultante es el del hash de Python. No es
+   reproducible ni comparable, aunque para el emparejamiento de extensiones dé igual.
+2. Un `FileHandler` no es un operador: no lo ve `--fl-check-optypes`. Y los registrados
+   desde C++ con `bke::file_handler_add()` **no crean tipo RNA**, así que el binario de
+   referencia (donde son Python) y el migrado no se pueden interrogar por el mismo camino.
+   Habría que escribir un `--fl-dump-filehandlers` en C++ **y** un equivalente en el
+   binario de referencia que lea `bpy.types.FileHandler.__subclasses__()`; son dos fuentes
+   distintas, no una línea base.
+3. `poll_drop` depende de una región de vista 3D viva y del modo de perspectiva: no se
+   puede ejercitar en `--background`, igual que pasa con los cuatro operadores de
+   extrusión.
+
+### Qué haría falta para cerrarlo con evidencia
+
+Un volcado en C++ de `bke::file_handlers()` (idname, etiqueta, operador de importación y
+lista de extensiones **ordenada**, para esquivar el problema 1), y capturar la línea base
+en el binario de referencia recorriendo `bpy.types.FileHandler.__subclasses__()` con el
+mismo formato y el mismo orden. Es media hora de trabajo; no cabía esta noche.
 - Comprobación manual en la interfaz de que la tecla E y sus variantes siguen extruyendo
   igual en los cuatro casos (cara suelta, varias caras, arista, vértice).
