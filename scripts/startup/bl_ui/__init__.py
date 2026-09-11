@@ -31,7 +31,6 @@ _modules = [
     "properties_data_modifier",
     "properties_data_pointcloud",
     "properties_data_lightprobe",
-    "properties_data_volume",
     "properties_mask_common",
     "properties_material",
     "properties_material_gpencil",

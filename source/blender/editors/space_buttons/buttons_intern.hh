@@ -85,6 +85,7 @@ void fl_properties_collection_register(ARegionType *art);
 void fl_properties_data_lattice_register(ARegionType *art);
 void fl_properties_data_metaball_register(ARegionType *art);
 void fl_properties_data_speaker_register(ARegionType *art);
+void fl_properties_data_volume_register(ARegionType *art);
 void fl_world_buttons_register(ARegionType *art);
 ID *buttons_context_id_path(const bContext *C);
 
