@@ -542,114 +542,58 @@ Lo que **no** queda verificado, dicho: esos 2 botones son todo lo que la escena 
 fábrica dibuja de los once. La rama llena pide una segunda línea base sobre un `.blend`
 con los modos de pintado, escultura de curvas y un lápiz de cera con capas.
 
-## 127 de 133. Los seis que quedan, y quién los bloquea
+## 128 de 133. Los cinco que quedan, y quién los bloquea
 
 Recuento hecho por cruce de conjuntos sobre el árbol y sobre el volcado de registro del
 binario recién instalado, no por lectura:
 
 - de los 133, **presentes en el registro: 133** (ninguno resuelve a `nullptr`);
-- de los 133, **sin clase de Python viva: 127**;
-- quedan **6**, y **ninguno** está bloqueado ya por el mecanismo de los paneles.
+- de los 133, **sin clase de Python viva: 128**;
+- quedan **5**, y **ninguno** está bloqueado por el mecanismo de los paneles.
 
 | Qué queda | Dónde vive | Qué lo bloquea |
 |---|---|---|
 | `VIEW3D_PT_snapping` | `space_view3d.py` | Es el **37.º** de `VIEW_3D HEADER` (58 paneles). Su prefijo son 36 paneles y el **segundo** es `VIEW3D_PT_brush_asset_shelf_filter`, de `properties_paint_common.py` |
 | `TOPBAR_PT_name`, `TOPBAR_PT_name_marker`, `USERPREF_PT_ndof_settings` | `space_topbar.py`, `space_userpref.py` | Son el 5.º, 6.º y 7.º de `TOPBAR HEADER`. Su prefijo pasa por `IMAGE_PT_uv_sculpt_options` y `IMAGE_PT_uv_sculpt_curve`, de `space_image.py` |
-| `POSE_MT_selection_sets_select` | `properties_data_armature.py` | El menú C++ y la clase de Python no pueden convivir, y ese fichero no es de este carril. (El operador `pose.selection_set_select` sigue siendo de Python, pero eso **no** bloquea: el idname se resuelve al dibujar, como el resto de la «deuda con nombre y apellidos») |
 | `OUTLINER_MT_context_menu` | `space_outliner.py` | Su bloque de la línea base está contaminado; ver abajo |
 
-Los cinco primeros están bloqueados por **propiedad de ficheros**, no por el mecanismo:
-el día que `properties_paint_common.py`, `space_image.py` y `properties_data_armature.py`
-estén en el mismo carril que sus regiones, salen con la regla del prefijo y sin
-sorpresas. Los dos prefijos que hacen falta están medidos:
+Los cuatro paneles están bloqueados por **propiedad de ficheros**, no por el mecanismo:
+el día que `properties_paint_common.py` y `space_image.py` estén en el mismo carril que
+sus regiones, salen con la regla del prefijo y sin sorpresas. Los dos prefijos que hacen
+falta están medidos:
 
 | Región | Paneles del prefijo | Líneas de Python | Fichero que lo bloquea (posición) |
 |---|---|---|---|
 | `VIEW_3D HEADER` → `VIEW3D_PT_snapping` | 36 + él | ~1.400 | `properties_paint_common.py` (2.ª) |
 | `TOPBAR HEADER` → los tres | 4 + ellos | ~200 | `space_image.py` (2.ª y 3.ª) |
 
-## La alarma: `--fl-check-keymap-menus` (2026-09-11)
+### `POSE_MT_selection_sets_select`: estaba mal dado por bloqueado
 
-Hasta ahora este agujero solo se medía a mano, con el cruce de conjuntos de arriba.
-Desde este commit lo mide el binario, en el estilo de `--fl-check-keymap`,
-`--fl-check-tools` y `--fl-check-ui`:
+La política lo daba por bloqueado «porque `pose.selection_set_select` sigue siendo un
+operador de Python». **Eso no bloquea**, y conviene dejarlo claro porque puede volver a
+frenar a alguien: el `idname` de un operador **se resuelve en tiempo de dibujo**, así que
+un menú nativo que lo nombra funciona hoy con el operador de Python y seguirá
+funcionando el día que sea nativo. Es la misma «deuda con nombre y apellidos» que ya
+llevan `VIEW3D_MT_transform_gizmo_pie` y los de extrusión. Lo que bloqueaba de verdad era
+la **propiedad del fichero**.
 
-```
-Blender --background --fl-check-keymap-menus [fichero]
-```
+Migrado el 2026-09-11 (`1f51737a692`), en `editors/armature/fl_armature_menus.cc`, con
+dos cosas que no habían salido antes en esta migración:
 
-Construye el keymap **nativo** en una configuración aparte —el mismo camino que
-`FL_keyconfig_dump_native`, y por eso vale en `--background`, donde el editor no carga
-ningún keymap—, recoge todos los nombres que invocan `wm.call_menu`,
-`wm.call_menu_pie` y `wm.call_panel`, y los resuelve uno a uno. Sale 0 solo si no
-falta ninguno, y lista los que faltan con el keymap desde el que se invocan. Con
-`fichero` escribe además la lista ordenada de nombres con sus cuentas.
+1. **Un menú nativo consumiendo una propiedad declarada desde Python.**
+   `Object.selection_sets` la declara `bl_operators/bone_selection_sets.py` con
+   `bpy.props`. Desde C++ se lee por RNA y por nombre sin ceremonia: a
+   `RNA_struct_find_property()` le da igual quién la registrara.
+2. **Un `poll` que pregunta por el `poll` de un operador.** El del Python es literalmente
+   `bpy.types.POSE_OT_selection_set_select.poll(context)`; en C++ es
+   `WM_operatortype_find()` + `WM_operator_poll()`. Si el operador no está registrado, el
+   `poll` devuelve falso y el menú no se dibuja — que es lo que hace el Python cuando
+   `bpy.types.POSE_OT_...` no existe: la excepción del `poll` se traga y cuenta como
+   falso.
 
-### Las 22 configuraciones, y por qué no vale con una
-
-El keymap depende de **17 preferencias**, y algunas cambian **qué menú abre una tecla**:
-`VIEW3D_MT_snap` frente a `VIEW3D_MT_snap_pie`, `VIEW3D_MT_shading_pie` frente a
-`_ex_pie`, `VIEW3D_MT_object_mode_pie` solo con «Tab abre el radial de modos»… Mirar
-solo la configuración de fábrica dejaría sin comprobar justo esos, que son los que
-fallan **más callados**, porque solo los ve quien cambió la preferencia.
-
-Así que la comprobación construye el keymap **22 veces**: una de fábrica y una por cada
-preferencia movida por separado (`register_default()` se partió en dos para eso, y por
-debajo llama a `register_default_with_params()`). No es una permutación exhaustiva
-—serían 2¹⁷— sino una variación simple desde el defecto, que basta para que todo nombre
-alcanzable aparezca al menos una vez. Si algún día hiciera falta un nombre que solo sale
-con **dos** preferencias a la vez, se añade esa pareja a la tabla `variantes`.
-
-Medida de hoy:
-
-```
-FL-KEYMAP-MENUS nombres=136 (defecto=127, solo-con-preferencia=9) configuraciones=22
-                elementos=4569 call_menu=3105 call_menu_pie=981 call_panel=483
-                resueltos=136 ausentes=0 sin-nombre=0
-```
-
-**136.** Exactamente los 136 que este documento tenía contados por cruce de conjuntos
-sobre el árbol, comprobado con `diff` contra aquella lista: **cero diferencias**. Dos
-métodos independientes —uno leyendo literales del código fuente, otro construyendo el
-keymap de verdad y preguntándole— dan el mismo conjunto. Los 136 dejan de ser el
-resultado de un `grep` afortunado y pasan a ser un número medido dos veces.
-
-Los **nueve** que solo aparecen al mover una preferencia son justo los que este
-documento avisaba de que «un `grep` de `item_menu(km, "…"` se deja»:
-
-| Menú | Preferencia que lo saca |
-|---|---|
-| `ANIM_MT_keyframe_insert_pie` | `use_pie_click_drag` |
-| `IMAGE_MT_uvs_snap` | `legacy` |
-| `VIEW3D_MT_edit_mesh_select_mode` | `legacy` |
-| `VIEW3D_MT_make_single_user` | `legacy` |
-| `VIEW3D_MT_object_mode_pie` | `use_v3d_tab_menu` |
-| `VIEW3D_MT_shading_ex_pie` | `use_v3d_shade_ex_pie` |
-| `VIEW3D_MT_snap` | `legacy` |
-| `VIEW3D_MT_transform_gizmo_pie` | `v3d_tilde_action=GIZMO` |
-| `WM_MT_region_toggle_pie` | `use_region_toggle_pie` |
-
-Ahora no hay que acordarse de ellos: salen solos.
-
-### Probado al revés, que es lo que le da valor
-
-Apartando `bl_ui` entero de la copia instalada —o sea, **simulando el editor sin
-intérprete**, que es el objetivo del proyecto— la comprobación falla con `rc=1` y
-señala **exactamente seis**: `OUTLINER_MT_context_menu`,
-`POSE_MT_selection_sets_select`, `TOPBAR_PT_name`, `TOPBAR_PT_name_marker`,
-`USERPREF_PT_ndof_settings` y `VIEW3D_PT_snapping`. Ni uno más.
-
-Dicho al derecho: **130 de los 136 nombres que el keymap puede invocar —con cualquiera
-de las 22 configuraciones de preferencias— ya resuelven con `bl_ui` completamente
-ausente.** Es la primera medida directa de que las teclas siguen abriendo algo sin
-Python, en vez de deducirlo de un cruce de listas.
-
-### Lo que no cubre
-
-Las combinaciones de **dos o más** preferencias a la vez. Hoy no hace falta ninguna —los
-136 salen todos con una sola variación desde el defecto—, pero si algún día apareciera
-un menú que solo existe con dos preferencias combinadas, hay que añadir esa pareja a la
-tabla `variantes` de `fl_keymap_menu_check.cc`. Queda escrito ahí también.
+Verificado: **registro idéntico**; dibujo `NO-CUBIERTO motivo=poll`, igual que la línea
+base — la escena de fábrica no tiene esqueleto en modo pose, así que **queda verificado
+el registro y no el dibujo**.
 
 ### `OUTLINER_MT_context_menu`: intentado, medido y retirado
 
