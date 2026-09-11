@@ -304,100 +304,6 @@ class NLA_MT_strips_transform(Menu):
         layout.operator("nla.move_down", text="Move Down")
 
 
-class NLA_MT_snap_pie(Menu):
-    bl_label = "Snap"
-
-    def draw(self, _context):
-        layout = self.layout
-        pie = layout.menu_pie()
-
-        pie.operator("nla.snap", text="Selection to Current Frame").type = 'CFRA'
-        pie.operator("nla.snap", text="Selection to Nearest Frame").type = 'NEAREST_FRAME'
-        pie.operator("nla.snap", text="Selection to Nearest Second").type = 'NEAREST_SECOND'
-        pie.operator("nla.snap", text="Selection to Nearest Marker").type = 'NEAREST_MARKER'
-
-
-class NLA_MT_view_pie(Menu):
-    bl_label = "View"
-
-    def draw(self, context):
-        layout = self.layout
-
-        pie = layout.menu_pie()
-        pie.operator("nla.view_all")
-        pie.operator("nla.view_selected", icon='ZOOM_SELECTED')
-        pie.operator("nla.view_frame")
-        if context.scene.use_preview_range:
-            pie.operator("anim.scene_range_frame", text="Frame Preview Range")
-        else:
-            pie.operator("anim.scene_range_frame", text="Frame Scene Range")
-
-
-class NLA_MT_context_menu(Menu):
-    bl_label = "NLA"
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-
-        if scene.is_nla_tweakmode:
-            layout.operator("nla.tweakmode_exit", text="Stop Editing Stashed Action").isolate_action = True
-            layout.operator("nla.tweakmode_exit", text="Stop Tweaking Strip Actions")
-        else:
-            layout.operator("nla.tweakmode_enter", text="Start Editing Stashed Action").isolate_action = True
-            layout.operator(
-                "nla.tweakmode_enter",
-                text="Start Tweaking Strip Actions (Full Stack)",
-            ).use_upper_stack_evaluation = True
-            layout.operator(
-                "nla.tweakmode_enter",
-                text="Start Tweaking Strip Actions (Lower Stack)",
-            ).use_upper_stack_evaluation = False
-
-        layout.separator()
-
-        props = layout.operator("wm.call_panel", text="Rename...")
-        props.name = "TOPBAR_PT_name"
-        props.keep_open = False
-        layout.operator("nla.duplicate_move")
-        layout.operator("nla.duplicate_linked_move")
-
-        layout.separator()
-
-        layout.operator("nla.split")
-        layout.operator("nla.delete")
-
-        layout.separator()
-
-        layout.operator("nla.meta_add")
-        layout.operator("nla.meta_remove")
-
-        layout.separator()
-
-        layout.operator("nla.swap")
-
-        layout.separator()
-
-        layout.operator_menu_enum("nla.snap", "type", text="Snap")
-
-
-class NLA_MT_channel_context_menu(Menu):
-    bl_label = "NLA Tracks"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_menu_enum("anim.channels_move", "direction", text="Track Ordering...")
-
-        layout.separator()
-
-        layout.operator("nla.tracks_add", text="Add Track").above_selected = False
-        layout.operator("nla.tracks_add", text="Add Track Above Selected").above_selected = True
-        layout.separator()
-        layout.operator("nla.tracks_delete")
-        layout.operator("anim.channels_clean_empty")
-
-
 classes = (
     NLA_HT_header,
     NLA_MT_editor_menus,
@@ -409,10 +315,6 @@ classes = (
     NLA_MT_tracks,
     NLA_MT_strips,
     NLA_MT_strips_transform,
-    NLA_MT_snap_pie,
-    NLA_MT_view_pie,
-    NLA_MT_context_menu,
-    NLA_MT_channel_context_menu,
     NLA_PT_filters,
     NLA_PT_action,
     NLA_PT_snapping,

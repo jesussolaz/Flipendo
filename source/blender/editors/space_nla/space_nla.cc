@@ -42,6 +42,7 @@
 
 #include "BLO_read_write.hh"
 
+#include "FL_nla_menus.hh"
 #include "nla_intern.hh" /* own include */
 
 /* ******************** default callbacks for nla space ***************** */
@@ -692,6 +693,8 @@ void ED_spacetype_nla()
 
   art = ED_area_type_hud(st->spaceid);
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::nla::nla_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

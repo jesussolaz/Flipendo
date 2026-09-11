@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../../makesrna
 
@@ -14,6 +15,7 @@ set(INC_SYS
 )
 
 set(SRC
+  fl_nla_menus.cc
   nla_buttons.cc
   nla_draw.cc
   nla_edit.cc
@@ -22,6 +24,7 @@ set(SRC
   nla_tracks.cc
   space_nla.cc
 
+  FL_nla_menus.hh
   nla_intern.hh
 )
 
