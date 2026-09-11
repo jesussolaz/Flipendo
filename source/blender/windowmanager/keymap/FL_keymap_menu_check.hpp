@@ -29,16 +29,25 @@
  * Con `fichero` escribe ademas la lista ordenada de los nombres que ve, para poder
  * cruzarla con las clases de Python vivas sin volver a adivinar el `grep`.
  *
- * Que NO cubre, dicho antes de que alguien se fie de mas
- * ----------------------------------------------------
- * Comprueba la configuracion por defecto **tal y como la construye
- * `flipendo::keymap::register_default()`**, o sea con los `Params` por defecto. Las
- * combinaciones que esos `Params` no activan —`VIEW3D_MT_snap` frente a
- * `VIEW3D_MT_snap_pie`, `VIEW3D_MT_shading_ex_pie`...— nombran menus que aqui no
- * aparecen. Esos salen del cruce de conjuntos sobre el arbol que describe la politica,
- * no de esta comprobacion. Por eso el numero de nombres que da esto (127) es menor que
- * los 136 de la politica, y **no** tiene nada que ver con que 127 de los 133 esten ya
- * migrados: que coincidan es casualidad.
+ * Las 22 configuraciones, y por que no vale con una
+ * -------------------------------------------------
+ * El keymap depende de 17 preferencias, y algunas cambian **que menu abre una tecla**:
+ * `VIEW3D_MT_snap` frente a `VIEW3D_MT_snap_pie`, `VIEW3D_MT_shading_pie` frente a
+ * `_ex_pie`, `VIEW3D_MT_object_mode_pie` solo con «Tab abre el radial de modos»...
+ * Mirar solo la configuracion de fabrica dejaria sin comprobar justo esos, que son los
+ * que fallan mas callados porque solo los ve quien cambio la preferencia.
+ *
+ * Asi que se construye el keymap **22 veces**: una de fabrica y una por cada preferencia
+ * movida por separado (las banderas mas las tres enumeraciones). No es una permutacion
+ * exhaustiva —serian 2^17— sino una variacion simple desde el defecto, que basta para
+ * que todo nombre alcanzable aparezca al menos una vez. Si algun dia hiciera falta un
+ * nombre que solo sale con DOS preferencias a la vez, se anade esa pareja a la tabla
+ * `variantes` de `fl_keymap_menu_check.cc`.
+ *
+ * Con eso salen **136 nombres distintos** (127 de fabrica + 9 que solo aparecen al mover
+ * una preferencia), que son exactamente los 136 que la politica tenia contados por
+ * cruce de conjuntos sobre el codigo fuente. Dos metodos independientes, el mismo
+ * conjunto.
  *
  * Ver `politicas/MENUS-DEL-KEYMAP-A-CPP.md`.
  */

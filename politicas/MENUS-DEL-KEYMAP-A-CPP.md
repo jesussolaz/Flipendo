@@ -517,12 +517,51 @@ ningún keymap—, recoge todos los nombres que invocan `wm.call_menu`,
 falta ninguno, y lista los que faltan con el keymap desde el que se invocan. Con
 `fichero` escribe además la lista ordenada de nombres con sus cuentas.
 
+### Las 22 configuraciones, y por qué no vale con una
+
+El keymap depende de **17 preferencias**, y algunas cambian **qué menú abre una tecla**:
+`VIEW3D_MT_snap` frente a `VIEW3D_MT_snap_pie`, `VIEW3D_MT_shading_pie` frente a
+`_ex_pie`, `VIEW3D_MT_object_mode_pie` solo con «Tab abre el radial de modos»… Mirar
+solo la configuración de fábrica dejaría sin comprobar justo esos, que son los que
+fallan **más callados**, porque solo los ve quien cambió la preferencia.
+
+Así que la comprobación construye el keymap **22 veces**: una de fábrica y una por cada
+preferencia movida por separado (`register_default()` se partió en dos para eso, y por
+debajo llama a `register_default_with_params()`). No es una permutación exhaustiva
+—serían 2¹⁷— sino una variación simple desde el defecto, que basta para que todo nombre
+alcanzable aparezca al menos una vez. Si algún día hiciera falta un nombre que solo sale
+con **dos** preferencias a la vez, se añade esa pareja a la tabla `variantes`.
+
 Medida de hoy:
 
 ```
-FL-KEYMAP-MENUS nombres=127 elementos=208 call_menu=141 call_menu_pie=45
-                call_panel=22 resueltos=127 ausentes=0 sin-nombre=0
+FL-KEYMAP-MENUS nombres=136 (defecto=127, solo-con-preferencia=9) configuraciones=22
+                elementos=4569 call_menu=3105 call_menu_pie=981 call_panel=483
+                resueltos=136 ausentes=0 sin-nombre=0
 ```
+
+**136.** Exactamente los 136 que este documento tenía contados por cruce de conjuntos
+sobre el árbol, comprobado con `diff` contra aquella lista: **cero diferencias**. Dos
+métodos independientes —uno leyendo literales del código fuente, otro construyendo el
+keymap de verdad y preguntándole— dan el mismo conjunto. Los 136 dejan de ser el
+resultado de un `grep` afortunado y pasan a ser un número medido dos veces.
+
+Los **nueve** que solo aparecen al mover una preferencia son justo los que este
+documento avisaba de que «un `grep` de `item_menu(km, "…"` se deja»:
+
+| Menú | Preferencia que lo saca |
+|---|---|
+| `ANIM_MT_keyframe_insert_pie` | `use_pie_click_drag` |
+| `IMAGE_MT_uvs_snap` | `legacy` |
+| `VIEW3D_MT_edit_mesh_select_mode` | `legacy` |
+| `VIEW3D_MT_make_single_user` | `legacy` |
+| `VIEW3D_MT_object_mode_pie` | `use_v3d_tab_menu` |
+| `VIEW3D_MT_shading_ex_pie` | `use_v3d_shade_ex_pie` |
+| `VIEW3D_MT_snap` | `legacy` |
+| `VIEW3D_MT_transform_gizmo_pie` | `v3d_tilde_action=GIZMO` |
+| `WM_MT_region_toggle_pie` | `use_region_toggle_pie` |
+
+Ahora no hay que acordarse de ellos: salen solos.
 
 ### Probado al revés, que es lo que le da valor
 
@@ -532,18 +571,17 @@ señala **exactamente seis**: `OUTLINER_MT_context_menu`,
 `POSE_MT_selection_sets_select`, `TOPBAR_PT_name`, `TOPBAR_PT_name_marker`,
 `USERPREF_PT_ndof_settings` y `VIEW3D_PT_snapping`. Ni uno más.
 
-Dicho al derecho: **121 de los 127 nombres que el keymap por defecto invoca ya
-resuelven con `bl_ui` completamente ausente.** Es la primera medida directa de que las
-teclas siguen abriendo algo sin Python, en vez de deducirlo de un cruce de listas.
+Dicho al derecho: **130 de los 136 nombres que el keymap puede invocar —con cualquiera
+de las 22 configuraciones de preferencias— ya resuelven con `bl_ui` completamente
+ausente.** Es la primera medida directa de que las teclas siguen abriendo algo sin
+Python, en vez de deducirlo de un cruce de listas.
 
 ### Lo que no cubre
 
-La configuración por defecto con los `Params` por defecto. Las combinaciones que esos
-`Params` no activan (`VIEW3D_MT_snap` frente a `VIEW3D_MT_snap_pie`,
-`VIEW3D_MT_shading_ex_pie`…) nombran menús que ahí no aparecen: siguen cubiertos por el
-cruce de conjuntos, no por la alarma. Por eso da 127 nombres y no 136, y **que 127
-coincida con los 127 de los 133 ya migrados es casualidad**: son dos conjuntos
-distintos y no hay que sumarlos.
+Las combinaciones de **dos o más** preferencias a la vez. Hoy no hace falta ninguna —los
+136 salen todos con una sola variación desde el defecto—, pero si algún día apareciera
+un menú que solo existe con dos preferencias combinadas, hay que añadir esa pareja a la
+tabla `variantes` de `fl_keymap_menu_check.cc`. Queda escrito ahí también.
 
 ### `OUTLINER_MT_context_menu`: intentado, medido y retirado
 
