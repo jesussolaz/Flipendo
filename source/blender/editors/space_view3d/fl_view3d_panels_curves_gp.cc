@@ -107,7 +107,13 @@ static PointerRNA curves_sculpt_settings(PointerRNA *brush)
  */
 static bool draw_active_layer_block(uiLayout *layout, const bContext *C)
 {
-  Object *ob = CTX_data_active_object(C);
+  /* `context.object`, NO `context.active_object`: son dos miembros distintos del
+   * contexto y el Python usa este aqui (y `active_object` unos renglones mas abajo,
+   * para el material). En la vista 3D coinciden, pero la diferencia es real —el editor
+   * de Propiedades fijado devuelve otro— y copiar el nombre equivocado es justo la
+   * clase de desliz que esta migracion persigue. */
+  PointerRNA ob_ptr = CTX_data_pointer_get(C, "object");
+  Object *ob = static_cast<Object *>(ob_ptr.data);
   if (ob == nullptr || ob->data == nullptr) {
     /* `None.data` / `None.layers`: AttributeError. */
     return false;
@@ -290,11 +296,12 @@ static void greasepencil_draw_context_menu_draw(const bContext *C, Panel *panel)
 
     uiLayout *col = &layout->column(false);
     col->separator();
-    uiItemMenuEnumR_prop(col,
-                         &gp_settings,
-                         RNA_struct_find_property(&gp_settings, "vertex_mode"),
-                         IFACE_("Mode"),
-                         ICON_NONE);
+    /* `col.prop_menu_enum(gp_settings, "vertex_mode", text="Mode")`. `rna_uiItemMenuEnumR`
+     * avisa y no dibuja si la propiedad no existe; `uiItemMenuEnumR_prop` la
+     * desreferencia sin mirar, asi que la comprobacion va aqui. */
+    if (PropertyRNA *vertex_mode = RNA_struct_find_property(&gp_settings, "vertex_mode")) {
+      uiItemMenuEnumR_prop(col, &gp_settings, vertex_mode, IFACE_("Mode"), ICON_NONE);
+    }
     col->separator();
   }
 
@@ -397,10 +404,13 @@ static void greasepencil_vertex_paint_context_menu_draw(const bContext *C, Panel
                                    C_mut, &brush, "gpencil_vertex_tool", "DRAW") ||
                                RNA_enum_is_equal(C_mut, &brush, "gpencil_vertex_tool", "REPLACE");
   if (draw_or_replace) {
+    /* El `split` se crea ANTES de tocar `ups`, como en el Python: si `ups` no estuviera
+     * (imposible hoy, es un struct dentro de `ToolSettings`) la fila ya se habria
+     * creado cuando salta la excepcion. */
+    uiLayout *split = &layout->split(0.1f, false);
     if (ups.data == nullptr) {
       return;
     }
-    uiLayout *split = &layout->split(0.1f, false);
     split->prop(&ups, "color", UI_ITEM_NONE, "", ICON_NONE);
     uiTemplateColorPicker(split, &ups, "color", true, false, false, false);
 
@@ -410,10 +420,10 @@ static void greasepencil_vertex_paint_context_menu_draw(const bContext *C, Panel
     col->separator();
   }
 
+  uiLayout *row = &col->row(true);
   if (ups.data == nullptr) {
     return;
   }
-  uiLayout *row = &col->row(true);
   row->prop(&ups, "size", UI_ITEM_NONE, IFACE_("Radius"), ICON_NONE);
   row->prop(&brush, "use_pressure_size", UI_ITEM_NONE, "", ICON_STYLUS_PRESSURE);
 
