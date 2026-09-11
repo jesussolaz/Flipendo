@@ -90,14 +90,15 @@ Las mismas cifras exactas que antes de añadirla: no mueve ni un bloque más.
 
 Criterio: pestaña completa, y primero las que **no** dependen de los mixins compartidos
 (`PropertyPanel` de `rna_prop_ui` y `PropertiesAnimationMixin` de `bl_ui.space_properties`).
-Los dos ya tienen equivalente C++ escrito como `static` dentro de `fl_world_buttons.cc`
-(`draw_custom_properties` y `draw_action_and_slot_selector`): **el primer paso de la siguiente
-tanda es sacarlos a `FL_properties_ui.hpp`**, y a partir de ahí las demás salen casi solas.
+**Los dos mixins ya están extraídos** (`FL_properties_ui.hpp` +
+`space_buttons/fl_properties_ui.cc`): `draw_custom_properties` es el `PropertyPanel` de
+`rna_prop_ui` y `draw_action_and_slot_selector` es el `PropertiesAnimationMixin` de
+`bl_ui.space_properties`. Ya no hay que reescribirlos en cada pestaña: se incluye la cabecera y
+se llaman. **Ésa era la señal de salida**; a partir de aquí las demás salen casi solas.
 
 | Fichero | Líneas | Paneles | Dependencias compartidas |
 |---|---:|---:|---|
 | `properties_animviz.py` | 123 | 0 (solo mixins de dibujo) | ninguna — es una **biblioteca**, no una pestaña; cae con sus usuarios |
-| `properties_collection.py` | 146 | 6 | `PropertyPanel` |
 | `properties_data_lattice.py` | 105 | 4 | `PropertyPanel`, `PropertiesAnimationMixin` |
 | `properties_data_metaball.py` | 137 | 6 | `PropertyPanel`, `PropertiesAnimationMixin` |
 | `properties_data_speaker.py` | 156 | 6 | `PropertyPanel`, `PropertiesAnimationMixin` |
@@ -112,3 +113,47 @@ ficheros; ahora 41). Las gordas —`properties_particle` 2.312, `properties_pain
 `properties_constraint` 1.900, `properties_physics_fluid` 1.629, `properties_freestyle` 1.348—
 no son candidatas a una sola sesión, y `properties_freestyle` además cae entera con Freestyle
 (`INVENTARIO-PYTHON.md §2.9`).
+
+## Cuarta unidad: la pestaña Colección, y los mixins ya extraídos
+
+Dos cosas en un cambio, porque la segunda no se sostiene sin la primera.
+
+**(a) Los dos mixins salen de `fl_world_buttons.cc`.** Estaban escritos en C++ pero `static`
+dentro del fichero donde hicieron falta por primera vez. Ahora viven en
+`space_buttons/fl_properties_ui.cc`, declarados en `FL_properties_ui.hpp`:
+
+- `draw_custom_properties()` — el `PropertyPanel` de `rna_prop_ui`.
+- `draw_action_and_slot_selector()` — el `PropertiesAnimationMixin` de `bl_ui.space_properties`.
+
+**Es una extracción, no una reescritura**: no se tocó ni una línea del cuerpo de las dos
+funciones, solo el `static` y el espacio de nombres. Por eso no mueve ni un bloque del volcado.
+`fl_world_buttons.cc` era de Codex, que se quedó sin cuota a las 04:05; pasa a este carril.
+
+**(b) `properties_collection.py`** (146 líneas, 6 paneles y 1 menú) pasa entera a
+`space_buttons/fl_properties_collection.cc`, y es la primera que **usa** los mixins en vez de
+copiarlos. `lineart_make_line_type_entry()` no se migra: está definida en el fichero y **no la
+llama nadie**, ni allí ni en el resto del árbol.
+
+**Las dos trampas que cazó el volcado**, y que leyendo no se veían:
+
+1. **`toggle=False` no es el valor por defecto ni sobra.** `hide_select` tiene icono
+   (`RESTRICT_SELECT_OFF`), y una booleana con icono se dibuja como `ICON_TOGGLE` salvo que se
+   fuerce lo contrario. En C++ eso es `UI_ITEM_R_ICON_NEVER`. Sin él, el volcado daba
+   `type=ICON_TOGGLE icon=RESTRICT_SELECT_OFF text=''` donde el Python daba
+   `type=CHECKBOX icon=NONE text='Selectable'`. Afecta a `hide_select`, `hide_render`,
+   `exclude`, `holdout` e `indirect_only`.
+2. **El mixin `PropertyPanel` lleva `bl_order = 1000`**: las propiedades personalizadas van
+   siempre al final de la pestaña. Sin ese `order`, el panel salía con `order=0` y el volcado del
+   **registro** lo cantaba.
+
+**Verificado:**
+
+| Volcado | Resultado |
+|---|---|
+| Registro | **2.113 bloques, 2.112 idénticos, 1 distinto, 0 faltan, 0 sobran** |
+| Diseño | **2.004 bloques, 2.003 idénticos, 1 distinto, 0 faltan, 0 sobran** |
+
+El único distinto del diseño es `TOPBAR_MT_templates_more`, que **no es de esta pestaña** (es el
+menú de plantillas de aplicación). El único distinto del registro sigue siendo
+`REGION PROPERTIES WINDOW`, la deuda de orden global. **Los seis paneles y el menú de Colección
+se dibujan idénticos al Python.**

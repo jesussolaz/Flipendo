@@ -1111,6 +1111,7 @@ void ED_spacetype_buttons()
   /* La pestana Mundo completa, antes `properties_world.py`. */
   fl_properties_data_empty_register(art);
   fl_properties_physics_geometry_nodes_register(art);
+  fl_properties_collection_register(art);
   fl_world_buttons_register(art);
   BLI_addhead(&st->regiontypes, art);
 

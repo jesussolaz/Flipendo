@@ -107,109 +107,6 @@ static bNodeSocket *node_input_find(bNode *node, const char *name)
 }
 
 /* La función homónima de `bl_ui/anim.py`, sin cruzar el puente a Python. */
-static void draw_action_and_slot_selector(const bContext *C, uiLayout *layout, ID *id)
-{
-  uiTemplateAction(layout, C, id, "ACTION_OT_new", "ACTION_OT_unlink", std::nullopt);
-
-  AnimData *adt = BKE_animdata_from_id(id);
-  if (adt == nullptr || adt->action == nullptr) {
-    return;
-  }
-  PointerRNA action = RNA_id_pointer_create(&adt->action->id);
-  if (!RNA_boolean_get(&action, "is_action_layered")) {
-    return;
-  }
-
-  PointerRNA adt_ptr = RNA_pointer_create_discrete(id, &RNA_AnimData, adt);
-  PointerRNA id_ptr = RNA_id_pointer_create(id);
-  uiLayoutSetContextPointer(layout, "animated_id", &id_ptr);
-  uiTemplateSearch(layout,
-                   C,
-                   &adt_ptr,
-                   "action_slot",
-                   &adt_ptr,
-                   "action_suitable_slots",
-                   "ANIM_OT_slot_new_for_id",
-                   "ANIM_OT_slot_unassign_from_id");
-}
-
-/* Núcleo de `rna_prop_ui.draw()` para un ID. Mantiene también las ramas que la
- * escena de fábrica no ejercita: valores complejos, punteros ID y edición. */
-static void draw_custom_properties(const bContext *C,
-                                   uiLayout *layout,
-                                   PointerRNA *ptr,
-                                   ID *id,
-                                   const char *data_path)
-{
-  const bool use_edit = !ID_IS_LINKED(id) && !ID_IS_OVERRIDE_LIBRARY_REAL(id);
-  if (use_edit) {
-    uiLayout *row = &layout->row(false);
-    PointerRNA op = row->op("WM_OT_properties_add", IFACE_("New"), ICON_ADD);
-    RNA_string_set(&op, "data_path", data_path);
-    layout->separator();
-  }
-  uiLayoutSetPropDecorate(layout, false);
-
-  IDProperty *group = IDP_GetProperties(id);
-  if (group == nullptr) {
-    return;
-  }
-
-  std::vector<IDProperty *> properties;
-  LISTBASE_FOREACH (IDProperty *, property, &group->data.group) {
-    properties.push_back(property);
-  }
-  std::sort(properties.begin(), properties.end(), [](const IDProperty *a, const IDProperty *b) {
-    return strcmp(a->name, b->name) < 0;
-  });
-
-  for (IDProperty *property : properties) {
-    const std::string property_path = "[\"" + BLI_str_escape(property->name) + "\"]";
-    uiLayout *split = &layout->split(0.4f, true);
-    uiLayout *label_row = &split->row(false);
-    uiLayoutSetAlignment(label_row, UI_LAYOUT_ALIGN_RIGHT);
-    label_row->label(property->name, ICON_NONE);
-
-    uiLayout *value_row = &split->row(true);
-    uiLayout *value_column = &value_row->column(true);
-    const bool edit_value = property->type == IDP_GROUP ||
-                            (property->type == IDP_ARRAY && property->len >= 8);
-    if (edit_value) {
-      PointerRNA op = value_column->op(
-          "WM_OT_properties_edit_value", IFACE_("Edit Value"), ICON_NONE);
-      RNA_string_set(&op, "data_path", data_path);
-      RNA_string_set(&op, "property_name", property->name);
-    }
-    else if (property->type == IDP_ID) {
-      uiTemplateID(value_column,
-                   C,
-                   ptr,
-                   property_path,
-                   nullptr,
-                   nullptr,
-                   nullptr,
-                   UI_TEMPLATE_ID_FILTER_ALL,
-                   false,
-                   "");
-    }
-    else {
-      value_column->prop(ptr, property_path, UI_ITEM_NONE, "", ICON_NONE);
-    }
-
-    if (use_edit) {
-      uiLayout *operator_row = &value_row->row(true);
-      uiLayoutSetAlignment(operator_row, UI_LAYOUT_ALIGN_RIGHT);
-      uiLayoutSetEmboss(operator_row, blender::ui::EmbossType::None);
-      PointerRNA edit = operator_row->op("WM_OT_properties_edit", "", ICON_PREFERENCES);
-      RNA_string_set(&edit, "data_path", data_path);
-      RNA_string_set(&edit, "property_name", property->name);
-      PointerRNA remove = operator_row->op("WM_OT_properties_remove", "", ICON_X);
-      RNA_string_set(&remove, "data_path", data_path);
-      RNA_string_set(&remove, "property_name", property->name);
-    }
-  }
-}
-
 static void world_context_draw(const bContext *C, Panel *panel)
 {
   Scene *scene = CTX_data_scene(C);
@@ -247,11 +144,11 @@ static void world_animation_draw(const bContext *C, Panel *panel)
   uiLayoutSetPropDecorate(layout, false);
   uiLayout *col = &layout->column(true);
   col->label(IFACE_("World"), ICON_NONE);
-  draw_action_and_slot_selector(C, col, &world->id);
+  flipendo::properties_ui::draw_action_and_slot_selector(C, col, &world->id);
   if (world->nodetree != nullptr) {
     col = &layout->column(true);
     col->label(IFACE_("Shader Node Tree"), ICON_NONE);
-    draw_action_and_slot_selector(C, col, &world->nodetree->id);
+    flipendo::properties_ui::draw_action_and_slot_selector(C, col, &world->nodetree->id);
   }
 }
 
@@ -259,7 +156,7 @@ static void world_custom_props_draw(const bContext *C, Panel *panel)
 {
   World *world = context_world(C);
   PointerRNA ptr = world_ptr(world);
-  draw_custom_properties(C, panel->layout, &ptr, &world->id, "world");
+  flipendo::properties_ui::draw_custom_properties(C, panel->layout, &ptr, &world->id, "world");
 }
 
 static void world_surface_draw(const bContext *C, Panel *panel)
