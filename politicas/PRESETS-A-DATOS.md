@@ -226,15 +226,34 @@ commit que las obtuvo y en `~/Flipendo/dev/noche/informes/F1-presets.md`.
 
 ## Deuda abierta, con nombre y apellidos
 
-1. **Los cinco presets de FFmpeg con condicional NTSC/PAL**
-   (`DVD_(note_colon__this_changes_render_resolution).py`, `H264_in_MP4.py`,
-   `H264_in_Matroska.py`, `Ogg_Theora.py`, `Xvid.py`). Deciden `gopsize` 18 o 15
-   según `scene.render.fps != 25`, que es estado de la escena en el momento de
-   aplicar. No es representable como asignación plana y **no se convierte**:
-   hornear una de las dos ramas cambiaría el comportamiento para la mitad de los
-   usuarios. Salida prevista: o un guardián declarativo en el formato (`when
-   <ruta> != <literal>`), o cinco proveedores de preset nativos. Mientras tanto
-   siguen en `.py` y siguen funcionando.
+1. ~~**Los cinco presets de FFmpeg con condicional NTSC/PAL.**~~ **CERRADO.**
+   Decidian `gopsize` (18 o 15) y, el del DVD, `resolution_y` (480 o 576) segun
+   `scene.render.fps != 25`. No se horneo ninguna rama: el formato tiene ahora un
+   **guardian declarado**, y solo eso:
+
+   ```
+   when context.scene.render.fps != 25
+   set context.scene.render.ffmpeg.gopsize 18
+   otherwise
+   set context.scene.render.ffmpeg.gopsize 15
+   endwhen
+   ```
+
+   Una comparacion de una ruta RNA contra un literal, con `==` o `!=`, y las
+   operaciones que protege. Sin bucles, sin expresiones. **No va a crecer**: es
+   justo lo que hacia falta para no perder la unica decision que tomaban estos
+   cinco ficheros.
+
+   Verificado comparando el estado que deja cada camino **en las dos ramas**:
+   se aplica el `.py` con el interprete y el `.fpreset` con el lector nativo
+   sobre un estado de partida limpio, con `fps=30` y con `fps=25`, y se leen
+   todas las rutas que el preset toca. **116 propiedades comparadas en 10 casos
+   (5 presets x 2 ramas), 0 distintas.** Con `fps=30` sale `gopsize 18` (y
+   `resolution_y 480` en el DVD); con `fps=25`, `gopsize 15` y `resolution_y 576`
+   — que es exactamente lo que hacia el Python.
+
+   Con esto **`scripts/presets` queda a cero ficheros `.py`**: 172 `.fpreset` y
+   2 temas `.xml`.
 
 2. **`scripts/presets/text_editor/Visual_Studio_Code.py`.** Su `match
    platform.system()` colapsa en Flipendo, que es solo macOS, a la rama `_` →
@@ -284,12 +303,12 @@ sobrescriba se queda como estaba.
 | Qué | Cifra |
 |---|---:|
 | Presets `.py` de partida | 173 (10.287 líneas) |
-| Presets de propiedades convertidos a `.fpreset` | **166** (165 por la herramienta + 1 a mano) |
+| Presets de propiedades convertidos a `.fpreset` | **171** (165 por la herramienta, 1 a mano, 5 de FFmpeg con guardian) |
 | Marcadores de keyconfig `.fpreset` | **1** («Blender», construcción C++) |
 | Mismo estado por los dos caminos | **148 de 166 comparados, 0 distintos** |
-| `.fpreset` que leen y aplican sin un error | **151 de 166** (0 con error, 15 sin contexto) |
+| `.fpreset` que leen y aplican sin un error | **156 de 172** (1 con error, 15 sin contexto) |
 | `.py` retirados | **168** (incluye los 2 de keyconfig, 9.055 líneas) |
-| `.py` que quedan | **5** (solo FFmpeg) |
+| `.py` que quedan | **0** |
 
 Los artefactos están en `tests/flipendo/presets/`:
 `comparacion-python-cpp.txt` (la comparación de los dos caminos, congelada
@@ -307,13 +326,10 @@ Blender --background --factory-startup \
 
 ### El puente que queda, y se ve
 
-Los cinco presets de FFmpeg siguen sin sustituto nativo, así que
-`ExecutePreset` conserva **un último recurso**: si el lector nativo rechaza
-un `.py`, se ejecuta como script, igual que antes. Retirarlo sin reemplazo
-habría sido una regresión — el condicional NTSC/PAL dejaría de aplicarse.
-Comprobado que siguen funcionando: con `fps=30` dan `gopsize=18` y con
-`fps=25` dan `gopsize=15`, que es exactamente lo que hacía el Python.
-
-Ese camino imprime en consola el motivo del rechazo y luego «Preset no
-convertible a datos, se ejecuta como script». Es ruidoso a propósito: son
-cinco ficheros contados y conviene que se noten.
+En el arbol ya no hay ni un preset `.py`, asi que **el ultimo recurso de
+`ExecutePreset` no lo usa nada de lo que distribuimos**. Se conserva igualmente,
+y a proposito: un usuario puede tener en su carpeta un preset `.py` escrito a
+mano con logica que el lector nativo no entienda, y perderselo sin avisar seria
+justo lo que esta migracion existe para evitar. Cuando salta, imprime el motivo
+del rechazo y «Preset no convertible a datos, se ejecuta como script». Se va con
+`bl_operators`.

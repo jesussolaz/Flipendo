@@ -60,10 +60,31 @@ enum class OpKind {
   Clear,         /* `clear <ruta>` sobre una coleccion de IDProperty. */
   CollectionAdd, /* `add <ruta>` abre un elemento nuevo. */
   CollectionEnd, /* `end` lo cierra. */
+  /**
+   * `when <ruta> == <valor>` / `when <ruta> != <valor>`: guardian.
+   *
+   * Existe por los cinco presets de FFmpeg, que decidian `gopsize` (y, en el
+   * del DVD, `resolution_y`) segun `scene.render.fps != 25`. No es un
+   * mini-lenguaje y no va a crecer: UNA comparacion de una ruta RNA contra un
+   * literal, con `==` o `!=`, y las operaciones que protege. Sin bucles, sin
+   * expresiones, sin anidamiento. Hornear una de las dos ramas habria cambiado
+   * el comportamiento para la mitad de los usuarios; ver PRESETS-A-DATOS.md.
+   */
+  When,
+  Otherwise, /* `otherwise`: la otra rama del `when`. */
+  WhenEnd,   /* `endwhen`: lo cierra. */
+};
+
+/** Comparacion de un `when`. */
+enum class CompareOp {
+  Equal,
+  NotEqual,
 };
 
 struct Op {
   OpKind kind = OpKind::Set;
+  /** Solo para `When`. */
+  CompareOp compare = CompareOp::Equal;
   /** Ruta RNA con raiz `context.`, o relativa (`.campo`) dentro de un `add`. */
   std::string path;
   Value value;

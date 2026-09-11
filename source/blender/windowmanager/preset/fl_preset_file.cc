@@ -540,6 +540,7 @@ bool read_fpreset_text(const std::string &text,
   const std::vector<std::string> lines = split_lines(text);
   bool seen_magic = false;
   int depth = 0;
+  int when_depth = 0;
 
   for (size_t ln = 0; ln < lines.size(); ln++) {
     const std::string line = trim(lines[ln]);
@@ -606,6 +607,62 @@ bool read_fpreset_text(const std::string &text,
       else {
         op.kind = OpKind::Clear;
       }
+      r_preset.ops.push_back(op);
+      continue;
+    }
+    if (word == "when") {
+      Op op;
+      op.kind = OpKind::When;
+      op.line = lineno;
+      if (!scan_path(line, pos, op.path)) {
+        return err("falta la ruta despues de 'when'");
+      }
+      if (op.path.compare(0, 8, "context.") != 0) {
+        return err("la ruta de 'when' debe empezar por 'context.': " + op.path);
+      }
+      while (pos < line.size() && (line[pos] == ' ' || line[pos] == '\t')) {
+        pos++;
+      }
+      if (line.compare(pos, 2, "==") == 0) {
+        op.compare = CompareOp::Equal;
+      }
+      else if (line.compare(pos, 2, "!=") == 0) {
+        op.compare = CompareOp::NotEqual;
+      }
+      else {
+        return err("'when' solo admite '==' o '!='");
+      }
+      pos += 2;
+      const std::string rest = line.substr(pos);
+      Scanner sc(rest, false);
+      if (!sc.parse_value(op.value)) {
+        return err(sc.error);
+      }
+      if (!sc.at_end()) {
+        return err("sobra texto despues del valor de 'when'");
+      }
+      when_depth++;
+      r_preset.ops.push_back(op);
+      continue;
+    }
+    if (word == "otherwise") {
+      if (when_depth == 0) {
+        return err("'otherwise' sin un 'when' abierto");
+      }
+      Op op;
+      op.kind = OpKind::Otherwise;
+      op.line = lineno;
+      r_preset.ops.push_back(op);
+      continue;
+    }
+    if (word == "endwhen") {
+      if (when_depth == 0) {
+        return err("'endwhen' sin un 'when' abierto");
+      }
+      when_depth--;
+      Op op;
+      op.kind = OpKind::WhenEnd;
+      op.line = lineno;
       r_preset.ops.push_back(op);
       continue;
     }

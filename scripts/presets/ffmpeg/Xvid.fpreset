@@ -1,0 +1,19 @@
+fpreset 1
+subdir ffmpeg
+set context.scene.render.ffmpeg.format "AVI"
+set context.scene.render.ffmpeg.codec "MPEG4"
+# El original decidia `gopsize` con `is_ntsc = (scene.render.fps != 25)`.
+# Es la misma decision, declarada: ni se hornea una rama ni se ejecuta codigo.
+when context.scene.render.fps != 25
+set context.scene.render.ffmpeg.gopsize 18
+otherwise
+set context.scene.render.ffmpeg.gopsize 15
+endwhen
+set context.scene.render.ffmpeg.use_max_b_frames false
+set context.scene.render.ffmpeg.video_bitrate 6000
+set context.scene.render.ffmpeg.maxrate 9000
+set context.scene.render.ffmpeg.minrate 0
+# 224 * 8, tal y como estaba escrito en el .py
+set context.scene.render.ffmpeg.buffersize 1792
+set context.scene.render.ffmpeg.packetsize 2048
+set context.scene.render.ffmpeg.muxrate 10080000

@@ -318,11 +318,105 @@ bool set_property(bContext *C,
 
 }  // namespace
 
+/**
+ * Evalua el guardian de un `when`: lee la ruta RNA y la compara con el literal.
+ *
+ * Solo `==` y `!=`, y solo contra un literal. Si la ruta no se puede resolver se
+ * informa y se toma la rama falsa: mejor una rama definida que un estado a
+ * medias.
+ */
+static bool when_condition_eval(bContext *C, const Op &op, ApplyReport &r_report)
+{
+  PointerRNA base;
+  std::string rest;
+  std::string error;
+  if (!resolve_root(C, op.path, base, rest, error)) {
+    r_report.errors.push_back("when: " + error);
+    return false;
+  }
+  PointerRNA ptr;
+  PropertyRNA *prop = nullptr;
+  if (rest.empty() || !RNA_path_resolve_property(&base, rest.c_str(), &ptr, &prop)) {
+    r_report.errors.push_back("when: " + op.path + ": esta ruta RNA ya no existe");
+    return false;
+  }
+
+  bool equal = false;
+  switch (RNA_property_type(prop)) {
+    case PROP_BOOLEAN:
+      equal = (RNA_property_boolean_get(&ptr, prop) ? 1 : 0) ==
+              (op.value.kind == ValueKind::Bool ? (op.value.b ? 1 : 0) : int(op.value.i));
+      break;
+    case PROP_INT:
+      equal = RNA_property_int_get(&ptr, prop) ==
+              int(op.value.kind == ValueKind::Float ? (long long)(op.value.f) : op.value.i);
+      break;
+    case PROP_FLOAT:
+      equal = double(RNA_property_float_get(&ptr, prop)) ==
+              (op.value.kind == ValueKind::Int ? double(op.value.i) : op.value.f);
+      break;
+    case PROP_ENUM: {
+      const char *id = nullptr;
+      if (RNA_property_enum_identifier(
+              C, &ptr, prop, RNA_property_enum_get(&ptr, prop), &id) &&
+          id != nullptr)
+      {
+        equal = (op.value.kind == ValueKind::String) && (op.value.s == id);
+      }
+      break;
+    }
+    case PROP_STRING: {
+      char *value = RNA_property_string_get_alloc(&ptr, prop, nullptr, 0, nullptr);
+      equal = (op.value.kind == ValueKind::String) && (value != nullptr) &&
+              (op.value.s == value);
+      if (value != nullptr) {
+        MEM_freeN(value);
+      }
+      break;
+    }
+    default:
+      r_report.errors.push_back("when: " + op.path + ": tipo de propiedad no comparable");
+      return false;
+  }
+  return (op.compare == CompareOp::Equal) ? equal : !equal;
+}
+
 bool apply(bContext *C, const Preset &preset, ApplyReport &r_report)
 {
   std::vector<PointerRNA> stack;
 
+  /* Pila de guardianes: `taken` dice si la rama actual se ejecuta. */
+  std::vector<bool> when_stack;
+  const auto skipping = [&when_stack]() {
+    for (const bool taken : when_stack) {
+      if (!taken) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   for (const Op &op : preset.ops) {
+    if (op.kind == OpKind::When) {
+      /* Si ya estamos saltando, no se evalua: no se toca el estado por error. */
+      when_stack.push_back(skipping() ? false : when_condition_eval(C, op, r_report));
+      continue;
+    }
+    if (op.kind == OpKind::Otherwise) {
+      if (!when_stack.empty()) {
+        when_stack.back() = !when_stack.back();
+      }
+      continue;
+    }
+    if (op.kind == OpKind::WhenEnd) {
+      if (!when_stack.empty()) {
+        when_stack.pop_back();
+      }
+      continue;
+    }
+    if (skipping()) {
+      continue;
+    }
     if (op.kind == OpKind::CollectionEnd) {
       if (!stack.empty()) {
         stack.pop_back();

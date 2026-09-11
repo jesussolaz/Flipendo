@@ -1,0 +1,24 @@
+fpreset 1
+subdir ffmpeg
+set context.scene.render.ffmpeg.format "MPEG2"
+set context.scene.render.resolution_x 720
+# El original decidia `resolution_y` y `gopsize` con
+# `is_ntsc = (scene.render.fps != 25)`. Es la misma decision, declarada.
+when context.scene.render.fps != 25
+set context.scene.render.resolution_y 480
+set context.scene.render.ffmpeg.gopsize 18
+otherwise
+set context.scene.render.resolution_y 576
+set context.scene.render.ffmpeg.gopsize 15
+endwhen
+set context.scene.render.ffmpeg.video_bitrate 6000
+set context.scene.render.ffmpeg.maxrate 9000
+set context.scene.render.ffmpeg.minrate 0
+# 224 * 8, tal y como estaba escrito en el .py
+set context.scene.render.ffmpeg.buffersize 1792
+set context.scene.render.ffmpeg.packetsize 2048
+set context.scene.render.ffmpeg.muxrate 10080000
+set context.scene.render.ffmpeg.audio_codec "AC3"
+set context.scene.render.ffmpeg.audio_bitrate 448
+set context.scene.render.ffmpeg.audio_mixrate 48000
+set context.scene.render.ffmpeg.audio_channels "SURROUND51"
