@@ -1103,6 +1103,7 @@ void ED_spacetype_buttons()
   art->keymapflag = ED_KEYMAP_UI | ED_KEYMAP_FRAMES;
   art->lock = true;
   buttons_context_register(art);
+  buttons_properties_data_shaderfx_register(art);
   BLI_addhead(&st->regiontypes, art);
 
   /* Register the panel types from modifiers. The actual panels are built per modifier rather
