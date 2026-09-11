@@ -1,0 +1,25 @@
+# Presets que NO se pueden aplicar en esta configuracion, con su motivo.
+#
+# Esto NO es una lista de excepciones para poner el comprobador en verde: es una
+# declaracion, y se verifica en las dos direcciones. Si uno de estos pasa a
+# aplicarse -- por ejemplo el dia que se encienda Cycles -- el comprobador lo dice,
+# porque entonces la declaracion sobra y hay que quitarla de aqui. Y si un preset
+# que deberia aplicarse deja de hacerlo sin estar declarado, es ROJO.
+#
+# Formato: <ruta relativa a scripts/presets>  <motivo>
+
+cycles/integrator/Default.fpreset                     el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/integrator/Direct_Light.fpreset                el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/integrator/Fast_Global_Illumination.fpreset    el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/integrator/Full_Global_Illumination.fpreset    el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/integrator/Limited_Global_Illumination.fpreset el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/performance/Default.fpreset                    el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/performance/Faster_Render.fpreset              el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/performance/Lower_Memory.fpreset               el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/sampling/Final.fpreset                         el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/sampling/Preview.fpreset                       el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/viewport_sampling/Final.fpreset                el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+cycles/viewport_sampling/Preview.fpreset              el espacio de nombres RNA 'cycles' no existe: WITH_CYCLES=OFF
+hair_dynamics/Default.fpreset                         pide un sistema de particulas de pelo en el contexto, que el arnes no monta
+operator/wm.collada_export/sl_plus_open_sim_rigged.fpreset  preset de operador: solo aplica con wm.collada_export abierto
+operator/wm.collada_export/sl_plus_open_sim_static.fpreset  preset de operador: solo aplica con wm.collada_export abierto

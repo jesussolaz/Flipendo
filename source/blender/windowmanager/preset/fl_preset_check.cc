@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -126,6 +127,20 @@ std::string subdir_of(const std::string &root, const std::string &path)
   }
   const size_t slash = rel.find_last_of('/');
   return slash == std::string::npos ? "" : rel.substr(0, slash);
+}
+
+/** Como `subdir_of`, pero conservando el nombre del fichero: es la clave con la
+ * que se declara un preset en `no-aplicables.txt`. */
+std::string rel_of(const std::string &root, const std::string &path)
+{
+  if (path.compare(0, root.size(), root) != 0) {
+    return "";
+  }
+  std::string rel = path.substr(root.size());
+  while (!rel.empty() && (rel[0] == '/' || rel[0] == '\\')) {
+    rel = rel.substr(1);
+  }
+  return rel;
 }
 
 /** \} */
@@ -327,6 +342,39 @@ bool convert_tree(const char *dir)
 /** \name Comprobacion de los dos caminos
  * \{ */
 
+/**
+ * Lee `<dir>/no-aplicables.txt`: los presets que NO se pueden aplicar en esta
+ * configuracion, cada uno con su motivo.
+ *
+ * No es una lista para poner el comprobador en verde: es una declaracion, y se
+ * verifica en las dos direcciones. Un preset declarado que SI aplica sale en el
+ * informe, porque entonces la declaracion sobra; y uno sin declarar que no aplica
+ * es un fallo, porque es justo la regresion que hay que cazar.
+ */
+static std::map<std::string, std::string> no_aplicables_leer(const std::string &root)
+{
+  std::map<std::string, std::string> fuera;
+  std::ifstream in(root + "/no-aplicables.txt");
+  if (!in) {
+    return fuera;
+  }
+  std::string linea;
+  while (std::getline(in, linea)) {
+    const size_t ini = linea.find_first_not_of(" \t");
+    if (ini == std::string::npos || linea[ini] == '#') {
+      continue;
+    }
+    const size_t corte = linea.find_first_of(" \t", ini);
+    if (corte == std::string::npos) {
+      continue;
+    }
+    const std::string ruta = linea.substr(ini, corte - ini);
+    const size_t m = linea.find_first_not_of(" \t", corte);
+    fuera[ruta] = (m == std::string::npos) ? "sin motivo escrito" : linea.substr(m);
+  }
+  return fuera;
+}
+
 bool check_tree(bContext *C, const char *dir, const char *report_path)
 {
   const std::string root(dir);
@@ -455,23 +503,53 @@ bool check_tree(bContext *C, const char *dir, const char *report_path)
    * un fichero mal escrito a mano o una ruta RNA que desaparece. */
   std::vector<std::string> natives;
   collect_files(root, ".fpreset", natives);
-  int applied = 0, failed = 0, no_context = 0;
+  const std::map<std::string, std::string> no_aplicables = no_aplicables_leer(root);
+  int applied = 0, failed = 0, no_context = 0, declarados = 0, declaracion_sobra = 0;
   rep << "\n# Segunda pasada: cada .fpreset se lee y se aplica.\n\n";
   for (const std::string &fp : natives) {
     Preset preset;
     std::string error;
     if (!read_file(fp, preset, error)) {
+      /* Los `.fpreset` de `keyconfig/` son OTRO formato -- empiezan por
+       * `keyconfig <version>` y solo son la entrada de datos que descubre el menu
+       * de Preferencias; los 248 keymaps los reconstruye C++. Tratarlos como
+       * presets de propiedades y contarlos como rotos era un fallo de este
+       * comprobador, no del fichero. Lo suyo lo verifica --fl-check-keyconfig-io. */
+      if (subdir_of(root, fp).compare(0, 9, "keyconfig") == 0) {
+        rep << "OTRO-FORMATO " << fp << "\n         entrada de teclado, no un preset de "
+               "propiedades; lo comprueba --fl-check-keyconfig-io\n";
+        continue;
+      }
       rep << "ILEGIBLE " << fp << "\n         " << error << "\n";
       failed++;
       continue;
     }
     const std::vector<std::string> paths = touched_paths(preset);
     Preset before;
+    const std::string rel = rel_of(root, fp);
+    const auto decl = no_aplicables.find(rel);
     if (!paths.empty() && !capture(C, paths, before, error)) {
-      /* Ni el contexto ni la propiedad estan: no se puede aplicar ni juzgar. */
-      rep << "SIN-CTX  " << fp << "\n         " << error << "\n";
-      no_context++;
+      /* Ni el contexto ni la propiedad estan: no se puede aplicar ni juzgar. Si
+       * esta DECLARADO en `no-aplicables.txt` con su motivo, no es un fallo; si no lo
+       * esta, si, porque es exactamente la regresion que hay que cazar. */
+      if (decl != no_aplicables.end()) {
+        rep << "NO-APLICABLE " << rel << "\n         declarado: " << decl->second << "\n";
+        declarados++;
+      }
+      else {
+        rep << "SIN-CTX  " << fp << "\n         " << error
+            << "\n         SIN DECLARAR: o se declara en no-aplicables.txt con su motivo, "
+               "o esto es una regresion\n";
+        no_context++;
+      }
       continue;
+    }
+    if (decl != no_aplicables.end()) {
+      /* La otra direccion: estaba declarado como no aplicable y resulta que aplica.
+       * La declaracion sobra y hay que quitarla, o dejara de avisar de lo que venga. */
+      rep << "DECLARACION-SOBRA " << rel << "\n         se declaro no aplicable ("
+          << decl->second << ") pero SI se pudo aplicar: quitala de no-aplicables.txt\n";
+      declaracion_sobra++;
     }
     ApplyReport areport;
     apply(C, preset, areport);
@@ -489,7 +567,9 @@ bool check_tree(bContext *C, const char *dir, const char *report_path)
     apply(C, before, restore);
   }
   rep << "\naplicados sin error " << applied << " de " << int(natives.size())
-      << " (" << failed << " con error, " << no_context << " sin contexto)\n";
+      << " (" << failed << " con error, " << no_context << " sin contexto sin declarar, "
+      << declarados << " no aplicables declarados, " << declaracion_sobra
+      << " declaraciones que sobran)\n";
 
   const std::string text = rep.str();
   fputs(text.c_str(), stdout);
@@ -498,7 +578,8 @@ bool check_tree(bContext *C, const char *dir, const char *report_path)
     out << text;
   }
   harness_free(C, harness);
-  return diff == 0 && failed == 0 && (same > 0 || applied > 0);
+  return diff == 0 && failed == 0 && no_context == 0 && declaracion_sobra == 0 &&
+         (same > 0 || applied > 0);
 }
 
 /** \} */
