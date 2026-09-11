@@ -42,9 +42,11 @@
 #include <cstdio>
 #include <cstring>
 
+#include "DNA_lightprobe_types.h"
 #include "DNA_object_types.h"
 #include "DNA_scene_types.h"
 #include "DNA_speaker_types.h"
+#include "DNA_volume_types.h"
 
 #include "BLI_string.h"
 #include "BLI_utildefines.h"
@@ -149,6 +151,130 @@ static bool setup_speaker(bContext *C, const bool muted)
   return true;
 }
 
+/**
+ * `bpy.ops.object.volume_add()` y, en las variantes, lo que hace falta para pisar
+ * la rama contraria de cada `if` de la pestana del Volumen.
+ *
+ * Un volumen recien anadido no tiene fichero ni rejillas, asi que por defecto el
+ * volcado solo ve la mitad barata de tres paneles: `DATA_PT_volume_file` sin su
+ * bloque de secuencia, `DATA_PT_volume_viewport_display_slicing` con el `active`
+ * apagado y el detalle de la malla de alambre con el `active` encendido.
+ *
+ * - `SLICE` enciende `display.use_slice`, que es el `layout.active` del panel de
+ *   corte (la rama contraria a la de fabrica).
+ * - `WIRE_NONE` pone la malla de alambre en `NONE`, que apaga el `active` de la
+ *   fila del detalle (de fabrica viene en `BOXES`, que lo enciende).
+ * - `SEQUENCE` pone una ruta de fichero y marca la secuencia: enciende el
+ *   `if volume.filepath` entero con sus cuatro propiedades de fotograma y, de
+ *   paso, deja un mensaje de error de carga que ejercita el ultimo `if` del
+ *   panel. La ruta es fija a proposito, para que el volcado se reproduzca.
+ */
+static bool setup_volume(bContext *C, const char *variant)
+{
+  if (!call_op(C, "OBJECT_OT_volume_add")) {
+    return false;
+  }
+  if (variant == nullptr) {
+    return true;
+  }
+
+  Object *ob = active_object(C);
+  if (ob == nullptr || ob->type != OB_VOLUME || ob->data == nullptr) {
+    fprintf(stderr, "fl-ui-scene: el volumen no quedo activo.\n");
+    return false;
+  }
+  Volume *volume = static_cast<Volume *>(ob->data);
+
+  if (STREQ(variant, "SLICE")) {
+    volume->display.axis_slice_method = VOLUME_AXIS_SLICE_SINGLE;
+  }
+  else if (STREQ(variant, "WIRE_NONE")) {
+    volume->display.wireframe_type = VOLUME_WIREFRAME_NONE;
+  }
+  else if (STREQ(variant, "SEQUENCE")) {
+    STRNCPY(volume->filepath, "//fl-ui-scene-no-existe.vdb");
+    volume->is_sequence = 1;
+  }
+  else {
+    fprintf(stderr,
+            "fl-ui-scene: variante desconocida de VOLUME: '%s'. Conocidas: SLICE, WIRE_NONE, "
+            "SEQUENCE.\n",
+            variant);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * `bpy.ops.object.lightprobe_add(type=...)` y, en las variantes, el bit que hace
+ * falta para pisar la rama contraria del `draw()`.
+ *
+ * Por que hacen falta variantes y no basta con las tres formas: los paneles de la
+ * sonda deciden por **tres** booleanas ademas del tipo -`influence_type`,
+ * `use_custom_parallax` (con su `parallax_type`) y `use_data_display`-, y todas
+ * vienen apagadas de fabrica (`DNA_lightprobe_defaults.h`:
+ * `flag = LIGHTPROBE_FLAG_SHOW_INFLUENCE`, los dos `*_type` a `ELIPSOID`). Medir
+ * solo el caso por defecto dejaria sin probar la mitad de cada `if`, que es justo
+ * donde esta el riesgo al traducir.
+ *
+ * Cada variante toca **una sola** de las tres. Es deliberado: si se pusieran las
+ * tres a la vez, confundir `attenuation_type` con `parallax_type` en el C++ no lo
+ * cazaria ningun volcado, porque en las dos escenas valdrian lo mismo.
+ */
+static bool setup_lightprobe(bContext *C, const char *variant)
+{
+  const char *type = "SPHERE";
+  if (variant != nullptr) {
+    if (STREQ(variant, "PLANE") || STREQ(variant, "VOLUME")) {
+      type = variant;
+    }
+    else if (!STRPREFIX(variant, "SPHERE")) {
+      fprintf(stderr,
+              "fl-ui-scene: variante desconocida de LIGHTPROBE: '%s'. Conocidas: SPHERE, "
+              "SPHERE_BOX, SPHERE_PARALLAX, SPHERE_DATA, PLANE, VOLUME.\n",
+              variant);
+      return false;
+    }
+  }
+
+  PointerRNA props;
+  WM_operator_properties_create(&props, "OBJECT_OT_lightprobe_add");
+  RNA_enum_set_identifier(C, &props, "type", type);
+  const bool ok = call_op(C, "OBJECT_OT_lightprobe_add", &props);
+  WM_operator_properties_free(&props);
+  if (!ok) {
+    return false;
+  }
+
+  Object *ob = active_object(C);
+  if (ob == nullptr || ob->type != OB_LIGHTPROBE || ob->data == nullptr) {
+    fprintf(stderr, "fl-ui-scene: la sonda no quedo activa.\n");
+    return false;
+  }
+  LightProbe *probe = static_cast<LightProbe *>(ob->data);
+
+  if (variant == nullptr) {
+    return true;
+  }
+  if (STREQ(variant, "SPHERE_BOX")) {
+    /* `influence_type = 'BOX'`: la rama del texto "Size" en vez de "Radius". */
+    probe->attenuation_type = LIGHTPROBE_SHAPE_BOX;
+  }
+  else if (STREQ(variant, "SPHERE_PARALLAX")) {
+    /* `use_custom_parallax = True` enciende el `col.active` de
+     * DATA_PT_lightprobe_parallax y el `sub.active` de los dos paneles de
+     * Viewport Display; `parallax_type = 'BOX'` es su otra rama de texto. */
+    probe->flag |= LIGHTPROBE_FLAG_CUSTOM_PARALLAX;
+    probe->parallax_type = LIGHTPROBE_SHAPE_BOX;
+  }
+  else if (STREQ(variant, "SPHERE_DATA")) {
+    /* `use_data_display = True`: el `subrow.active` de
+     * DATA_PT_lightprobe_display_eevee_next. */
+    probe->flag |= LIGHTPROBE_FLAG_SHOW_DATA;
+  }
+  return true;
+}
+
 /** `bpy.ops.object.add(type='LATTICE')`. */
 static bool setup_object_type(bContext *C, const char *type)
 {
@@ -187,15 +313,20 @@ bool scene_setup(bContext *C, const char *spec)
     ok = setup_object_type(C, "LATTICE");
   }
   else if (STREQ(family, "VOLUME")) {
-    ok = call_op(C, "OBJECT_OT_volume_add");
+    ok = setup_volume(C, variant);
   }
   else if (STREQ(family, "CURVES")) {
     ok = call_op(C, "OBJECT_OT_curves_empty_hair_add");
   }
+  else if (STREQ(family, "LIGHTPROBE")) {
+    ok = setup_lightprobe(C, variant);
+  }
   else {
     fprintf(stderr,
             "fl-ui-scene: familia desconocida '%s'. Conocidas: METABALL[:BALL|CAPSULE|PLANE|"
-            "ELLIPSOID|CUBE], SPEAKER[:MUTED], LATTICE, VOLUME, CURVES.\n",
+            "ELLIPSOID|CUBE], SPEAKER[:MUTED], LATTICE, "
+            "VOLUME[:SLICE|WIRE_NONE|SEQUENCE], CURVES, "
+            "LIGHTPROBE[:SPHERE|SPHERE_BOX|SPHERE_PARALLAX|SPHERE_DATA|PLANE|VOLUME].\n",
             family);
     return false;
   }

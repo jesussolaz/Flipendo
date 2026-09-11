@@ -59,7 +59,15 @@ void draw_animation_panel(const bContext *C, uiLayout *layout, ID *id);
  *
  * `spec` es `FAMILIA` o `FAMILIA:VARIANTE`:
  * `METABALL[:BALL|CAPSULE|PLANE|ELLIPSOID|CUBE]`, `SPEAKER[:MUTED]`, `LATTICE`,
- * `VOLUME`, `CURVES`. Devuelve false y escribe el motivo si algo falla; un
+ * `VOLUME[:SLICE|WIRE_NONE|SEQUENCE]`, `CURVES`,
+ * `LIGHTPROBE[:SPHERE|SPHERE_BOX|SPHERE_PARALLAX|SPHERE_DATA|PLANE|VOLUME]`.
+ *
+ * Las variantes no son un lujo: la mitad de los `if` de estas pestanas decide por
+ * una booleana que viene apagada de fabrica, y medir solo el caso por defecto
+ * deja sin probar la rama contraria. Cada variante toca **una sola** cosa, para
+ * que confundir dos campos parecidos en el C++ no pueda pasar desapercibido.
+ *
+ * Devuelve false y escribe el motivo si algo falla; un
  * andamio que falla en silencio deja la pestana sin cubrir y el volcado vuelve a
  * decir `NO-CUBIERTO`, que es un falso verde.
  */
