@@ -500,6 +500,51 @@ sorpresas. Los dos prefijos que hacen falta están medidos:
 | `VIEW_3D HEADER` → `VIEW3D_PT_snapping` | 36 + él | ~1.400 | `properties_paint_common.py` (2.ª) |
 | `TOPBAR HEADER` → los tres | 4 + ellos | ~200 | `space_image.py` (2.ª y 3.ª) |
 
+## La alarma: `--fl-check-keymap-menus` (2026-09-11)
+
+Hasta ahora este agujero solo se medía a mano, con el cruce de conjuntos de arriba.
+Desde este commit lo mide el binario, en el estilo de `--fl-check-keymap`,
+`--fl-check-tools` y `--fl-check-ui`:
+
+```
+Blender --background --fl-check-keymap-menus [fichero]
+```
+
+Construye el keymap **nativo** en una configuración aparte —el mismo camino que
+`FL_keyconfig_dump_native`, y por eso vale en `--background`, donde el editor no carga
+ningún keymap—, recoge todos los nombres que invocan `wm.call_menu`,
+`wm.call_menu_pie` y `wm.call_panel`, y los resuelve uno a uno. Sale 0 solo si no
+falta ninguno, y lista los que faltan con el keymap desde el que se invocan. Con
+`fichero` escribe además la lista ordenada de nombres con sus cuentas.
+
+Medida de hoy:
+
+```
+FL-KEYMAP-MENUS nombres=127 elementos=208 call_menu=141 call_menu_pie=45
+                call_panel=22 resueltos=127 ausentes=0 sin-nombre=0
+```
+
+### Probado al revés, que es lo que le da valor
+
+Apartando `bl_ui` entero de la copia instalada —o sea, **simulando el editor sin
+intérprete**, que es el objetivo del proyecto— la comprobación falla con `rc=1` y
+señala **exactamente seis**: `OUTLINER_MT_context_menu`,
+`POSE_MT_selection_sets_select`, `TOPBAR_PT_name`, `TOPBAR_PT_name_marker`,
+`USERPREF_PT_ndof_settings` y `VIEW3D_PT_snapping`. Ni uno más.
+
+Dicho al derecho: **121 de los 127 nombres que el keymap por defecto invoca ya
+resuelven con `bl_ui` completamente ausente.** Es la primera medida directa de que las
+teclas siguen abriendo algo sin Python, en vez de deducirlo de un cruce de listas.
+
+### Lo que no cubre
+
+La configuración por defecto con los `Params` por defecto. Las combinaciones que esos
+`Params` no activan (`VIEW3D_MT_snap` frente a `VIEW3D_MT_snap_pie`,
+`VIEW3D_MT_shading_ex_pie`…) nombran menús que ahí no aparecen: siguen cubiertos por el
+cruce de conjuntos, no por la alarma. Por eso da 127 nombres y no 136, y **que 127
+coincida con los 127 de los 133 ya migrados es casualidad**: son dos conjuntos
+distintos y no hay que sumarlos.
+
 ### `OUTLINER_MT_context_menu`: intentado, medido y retirado
 
 Es corto, pero arrastra una cadena: su `draw()` llama a
