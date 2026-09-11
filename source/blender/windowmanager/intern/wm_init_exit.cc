@@ -214,6 +214,7 @@ void WM_init(bContext *C, int argc, const char **argv)
 
   WM_paneltype_init(); /* Lookup table only. */
   WM_menutype_init();
+  wm_menutypes_register();
   WM_uilisttype_init();
   wm_gizmotype_init();
   wm_gizmogrouptype_init();

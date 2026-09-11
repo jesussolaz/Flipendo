@@ -69,6 +69,7 @@ void wm_operatortype_free();
  */
 void wm_window_keymap(wmKeyConfig *keyconf);
 void wm_operatortypes_register();
+void wm_menutypes_register();
 
 /* `wm_gesture.cc` */
 

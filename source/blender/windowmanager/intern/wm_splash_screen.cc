@@ -28,7 +28,9 @@
 #include "BKE_appdir.hh"
 #include "BKE_blender_version.h"
 #include "BKE_context.hh"
+#include "BKE_global.hh"
 #include "BKE_preferences.h"
+#include "BKE_screen.hh"
 
 #include "BLT_translation.hh"
 
@@ -39,15 +41,349 @@
 #include "ED_screen.hh"
 
 #include "RNA_access.hh"
+#include "RNA_prototypes.hh"
 
+#include "UI_interface_c.hh"
 #include "UI_interface.hh"
 #include "UI_interface_icons.hh"
+#include "UI_interface_layout.hh"
 #include "UI_resources.hh"
+
+#include "FL_ui_registry.hh"
 
 #include "WM_api.hh"
 #include "WM_types.hh"
 
 #include "wm.hh"
+
+extern "C" char build_branch[];
+extern "C" char build_commit_date[];
+extern "C" char build_commit_time[];
+extern "C" char build_hash[];
+
+/* -------------------------------------------------------------------- */
+/** \name Menus globales historicamente alojados en bl_operators/wm.py
+ * \{ */
+
+static void wm_menu_url_preset(
+    const bContext *C, uiLayout &layout, const char *text, int icon, const char *type)
+{
+  PointerRNA props = layout.op("WM_OT_url_open_preset", IFACE_(text), icon);
+  RNA_enum_set_identifier(const_cast<bContext *>(C), &props, "type", type);
+}
+
+static void wm_menu_url(uiLayout &layout, const char *text, const char *url)
+{
+  PointerRNA props = layout.op("WM_OT_url_open", IFACE_(text), ICON_URL);
+  RNA_string_set(&props, "url", url);
+}
+
+static void wm_splash_file_templates_draw(uiLayout &layout)
+{
+  uiLayoutSetOperatorContext(&layout, WM_OP_INVOKE_DEFAULT);
+
+  PointerRNA props = layout.op("WM_OT_read_homefile", IFACE_("General"), ICON_FILE_NEW);
+  RNA_string_set(&props, "app_template", "");
+
+  ListBase templates{};
+  BKE_appdir_app_templates(&templates);
+  const int template_count = BLI_listbase_count(&templates);
+  const int template_limit = template_count > 4 ? 3 : template_count;
+  int index = 0;
+  LISTBASE_FOREACH (LinkData *, link, &templates) {
+    const char *template_id = static_cast<const char *>(link->data);
+    /* Igual que TOPBAR_MT_file_new.draw_ex(use_splash=True): tres plantillas y `...`. */
+    if (index++ >= template_limit) {
+      break;
+    }
+    char display_name[FILE_MAXFILE];
+    BLI_path_to_display_name(display_name, sizeof(display_name), template_id);
+    props = layout.op("WM_OT_read_homefile", IFACE_(display_name), ICON_FILE_NEW);
+    RNA_string_set(&props, "app_template", template_id);
+  }
+  if (template_count > 4) {
+    layout.menu("TOPBAR_MT_templates_more", IFACE_("..."), ICON_NONE);
+  }
+  LISTBASE_FOREACH (LinkData *, link, &templates) {
+    MEM_freeN(link->data);
+  }
+  BLI_freelistN(&templates);
+  uiLayoutSetOperatorContext(&layout, WM_OP_EXEC_DEFAULT);
+}
+
+static void wm_splash_menu_draw(const bContext *C, Menu *menu)
+{
+  uiLayout &layout = *menu->layout;
+  uiLayoutSetOperatorContext(&layout, WM_OP_EXEC_DEFAULT);
+  uiLayoutSetEmboss(&layout, blender::ui::EmbossType::Pulldown);
+
+  uiLayout &split = layout.split(0.0f, false);
+  uiLayout &col1 = split.column(false);
+  col1.label(IFACE_("New File"), ICON_NONE);
+  wm_splash_file_templates_draw(col1);
+
+  uiLayout &col2 = split.column(false);
+  uiLayout &col2_title = col2.row(false);
+  const bool found_recent = uiTemplateRecentFiles(&col2, 5) != 0;
+  col2_title.label(IFACE_(found_recent ? "Recent Files" : "Getting Started"), ICON_NONE);
+  if (!found_recent) {
+    wm_menu_url_preset(C, col2, "Manual", ICON_URL, "MANUAL");
+    wm_menu_url(col2, "Tutorials", "https://www.blender.org/tutorials/");
+    wm_menu_url(col2, "Support", "https://www.blender.org/support/");
+    wm_menu_url(col2, "User Communities", "https://www.blender.org/community/");
+    wm_menu_url_preset(C, col2, "Blender Website", ICON_URL, "BLENDER");
+  }
+
+  layout.separator();
+  uiLayout &bottom = layout.split(0.0f, false);
+  uiLayout &bottom_left = bottom.column(false);
+  uiLayout &open_row = bottom_left.row(false);
+  uiLayoutSetOperatorContext(&open_row, WM_OP_INVOKE_DEFAULT);
+  open_row.op("WM_OT_open_mainfile", IFACE_("Open..."), ICON_FILE_FOLDER);
+  bottom_left.op("WM_OT_recover_last_session", std::nullopt, ICON_RECOVER_LAST);
+
+  uiLayout &bottom_right = bottom.column(false);
+  wm_menu_url_preset(C, bottom_right, "Donate", ICON_FUND, "FUND");
+  wm_menu_url_preset(C, bottom_right, "What's New", ICON_URL, "RELEASE_NOTES");
+  layout.separator();
+  if ((G.f & G_FLAG_INTERNET_ALLOW) == 0 &&
+      (G.f & G_FLAG_INTERNET_OVERRIDE_PREF_ANY) != 0)
+  {
+    layout.label(IFACE_("Running in Offline Mode"), ICON_INTERNET_OFFLINE);
+  }
+  layout.separator();
+}
+
+static void wm_splash_about_menu_draw(const bContext *C, Menu *menu)
+{
+  uiLayout &layout = *menu->layout;
+  uiLayoutSetOperatorContext(&layout, WM_OP_EXEC_DEFAULT);
+  uiLayout &split = layout.split(0.65f, false);
+  uiLayout &left = split.column(true);
+  uiLayoutSetScaleY(&left, 0.8f);
+  left.separator(2.5f);
+
+  char text[256];
+  SNPRINTF(text, "Date: %s %s", build_commit_date, build_commit_time);
+  left.label(text, ICON_NONE);
+  SNPRINTF(text, "Hash: %s", build_hash);
+  left.label(text, ICON_NONE);
+  SNPRINTF(text, "Branch: %s", build_branch);
+  left.label(text, ICON_NONE);
+  left.separator(2.0f);
+  left.label(IFACE_("UPBGE is free software"), ICON_NONE);
+  left.label(IFACE_("Licensed under the GNU General Public License"), ICON_NONE);
+
+  uiLayout &right = split.column(true);
+  uiLayoutSetEmboss(&right, blender::ui::EmbossType::Pulldown);
+  wm_menu_url_preset(C, right, "Donate", ICON_FUND, "FUND");
+  wm_menu_url(right, "Release Notes", "https://github.com/UPBGE/upbge/wiki/Release-notes");
+  right.separator(2.0f);
+  wm_menu_url_preset(C, right, "Credits", ICON_URL, "CREDITS");
+  wm_menu_url(right, "License", "https://www.blender.org/about/license/");
+  wm_menu_url(right, "Blender Store", "https://store.blender.org");
+  wm_menu_url(right, "UPBGE Website", "https://upbge.org");
+}
+
+static wmKeyConfig *wm_splash_active_keyconfig(wmWindowManager *wm)
+{
+  wmKeyConfig *keyconf = static_cast<wmKeyConfig *>(
+      BLI_findstring(&wm->keyconfigs, U.keyconfigstr, offsetof(wmKeyConfig, idname)));
+  return keyconf ? keyconf : wm->defaultconf;
+}
+
+static void wm_splash_quick_setup_menu_draw(const bContext *C, Menu *menu)
+{
+  uiLayout &layout = *menu->layout;
+  uiLayoutSetOperatorContext(&layout, WM_OP_EXEC_DEFAULT);
+
+  /* La busqueda de preferencias anteriores sigue perteneciendo al operador que las copia. La UI
+   * conserva el contrato seguro: solo ofrece importarlas si el propio operador da poll positivo. */
+  wmOperatorType *copy_prev = WM_operatortype_find("PREFERENCES_OT_copy_prev", true);
+  const bool can_import = copy_prev != nullptr && WM_operator_poll(const_cast<bContext *>(C), copy_prev);
+  if (can_import) {
+    layout.label(IFACE_("Import Preferences From Previous Version"), ICON_NONE);
+    uiLayout &margin = layout.split(0.20f, false);
+    margin.label("", ICON_NONE);
+    uiLayout &content = margin.split(0.73f, false).column(false);
+    content.op(copy_prev, IFACE_("Import Previous Preferences"), ICON_NONE);
+    layout.separator();
+    layout.separator(1.0f, LayoutSeparatorType::Line);
+  }
+  layout.label(IFACE_(can_import ? "Create New Preferences" : "Quick Setup"), ICON_NONE);
+
+  uiLayout &margin = layout.split(0.20f, false);
+  margin.label("", ICON_NONE);
+  uiLayout &col = margin.split(0.73f, false).column(false);
+  uiLayoutSetPropSep(&col, true);
+  uiLayoutSetPropDecorate(&col, false);
+
+  PointerRNA view_ptr = RNA_pointer_create_discrete(nullptr, &RNA_PreferencesView, &U);
+  col.prop(&view_ptr, "language", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  uiLayout &theme = col.column(false, IFACE_("Theme"));
+  MenuType *theme_menu = WM_menutype_find("USERPREF_MT_interface_theme_presets", true);
+  const char *theme_label = (theme_menu != nullptr && !STREQ(theme_menu->label, "Presets")) ?
+                                theme_menu->label :
+                                "Blender Dark";
+  theme.menu("USERPREF_MT_interface_theme_presets", IFACE_(theme_label), ICON_NONE);
+  col.separator();
+
+  wmWindowManager *wm = CTX_wm_manager(C);
+  wmKeyConfig *keyconf = wm ? wm_splash_active_keyconfig(wm) : nullptr;
+  uiLayout &keymap = col.column(false, IFACE_("Keymap"));
+  keymap.menu("USERPREF_MT_keyconfigs",
+              keyconf && keyconf->idname[0] ? keyconf->idname : IFACE_("Blender"),
+              ICON_NONE);
+  if (keyconf != nullptr) {
+    PointerRNA keyconf_ptr = RNA_pointer_create_discrete(nullptr, &RNA_KeyConfig, keyconf);
+    PointerRNA prefs_ptr = RNA_pointer_get(&keyconf_ptr, "preferences");
+    if (prefs_ptr.data != nullptr) {
+      if (RNA_struct_find_property(&prefs_ptr, "select_mouse")) {
+        col.row(false).prop(&prefs_ptr,
+                            "select_mouse",
+                            UI_ITEM_R_EXPAND,
+                            IFACE_("Mouse Select"),
+                            ICON_NONE);
+      }
+      if (RNA_struct_find_property(&prefs_ptr, "spacebar_action")) {
+        col.row(false).prop(
+            &prefs_ptr, "spacebar_action", UI_ITEM_NONE, IFACE_("Spacebar Action"), ICON_NONE);
+      }
+    }
+  }
+  uiLayout &save = col.column(false);
+  save.separator(2.0f);
+  save.op("WM_OT_save_userpref",
+          IFACE_(can_import ? "Save New Preferences" : "Continue"),
+          ICON_NONE);
+  layout.separator(2.0f);
+}
+
+struct RegionToggleInfo {
+  int region_type;
+  const char *property;
+  const char *label;
+};
+
+static constexpr RegionToggleInfo region_toggle_info[] = {
+    {RGN_TYPE_TOOLS, "show_region_toolbar", N_("Tools")},
+    {RGN_TYPE_UI, "show_region_ui", N_("Sidebar")},
+    {RGN_TYPE_HEADER, "show_region_header", N_("Header")},
+    {RGN_TYPE_FOOTER, "show_region_footer", N_("Footer")},
+    {RGN_TYPE_ASSET_SHELF, "show_region_asset_shelf", N_("Asset Shelf")},
+    {RGN_TYPE_CHANNELS, "show_region_channels", N_("Channels")},
+};
+
+static bool wm_region_toggle_pie_poll(const bContext *C, MenuType * /*mt*/)
+{
+  return CTX_wm_space_data(C) != nullptr;
+}
+
+static void wm_region_toggle_pie_menu_draw(const bContext *C, Menu *menu)
+{
+  uiLayout &pie = menu->layout->menu_pie();
+  ScrArea *area = CTX_wm_area(C);
+  SpaceLink *space = CTX_wm_space_data(C);
+  bScreen *screen = CTX_wm_screen(C);
+  if (area == nullptr || space == nullptr) {
+    return;
+  }
+  PointerRNA space_ptr = RNA_pointer_create_discrete(screen ? &screen->id : nullptr, &RNA_Space, space);
+
+  blender::Vector<const RegionToggleInfo *> slots[8];
+  LISTBASE_FOREACH (ARegion *, region, &area->regionbase) {
+    const RegionToggleInfo *info = nullptr;
+    for (const RegionToggleInfo &candidate : region_toggle_info) {
+      if (candidate.region_type == region->regiontype) {
+        info = &candidate;
+        break;
+      }
+    }
+    if (info == nullptr || RNA_struct_find_property(&space_ptr, info->property) == nullptr) {
+      continue;
+    }
+    int slot = -1;
+    if (region->alignment == RGN_ALIGN_LEFT) {
+      slot = 0;
+    }
+    else if (region->alignment == RGN_ALIGN_RIGHT) {
+      slot = 1;
+    }
+    else if (region->alignment == RGN_ALIGN_BOTTOM) {
+      slot = 2;
+    }
+    else if (region->alignment == RGN_ALIGN_TOP) {
+      slot = 3;
+    }
+    if (slot >= 0) {
+      slots[slot].append(info);
+    }
+  }
+
+  static constexpr int alternatives[4][3] = {{4, 6, 1}, {5, 7, 0}, {6, 7, 3}, {4, 5, 2}};
+  for (int slot = 0; slot < 4; slot++) {
+    while (slots[slot].size() > 1) {
+      bool moved = false;
+      for (const int other : alternatives[slot]) {
+        if (slots[other].is_empty()) {
+          slots[other].append(slots[slot].pop_last());
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) {
+        break;
+      }
+    }
+  }
+  for (int slot = 0; slot < 4; slot++) {
+    while (slots[slot].size() > 1) {
+      bool moved = false;
+      for (int other = 4; other < 8; other++) {
+        if (slots[other].is_empty()) {
+          slots[other].append(slots[slot].pop_last());
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) {
+        break;
+      }
+    }
+  }
+
+  for (int slot = 0; slot < 8; slot++) {
+    if (slots[slot].is_empty()) {
+      pie.separator();
+      continue;
+    }
+    const RegionToggleInfo &info = *slots[slot].first();
+    const bool visible = RNA_boolean_get(&space_ptr, info.property);
+    PointerRNA props = pie.op("WM_OT_context_toggle",
+                              IFACE_(info.label),
+                              visible ? ICON_CHECKBOX_HLT : ICON_CHECKBOX_DEHLT);
+    std::string data_path = std::string("space_data.") + info.property;
+    RNA_string_set(&props, "data_path", data_path.c_str());
+  }
+}
+
+void wm_menutypes_register()
+{
+  static const flipendo::MenuDecl menus[] = {
+      {"WM_MT_splash_quick_setup", N_("Quick Setup"), nullptr, nullptr, wm_splash_quick_setup_menu_draw},
+      {"WM_MT_splash", N_("Splash"), nullptr, nullptr, wm_splash_menu_draw},
+      {"WM_MT_splash_about", N_("About"), nullptr, nullptr, wm_splash_about_menu_draw},
+      {"WM_MT_region_toggle_pie",
+       N_("Region Toggle"),
+       nullptr,
+       nullptr,
+       wm_region_toggle_pie_menu_draw,
+       wm_region_toggle_pie_poll},
+  };
+  flipendo::menus_register({menus, ARRAY_SIZE(menus)});
+}
+
+/** \} */
 
 /* -------------------------------------------------------------------- */
 /** \name Splash Screen
