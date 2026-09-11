@@ -97,3 +97,13 @@ void BUTTONS_OT_file_browse(wmOperatorType *ot);
  */
 void BUTTONS_OT_directory_browse(wmOperatorType *ot);
 void BUTTONS_OT_context_menu(wmOperatorType *ot);
+
+/* `fl_game_buttons.cc` */
+
+/**
+ * Da de alta los paneles de juego del editor de Propiedades — los que estaban en
+ * `scripts/startup/bl_ui/properties_game.py` — en la region principal.
+ */
+void fl_game_buttons_register(ARegionType *art);
+/** Da de alta los dos menus de esos paneles en el registro global. */
+void fl_game_menus_register();

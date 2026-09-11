@@ -17,6 +17,7 @@ set(SRC
   buttons_context.cc
   buttons_ops.cc
   buttons_texture.cc
+  fl_game_buttons.cc
   space_buttons.cc
 
   buttons_intern.hh

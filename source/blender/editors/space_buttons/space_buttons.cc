@@ -1103,6 +1103,9 @@ void ED_spacetype_buttons()
   art->keymapflag = ED_KEYMAP_UI | ED_KEYMAP_FRAMES;
   art->lock = true;
   buttons_context_register(art);
+  /* Los paneles de juego, que hasta ahora venian de `properties_game.py`. */
+  fl_game_buttons_register(art);
+  fl_game_menus_register();
   BLI_addhead(&st->regiontypes, art);
 
   /* Register the panel types from modifiers. The actual panels are built per modifier rather

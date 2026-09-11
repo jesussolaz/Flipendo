@@ -340,3 +340,34 @@ Mientras otros carriles migran interfaz, el número de bloques sube. Eso no es u
 regresión: es la migración avanzando. La línea base se regenera a propósito, en el
 commit que cambia la interfaz, y se dice allí. Lo que nunca debe pasar es regenerarla
 "porque salía rojo".
+
+## Lo que enseñó la primera migración completa (`properties_game.py`)
+
+14 paneles y 2 menús, 899 líneas de Python, a
+`source/blender/editors/space_buttons/fl_game_buttons.cc`. Verificado con los dos
+volcados contra la línea base congelada:
+
+- **Los 16 tipos salen idénticos**, campo a campo y botón a botón. Cero diferencias en
+  el registro y cero en el dibujo.
+- **Queda una diferencia, y es la que la política predecía**: el bloque
+  `REGION PROPERTIES WINDOW`. Los 14 paneles se han movido dentro de la lista de la
+  región, de la posición ~200 a la ~27, sin que ninguno de sus campos cambie.
+
+El motivo es exactamente el de la trampa de `order`: `properties_game.py` se registraba
+al cargar los scripts, y el C++ se registra en `ED_spacetypes_init()`, mucho antes. Los
+paneles vecinos son todos de Python con `order` 0, así que el desempate lo decide el
+momento del registro, y ese momento ha cambiado.
+
+**No se ha "arreglado" inventando un `order`.** Los `bl_order` se han copiado tal cual
+estaban (1000 en las pestañas de Juego y Física, 0 en Escena y Objeto): poner un 1000
+donde el Python tenía 0 sería inventarse un dato para que el verificador calle. La
+diferencia se queda escrita aquí y en el commit.
+
+**Desaparece sola cuando migren los vecinos**: en cuanto las pestañas de Propiedades
+sean C++, todos se registran en el mismo sitio y el orden vuelve a ser el de `order`.
+Mientras tanto, el usuario ve estos paneles en su misma pestaña, con su misma etiqueta y
+su mismo contenido, antes que los de Python en vez de después.
+
+La lección para el resto de `bl_ui`: **migrar por pestañas o por editores completos, no
+panel suelto a panel suelto.** Un editor entero migrado de una vez no tiene vecinos
+Python con los que desempatar, y el orden sale exacto.
