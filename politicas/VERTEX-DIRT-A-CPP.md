@@ -57,7 +57,29 @@ TOTAL 13112/13112 elementos de color identicos, 13146/13146 lineas   (rc=0)
 
 **13112 de 13112 elementos idénticos, tolerancia cero**: bytes iguales en los diez casos
 de color de 8 bits y `%.9g` idéntico en el caso de color flotante. No hay margen
-declarado porque no hace falta ninguno.
+declarado porque no hizo falta ninguno.
+
+> **Actualización de esa misma noche, a las 02:55: lo esperado pasa a ser 13111/13112.**
+> El único elemento que difiere es el 43 del caso 6 (esfera UV con `FLOAT_COLOR` en
+> dominio POINT), `0.451389611` frente a `0.451384932`, 1e-5 relativo y estable entre
+> ejecuciones. No es la migración: construyendo la misma esfera UV en el binario de
+> referencia y en el actual, las **posiciones salen idénticas y las normales no**
+> (`co=4.33623790741e-05` en los dos; `no=2.67952971811e-05` frente a
+> `no=2.68996051958e-05`). Algo que entró en el árbol esa noche cambió el cálculo de
+> normales de vértice, y la suciedad por cavidad es por definición una función de la
+> normal. Los diez casos de color de 8 bits siguen byte a byte idénticos porque el
+> redondeo a byte se come 1e-5. La línea base no se puede recapturar —haría falta un
+> binario con el Python **y** las normales nuevas— así que se deja congelada y queda
+> escrito aquí.
+
+### Un fallo que cazó `--fl-check-optypes` después
+
+El subtipo de los dos ángulos estaba mal en la primera versión: se puso
+`RNA_def_property_subtype(prop, PROP_ANGLE)` y el Python declaraba `unit='ROTATION'`. **No
+es lo mismo**: `subtype` y `unit` comparten campo de bits, `PROP_ANGLE` es
+`16 | PROP_UNIT_ROTATION`, y `unit='ROTATION'` a secas deja el índice de subtipo en 0.
+Python lo reporta como subtipo vacío y el C++ lo reportaba como `ANGLE`. Corregido a
+`PropertySubType(PROP_UNIT_ROTATION)`; `--fl-check-optypes` pasó de 22/24 a 24/24.
 
 > Nota de proceso: la captura de la línea base se hizo con un guion Python **efímero**,
 > fuera del árbol (en el scratchpad de la sesión). Al repositorio solo entra el `.txt`
