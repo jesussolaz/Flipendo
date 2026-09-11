@@ -679,69 +679,6 @@ class SEQUENCER_MT_navigation(Menu):
         props.center = True
 
 
-class SEQUENCER_MT_add(Menu):
-    bl_label = "Add"
-    bl_translation_context = i18n_contexts.operator_default
-    bl_options = {'SEARCH_ON_KEY_PRESS'}
-
-    def draw(self, context):
-
-        layout = self.layout
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        layout.menu("SEQUENCER_MT_add_scene", text="Scene", icon='SCENE_DATA')
-
-        bpy_data_movieclips_len = len(bpy.data.movieclips)
-        if bpy_data_movieclips_len > 10:
-            layout.operator_context = 'INVOKE_DEFAULT'
-            layout.operator("sequencer.movieclip_strip_add", text="Clip...", icon='TRACKER')
-        elif bpy_data_movieclips_len > 0:
-            layout.operator_menu_enum("sequencer.movieclip_strip_add", "clip", text="Clip", icon='TRACKER')
-        else:
-            layout.menu("SEQUENCER_MT_add_empty", text="Clip", text_ctxt=i18n_contexts.id_movieclip, icon='TRACKER')
-        del bpy_data_movieclips_len
-
-        bpy_data_masks_len = len(bpy.data.masks)
-        if bpy_data_masks_len > 10:
-            layout.operator_context = 'INVOKE_DEFAULT'
-            layout.operator("sequencer.mask_strip_add", text="Mask...", icon='MOD_MASK')
-        elif bpy_data_masks_len > 0:
-            layout.operator_menu_enum("sequencer.mask_strip_add", "mask", text="Mask", icon='MOD_MASK')
-        else:
-            layout.menu("SEQUENCER_MT_add_empty", text="Mask", icon='MOD_MASK')
-        del bpy_data_masks_len
-
-        layout.separator()
-
-        layout.operator("sequencer.movie_strip_add", text="Movie", icon='FILE_MOVIE')
-        layout.operator("sequencer.sound_strip_add", text="Sound", icon='FILE_SOUND')
-        layout.operator("sequencer.image_strip_add", text="Image/Sequence", icon='FILE_IMAGE')
-
-        layout.separator()
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-        layout.operator("sequencer.effect_strip_add", text="Color", icon='COLOR').type = 'COLOR'
-        layout.operator("sequencer.effect_strip_add", text="Text", icon='FONT_DATA').type = 'TEXT'
-
-        layout.separator()
-
-        layout.operator("sequencer.effect_strip_add", text="Adjustment Layer", icon='COLOR').type = 'ADJUSTMENT'
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-        layout.menu("SEQUENCER_MT_add_effect", icon='SHADERFX')
-
-        total, nonsound = selected_strips_count(context)
-
-        col = layout.column()
-        col.menu("SEQUENCER_MT_add_transitions", icon='ARROW_LEFTRIGHT')
-        # Enable for video transitions or sound cross-fade.
-        col.enabled = nonsound == 2 or (nonsound == 0 and total == 2)
-
-        col = layout.column()
-        col.operator_menu_enum("sequencer.fades_add", "type", text="Fade", icon='IPO_EASE_IN_OUT')
-        col.enabled = total >= 1
-
-
 class SEQUENCER_MT_add_scene(Menu):
     bl_label = "Scene"
     bl_translation_context = i18n_contexts.operator_default
@@ -3043,7 +2980,6 @@ classes = (
     SEQUENCER_MT_select,
     SEQUENCER_MT_marker,
     SEQUENCER_MT_navigation,
-    SEQUENCER_MT_add,
     SEQUENCER_MT_add_scene,
     SEQUENCER_MT_add_effect,
     SEQUENCER_MT_add_transitions,

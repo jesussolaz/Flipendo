@@ -18,6 +18,7 @@
 #include <optional>
 
 #include "BLI_listbase.h"
+#include "BLI_vector.hh"
 #include "BLI_utildefines.h"
 
 #include "BKE_context.hh"
@@ -189,7 +190,137 @@ static void change_draw(const bContext *C, Menu *menu)
 /** \name Registro
  * \{ */
 
+
+/* -------------------------------------------------------------------- */
+/** \name SEQUENCER_MT_add
+ * \{ */
+
+/** `selected_strips_count(context)` del Python: (total, no-sonido). */
+static void selected_strips_count(const bContext *C, int *r_total, int *r_nonsound)
+{
+  *r_total = 0;
+  *r_nonsound = 0;
+  const blender::Vector<PointerRNA> strips = CTX_data_collection_get(C, "selected_strips");
+  for (const PointerRNA &strip : strips) {
+    (*r_total)++;
+    const Strip *s = static_cast<const Strip *>(strip.data);
+    if (s != nullptr && s->type != STRIP_TYPE_SOUND_RAM) {
+      (*r_nonsound)++;
+    }
+  }
+}
+
+/**
+ * `len(bpy.data.X) > 10` -> dialogo; `> 0` -> desplegable; si no, el submenu
+ * «vacio» que explica que no hay ninguno. Mismo reparto que en
+ * `VIEW3D_MT_make_links` y `SEQUENCER_MT_change`.
+ */
+static void add_datablock_entry(uiLayout *layout,
+                                const bContext *C,
+                                const ListBase *data,
+                                const char *opname,
+                                const char *propname,
+                                const char *text,
+                                const char *text_ctxt,
+                                const char *dialog_text,
+                                int icon)
+{
+  const int count = data ? BLI_listbase_count(data) : 0;
+  if (count > 10) {
+    uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_DEFAULT);
+    layout->op(opname, IFACE_(dialog_text), icon);
+  }
+  else if (count > 0) {
+    uiItemMenuEnumO(layout, C, opname, propname, IFACE_(text), icon);
+  }
+  else {
+    layout->menu("SEQUENCER_MT_add_empty",
+                 text_ctxt ? CTX_IFACE_(text_ctxt, text) : IFACE_(text),
+                 icon);
+  }
+}
+
+static void add_draw(const bContext *C, Menu *menu)
+{
+  uiLayout *layout = menu->layout;
+  const Main *bmain = CTX_data_main(C);
+
+  uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+  layout->menu("SEQUENCER_MT_add_scene", IFACE_("Scene"), ICON_SCENE_DATA);
+
+  add_datablock_entry(layout,
+                      C,
+                      bmain ? &bmain->movieclips : nullptr,
+                      "SEQUENCER_OT_movieclip_strip_add",
+                      "clip",
+                      N_("Clip"),
+                      BLT_I18NCONTEXT_ID_MOVIECLIP,
+                      N_("Clip..."),
+                      ICON_TRACKER);
+  add_datablock_entry(layout,
+                      C,
+                      bmain ? &bmain->masks : nullptr,
+                      "SEQUENCER_OT_mask_strip_add",
+                      "mask",
+                      N_("Mask"),
+                      nullptr,
+                      N_("Mask..."),
+                      ICON_MOD_MASK);
+
+  layout->separator();
+
+  layout->op("SEQUENCER_OT_movie_strip_add", IFACE_("Movie"), ICON_FILE_MOVIE);
+  layout->op("SEQUENCER_OT_sound_strip_add", IFACE_("Sound"), ICON_FILE_SOUND);
+  layout->op("SEQUENCER_OT_image_strip_add", IFACE_("Image/Sequence"), ICON_FILE_IMAGE);
+
+  layout->separator();
+
+  uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+  PointerRNA props = layout->op("SEQUENCER_OT_effect_strip_add", IFACE_("Color"), ICON_COLOR);
+  if (props.data) {
+    RNA_enum_set_identifier(nullptr, &props, "type", "COLOR");
+  }
+  props = layout->op("SEQUENCER_OT_effect_strip_add", IFACE_("Text"), ICON_FONT_DATA);
+  if (props.data) {
+    RNA_enum_set_identifier(nullptr, &props, "type", "TEXT");
+  }
+
+  layout->separator();
+
+  props = layout->op("SEQUENCER_OT_effect_strip_add", IFACE_("Adjustment Layer"), ICON_COLOR);
+  if (props.data) {
+    RNA_enum_set_identifier(nullptr, &props, "type", "ADJUSTMENT");
+  }
+
+  uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_DEFAULT);
+  layout->menu("SEQUENCER_MT_add_effect", std::nullopt, ICON_SHADERFX);
+
+  int total = 0, nonsound = 0;
+  selected_strips_count(C, &total, &nonsound);
+
+  uiLayout *col = &layout->column(false);
+  col->menu("SEQUENCER_MT_add_transitions", std::nullopt, ICON_ARROW_LEFTRIGHT);
+  /* Solo con dos tiras de video, o con dos de sonido para el fundido cruzado. */
+  uiLayoutSetEnabled(col, nonsound == 2 || (nonsound == 0 && total == 2));
+
+  col = &layout->column(false);
+  uiItemMenuEnumO(col, C, "SEQUENCER_OT_fades_add", "type", IFACE_("Fade"), ICON_IPO_EASE_IN_OUT);
+  uiLayoutSetEnabled(col, total >= 1);
+}
+
+/** \} */
+
 static const flipendo::MenuDecl sequencer_menus[] = {
+    {
+        /*idname*/ "SEQUENCER_MT_add",
+        /*label*/ N_("Add"),
+        /*description*/ nullptr,
+        /*translation_context*/ BLT_I18NCONTEXT_OPERATOR_DEFAULT,
+        /*draw*/ add_draw,
+        /*poll*/ nullptr,
+        /*flag*/ int(MenuTypeFlag::SearchOnKeyPress),
+    },
     {
         /*idname*/ "SEQUENCER_MT_change",
         /*label*/ N_("Change"),
