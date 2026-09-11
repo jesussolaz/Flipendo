@@ -47,4 +47,7 @@ void view3d_ctxmode_menus_register();
 /** Familia 7: los menus de «anadir» (malla y curva en edicion). */
 void view3d_add_menus_register();
 
+/** Familia 8: `VIEW3D_MT_add`, el menu de Shift-A. */
+void view3d_add_root_menu_register();
+
 }  // namespace blender::ed::view3d

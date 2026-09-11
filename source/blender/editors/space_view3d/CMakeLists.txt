@@ -20,6 +20,7 @@ set(INC_SYS
 set(SRC
   drawobject.cc
   fl_view3d_menus.cc
+  fl_view3d_menu_add_root.cc
   fl_view3d_menus_add.cc
   fl_view3d_menus_edit.cc
   fl_view3d_menus_mesh.cc
