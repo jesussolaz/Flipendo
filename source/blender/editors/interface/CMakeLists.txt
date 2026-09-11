@@ -27,6 +27,7 @@ set(SRC
   eyedroppers/interface_eyedropper.cc
   interface.cc
   interface_align.cc
+  fl_ui_dump.cc
   FL_ui_registry.cc
   fl_toolbar_ui.cc
   fl_toolbar_ops.cc
@@ -121,7 +122,6 @@ set(SRC
 
   eyedroppers/eyedropper_intern.hh
   templates/interface_templates_intern.hh
-  FL_ui_registry.hh
   interface_intern.hh
   regions/interface_regions_intern.hh
   view2d/view2d_intern.hh

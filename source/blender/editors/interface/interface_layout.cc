@@ -48,6 +48,8 @@
 #include "fmt/format.h"
 #include "interface_intern.hh"
 
+#include "FL_ui_dump.hpp"
+
 using blender::StringRef;
 using blender::StringRefNull;
 
@@ -6294,6 +6296,111 @@ const char *UI_layout_introspect(uiLayout *layout)
   BLI_dynstr_free(ds);
   return result;
 }
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Flipendo: puente para el volcador de interfaz
+ *
+ * Los tipos concretos de item (`uiButtonItem`, `uiLayoutItemSplit`, ...) y la
+ * enumeracion `blender::ui::ItemType` son privados de este fichero: el header
+ * publico solo los declara. El volcador `--fl-dump-ui-layout` vive en
+ * `fl_ui_dump.cc` y necesita leerlos para serializar el arbol de `uiLayout`.
+ *
+ * Duplicar alli esas structs seria la manera clasica de que se desincronicen en
+ * silencio, asi que se abren estos accesos — los justos, de solo lectura — y el
+ * resto sigue siendo privado. Contrato en `FL_ui_dump.hpp`.
+ * \{ */
+
+namespace flipendo::ui_dump {
+
+const char *item_type_name(const uiItem *item)
+{
+  switch (item->type_) {
+    case uiItemType::Button:
+      return "BUTTON";
+    case uiItemType::LayoutRow:
+      return "LAYOUT_ROW";
+    case uiItemType::LayoutPanelHeader:
+      return "LAYOUT_PANEL_HEADER";
+    case uiItemType::LayoutPanelBody:
+      return "LAYOUT_PANEL_BODY";
+    case uiItemType::LayoutColumn:
+      return "LAYOUT_COLUMN";
+    case uiItemType::LayoutColumnFlow:
+      return "LAYOUT_COLUMN_FLOW";
+    case uiItemType::LayoutRowFlow:
+      return "LAYOUT_ROW_FLOW";
+    case uiItemType::LayoutGridFlow:
+      return "LAYOUT_GRID_FLOW";
+    case uiItemType::LayoutBox:
+      return "LAYOUT_BOX";
+    case uiItemType::LayoutAbsolute:
+      return "LAYOUT_ABSOLUTE";
+    case uiItemType::LayoutSplit:
+      return "LAYOUT_SPLIT";
+    case uiItemType::LayoutOverlap:
+      return "LAYOUT_OVERLAP";
+    case uiItemType::LayoutRadial:
+      return "LAYOUT_RADIAL";
+    case uiItemType::LayoutRoot:
+      return "LAYOUT_ROOT";
+  }
+  return "LAYOUT_DESCONOCIDO";
+}
+
+const uiBut *item_button(const uiItem *item)
+{
+  if (item->type_ != uiItemType::Button) {
+    return nullptr;
+  }
+  return static_cast<const uiButtonItem *>(item)->but;
+}
+
+bool item_split_percentage(const uiItem *item, float *r_percentage)
+{
+  if (item->type_ != uiItemType::LayoutSplit) {
+    return false;
+  }
+  *r_percentage = static_cast<const uiLayoutItemSplit *>(item)->percentage;
+  return true;
+}
+
+bool item_flow_number(const uiItem *item, int *r_number)
+{
+  if (!ELEM(item->type_, uiItemType::LayoutColumnFlow, uiItemType::LayoutRowFlow)) {
+    return false;
+  }
+  *r_number = static_cast<const uiLayoutItemFlow *>(item)->number;
+  return true;
+}
+
+bool item_grid_flow(const uiItem *item,
+                    bool *r_row_major,
+                    int *r_columns_len,
+                    bool *r_even_columns,
+                    bool *r_even_rows)
+{
+  if (item->type_ != uiItemType::LayoutGridFlow) {
+    return false;
+  }
+  const uiLayoutItemGridFlow *flow = static_cast<const uiLayoutItemGridFlow *>(item);
+  *r_row_major = flow->row_major;
+  *r_columns_len = flow->columns_len;
+  *r_even_columns = flow->even_columns;
+  *r_even_rows = flow->even_rows;
+  return true;
+}
+
+const char *item_panel_open_prop(const uiItem *item)
+{
+  if (item->type_ != uiItemType::LayoutPanelHeader) {
+    return nullptr;
+  }
+  return static_cast<const uiLayoutItemPanelHeader *>(item)->open_prop_name;
+}
+
+}  // namespace flipendo::ui_dump
 
 /** \} */
 
