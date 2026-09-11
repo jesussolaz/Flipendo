@@ -101,4 +101,32 @@ bool prop_unified_color_picker(uiLayout *parent,
                                const char *prop_name,
                                bool value_slider);
 
+/**
+ * `UnifiedPaintPanel.get_brush_mode` (`properties_paint_common.py:213`).
+ *
+ * Devuelve la cadena del modo (`"SCULPT"`, `"PAINT_VERTEX"`...) o `nullptr` donde el
+ * Python devuelve `None`, que es su forma de decir «aqui no se pinta ninguna opcion de
+ * pincel».
+ */
+const char *get_brush_mode(const bContext *C);
+
+/**
+ * `UnifiedPaintPanel.paint_settings` (`properties_paint_common.py:252`).
+ *
+ * Devuelve `PointerRNA_NULL` donde el Python devuelve `None`. Quien lo llame tiene que
+ * cortar el dibujo en ese punto si el Python hacia `settings.brush` justo despues: eso
+ * es un `AttributeError` sobre `None`.
+ */
+PointerRNA paint_settings(const bContext *C);
+
+/**
+ * `brush_basic_grease_pencil_weight_settings` (`properties_paint_common.py:1886`).
+ *
+ * \return `false` si el Python habria lanzado la excepcion (pincel `None`).
+ */
+bool brush_basic_grease_pencil_weight_settings(uiLayout *layout,
+                                               const bContext *C,
+                                               PointerRNA *brush,
+                                               bool compact);
+
 }  // namespace flipendo::paint_common

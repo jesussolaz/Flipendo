@@ -6448,147 +6448,6 @@ class GREASE_PENCIL_MT_Layers(Menu):
             layout.operator("grease_pencil.layer_active", text=layer.name, icon=icon).layer = i
 
 
-class VIEW3D_PT_greasepencil_draw_context_menu(Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Draw"
-    bl_ui_units_x = 12
-
-    def draw(self, context):
-        layout = self.layout
-        tool_settings = context.tool_settings
-        settings = tool_settings.gpencil_paint
-        brush = settings.brush
-        gp_settings = brush.gpencil_settings
-
-        is_pin_vertex = gp_settings.brush_draw_mode == 'VERTEXCOLOR'
-        is_vertex = settings.color_mode == 'VERTEXCOLOR' or brush.gpencil_tool == 'TINT' or is_pin_vertex
-
-        if brush.gpencil_tool not in {'ERASE', 'CUTTER', 'EYEDROPPER'} and is_vertex:
-            split = layout.split(factor=0.1)
-            split.prop(brush, "color", text="")
-            split.template_color_picker(brush, "color", value_slider=True)
-
-            col = layout.column()
-            col.separator()
-            col.prop_menu_enum(gp_settings, "vertex_mode", text="Mode")
-            col.separator()
-
-        if brush.gpencil_tool not in {'FILL', 'CUTTER', 'ERASE'}:
-            radius = "size" if (brush.use_locked_size == 'VIEW') else "unprojected_radius"
-            layout.prop(brush, radius, text="Radius", slider=True)
-        if brush.gpencil_tool == 'ERASE':
-            layout.prop(brush, "size", slider=True)
-        if brush.gpencil_tool not in {'ERASE', 'FILL', 'CUTTER'}:
-            layout.prop(gp_settings, "pen_strength")
-
-        layer = context.object.data.layers.active
-
-        if layer:
-            layout.label(text="Active Layer")
-            row = layout.row(align=True)
-            row.operator_context = 'EXEC_REGION_WIN'
-            row.menu("GREASE_PENCIL_MT_Layers", text="", icon='OUTLINER_DATA_GP_LAYER')
-            row.prop(layer, "name", text="")
-            row.operator("grease_pencil.layer_remove", text="", icon='X')
-
-        layout.label(text="Active Material")
-        row = layout.row(align=True)
-        row.menu("VIEW3D_MT_greasepencil_material_active", text="", icon='MATERIAL')
-        ob = context.active_object
-        if ob.active_material:
-            row.prop(ob.active_material, "name", text="")
-
-
-class VIEW3D_PT_greasepencil_sculpt_context_menu(Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Sculpt"
-    bl_ui_units_x = 12
-
-    def draw(self, context):
-        tool_settings = context.tool_settings
-        brush = tool_settings.gpencil_sculpt_paint.brush
-        layout = self.layout
-
-        ups = tool_settings.unified_paint_settings
-        size_owner = ups if ups.use_unified_size else brush
-        strength_owner = ups if ups.use_unified_strength else brush
-        layout.prop(size_owner, "size", text="")
-        layout.prop(strength_owner, "strength", text="")
-
-        layer = context.object.data.layers.active
-
-        if layer:
-            layout.label(text="Active Layer")
-            row = layout.row(align=True)
-            row.operator_context = 'EXEC_REGION_WIN'
-            row.menu("GREASE_PENCIL_MT_Layers", text="", icon='OUTLINER_DATA_GP_LAYER')
-            row.prop(layer, "name", text="")
-            row.operator("grease_pencil.layer_remove", text="", icon='X')
-
-
-class VIEW3D_PT_greasepencil_vertex_paint_context_menu(Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Vertex Paint"
-    bl_ui_units_x = 12
-
-    def draw(self, context):
-        layout = self.layout
-        tool_settings = context.tool_settings
-        settings = tool_settings.gpencil_vertex_paint
-        brush = settings.brush
-        gp_settings = brush.gpencil_settings
-
-        col = layout.column()
-
-        if brush.gpencil_vertex_tool in {'DRAW', 'REPLACE'}:
-            split = layout.split(factor=0.1)
-            split.prop(tool_settings.unified_paint_settings, "color", text="")
-            split.template_color_picker(tool_settings.unified_paint_settings, "color", value_slider=True)
-
-            col = layout.column()
-            col.separator()
-            col.prop(gp_settings, "vertex_mode", text="")
-            col.separator()
-
-        row = col.row(align=True)
-        row.prop(tool_settings.unified_paint_settings, "size", text="Radius")
-        row.prop(brush, "use_pressure_size", text="", icon='STYLUS_PRESSURE')
-
-        if brush.gpencil_vertex_tool in {'DRAW', 'BLUR', 'SMEAR'}:
-            row = layout.row(align=True)
-            row.prop(brush, "strength", slider=True)
-            row.prop(brush, "use_pressure_strength", text="", icon='STYLUS_PRESSURE')
-
-        layer = context.object.data.layers.active
-
-        if layer:
-            layout.label(text="Active Layer")
-            row = layout.row(align=True)
-            row.operator_context = 'EXEC_REGION_WIN'
-            row.menu("GREASE_PENCIL_MT_Layers", text="", icon='OUTLINER_DATA_GP_LAYER')
-            row.prop(layer, "name", text="")
-            row.operator("grease_pencil.layer_remove", text="", icon='X')
-
-
-class VIEW3D_PT_greasepencil_weight_context_menu(Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Weight Paint"
-    bl_ui_units_x = 12
-
-    def draw(self, context):
-        tool_settings = context.tool_settings
-        settings = tool_settings.gpencil_weight_paint
-        brush = settings.brush
-        layout = self.layout
-
-        # Weight settings
-        brush_basic_grease_pencil_weight_settings(layout, context, brush)
-
-
 class VIEW3D_PT_grease_pencil_sculpt_automasking(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
@@ -6758,82 +6617,6 @@ class TOPBAR_PT_grease_pencil_vertex_color(Panel):
             row.prop(gp_settings, "vertex_mode", text="Mode")
             row = layout.row(align=True)
             row.prop(gp_settings, "vertex_color_factor", slider=True, text="Mix Factor")
-
-
-class VIEW3D_PT_curves_sculpt_add_shape(Panel):
-    # Only for popover, these are dummy values.
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Curves Sculpt Add Curve Options"
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.use_property_split = True
-        layout.use_property_decorate = False  # No animation.
-
-        settings = UnifiedPaintPanel.paint_settings(context)
-        brush = settings.brush
-
-        col = layout.column(heading="Interpolate", align=True)
-        col.prop(brush.curves_sculpt_settings, "use_length_interpolate", text="Length")
-        col.prop(brush.curves_sculpt_settings, "use_radius_interpolate", text="Radius")
-        col.prop(brush.curves_sculpt_settings, "use_shape_interpolate", text="Shape")
-        col.prop(brush.curves_sculpt_settings, "use_point_count_interpolate", text="Point Count")
-
-        col = layout.column()
-        col.active = not brush.curves_sculpt_settings.use_length_interpolate
-        col.prop(brush.curves_sculpt_settings, "curve_length", text="Length")
-
-        col = layout.column()
-        col.active = not brush.curves_sculpt_settings.use_radius_interpolate
-        col.prop(brush.curves_sculpt_settings, "curve_radius", text="Radius")
-
-        col = layout.column()
-        col.active = not brush.curves_sculpt_settings.use_point_count_interpolate
-        col.prop(brush.curves_sculpt_settings, "points_per_curve", text="Points")
-
-
-class VIEW3D_PT_curves_sculpt_parameter_falloff(Panel):
-    # Only for popover, these are dummy values.
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Curves Sculpt Parameter Falloff"
-
-    def draw(self, context):
-        layout = self.layout
-
-        settings = UnifiedPaintPanel.paint_settings(context)
-        brush = settings.brush
-
-        layout.template_curve_mapping(brush.curves_sculpt_settings, "curve_parameter_falloff")
-        row = layout.row(align=True)
-        row.operator("brush.sculpt_curves_falloff_preset", icon='SMOOTHCURVE', text="").shape = 'SMOOTH'
-        row.operator("brush.sculpt_curves_falloff_preset", icon='SPHERECURVE', text="").shape = 'ROUND'
-        row.operator("brush.sculpt_curves_falloff_preset", icon='ROOTCURVE', text="").shape = 'ROOT'
-        row.operator("brush.sculpt_curves_falloff_preset", icon='SHARPCURVE', text="").shape = 'SHARP'
-        row.operator("brush.sculpt_curves_falloff_preset", icon='LINCURVE', text="").shape = 'LINE'
-        row.operator("brush.sculpt_curves_falloff_preset", icon='NOCURVE', text="").shape = 'MAX'
-
-
-class VIEW3D_PT_curves_sculpt_grow_shrink_scaling(Panel):
-    # Only for popover, these are dummy values.
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Curves Grow/Shrink Scaling"
-    bl_ui_units_x = 12
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.use_property_split = True
-        layout.use_property_decorate = False  # No animation.
-
-        settings = UnifiedPaintPanel.paint_settings(context)
-        brush = settings.brush
-
-        layout.prop(brush.curves_sculpt_settings, "use_uniform_scale")
-        layout.prop(brush.curves_sculpt_settings, "minimum_length")
 
 
 class VIEW3D_PT_viewport_debug(Panel):
@@ -7115,9 +6898,6 @@ classes = (
     TOPBAR_PT_grease_pencil_materials,
     TOPBAR_PT_grease_pencil_vertex_color,
     TOPBAR_PT_annotation_layers,
-    VIEW3D_PT_curves_sculpt_add_shape,
-    VIEW3D_PT_curves_sculpt_parameter_falloff,
-    VIEW3D_PT_curves_sculpt_grow_shrink_scaling,
     VIEW3D_PT_viewport_debug,
     VIEW3D_PT_active_spline,
     VIEW3D_AST_brush_sculpt,
@@ -7130,10 +6910,6 @@ classes = (
     VIEW3D_AST_brush_gpencil_vertex,
     VIEW3D_AST_brush_gpencil_weight,
     GREASE_PENCIL_MT_Layers,
-    VIEW3D_PT_greasepencil_draw_context_menu,
-    VIEW3D_PT_greasepencil_sculpt_context_menu,
-    VIEW3D_PT_greasepencil_vertex_paint_context_menu,
-    VIEW3D_PT_greasepencil_weight_context_menu,
 )
 
 

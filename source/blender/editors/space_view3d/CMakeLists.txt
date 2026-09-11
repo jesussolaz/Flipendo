@@ -29,6 +29,7 @@ set(SRC
   fl_view3d_menus_ctxmode.cc
   fl_view3d_menus_object.cc
   fl_view3d_panels_paint.cc
+  fl_view3d_panels_curves_gp.cc
   space_view3d.cc
   view3d_buttons.cc
   view3d_camera_control.cc

@@ -1629,6 +1629,7 @@ void ED_spacetype_view3d()
    * `VIEW_3D WINDOW` en la linea base, y por eso se pueden dar de alta aqui —antes que
    * el Python— sin mover de sitio a los otros siete: ver `FL_view3d_panels.hh`. */
   blender::ed::view3d::view3d_paint_panels_register(art);
+  blender::ed::view3d::view3d_curves_gp_panels_register(art);
   BLI_addhead(&st->regiontypes, art);
 
   /* regions: list-view/buttons */

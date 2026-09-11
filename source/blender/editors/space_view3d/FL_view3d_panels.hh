@@ -39,4 +39,14 @@ namespace blender::ed::view3d {
  */
 void view3d_paint_panels_register(ARegionType *art);
 
+/**
+ * Paneles 5 a 11 de la region `VIEW_3D WINDOW`: los tres emergentes de la escultura de
+ * curvas y los cuatro contextuales del lapiz de cera. Con estos la region queda entera en
+ * C++ y ya no hay ningun `PanelType` de Python detras.
+ *
+ * Se da de alta DESPUES de `view3d_paint_panels_register()`: el orden de las dos llamadas
+ * es el orden de la lista de la region.
+ */
+void view3d_curves_gp_panels_register(ARegionType *art);
+
 }  // namespace blender::ed::view3d
