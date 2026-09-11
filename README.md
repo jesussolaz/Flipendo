@@ -154,11 +154,23 @@ La fila que más cambia el cálculo es la de add-ons: quitar Python **cuesta** e
 
 Todo verificado con capturas y tests en Metal — ver los mensajes de commit, que documentan cada verificación.
 
+### El look de Kingdom Hearts, como filtro nativo
+
+El post-proceso es la capacidad que UPBGE 0.44 **ni siquiera podía compilar** en Metal. Aquí es un filtro 2D integrado en el motor —bloom, gradación de color y viñeta—, escrito en C++ y GLSL como cualquier otro, que cross-compila a Metal desde una sola fuente. Sin Python de por medio.
+
+| Sin filtro | Con el look KH, nativo |
+|---|---|
+| ![La plantilla ARPG sin post-proceso](examples/kingdom_hearts_look/antes.png) | ![La misma escena con el filtro nativo de Flipendo](examples/kingdom_hearts_look/despues.png) |
+
+Cómo se usa y de dónde sale: [`examples/kingdom_hearts_look/`](examples/kingdom_hearts_look/).
+
 ## Estructura
 
 - Árbol base: snapshot de UPBGE en el commit upstream `3c7b891a` (Blender 4.5.0 alpha).
 - Cada mejora es un commit encima, con la explicación técnica en el mensaje.
-- Doctrina y estado de la migración: [`politicas/`](politicas/).
+- Doctrina y estado de la migración: [`politicas/`](politicas/) — 35 documentos que explican qué se migró, cómo se verificó y qué trampas aparecieron.
+- Ejemplos de uso del motor: [`examples/`](examples/).
+- Registro de versiones: [`CHANGELOG-FLIPENDO.md`](CHANGELOG-FLIPENDO.md).
 
 ## Compilar (macOS)
 
