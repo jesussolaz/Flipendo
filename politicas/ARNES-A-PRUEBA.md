@@ -139,3 +139,34 @@ comprueba `--fl-check-context-ops`, en modo gráfico.
   **nativos**. Van como red de seguridad, no como caso probado, y se dice.
 - `--fl-check-ui (registro)` y `--fl-check-presets` siguen en rojo por trabajo de otros
   carriles, no por el arnés. El detalle, en `informes/ARNES-1.md`.
+
+## Un verificador no puede discrepar consigo mismo (11-09, jefe de proyecto)
+
+`--fl-dump-ui-layout` y `--fl-check-ui` comparten la generación de bloques, pero durante
+unas horas **dieron resultados distintos sobre el mismo binario**: el volcado, cero
+diferencias contra la línea base; el comprobador, dos bloques. Los dos no podían tener
+razón.
+
+La causa fue una normalización puesta en el sitio equivocado. Al curar que el volcado
+dependiera de dónde estuviera el ratón —la barra de estado pinta pistas contextuales que
+se repueblan al dibujar— la limpieza se colocó al principio de `dump_layout()`. Pero
+`check()` llama a `diseno_bloques()` **directamente**, sin pasar por ahí: el camino del
+volcado quedó normalizado y el del comprobador no.
+
+Tres reglas que salen de esto:
+
+1. **Toda normalización vive donde la comparten los dos caminos.** Si se puede poner en
+   el punto de dibujado en vez de en el de entrada, ahí va: es el único sitio por el que
+   pasan ambos.
+2. **Cuando el volcado y el comprobador discrepen, el fallo es del verificador**, no del
+   código medido. Antes de tocar una línea base, comprobar que los dos caminos coinciden.
+3. **Un rojo lento también se repite.** La batería firmaba sin repetir los comprobadores
+   de más de un minuto —justo los más expuestos a transitorios— y llegó a firmar un rojo
+   que la medición manual inmediata desmentía. Se repite una vez: basta para distinguir
+   un fallo de un transitorio, y no convierte la batería en media hora.
+
+Y el resumen de las cuatro veces que ha pasado lo mismo con distinto disfraz: **estado
+del entorno colándose en una prueba**. La ruta de instalación, la lista de ficheros
+recientes, los presets del usuario y la posición física del ratón. La cura preferente es
+**normalizar la entrada**; solo cuando eso no se puede, elidir la salida conservando la
+forma, para que un cambio real se siga viendo.

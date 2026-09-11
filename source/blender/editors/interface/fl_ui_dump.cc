@@ -360,6 +360,75 @@ struct Bloque {
   blender::Vector<std::string> lineas;
 };
 
+/**
+ * Colapsa las repeticiones consecutivas de las entradas de ficheros recientes.
+ *
+ * Su VALOR ya se elide como `<RECIENTE>` al serializar el boton, pero su NUMERO
+ * depende de cuantos ficheros haya abierto el usuario: seis un dia, nueve al
+ * siguiente. Afecta al menu de abrir recientes y a la pantalla de bienvenida.
+ *
+ * Vive aqui y no en el escritor a proposito. Estuvo en `bloques_escribir()` y eso
+ * dejaba el volcado colapsado y la comparacion en memoria de `check()` sin
+ * colapsar: los dos caminos del mismo verificador daban resultados distintos
+ * sobre el mismo binario. Toda normalizacion tiene que vivir donde la comparten
+ * los dos.
+ */
+/**
+ * La fila de pistas contextuales de la barra de estado ("Resize", "Options" y sus
+ * iconos de raton) NO se lee de un estado guardado: la CALCULA el dibujado a partir
+ * de donde este el cursor en ese instante. Por eso limpiar el estado antes de
+ * dibujar no basta -- se probo, y el dibujado la vuelve a calcular.
+ *
+ * Aqui si hay que normalizar la salida, pero solo esa fila: se sustituye por un
+ * marcador y se descartan sus hijos. El resto de la barra -- el aviso de red, el
+ * separador y la etiqueta de version -- se compara como siempre, asi que un cambio
+ * real en la barra se sigue viendo. Lo unico que se pierde es la posicion fisica
+ * del raton, que no es del codigo.
+ */
+static void statusbar_normalizar(Bloque &bloque)
+{
+  blender::Vector<std::string> salida;
+  bool saltando_hijos = false;
+  bool ya_puesta = false;
+  for (const std::string &linea : bloque.lineas) {
+    const size_t sangria = linea.find_first_not_of(' ');
+    if (saltando_hijos) {
+      if (sangria != std::string::npos && sangria > 4) {
+        continue;
+      }
+      saltando_hijos = false;
+    }
+    if (!ya_puesta && sangria == 4 && linea.compare(4, 10, "LAYOUT_ROW") == 0) {
+      salida.append("    LAYOUT_ROW <PISTAS-CONTEXTUALES: dependen de donde este el cursor>");
+      ya_puesta = true;
+      saltando_hijos = true;
+      continue;
+    }
+    salida.append(linea);
+  }
+  bloque.lineas = std::move(salida);
+}
+
+static void bloques_normalizar(blender::Vector<Bloque> &bloques)
+{
+  for (Bloque &bloque : bloques) {
+    if (bloque.clave.find("STATUSBAR_HT_header") != std::string::npos) {
+      statusbar_normalizar(bloque);
+    }
+    blender::Vector<std::string> salida;
+    const std::string *anterior = nullptr;
+    for (const std::string &linea : bloque.lineas) {
+      const bool es_reciente = linea.find("<RECIENTE>") != std::string::npos;
+      if (es_reciente && anterior != nullptr && *anterior == linea) {
+        continue;
+      }
+      salida.append(linea);
+      anterior = &salida.last();
+    }
+    bloque.lineas = std::move(salida);
+  }
+}
+
 static void bloques_ordenar(blender::Vector<Bloque> &bloques)
 {
   std::sort(bloques.begin(), bloques.end(), [](const Bloque &a, const Bloque &b) {
@@ -403,14 +472,8 @@ static bool bloques_escribir(const blender::Vector<Bloque> &bloques,
      * linea base con ellas tampoco se reproduce. Se colapsan las repeticiones
      * consecutivas en una sola: la forma del menu se sigue viendo, la cuenta del
      * historial del usuario no entra. */
-    const std::string *anterior = nullptr;
     for (const std::string &linea : bloque.lineas) {
-      const bool es_reciente = linea.find("<RECIENTE>") != std::string::npos;
-      if (es_reciente && anterior != nullptr && *anterior == linea) {
-        continue;
-      }
       fprintf(fp, "%s\n", linea.c_str());
-      anterior = &linea;
     }
   }
   fclose(fp);
@@ -630,6 +693,7 @@ static blender::Vector<Bloque> registro_bloques()
     bloques.append(asset_shelf_bloque(*type));
   }
 
+  bloques_normalizar(bloques);
   bloques_ordenar(bloques);
   return bloques;
 }
@@ -1577,6 +1641,7 @@ static blender::Vector<Bloque> diseno_bloques(bContext *C, int *r_cubiertos, int
     }
   }
 
+  bloques_normalizar(bloques);
   bloques_ordenar(bloques);
   *r_cubiertos = cubiertos;
   *r_no_cubiertos = no_cubiertos;
@@ -1617,21 +1682,14 @@ bool dump_layout(bContext *C, const char *filepath)
     return false;
   }
 
-  /* La barra de estado dibuja las pistas contextuales del raton -- "Resize",
-   * "Options" y sus iconos de boton -- que dependen de donde este el puntero en
-   * el instante del volcado. Medido: tres pasadas dieron 30.572, 30.572 y 30.579
-   * lineas, y las 9 de diferencia estaban todas en STATUSBAR_HT_header. Un volcado
-   * que cambia segun donde dejaste el raton no es una linea base.
-   *
-   * Se normaliza la ENTRADA en vez de elidir la salida, que es mejor: se limpia el
-   * estado contextual de cada ventana antes de dibujar, asi que el bloque se
-   * captura siempre en el mismo estado y un cambio real en el si se veria. */
-  LISTBASE_FOREACH (wmWindow *, win, &CTX_wm_manager(C)->windows) {
-    wmWindow *win_previa = CTX_wm_window(C);
-    CTX_wm_window_set(C, win);
-    ED_workspace_status_text(C, nullptr);
-    CTX_wm_window_set(C, win_previa);
-  }
+  /* La limpieza del estado contextual NO va aqui: va justo antes de cada
+   * `ht->draw()` (ver `cabecera_a_bloque`). Estuvo aqui una version y creo un
+   * fallo peor que el que arreglaba: `check()` llama a `diseno_bloques()`
+   * directamente, asi que el camino del volcado limpiaba y el del comprobador no.
+   * Los dos caminos daban resultados distintos sobre el mismo binario -- el
+   * volcado, cero diferencias; el comprobador, dos bloques -- y eso es lo peor
+   * que le puede pasar a un verificador: discrepar consigo mismo. Cualquier
+   * normalizacion tiene que vivir donde la comparten los dos. */
 
   int cubiertos = 0, no_cubiertos = 0;
   const blender::Vector<Bloque> bloques = diseno_bloques(C, &cubiertos, &no_cubiertos);

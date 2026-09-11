@@ -24189,7 +24189,7 @@ DRAW
 === HEADER STATUSBAR HEADER STATUSBAR_HT_header
 DRAW
   LAYOUT_ROOT activo=si align=no alignment=EXPAND emboss=UNDEFINED enabled=si heading='' prop_decorate=si prop_sep=no redalert=no scale_x=0 scale_y=0 units_x=0 units_y=0
-    LAYOUT_ROW activo=si align=si alignment=LEFT emboss=UNDEFINED enabled=si heading='' prop_decorate=si prop_sep=no redalert=no scale_x=0 scale_y=0 units_x=0 units_y=0
+    LAYOUT_ROW <PISTAS-CONTEXTUALES: dependen de donde este el cursor>
     BUTTON activo=si emboss=EMBOSS enabled=si icon=NONE op=None rna=None text='' tip='' type=SEPR_SPACER
     BUTTON activo=si emboss=EMBOSS enabled=si icon=NONE op=None rna=None text='' tip='' type=SEPR_SPACER
     LAYOUT_ROW activo=si align=no alignment=RIGHT emboss=UNDEFINED enabled=si heading='' prop_decorate=si prop_sep=no redalert=no scale_x=0 scale_y=0 units_x=0 units_y=0
