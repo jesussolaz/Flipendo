@@ -27,6 +27,7 @@
 
 #include "BLI_math_base.h"
 #include "BLI_utildefines.h"
+#include "BLI_vector.hh"
 
 #include "BKE_context.hh"
 #include "BKE_editmesh.hh"
@@ -46,6 +47,7 @@
 #include "UI_interface_layout.hh"
 #include "UI_resources.hh"
 
+#include "WM_api.hh"
 #include "WM_types.hh"
 
 #include "FL_ui_registry.hh"
@@ -53,6 +55,27 @@
 #include "FL_view3d_menus.hh"
 
 namespace blender::ed::view3d {
+
+
+/**
+ * `layout.operator_menu_enum(op, prop)` **sin** `text=`.
+ *
+ * Tercera vez esta noche: pasar `""` no es lo mismo que no pasar nada. El Python
+ * manda `None`, que se vuelve `std::nullopt`, y es eso lo que hace que el rotulo
+ * salga del operador. Con `""` el boton sale mudo y el volcado lo canta.
+ */
+static void menu_enum_o(uiLayout *layout,
+                        const bContext *C,
+                        const char *opname,
+                        const char *propname)
+{
+  wmOperatorType *ot = WM_operatortype_find(opname, false);
+  if (ot == nullptr) {
+    return;
+  }
+  PointerRNA opptr;
+  uiItemMenuEnumFullO_ptr(layout, C, ot, propname, std::nullopt, ICON_NONE, &opptr);
+}
 
 /* -------------------------------------------------------------------- */
 /** \name Modo de seleccion
@@ -457,7 +480,292 @@ static void edit_mesh_select_similar_draw(const bContext * /*C*/, Menu *menu)
 /** \name Registro
  * \{ */
 
+
+/* -------------------------------------------------------------------- */
+/** \name VIEW3D_MT_edit_mesh_context_menu
+ *
+ * El boton derecho en edicion de malla. Ensena **una columna por modo de
+ * seleccion activo** (vertice, arista, cara), asi que con los tres activos
+ * salen tres columnas dentro de la misma fila. Y dentro de cada una hay ramas
+ * por numero de elementos seleccionados.
+ * \{ */
+
+/** `count_selected_items_for_objects_in_mode()` del Python. */
+static void count_selected_items_in_mode(const bContext *C,
+                                         int *r_verts,
+                                         int *r_edges,
+                                         int *r_faces)
+{
+  *r_verts = *r_edges = *r_faces = 0;
+  const Vector<PointerRNA> objects = CTX_data_collection_get(C, "objects_in_mode_unique_data");
+  for (const PointerRNA &ob_ptr : objects) {
+    const Object *ob = static_cast<const Object *>(ob_ptr.data);
+    if (ob == nullptr || ob->type != OB_MESH) {
+      continue;
+    }
+    const BMEditMesh *em = BKE_editmesh_from_object(const_cast<Object *>(ob));
+    if (em == nullptr) {
+      continue;
+    }
+    *r_verts += em->bm->totvertsel;
+    *r_edges += em->bm->totedgesel;
+    *r_faces += em->bm->totfacesel;
+  }
+}
+
+static void edit_mesh_context_menu_draw(const bContext *C, Menu *menu)
+{
+  uiLayout *layout = menu->layout;
+
+  const ToolSettings *ts = CTX_data_tool_settings(C);
+  if (ts == nullptr) {
+    return;
+  }
+  const bool is_vert_mode = (ts->selectmode & SCE_SELECT_VERTEX) != 0;
+  const bool is_edge_mode = (ts->selectmode & SCE_SELECT_EDGE) != 0;
+  const bool is_face_mode = (ts->selectmode & SCE_SELECT_FACE) != 0;
+
+  int selected_verts_len = 0, selected_edges_len = 0, selected_faces_len = 0;
+  count_selected_items_in_mode(C, &selected_verts_len, &selected_edges_len, &selected_faces_len);
+
+#ifdef WITH_FREESTYLE
+  const bool with_freestyle = true;
+#else
+  const bool with_freestyle = false;
+#endif
+
+  uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+  /* La rama de «nada seleccionado» esta comentada en el Python desde hace
+   * versiones; no se escribe. */
+
+  uiLayout *row = &layout->row(false);
+
+  if (is_vert_mode) {
+    uiLayout *col = &row->column(true);
+
+    col->label(IFACE_("Vertex"), ICON_VERTEXSEL);
+    col->separator();
+
+    col->op("MESH_OT_subdivide", IFACE_("Subdivide"), ICON_NONE);
+
+    col->separator();
+
+    col->op("MESH_OT_extrude_vertices_move", IFACE_("Extrude Vertices"), ICON_NONE);
+    PointerRNA props = col->op("MESH_OT_bevel", IFACE_("Bevel Vertices"), ICON_NONE);
+    if (props.data) {
+      RNA_enum_set_identifier(nullptr, &props, "affect", "VERTICES");
+    }
+
+    if (selected_verts_len > 1) {
+      col->separator();
+      col->op("MESH_OT_edge_face_add", IFACE_("New Edge/Face from Vertices"), ICON_NONE);
+      col->op("MESH_OT_vert_connect_path", IFACE_("Connect Vertex Path"), ICON_NONE);
+      col->op("MESH_OT_vert_connect", IFACE_("Connect Vertex Pairs"), ICON_NONE);
+    }
+
+    col->separator();
+
+    col->op("TRANSFORM_OT_push_pull", IFACE_("Push/Pull"), ICON_NONE);
+    col->op("TRANSFORM_OT_shrink_fatten", IFACE_("Shrink/Fatten"), ICON_NONE);
+    col->op("TRANSFORM_OT_shear", IFACE_("Shear"), ICON_NONE);
+    col->op("TRANSFORM_OT_vert_slide", IFACE_("Slide Vertices"), ICON_NONE);
+    uiLayoutSetOperatorContext(col, WM_OP_EXEC_REGION_WIN);
+    props = col->op("TRANSFORM_OT_vertex_random", IFACE_("Randomize Vertices"), ICON_NONE);
+    if (props.data) {
+      RNA_float_set(&props, "offset", 0.1f);
+    }
+    props = col->op("MESH_OT_vertices_smooth", IFACE_("Smooth Vertices"), ICON_NONE);
+    if (props.data) {
+      RNA_float_set(&props, "factor", 0.5f);
+    }
+    uiLayoutSetOperatorContext(col, WM_OP_INVOKE_REGION_WIN);
+    col->op("MESH_OT_vertices_smooth_laplacian", IFACE_("Smooth Laplacian"), ICON_NONE);
+
+    col->separator();
+
+    col->menu("VIEW3D_MT_mirror", IFACE_("Mirror Vertices"), ICON_NONE);
+    col->menu("VIEW3D_MT_snap", IFACE_("Snap Vertices"), ICON_NONE);
+
+    col->separator();
+
+    col->op("TRANSFORM_OT_vert_crease", std::nullopt, ICON_NONE);
+
+    col->separator();
+
+    if (selected_verts_len > 1) {
+      col->menu("VIEW3D_MT_edit_mesh_merge", IFACE_("Merge Vertices"), ICON_NONE);
+    }
+    col->op("MESH_OT_split", std::nullopt, ICON_NONE);
+    menu_enum_o(col, C, "MESH_OT_separate", "type");
+    col->op("MESH_OT_dissolve_verts", std::nullopt, ICON_NONE);
+    props = col->op("MESH_OT_delete", IFACE_("Delete Vertices"), ICON_NONE);
+    if (props.data) {
+      RNA_enum_set_identifier(nullptr, &props, "type", "VERT");
+    }
+  }
+
+  if (is_edge_mode) {
+    uiLayout *col = &row->column(true);
+    col->label(IFACE_("Edge"), ICON_EDGESEL);
+    col->separator();
+
+    col->op("MESH_OT_subdivide", IFACE_("Subdivide"), ICON_NONE);
+
+    col->separator();
+
+    col->op("MESH_OT_extrude_edges_move", IFACE_("Extrude Edges"), ICON_NONE);
+    PointerRNA props = col->op("MESH_OT_bevel", IFACE_("Bevel Edges"), ICON_NONE);
+    if (props.data) {
+      RNA_enum_set_identifier(nullptr, &props, "affect", "EDGES");
+    }
+    if (selected_edges_len >= 2) {
+      col->op("MESH_OT_bridge_edge_loops", std::nullopt, ICON_NONE);
+    }
+    if (selected_edges_len >= 1) {
+      col->op("MESH_OT_edge_face_add", IFACE_("New Face from Edges"), ICON_NONE);
+    }
+    if (selected_edges_len >= 2) {
+      col->op("MESH_OT_fill", std::nullopt, ICON_NONE);
+    }
+
+    col->separator();
+
+    props = col->op("MESH_OT_loopcut_slide", std::nullopt, ICON_NONE);
+    if (props.data) {
+      PointerRNA slide = RNA_pointer_get(&props, "TRANSFORM_OT_edge_slide");
+      RNA_boolean_set(&slide, "release_confirm", false);
+    }
+    col->op("MESH_OT_offset_edge_loops_slide", std::nullopt, ICON_NONE);
+
+    col->separator();
+
+    col->op("MESH_OT_knife_tool", std::nullopt, ICON_NONE);
+    col->op("MESH_OT_bisect", std::nullopt, ICON_NONE);
+
+    col->separator();
+
+    props = col->op("MESH_OT_edge_rotate", IFACE_("Rotate Edge CW"), ICON_NONE);
+    if (props.data) {
+      RNA_boolean_set(&props, "use_ccw", false);
+    }
+    col->op("TRANSFORM_OT_edge_slide", std::nullopt, ICON_NONE);
+    col->op("MESH_OT_edge_split", std::nullopt, ICON_NONE);
+
+    col->separator();
+
+    col->op("TRANSFORM_OT_edge_crease", std::nullopt, ICON_NONE);
+    col->op("TRANSFORM_OT_edge_bevelweight", std::nullopt, ICON_NONE);
+
+    col->separator();
+
+    props = col->op("MESH_OT_mark_seam", std::nullopt, ICON_NONE);
+    if (props.data) {
+      RNA_boolean_set(&props, "clear", false);
+    }
+    props = col->op("MESH_OT_mark_seam", IFACE_("Clear Seam"), ICON_NONE);
+    if (props.data) {
+      RNA_boolean_set(&props, "clear", true);
+    }
+
+    col->separator();
+
+    col->op("MESH_OT_mark_sharp", std::nullopt, ICON_NONE);
+    props = col->op("MESH_OT_mark_sharp", IFACE_("Clear Sharp"), ICON_NONE);
+    if (props.data) {
+      RNA_boolean_set(&props, "clear", true);
+    }
+    col->op("MESH_OT_set_sharpness_by_angle", std::nullopt, ICON_NONE);
+
+    if (with_freestyle) {
+      col->separator();
+
+      props = col->op("MESH_OT_mark_freestyle_edge", std::nullopt, ICON_NONE);
+      if (props.data) {
+        RNA_boolean_set(&props, "clear", false);
+      }
+      props = col->op("MESH_OT_mark_freestyle_edge", IFACE_("Clear Freestyle Edge"), ICON_NONE);
+      if (props.data) {
+        RNA_boolean_set(&props, "clear", true);
+      }
+    }
+
+    col->separator();
+
+    col->op("MESH_OT_unsubdivide", std::nullopt, ICON_NONE);
+    col->op("MESH_OT_split", std::nullopt, ICON_NONE);
+    menu_enum_o(col, C, "MESH_OT_separate", "type");
+    col->op("MESH_OT_dissolve_edges", std::nullopt, ICON_NONE);
+    props = col->op("MESH_OT_delete", IFACE_("Delete Edges"), ICON_NONE);
+    if (props.data) {
+      RNA_enum_set_identifier(nullptr, &props, "type", "EDGE");
+    }
+  }
+
+  if (is_face_mode) {
+    uiLayout *col = &row->column(true);
+
+    col->label(IFACE_("Face"), ICON_FACESEL);
+    col->separator();
+
+    col->op("MESH_OT_subdivide", IFACE_("Subdivide"), ICON_NONE);
+
+    col->separator();
+
+    col->op("VIEW3D_OT_edit_mesh_extrude_move_normal", IFACE_("Extrude Faces"), ICON_NONE);
+    col->op("VIEW3D_OT_edit_mesh_extrude_move_shrink_fatten",
+            IFACE_("Extrude Faces Along Normals"),
+            ICON_NONE);
+    col->op("MESH_OT_extrude_faces_move", IFACE_("Extrude Individual Faces"), ICON_NONE);
+
+    col->op("MESH_OT_inset", std::nullopt, ICON_NONE);
+    col->op("MESH_OT_poke", std::nullopt, ICON_NONE);
+
+    if (selected_faces_len >= 2) {
+      col->op("MESH_OT_bridge_edge_loops", IFACE_("Bridge Faces"), ICON_NONE);
+    }
+
+    col->separator();
+
+    col->menu("VIEW3D_MT_uv_map", IFACE_("UV Unwrap Faces"), ICON_NONE);
+
+    col->separator();
+
+    PointerRNA props = col->op("MESH_OT_quads_convert_to_tris", std::nullopt, ICON_NONE);
+    if (props.data) {
+      RNA_enum_set_identifier(nullptr, &props, "quad_method", "BEAUTY");
+      RNA_enum_set_identifier(nullptr, &props, "ngon_method", "BEAUTY");
+    }
+    col->op("MESH_OT_tris_convert_to_quads", std::nullopt, ICON_NONE);
+
+    col->separator();
+
+    col->op("MESH_OT_faces_shade_smooth", std::nullopt, ICON_NONE);
+    col->op("MESH_OT_faces_shade_flat", std::nullopt, ICON_NONE);
+
+    col->separator();
+
+    col->op("MESH_OT_unsubdivide", std::nullopt, ICON_NONE);
+    col->op("MESH_OT_split", std::nullopt, ICON_NONE);
+    menu_enum_o(col, C, "MESH_OT_separate", "type");
+    col->op("MESH_OT_dissolve_faces", std::nullopt, ICON_NONE);
+    props = col->op("MESH_OT_delete", IFACE_("Delete Faces"), ICON_NONE);
+    if (props.data) {
+      RNA_enum_set_identifier(nullptr, &props, "type", "FACE");
+    }
+  }
+}
+
+/** \} */
+
 static const flipendo::MenuDecl view3d_mesh_menus[] = {
+    {
+        /*idname*/ "VIEW3D_MT_edit_mesh_context_menu",
+        /*label*/ "",
+        /*description*/ nullptr,
+        /*translation_context*/ nullptr,
+        /*draw*/ edit_mesh_context_menu_draw,
+    },
     {
         /*idname*/ "VIEW3D_MT_edit_mesh_select_mode",
         /*label*/ N_("Mesh Select Mode"),
