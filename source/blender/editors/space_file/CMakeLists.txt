@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../asset
   ../include
   ../../makesrna
@@ -16,6 +17,7 @@ set(INC_SYS
 
 set(SRC
   asset_catalog_tree_view.cc
+  fl_file_menus.cc
   file_context.cc
   file_draw.cc
   file_indexer.cc
@@ -30,6 +32,7 @@ set(SRC
   space_file.cc
 
   file_indexer.hh
+  FL_file_menus.hh
   file_intern.hh
   filelist.hh
   fsmenu.h

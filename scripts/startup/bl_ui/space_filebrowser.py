@@ -536,63 +536,6 @@ class FILEBROWSER_MT_select(FileBrowserMenu, Menu):
         layout.operator("file.select_box")
 
 
-class FILEBROWSER_MT_context_menu(FileBrowserMenu, Menu):
-    bl_label = "Files"
-
-    def draw(self, context):
-        layout = self.layout
-        st = context.space_data
-        params = st.params
-
-        layout.operator("file.previous", text="Back")
-        layout.operator("file.next", text="Forward")
-        layout.operator("file.parent", text="Go to Parent")
-        layout.operator("file.refresh", text="Refresh")
-        layout.menu("FILEBROWSER_MT_operations_menu")
-
-        layout.separator()
-
-        layout.operator("file.filenum", text="Increase Number", icon='ADD').increment = 1
-        layout.operator("file.filenum", text="Decrease Number", icon='REMOVE').increment = -1
-
-        layout.separator()
-
-        layout.operator("file.rename", text="Rename")
-        sub = layout.row()
-        sub.operator_context = 'EXEC_DEFAULT'
-        sub.operator("file.delete", text="Delete")
-
-        layout.separator()
-
-        sub = layout.row()
-        sub.operator_context = 'EXEC_DEFAULT'
-        sub.operator("file.directory_new", text="New Folder")
-        layout.operator("file.bookmark_add", text="Add Bookmark")
-
-        layout.separator()
-
-        layout.prop_menu_enum(params, "display_type")
-        if params.display_type == 'THUMBNAIL':
-            layout.prop_menu_enum(params, "display_size_discrete")
-        layout.prop_menu_enum(params, "recursion_level", text="Recursions")
-        layout.prop_menu_enum(params, "sort_method")
-
-
-class FILEBROWSER_MT_view_pie(Menu):
-    bl_label = "View"
-    bl_idname = "FILEBROWSER_MT_view_pie"
-
-    def draw(self, context):
-        layout = self.layout
-
-        pie = layout.menu_pie()
-        view = context.space_data
-
-        pie.prop_enum(view.params, "display_type", value='LIST_VERTICAL')
-        pie.prop_enum(view.params, "display_type", value='LIST_HORIZONTAL')
-        pie.prop_enum(view.params, "display_type", value='THUMBNAIL')
-
-
 class ASSETBROWSER_PT_display(asset_utils.AssetBrowserPanel, Panel):
     bl_region_type = 'HEADER'
     bl_label = "Display Settings"  # Shows as tooltip in popover
@@ -857,34 +800,6 @@ class ASSETBROWSER_UL_metadata_tags(UIList):
             row.prop(tag, "name", text="", emboss=False, icon_value=icon)
 
 
-class ASSETBROWSER_MT_context_menu(AssetBrowserMenu, Menu):
-    bl_label = "Assets"
-
-    def draw(self, context):
-        layout = self.layout
-        st = context.space_data
-        params = st.params
-
-        layout.operator("asset.library_refresh")
-
-        layout.separator()
-
-        sub = layout.column()
-        sub.operator_context = 'EXEC_DEFAULT'
-        sub.operator("asset.clear", text="Clear Asset").set_fake_user = False
-        sub.operator("asset.clear", text="Clear Asset (Set Fake User)").set_fake_user = True
-
-        layout.separator()
-
-        layout.operator("asset.open_containing_blend_file")
-
-        layout.separator()
-
-        if params.display_type == 'THUMBNAIL':
-            layout.prop_menu_enum(params, "display_size_discrete")
-        layout.prop_menu_enum(params, "sort_method")
-
-
 classes = (
     FILEBROWSER_HT_header,
     FILEBROWSER_PT_display,
@@ -901,8 +816,6 @@ classes = (
     FILEBROWSER_MT_editor_menus,
     FILEBROWSER_MT_view,
     FILEBROWSER_MT_select,
-    FILEBROWSER_MT_context_menu,
-    FILEBROWSER_MT_view_pie,
     ASSETBROWSER_PT_display,
     ASSETBROWSER_PT_filter,
     ASSETBROWSER_MT_editor_menus,
@@ -915,7 +828,6 @@ classes = (
     ASSETBROWSER_PT_metadata_preview,
     ASSETBROWSER_PT_metadata_tags,
     ASSETBROWSER_UL_metadata_tags,
-    ASSETBROWSER_MT_context_menu,
 )
 
 

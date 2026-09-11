@@ -45,6 +45,7 @@
 #include "BLO_read_write.hh"
 
 #include "file_indexer.hh"
+#include "FL_file_menus.hh"
 #include "file_intern.hh" /* own include */
 #include "filelist.hh"
 #include "fsmenu.h"
@@ -1030,6 +1031,8 @@ void ED_spacetype_file()
   BLI_addhead(&st->regiontypes, art);
   file_tool_props_region_panels_register(art);
   file_external_operations_menu_register();
+
+  blender::ed::file::file_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }
