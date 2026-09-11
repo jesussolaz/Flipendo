@@ -581,106 +581,6 @@ class NODE_MT_context_menu_select_menu(Menu):
         layout.operator("node.select_same_type_step", text="Activate Same Type Next").prev = False
 
 
-class NODE_MT_context_menu(Menu):
-    bl_label = "Node"
-
-    def draw(self, context):
-        snode = context.space_data
-        is_nested = (len(snode.path) > 1)
-        is_geometrynodes = snode.tree_type == 'GeometryNodeTree'
-        group = snode.edit_tree
-
-        selected_nodes_len = len(context.selected_nodes)
-        active_node = context.active_node
-
-        layout = self.layout
-
-        # If no nodes are selected.
-        if selected_nodes_len == 0:
-            layout.operator_context = 'INVOKE_DEFAULT'
-            layout.menu("NODE_MT_add", icon='ADD')
-            layout.operator("node.clipboard_paste", text="Paste", icon='PASTEDOWN')
-
-            layout.separator()
-
-            layout.operator("node.find_node", text="Find...", icon='VIEWZOOM')
-
-            layout.separator()
-
-            if is_geometrynodes:
-                layout.operator_context = 'INVOKE_DEFAULT'
-                layout.operator("node.select", text="Clear Viewer", icon='HIDE_ON').clear_viewer = True
-
-            layout.operator("node.links_cut")
-            layout.operator("node.links_mute")
-
-            if is_nested:
-                layout.separator()
-
-                layout.operator("node.tree_path_parent", text="Exit Group", icon='FILE_PARENT')
-
-            return
-
-        if is_geometrynodes:
-            layout.operator_context = 'INVOKE_DEFAULT'
-            layout.operator("node.link_viewer", text="Link to Viewer", icon='HIDE_OFF')
-
-            layout.separator()
-
-        layout.operator("node.clipboard_copy", text="Copy", icon='COPYDOWN')
-        layout.operator("node.clipboard_paste", text="Paste", icon='PASTEDOWN')
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-        layout.operator("node.duplicate_move", icon='DUPLICATE')
-
-        layout.separator()
-
-        layout.operator("node.delete", icon='X')
-        layout.operator_context = 'EXEC_REGION_WIN'
-        layout.operator("node.delete_reconnect", text="Dissolve")
-
-        if selected_nodes_len > 1:
-            layout.separator()
-
-            layout.operator("node.link_make").replace = False
-            layout.operator("node.link_make", text="Make and Replace Links").replace = True
-            layout.operator("node.links_detach")
-
-        layout.separator()
-
-        if group and group.bl_use_group_interface:
-            layout.operator("node.group_make", text="Make Group", icon='NODETREE')
-            layout.operator("node.group_insert", text="Insert Into Group")
-
-            if active_node and active_node.type == 'GROUP':
-                layout.operator("node.group_edit").exit = False
-                layout.operator("node.group_ungroup", text="Ungroup")
-
-            if is_nested:
-                layout.operator("node.tree_path_parent", text="Exit Group", icon='FILE_PARENT')
-
-            layout.separator()
-
-        layout.operator("node.join", text="Join in New Frame")
-        layout.operator("node.detach", text="Remove from Frame")
-
-        layout.separator()
-
-        props = layout.operator("wm.call_panel", text="Rename...")
-        props.name = "TOPBAR_PT_name"
-        props.keep_open = False
-
-        layout.separator()
-
-        layout.menu("NODE_MT_context_menu_select_menu")
-        layout.menu("NODE_MT_context_menu_show_hide_menu")
-
-        if active_node:
-            layout.separator()
-            props = layout.operator("wm.doc_view_manual", text="Online Manual", icon='URL')
-            props.doc_id = active_node.bl_idname
-
-
 class NODE_PT_active_node_generic(Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
@@ -1127,7 +1027,6 @@ classes = (
     NODE_MT_node_color_context_menu,
     NODE_MT_context_menu_show_hide_menu,
     NODE_MT_context_menu_select_menu,
-    NODE_MT_context_menu,
     NODE_PT_material_slots,
     NODE_PT_geometry_node_tool_object_types,
     NODE_PT_geometry_node_tool_mode,
