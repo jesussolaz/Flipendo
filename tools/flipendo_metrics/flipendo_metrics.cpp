@@ -1,80 +1,1953 @@
-// flipendo_metrics — contador de composición del árbol mantenido de Flipendo.
-// Regenera las métricas de migración a C++ desde el árbol. Doctrina C++.
-// Uso: flipendo_metrics [raiz_del_repo]
+// flipendo_metrics — el estado de Flipendo, medido y generado desde el árbol.
 //
-// AVISO (2026-09-11): esta herramienta recorre el DISCO, así que ve ficheros sin
-// versionar y no ve lo que otro carril acaba de borrar. Sirve para una comprobación
-// rápida. La cifra que se cita en `politicas/METRICAS.md` se mide con git a un
-// commit nombrado; el método está en el §1 de ese documento.
+// Por qué existe esta herramienta y por qué creció el 2026-09-11:
 //
-// No está en ningún CMakeLists.txt (herramienta suelta). Se compila a mano:
+//   `politicas/METRICAS.md` publicó el 8 de septiembre una cifra de Python medida el
+//   5. Entre medias habían caído 109.442 líneas que nadie anotó, y el backlog seguía
+//   describiendo un `addons_core` que ya estaba podado. Un documento escrito a mano
+//   envejece en horas cuando hay siete carriles tocando el árbol a la vez. La
+//   solución no es escribir mejor: es GENERAR el estado, medido, con un comando.
+//
+// Qué mide (todo del árbol, nada copiado de ningún documento):
+//   - composición por lenguaje, separando lo propio de los terceros vendorizados
+//     (`extern/`, `lib/`) que marca `.gitattributes` como `linguist-vendored`;
+//   - el Python por zonas, que es donde se ve lo que falta de verdad;
+//   - qué ficheros COMPILA el binario y cuáles no, leyendo `build.ninja`: la
+//     diferencia entre «queda trabajo» y «queda código muerto»;
+//   - la evolución, sacada del historial de git y no de una tabla a mano;
+//   - los puentes que quedan de C++ a Python (`BPY_run_*`, `PyImport_ImportModule`,
+//     los `#ifdef WITH_PYTHON` que esconden capacidad);
+//   - la batería de verificadores `--fl-check-*` / `--fl-selftest-*` del binario,
+//     ejecutada de verdad, con sus cifras y separada en los que valen en
+//     `--background` y los que necesitan modo gráfico.
+//
+// Doctrina (politicas/LENGUAJE-CPP.md): esto es C++ y solo C++. No hay una línea de
+// Python ni de shell en el proceso: los subprocesos (`git`, el binario de Flipendo)
+// se lanzan con `fork`+`execvp` y argv explícito, sin pasar por `/bin/sh`.
+//
+// Uso:
+//   flipendo-metrics [raiz]                  tabla de composición (medida con git)
+//   flipendo-metrics --estado [raiz]         informe completo -> politicas/ESTADO.md
+//   flipendo-metrics --bateria [raiz]        solo los verificadores, por pantalla
+//
+//   --rev <commit>     medir a otro commit (por defecto HEAD)
+//   --sin-bateria      generar el informe sin ejecutar los verificadores
+//   --sin-grafico      no ejecutar el grupo que necesita modo gráfico
+//   --disco            recorrer el disco en vez de git (método viejo, ver §aviso)
+//   --build <dir>      árbol de compilación (por defecto <raiz>/../build)
+//   --binario <ruta>   binario a verificar
+//   --salida <ruta>    dónde escribir el informe
+//
+// AVISO sobre `--disco`: recorrer el disco ve ficheros sin versionar y no ve lo que
+// otro carril acaba de borrar; con varios carriles vivos NO es reproducible ni por
+// quien la hizo. Por eso el modo por defecto mide con git a un commit nombrado.
+//
+// No está en ningún CMakeLists.txt (herramienta suelta, no entra en el binario):
 //   c++ -std=c++17 -O2 -o ~/Flipendo/bin/flipendo-metrics \
 //       ~/Flipendo/dev/upbge/tools/flipendo_metrics/flipendo_metrics.cpp
+
 #include <algorithm>
+#include <cctype>
+#include <cstdarg>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <set>
 #include <string>
+#include <vector>
+
+#include <fcntl.h>
+#include <poll.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 namespace fs = std::filesystem;
 
-// Cuenta líneas como `wc -l`: el número de '\n'.
-//
-// Corregido el 2026-09-11. La versión anterior devolvía `n + (any ? 1 : 0)`, es
-// decir, sumaba una línea de más en todo fichero no vacío: un fichero de tres
-// líneas devolvía 4. Sobre el árbol entero, la diferencia contra `wc -l` era
-// exactamente el número de ficheros de cada lenguaje (Python +610 sobre 610
-// ficheros no vacíos, GLSL +745 sobre 745, .hpp +305 sobre 305...). Por ese fallo
-// todas las cifras históricas del repo van ligeramente altas.
-static long long count_lines(const fs::path &p) {
-  std::ifstream f(p, std::ios::binary);
-  if (!f) return 0;
-  long long n = 0; char c;
-  while (f.get(c)) { if (c == '\n') ++n; }
-  return n;
+/* -------------------------------------------------------------------------- */
+/* Utilidades de cadena                                                        */
+
+static std::string sfmt(const char *fmt, ...)
+{
+  char buf[4096];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return std::string(buf);
 }
 
-int main(int argc, char **argv) {
-  std::string root = argc > 1 ? argv[1] : ".";
-  const std::map<std::string, std::string> lang = {
-    {".c","C"},{".cc","C++"},{".cpp","C++"},{".cxx","C++"},
-    {".h",".h (C-style)"},{".hpp",".hpp"},{".hh",".hh (C++)"},
-    {".py","Python"},{".mm","Objective-C++"},{".m","Objective-C"},
-    {".glsl","GLSL"},{".msl","MSL"},{".metal","Metal (.metal)"},
-    {".sh","shell"},{".bash","shell"},{".zsh","shell"}};
-  std::map<std::string, std::pair<long long,long long>> maint, vend;  // {files, lines}
+/* Miles con punto, como se escriben los números en el resto de `politicas/`. */
+static std::string mil(long long v)
+{
+  bool neg = v < 0;
+  unsigned long long a = neg ? -(unsigned long long)v : (unsigned long long)v;
+  std::string d = std::to_string(a), o;
+  int c = 0;
+  for (int i = (int)d.size() - 1; i >= 0; --i) {
+    o.push_back(d[(size_t)i]);
+    if (++c % 3 == 0 && i > 0) o.push_back('.');
+  }
+  if (neg) o.push_back('-');
+  std::reverse(o.begin(), o.end());
+  return o;
+}
+
+static std::string pct(long long part, long long total)
+{
+  if (total <= 0) return "0,0 %";
+  std::string s = sfmt("%.1f %%", 100.0 * (double)part / (double)total);
+  for (auto &c : s) if (c == '.') c = ',';
+  return s;
+}
+
+static bool starts_with(const std::string &s, const std::string &t)
+{
+  return s.size() >= t.size() && s.compare(0, t.size(), t) == 0;
+}
+static bool contains(const std::string &s, const std::string &t)
+{
+  return s.find(t) != std::string::npos;
+}
+
+static std::string trim(const std::string &s)
+{
+  size_t a = s.find_first_not_of(" \t\r\n");
+  if (a == std::string::npos) return "";
+  size_t b = s.find_last_not_of(" \t\r\n");
+  return s.substr(a, b - a + 1);
+}
+
+static std::vector<std::string> split_ws(const std::string &s)
+{
+  std::vector<std::string> out;
+  size_t i = 0;
+  while (i < s.size()) {
+    while (i < s.size() && isspace((unsigned char)s[i])) ++i;
+    size_t a = i;
+    while (i < s.size() && !isspace((unsigned char)s[i])) ++i;
+    if (i > a) out.push_back(s.substr(a, i - a));
+  }
+  return out;
+}
+
+static std::vector<std::string> split_lines(const std::string &s)
+{
+  std::vector<std::string> out;
+  size_t a = 0;
+  while (a <= s.size()) {
+    size_t b = s.find('\n', a);
+    if (b == std::string::npos) { if (a < s.size()) out.push_back(s.substr(a)); break; }
+    out.push_back(s.substr(a, b - a));
+    a = b + 1;
+  }
+  return out;
+}
+
+/* Cuenta apariciones de `pat` en un bloque de bytes. */
+static long long count_occ(const char *data, size_t n, const std::string &pat)
+{
+  if (pat.empty() || n < pat.size()) return 0;
+  long long c = 0;
+  const char *end = data + n;
+  const char *p = data;
+  while (true) {
+    const char *h = (const char *)memmem(p, (size_t)(end - p), pat.data(), pat.size());
+    if (!h) break;
+    ++c;
+    p = h + 1;
+    if (p >= end) break;
+  }
+  return c;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Lanzar subprocesos SIN shell                                                */
+/*                                                                             */
+/* `fork` + `execvp` con argv explícito. No se construye ninguna línea de       */
+/* comando ni interviene `/bin/sh`: la doctrina prohíbe shell nuevo, y además   */
+/* así no hay que preocuparse de comillas ni de rutas con espacios.             */
+
+struct ProcResult {
+  int rc = -1;
+  bool timed_out = false;
+  bool launched = false;
+  std::string out;   /* stdout (+ stderr si merge_stderr) */
+  double secs = 0.0;
+};
+
+static double now_secs()
+{
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return (double)t.tv_sec + (double)t.tv_nsec * 1e-9;
+}
+
+static ProcResult run_process(const std::vector<std::string> &argv,
+                              const std::string &cwd,
+                              const std::string &stdin_data,
+                              int timeout_s,
+                              bool merge_stderr = true)
+{
+  ProcResult r;
+  if (argv.empty()) return r;
+  int inp[2], outp[2];
+  if (pipe(inp) != 0) return r;
+  if (pipe(outp) != 0) { close(inp[0]); close(inp[1]); return r; }
+
+  const double t0 = now_secs();
+  pid_t pid = fork();
+  if (pid < 0) { close(inp[0]); close(inp[1]); close(outp[0]); close(outp[1]); return r; }
+
+  if (pid == 0) {
+    /* Hijo: grupo propio para poder matar al árbol entero si se pasa de tiempo. */
+    setsid();
+    if (!cwd.empty()) { if (chdir(cwd.c_str()) != 0) _exit(127); }
+    dup2(inp[0], STDIN_FILENO);
+    dup2(outp[1], STDOUT_FILENO);
+    if (merge_stderr) {
+      dup2(outp[1], STDERR_FILENO);
+    }
+    else {
+      int devnull = open("/dev/null", O_WRONLY);
+      if (devnull >= 0) { dup2(devnull, STDERR_FILENO); close(devnull); }
+    }
+    close(inp[0]); close(inp[1]); close(outp[0]); close(outp[1]);
+    std::vector<char *> cargv;
+    cargv.reserve(argv.size() + 1);
+    for (const auto &s : argv) cargv.push_back(const_cast<char *>(s.c_str()));
+    cargv.push_back(nullptr);
+    execvp(cargv[0], cargv.data());
+    _exit(127);
+  }
+
+  r.launched = true;
+  close(inp[0]);
+  close(outp[1]);
+
+  size_t written = 0;
+  bool stdin_open = true;
+  if (stdin_data.empty()) { close(inp[1]); stdin_open = false; }
+
+  const double deadline = timeout_s > 0 ? t0 + (double)timeout_s : 0.0;
+  bool out_open = true;
+  std::string buf;
+  buf.reserve(1 << 20);
+  char chunk[1 << 16];
+
+  while (out_open) {
+    struct pollfd pf[2];
+    int nf = 0;
+    int i_out = -1, i_in = -1;
+    if (out_open) { pf[nf].fd = outp[0]; pf[nf].events = POLLIN; i_out = nf++; }
+    if (stdin_open) { pf[nf].fd = inp[1]; pf[nf].events = POLLOUT; i_in = nf++; }
+    int wait_ms = 1000;
+    if (deadline > 0.0) {
+      double left = deadline - now_secs();
+      if (left <= 0) {
+        kill(-pid, SIGKILL);
+        r.timed_out = true;
+        break;
+      }
+      if (left * 1000.0 < wait_ms) wait_ms = (int)(left * 1000.0) + 1;
+    }
+    int n = poll(pf, (nfds_t)nf, wait_ms);
+    if (n < 0) { if (errno == EINTR) continue; break; }
+    if (n == 0) continue;
+    if (i_in >= 0 && (pf[i_in].revents & (POLLOUT | POLLERR | POLLHUP))) {
+      size_t left = stdin_data.size() - written;
+      ssize_t w = left ? write(inp[1], stdin_data.data() + written, left > (1u << 16) ? (1u << 16) : left) : 0;
+      if (w > 0) written += (size_t)w;
+      if (w <= 0 || written >= stdin_data.size()) { close(inp[1]); stdin_open = false; }
+    }
+    if (i_out >= 0 && (pf[i_out].revents & (POLLIN | POLLERR | POLLHUP))) {
+      ssize_t rd = read(outp[0], chunk, sizeof(chunk));
+      if (rd > 0) buf.append(chunk, (size_t)rd);
+      else out_open = false;
+    }
+  }
+  if (stdin_open) close(inp[1]);
+  close(outp[0]);
+
+  int status = 0;
+  if (r.timed_out) {
+    kill(-pid, SIGKILL);
+  }
+  waitpid(pid, &status, 0);
+  r.rc = WIFEXITED(status) ? WEXITSTATUS(status) : (WIFSIGNALED(status) ? 128 + WTERMSIG(status) : -1);
+  r.out = std::move(buf);
+  r.secs = now_secs() - t0;
+  return r;
+}
+
+/* -------------------------------------------------------------------------- */
+/* git                                                                         */
+
+struct Git {
+  std::string root;
+
+  ProcResult run(const std::vector<std::string> &args,
+                 const std::string &in = "",
+                 bool merge_stderr = true,
+                 int timeout_s = 900) const
+  {
+    std::vector<std::string> argv = {"git", "-C", root};
+    argv.insert(argv.end(), args.begin(), args.end());
+    return run_process(argv, root, in, timeout_s, merge_stderr);
+  }
+
+  std::string out(const std::vector<std::string> &args) const
+  {
+    ProcResult r = run(args, "", false);
+    return r.rc == 0 ? r.out : std::string();
+  }
+
+  std::string line(const std::vector<std::string> &args) const { return trim(out(args)); }
+
+  std::string show(const std::string &rev, const std::string &path) const
+  {
+    return out({"show", rev + ":" + path});
+  }
+};
+
+/* -------------------------------------------------------------------------- */
+/* Clasificación por extensión                                                 */
+
+struct Lang {
+  const char *ext;
+  const char *name;
+};
+
+static const Lang kLangs[] = {
+    {".c", "C"},           {".cc", "C++"},        {".cpp", "C++"},       {".cxx", "C++"},
+    {".h", ".h heredada"}, {".hh", ".hh"},        {".hpp", ".hpp"},      {".hxx", ".hpp"},
+    {".py", "Python"},     {".mm", "Objective-C++"}, {".m", "Objective-C"},
+    {".glsl", "GLSL"},     {".msl", "MSL"},       {".metal", "Metal"},
+    {".sh", "shell"},      {".bash", "shell"},    {".zsh", "shell"},
+};
+
+static const char *lang_of(const std::string &path)
+{
+  size_t dot = path.find_last_of('.');
+  if (dot == std::string::npos) return nullptr;
+  std::string e = path.substr(dot);
+  for (auto &c : e) c = (char)tolower((unsigned char)c);
+  for (const Lang &l : kLangs) {
+    if (e == l.ext) return l.name;
+  }
+  return nullptr;
+}
+
+/* Lenguajes que el compilador convierte en objetos (`.o`). Para el resto,
+ * «compilado» no significa nada y preguntarlo da una respuesta falsa. */
+static bool lang_makes_objects(const std::string &lang)
+{
+  return lang == "C++" || lang == "C" || lang == "Objective-C++" || lang == "Objective-C";
+}
+
+/* Orden de presentación: primero el estándar del árbol, luego la deuda. */
+static int lang_rank(const std::string &l)
+{
+  static const std::vector<std::string> order = {
+      "C++", ".hh", ".hpp", ".h heredada", "Python", "GLSL", "Objective-C++",
+      "Objective-C", "MSL", "Metal", "C", "shell"};
+  for (size_t i = 0; i < order.size(); ++i) if (order[i] == l) return (int)i;
+  return 99;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Instantánea del árbol a un commit                                           */
+
+struct FileRec {
+  std::string path;
+  std::string lang;
+  long long lines = 0;
+  bool vendored = false;
+};
+
+struct Snapshot {
+  std::string rev;        /* hash completo */
+  std::string shortrev;   /* hash corto */
+  std::string date;       /* fecha del commit, ISO local */
+  std::string subject;
+  std::vector<FileRec> files;
+  long long tracked_total = 0;   /* ficheros versionados en total */
+  std::vector<std::string> vendored_prefixes;
+};
+
+/* Prefijos vendorizados leídos de `.gitattributes` (no escritos a mano aquí):
+ * cualquier patron marcado `linguist-vendored`. Hoy son los de `extern` y `lib`,
+ * que es justo la excepción doctrinal de LENGUAJE-CPP.md. */
+static std::vector<std::string> vendored_prefixes(const Git &git, const std::string &rev)
+{
+  std::vector<std::string> out;
+  std::string ga = git.show(rev, ".gitattributes");
+  for (const std::string &ln : split_lines(ga)) {
+    std::string t = trim(ln);
+    if (t.empty() || t[0] == '#') continue;
+    if (!contains(t, "linguist-vendored")) continue;
+    std::vector<std::string> tok = split_ws(t);
+    if (tok.empty()) continue;
+    std::string pat = tok[0];
+    while (!pat.empty() && (pat.back() == '*' || pat.back() == '/')) pat.pop_back();
+    if (!pat.empty()) out.push_back(pat + "/");
+  }
+  std::sort(out.begin(), out.end());
+  out.erase(std::unique(out.begin(), out.end()), out.end());
+  return out;
+}
+
+using ScanFn = void (*)(const std::string &path, bool vendored, const char *data, size_t n, void *ud);
+
+/* Lee el árbol a `rev` con `git ls-tree -r -z` + un solo `git cat-file --batch`.
+ * Cuenta líneas como `wc -l` (número de '\n'), que es lo que fija el §1 de
+ * METRICAS.md; la versión anterior de esta herramienta sumaba una línea de más
+ * por fichero no vacío. */
+static Snapshot take_snapshot(const Git &git,
+                              const std::string &rev,
+                              ScanFn scan = nullptr,
+                              void *scan_ud = nullptr,
+                              const std::vector<std::string> *force_prefixes = nullptr)
+{
+  Snapshot s;
+  s.rev = git.line({"rev-parse", rev});
+  s.shortrev = git.line({"rev-parse", "--short", rev});
+  s.date = git.line({"log", "-1", "--format=%cd", "--date=format:%Y-%m-%d %H:%M", rev});
+  s.subject = git.line({"log", "-1", "--format=%s", rev});
+  /* Para las series históricas se imponen los prefijos del commit de referencia: el
+   * `.gitattributes` que marca `extern` y `lib` como vendorizados se añadió a media
+   * historia, y sin imponerlos las filas viejas contarían las bibliotecas ajenas como
+   * código de Flipendo y la serie no sería comparable consigo misma. */
+  s.vendored_prefixes = force_prefixes ? *force_prefixes : vendored_prefixes(git, s.rev);
+
+  ProcResult ls = git.run({"ls-tree", "-r", "-z", s.rev}, "", false);
+  if (ls.rc != 0) return s;
+
+  std::vector<std::string> hashes;
+  std::vector<FileRec> recs;
+  size_t a = 0;
+  const std::string &b = ls.out;
+  while (a < b.size()) {
+    size_t z = b.find('\0', a);
+    if (z == std::string::npos) z = b.size();
+    std::string entry = b.substr(a, z - a);
+    a = z + 1;
+    size_t tab = entry.find('\t');
+    if (tab == std::string::npos) continue;
+    std::vector<std::string> head = split_ws(entry.substr(0, tab));
+    if (head.size() < 3 || head[1] != "blob") continue;
+    s.tracked_total++;
+    std::string path = entry.substr(tab + 1);
+    const char *lg = lang_of(path);
+    if (!lg) continue;
+    FileRec fr;
+    fr.path = path;
+    fr.lang = lg;
+    for (const std::string &p : s.vendored_prefixes) {
+      if (starts_with(path, p)) { fr.vendored = true; break; }
+    }
+    recs.push_back(fr);
+    hashes.push_back(head[2]);
+  }
+
+  std::string stdin_data;
+  stdin_data.reserve(hashes.size() * 41);
+  for (const std::string &h : hashes) { stdin_data += h; stdin_data.push_back('\n'); }
+
+  ProcResult cf = git.run({"cat-file", "--batch"}, stdin_data, /*merge_stderr=*/false);
+  const std::string &o = cf.out;
+  size_t p = 0, idx = 0;
+  while (p < o.size() && idx < recs.size()) {
+    size_t nl = o.find('\n', p);
+    if (nl == std::string::npos) break;
+    std::string hdr = o.substr(p, nl - p);
+    p = nl + 1;
+    std::vector<std::string> ht = split_ws(hdr);
+    if (ht.size() < 3) { ++idx; continue; }   /* «missing» y demás */
+    size_t size = (size_t)strtoull(ht[2].c_str(), nullptr, 10);
+    if (p + size > o.size()) break;
+    const char *data = o.data() + p;
+    long long lines = 0;
+    for (size_t i = 0; i < size; ++i) if (data[i] == '\n') ++lines;
+    recs[idx].lines = lines;
+    if (scan) scan(recs[idx].path, recs[idx].vendored, data, size, scan_ud);
+    p += size + 1;   /* el '\n' que cat-file añade detrás del contenido */
+    ++idx;
+  }
+  s.files = std::move(recs);
+  return s;
+}
+
+struct LangTotals {
+  std::map<std::string, std::pair<long long, long long>> own, vend;   /* lenguaje -> {ficheros, líneas} */
+  long long own_files = 0, own_lines = 0, vend_files = 0, vend_lines = 0;
+};
+
+static LangTotals totals_of(const Snapshot &s)
+{
+  LangTotals t;
+  for (const FileRec &f : s.files) {
+    auto &m = f.vendored ? t.vend : t.own;
+    auto &slot = m[f.lang];
+    slot.first += 1;
+    slot.second += f.lines;
+    if (f.vendored) { t.vend_files++; t.vend_lines += f.lines; }
+    else { t.own_files++; t.own_lines += f.lines; }
+  }
+  return t;
+}
+
+static long long lines_of(const LangTotals &t, const char *lang, bool own = true)
+{
+  const auto &m = own ? t.own : t.vend;
+  auto it = m.find(lang);
+  return it == m.end() ? 0 : it->second.second;
+}
+static long long files_of(const LangTotals &t, const char *lang, bool own = true)
+{
+  const auto &m = own ? t.own : t.vend;
+  auto it = m.find(lang);
+  return it == m.end() ? 0 : it->second.first;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Lo que el binario COMPILA de verdad: `build.ninja` + `CMakeCache.txt`        */
+
+struct BuildFacts {
+  bool have_ninja = false;
+  bool have_cache = false;
+  std::string ninja_path, cache_path;
+  std::set<std::string> objects;      /* rutas absolutas que son entrada de una arista `.o` */
+  std::set<std::string> mentioned;    /* rutas absolutas citadas en cualquier sitio del fichero */
+  std::map<std::string, std::string> cache;
+  long long object_edges = 0;
+};
+
+static bool looks_like_source(const std::string &p)
+{
+  return lang_of(p) != nullptr;
+}
+
+static BuildFacts read_build(const std::string &build_dir, const std::string &root_abs)
+{
+  BuildFacts b;
+  b.ninja_path = build_dir + "/build.ninja";
+  b.cache_path = build_dir + "/CMakeCache.txt";
+
+  std::ifstream cf(b.cache_path);
+  if (cf) {
+    b.have_cache = true;
+    std::string ln;
+    while (std::getline(cf, ln)) {
+      if (ln.empty() || ln[0] == '#' || ln[0] == '/') continue;
+      size_t eq = ln.find('=');
+      size_t colon = ln.find(':');
+      if (eq == std::string::npos || colon == std::string::npos || colon > eq) continue;
+      b.cache[ln.substr(0, colon)] = ln.substr(eq + 1);
+    }
+  }
+
+  std::ifstream nf(b.ninja_path);
+  if (!nf) return b;
+  b.have_ninja = true;
+  const std::string pref = root_abs + "/";
+  std::string ln;
+  while (std::getline(nf, ln)) {
+    /* Cualquier mención a una ruta del árbol, venga de donde venga. Sirve para
+     * decir «citado» sin confundirlo con «compilado»: un `-I<dir>` cita el
+     * directorio pero no compila nada de dentro. */
+    size_t pos = 0;
+    while ((pos = ln.find(pref, pos)) != std::string::npos) {
+      size_t e = pos;
+      while (e < ln.size() && !isspace((unsigned char)ln[e]) && ln[e] != ':' && ln[e] != '"') ++e;
+      std::string tok = ln.substr(pos, e - pos);
+      if (looks_like_source(tok)) b.mentioned.insert(tok);
+      pos = e;
+    }
+    if (!starts_with(ln, "build ")) continue;
+    size_t colon = ln.find(": ");
+    if (colon == std::string::npos) continue;
+    std::string outs = ln.substr(6, colon - 6);
+    if (!contains(outs, ".o")) continue;
+    b.object_edges++;
+    std::vector<std::string> tok = split_ws(ln.substr(colon + 2));
+    for (size_t i = 1; i < tok.size(); ++i) {   /* [0] es el nombre de la regla */
+      if (tok[i] == "||" || tok[i] == "|") break;
+      if (tok[i][0] == '/' && looks_like_source(tok[i])) b.objects.insert(tok[i]);
+    }
+  }
+  return b;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Zonas de Python                                                             */
+
+/* La zona es el directorio que da sentido a la pieza, no una lista escrita a
+ * mano: `scripts/startup/<zona>` a tres niveles (bl_ui y bl_operators son
+ * frentes distintos) y dos niveles en el resto. Si una zona desaparece del
+ * árbol, desaparece sola de la tabla. */
+static std::string py_zone(const std::string &path)
+{
+  std::vector<std::string> parts;
+  size_t a = 0;
+  while (a <= path.size()) {
+    size_t b = path.find('/', a);
+    if (b == std::string::npos) { parts.push_back(path.substr(a)); break; }
+    parts.push_back(path.substr(a, b - a));
+    a = b + 1;
+  }
+  if (parts.size() >= 3 && parts[0] == "scripts" && parts[1] == "startup")
+    return parts[0] + "/" + parts[1] + "/" + parts[2];
+  if (parts.size() >= 2) return parts[0] + "/" + parts[1];
+  return parts.empty() ? path : parts[0];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Puentes de C++ a Python                                                     */
+
+struct BridgePattern {
+  const char *pat;
+  const char *what;
+};
+
+static const BridgePattern kBridges[] = {
+    {"BPY_run_", "ejecutar código Python desde C++ (`BPY_run_*`)"},
+    {"PyImport_ImportModule", "importar un módulo de Python desde C++"},
+    {"PyRun_", "la API cruda de CPython (`PyRun_*`)"},
+    {"Py_Initialize", "arrancar el intérprete"},
+    {"BPY_python_start", "arrancar el intérprete (envoltorio de Blender)"},
+};
+
+struct BridgeScan {
+  std::map<std::string, long long> occ;                      /* patrón -> ocurrencias */
+  std::map<std::string, std::set<std::string>> pat_files;    /* patrón -> ficheros */
+  std::map<std::string, long long> file_calls;               /* fichero -> llamadas reales */
+  long long guard_lines = 0;                                 /* líneas `#if*` con WITH_PYTHON */
+  std::set<std::string> guard_files;
+  long long with_python_occ = 0;
+};
+
+static void bridge_scan(const std::string &path, bool vendored, const char *data, size_t n, void *ud)
+{
+  if (vendored) return;
+  const char *lg = lang_of(path);
+  if (!lg) return;
+  const std::string l = lg;
+  if (l == "Python" || l == "GLSL" || l == "MSL" || l == "Metal" || l == "shell") return;
+
+  BridgeScan &bs = *(BridgeScan *)ud;
+  for (const BridgePattern &bp : kBridges) {
+    long long c = count_occ(data, n, bp.pat);
+    if (c) {
+      bs.occ[bp.pat] += c;
+      bs.pat_files[bp.pat].insert(path);
+      bs.file_calls[path] += c;
+    }
+  }
+  long long wp = count_occ(data, n, "WITH_PYTHON");
+  if (!wp) return;
+  bs.with_python_occ += wp;
+
+  /* `#ifdef WITH_PYTHON` (con las variantes indentadas del preprocesador) es la
+   * marca de «aquí hay capacidad que solo existe si se compila con Python». */
+  size_t start = 0;
+  while (start < n) {
+    const char *nlp = (const char *)memchr(data + start, '\n', n - start);
+    size_t end = nlp ? (size_t)(nlp - data) : n;
+    std::string ln(data + start, end - start);
+    start = end + 1;
+    if (!contains(ln, "WITH_PYTHON")) continue;
+    std::string t = trim(ln);
+    if (t.empty() || t[0] != '#') continue;
+    std::string rest = trim(t.substr(1));
+    if (starts_with(rest, "if") || starts_with(rest, "elif")) {
+      bs.guard_lines++;
+      bs.guard_files.insert(path);
+    }
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Evolución sacada del historial                                              */
+
+struct HistPoint {
+  std::string rev, shortrev, when;
+  long long py_files = 0, py_lines = 0;
+  long long cpp = 0, mm = 0, glsl = 0, h = 0, hpp = 0, c = 0;
+  long long own_lines = 0;
+};
+
+struct Commit {
+  std::string hash;
+  long long ts = 0;
+  std::string day;    /* YYYY-MM-DD */
+  std::string hour;   /* YYYY-MM-DD HH */
+};
+
+static std::vector<Commit> commit_list(const Git &git, const std::string &rev)
+{
+  std::vector<Commit> out;
+  std::string s = git.out({"log", "--first-parent", "--format=%H %ct %cd",
+                           "--date=format:%Y-%m-%d %H", rev});
+  for (const std::string &ln : split_lines(s)) {
+    std::vector<std::string> t = split_ws(ln);
+    if (t.size() < 4) continue;
+    Commit c;
+    c.hash = t[0];
+    c.ts = strtoll(t[1].c_str(), nullptr, 10);
+    c.day = t[2];
+    c.hour = t[2] + " " + t[3];
+    out.push_back(c);
+  }
+  return out;   /* del más nuevo al más viejo */
+}
+
+static HistPoint measure_point(const Git &git, const std::string &rev,
+                               const std::vector<std::string> &prefixes)
+{
+  Snapshot s = take_snapshot(git, rev, nullptr, nullptr, &prefixes);
+  LangTotals t = totals_of(s);
+  HistPoint h;
+  h.rev = s.rev;
+  h.shortrev = s.shortrev;
+  h.when = s.date;
+  h.py_files = files_of(t, "Python");
+  h.py_lines = lines_of(t, "Python");
+  h.cpp = lines_of(t, "C++");
+  h.mm = lines_of(t, "Objective-C++");
+  h.glsl = lines_of(t, "GLSL");
+  h.h = lines_of(t, ".h heredada");
+  h.hpp = lines_of(t, ".hpp");
+  h.c = lines_of(t, "C");
+  h.own_lines = t.own_lines;
+  return h;
+}
+
+/* -------------------------------------------------------------------------- */
+/* La batería de verificadores del binario                                     */
+
+struct Verifier {
+  std::string flag;        /* --fl-check-keymap */
+  std::string label;       /* lo que se imprime (puede llevar variante) */
+  std::string kind;        /* "check" o "selftest" */
+  std::string doc;         /* doc string tal cual está en creator_args.cc */
+  std::vector<std::string> args;
+  std::vector<std::string> baselines;   /* para los selftest: con qué comparar el volcado */
+  std::string out_file;                 /* volcado del selftest, si lo hay */
+  bool gui = false;
+  std::string gui_reason;
+
+  /* resultado */
+  bool ran = false;
+  int rc = -1;
+  bool timed_out = false;
+  double secs = 0;
+  std::string mode;       /* "background" | "grafico" */
+  std::string verdict;    /* VERDE | ROJO | SIN LINEA BASE | NO EJECUTADO */
+  std::string detail;
+  std::string baseline_used;
+};
+
+/* Extrae el doc string de un argumento: `arg_handle_fl_<x>_doc[] = "..." "...";` */
+static std::string doc_of(const std::string &src, const std::string &flag)
+{
+  std::string name = flag.substr(2);                 /* fl-check-keymap */
+  for (auto &c : name) if (c == '-') c = '_';        /* fl_check_keymap */
+  std::string needle = "arg_handle_" + name + "_doc[]";
+  size_t p = src.find(needle);
+  if (p == std::string::npos) return "";
+  size_t eq = src.find('=', p);
+  if (eq == std::string::npos) return "";
+  size_t end = src.find(';', eq);
+  if (end == std::string::npos) return "";
+  std::string body = src.substr(eq + 1, end - eq - 1);
+  std::string out;
+  bool in_str = false;
+  for (size_t i = 0; i < body.size(); ++i) {
+    char c = body[i];
+    if (!in_str) { if (c == '"') in_str = true; continue; }
+    if (c == '"') { in_str = false; continue; }
+    if (c == '\\' && i + 1 < body.size()) {
+      char n = body[++i];
+      if (n == 'n') out.push_back('\n');
+      else if (n == 't') out.push_back('\t');
+      else out.push_back(n);
+      continue;
+    }
+    out.push_back(c);
+  }
+  return out;
+}
+
+/* Receta para los verificadores cuyo doc string no basta para saber cómo se
+ * invocan. Cada una está MEDIDA ejecutándola el 2026-09-11 contra el binario del
+ * árbol, no deducida: el comentario dice qué se observó. `@out` es un fichero
+ * temporal que escribe esta herramienta. */
+struct Recipe {
+  const char *flag;
+  const char *args;        /* separados por '|', "@out" = temporal */
+  const char *baselines;   /* separados por '|', el primero es el preferente */
+  int gui;                 /* 1 = necesita modo gráfico */
+  const char *gui_reason;
+};
+
+static const Recipe kRecipes[] = {
+    /* Escriben un informe; el veredicto lo da el código de salida. */
+    {"--fl-check-presets", "scripts/presets|@out", "", 0, ""},
+    {"--fl-check-keyconfig-io", "@out", "", 0, ""},
+    {"--fl-check-keymap-menus", "", "", 0, ""},
+    /* El catálogo de herramientas vive en `toolsystem/`, no en `tools/`: la
+     * convención de nombres no lo encuentra y sin línea base este comprobador
+     * SALE CON 0 aunque no haya comprobado nada (verde falso, medido). */
+    {"--fl-check-tools", "@baseline", "tests/flipendo/toolsystem/baseline-python.txt", 0, ""},
+    /* El keymap por defecto NO se carga en --background (REGLAMENTO): la
+     * comparación de verdad va en modo gráfico. */
+    {"--fl-check-keymap", "@baseline", "tests/flipendo/keymap/baseline-python.txt", 1,
+     "el keymap por defecto no se carga en --background"},
+    /* Los seis operadores de `wm` vuelcan a fichero y se comparan aquí. Las
+     * líneas base se identificaron comparando el volcado byte a byte contra
+     * todos los `.txt` de tests/flipendo. */
+    {"--fl-selftest-context-ops", "@out", "tests/flipendo/operators/execution-python.txt", 1,
+     "en --background no escribe nada: necesita un editor real"},
+    {"--fl-selftest-wm-property-ops", "@out", "tests/flipendo/operators/properties-python.txt", 1,
+     "en --background no escribe nada: necesita un editor real"},
+    {"--fl-selftest-wm-system-ops", "@out", "tests/flipendo/operators/system-python.txt", 0, ""},
+    {"--fl-selftest-wm-owner-ops", "@out", "tests/flipendo/operators/owner-python.txt", 0, ""},
+    {"--fl-selftest-wm-properties-edit", "@out",
+     "tests/flipendo/operators/properties-edit-native.txt", 0, ""},
+    {"--fl-selftest-wm-batch-rename", "@out",
+     "tests/flipendo/operators/batch-rename-native.txt", 0, ""},
+    /* Informe de cifras, sin línea base congelada en el árbol. */
+    {"--fl-selftest-keyconfig", "@out", "", 0, ""},
+    /* El volcado de C++ NO es byte a byte igual al de Python: difiere en el
+     * último dígito de varios flotantes (la acumulación va en paralelo, ver la
+     * lección de las 03:50 del REGLAMENTO). La línea base verificada del árbol
+     * es la segunda; si coincide con esa y no con la de Python, se dice. */
+    {"--fl-selftest-object-ops", "@out",
+     "tests/flipendo/objectops/baseline-python.txt|tests/flipendo/objectops/run-cpp-verified.txt",
+     0, ""},
+};
+
+static const Recipe *recipe_for(const std::string &flag)
+{
+  for (const Recipe &r : kRecipes) if (flag == r.flag) return &r;
+  return nullptr;
+}
+
+static std::vector<std::string> split_pipe(const std::string &s)
+{
+  std::vector<std::string> out;
+  size_t a = 0;
+  while (a <= s.size()) {
+    size_t b = s.find('|', a);
+    if (b == std::string::npos) { if (a < s.size()) out.push_back(s.substr(a)); break; }
+    out.push_back(s.substr(a, b - a));
+    a = b + 1;
+  }
+  return out;
+}
+
+/* Primera ruta `tests/flipendo/...` citada por el propio doc string. */
+static std::string baseline_in_doc(const std::string &doc, const std::string &root)
+{
+  size_t p = doc.find("tests/flipendo/");
+  if (p == std::string::npos) return "";
+  size_t e = p;
+  while (e < doc.size() && !isspace((unsigned char)doc[e]) && doc[e] != '`' && doc[e] != ',') ++e;
+  std::string path = doc.substr(p, e - p);
+  while (!path.empty() && (path.back() == '.' || path.back() == ')')) path.pop_back();
+  return fs::exists(root + "/" + path) ? path : std::string();
+}
+
+/* Convención: `--fl-check-mesh-ops` -> `tests/flipendo/meshops/`, y si no existe
+ * se van soltando segmentos por la derecha (`rigidbody-ops` -> `rigidbody`). */
+static std::string baseline_by_convention(const std::string &flag, const std::string &root)
+{
+  size_t dash = flag.find("check-");
+  size_t off = dash != std::string::npos ? dash + 6 : flag.find("selftest-") + 9;
+  std::string name = flag.substr(off);
+  std::vector<std::string> segs;
+  size_t a = 0;
+  while (a <= name.size()) {
+    size_t b = name.find('-', a);
+    if (b == std::string::npos) { segs.push_back(name.substr(a)); break; }
+    segs.push_back(name.substr(a, b - a));
+    a = b + 1;
+  }
+  for (size_t keep = segs.size(); keep >= 1; --keep) {
+    std::string dir;
+    for (size_t i = 0; i < keep; ++i) dir += segs[i];
+    std::string cand = "tests/flipendo/" + dir + "/baseline-python.txt";
+    if (fs::exists(root + "/" + cand)) return cand;
+  }
+  return "";
+}
+
+/* Los verificadores se descubren en el árbol, no se escriben aquí: se leen las
+ * cadenas `"--fl-..."` de creator_args.cc, que es donde `BLI_args_add` los
+ * registra. Si mañana hay uno más, aparece solo. */
+static std::vector<std::string> discover_flags(const std::string &src, const std::string &kind)
+{
+  std::set<std::string> found;
+  std::string needle = "\"--fl-" + kind + "-";
+  size_t p = 0;
+  while ((p = src.find(needle, p)) != std::string::npos) {
+    size_t a = p + 1;
+    size_t e = src.find('"', a);
+    if (e == std::string::npos) break;
+    found.insert(src.substr(a, e - a));
+    p = e;
+  }
+  return std::vector<std::string>(found.begin(), found.end());
+}
+
+static bool read_file(const std::string &p, std::string &out)
+{
+  std::ifstream f(p, std::ios::binary);
+  if (!f) return false;
+  out.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+  return true;
+}
+
+/* Compara dos ficheros como `cmp`, y si difieren dice en qué línea. */
+static bool same_file(const std::string &a, const std::string &b, std::string &why)
+{
+  std::string x, y;
+  if (!read_file(a, x)) { why = "no se pudo leer el volcado"; return false; }
+  if (!read_file(b, y)) { why = "no existe la linea base"; return false; }
+  if (x == y) return true;
+  std::vector<std::string> lx = split_lines(x), ly = split_lines(y);
+  for (size_t i = 0; i < std::max(lx.size(), ly.size()); ++i) {
+    std::string a1 = i < lx.size() ? lx[i] : "<no hay linea>";
+    std::string b1 = i < ly.size() ? ly[i] : "<no hay linea>";
+    if (a1 != b1) {
+      if (a1.size() > 90) a1 = a1.substr(0, 90) + "...";
+      if (b1.size() > 90) b1 = b1.substr(0, 90) + "...";
+      why = sfmt("linea %zu: obtenido `%s` / linea base `%s`", i + 1, a1.c_str(), b1.c_str());
+      return false;
+    }
+  }
+  why = "difieren en el final del fichero";
+  return false;
+}
+
+/* Ruido que el binario escribe por su cuenta y que no es el parte del
+ * verificador: el saludo, el audio, y las excepciones de los add-ons instalados
+ * (que se cuelan DESPUÉS del parte y se llevaban el sitio de la cifra buena). */
+static bool is_noise_line(const std::string &t)
+{
+  return starts_with(t, "Blender 4.5") || t == "Blender quit" || contains(t, "ALSA lib") ||
+         starts_with(t, "AL lib") || contains(t, "Exception in module register()") ||
+         starts_with(t, "Traceback") || starts_with(t, "File \"") || starts_with(t, "ModuleNotFoundError") ||
+         starts_with(t, "Warning:") || contains(t, "Read prefs:");
+}
+
+/* El parte del verificador se reconoce solo: lo escriben todos con su nombre o
+ * con las cifras de la comparación. */
+static bool is_report_line(const std::string &t)
+{
+  return contains(t, "fl-check") || contains(t, "fl-selftest") || contains(t, "FL-") ||
+         contains(t, "identic") || contains(t, "distint") || contains(t, "comparad") ||
+         contains(t, "aplicados") || contains(t, "linea base") || contains(t, "TOTAL");
+}
+
+static std::string meaningful_tail(const std::string &out)
+{
+  std::vector<std::string> ls = split_lines(out);
+  auto clip = [](std::string t) {
+    if (t.size() > 150) t = t.substr(0, 150) + "...";
+    return t;
+  };
+  for (size_t i = ls.size(); i-- > 0;) {
+    std::string t = trim(ls[i]);
+    if (t.empty() || is_noise_line(t)) continue;
+    if (is_report_line(t)) return clip(t);
+  }
+  for (size_t i = ls.size(); i-- > 0;) {
+    std::string t = trim(ls[i]);
+    if (t.empty() || is_noise_line(t)) continue;
+    return clip(t);
+  }
+  return "";
+}
+
+struct Battery {
+  std::vector<Verifier> v;
+  long long green = 0, red = 0, unstable = 0, nobase = 0, skipped = 0;
+  long long dumpers = 0;        /* --fl-dump-*, no dan veredicto */
+  long long converters = 0;     /* el resto de --fl-* */
+  long long fl_args_total = 0;
+  long long distinct_flags = 0; /* banderas check/selftest distintas (sin variantes) */
+  long long n_checks = 0, n_selfs = 0;
+  double secs = 0;
+  bool ran_gui = false;
+  std::string binary;
+};
+
+static Battery run_battery(const std::string &root,
+                           const std::string &binary,
+                           const std::string &creator_src,
+                           bool do_gui)
+{
+  Battery bat;
+  bat.binary = binary;
+
+  std::vector<std::string> checks = discover_flags(creator_src, "check");
+  std::vector<std::string> selfs = discover_flags(creator_src, "selftest");
+  {
+    std::set<std::string> all;
+    size_t p = 0;
+    while ((p = creator_src.find("\"--fl-", p)) != std::string::npos) {
+      size_t a = p + 1, e = creator_src.find('"', a);
+      if (e == std::string::npos) break;
+      all.insert(creator_src.substr(a, e - a));
+      p = e;
+    }
+    bat.fl_args_total = (long long)all.size();
+    for (const std::string &f : all) {
+      if (starts_with(f, "--fl-dump-")) bat.dumpers++;
+      else if (!starts_with(f, "--fl-check-") && !starts_with(f, "--fl-selftest-")) bat.converters++;
+    }
+  }
+
+  std::string tmpdir = sfmt("%s/flipendo-estado-%d",
+                            getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp", (int)getpid());
+  while (!tmpdir.empty() && tmpdir.find("//") != std::string::npos)
+    tmpdir.erase(tmpdir.find("//"), 1);
+  std::error_code ec;
+  fs::create_directories(tmpdir, ec);
+
+  auto make = [&](const std::string &flag, const std::string &kind) {
+    Verifier v;
+    v.flag = flag;
+    v.label = flag;
+    v.kind = kind;
+    v.doc = doc_of(creator_src, flag);
+    const Recipe *r = recipe_for(flag);
+    std::string tmpname = flag.substr(2);
+    for (auto &c : tmpname) if (c == '-') c = '_';
+    v.out_file = tmpdir + "/" + tmpname + ".txt";
+
+    if (r) {
+      if (r->gui) { v.gui = true; v.gui_reason = r->gui_reason; }
+      for (const std::string &bl : split_pipe(r->baselines)) if (!bl.empty()) v.baselines.push_back(bl);
+      for (const std::string &a : split_pipe(r->args)) {
+        if (a == "@out") v.args.push_back(v.out_file);
+        else if (a == "@baseline") v.args.push_back(root + "/" + (v.baselines.empty() ? "" : v.baselines[0]));
+        else v.args.push_back(a);
+      }
+    }
+    else {
+      std::string bl = baseline_in_doc(v.doc, root);
+      if (bl.empty()) bl = baseline_by_convention(flag, root);
+      if (!bl.empty()) v.baselines.push_back(bl);
+      if (kind == "check") {
+        if (!bl.empty()) v.args.push_back(root + "/" + bl);
+      }
+      else {
+        v.args.push_back(v.out_file);
+      }
+    }
+    /* El propio doc string dice cuándo hace falta pantalla. */
+    if (!v.gui && (contains(v.doc, "modo grafico") || contains(v.doc, "modo gráfico"))) {
+      v.gui = true;
+      v.gui_reason = "lo dice su propia ayuda en creator_args.cc";
+    }
+    return v;
+  };
+
+  for (const std::string &f : checks) bat.v.push_back(make(f, "check"));
+  for (const std::string &f : selfs) bat.v.push_back(make(f, "selftest"));
+  bat.n_checks = (long long)checks.size();
+  bat.n_selfs = (long long)selfs.size();
+  bat.distinct_flags = bat.n_checks + bat.n_selfs;
+
+  /* `--fl-check-ui` admite las dos líneas base (registro y dibujo) y lo decide la
+   * marca de la primera línea del fichero: son dos comprobaciones distintas, y la
+   * de dibujo necesita pantalla. Se duplica la entrada para que el informe no
+   * esconda la mitad. */
+  for (size_t i = 0; i < bat.v.size(); ++i) {
+    if (bat.v[i].flag != "--fl-check-ui") continue;
+    const std::string layout = "tests/flipendo/ui/baseline-python-layout.txt";
+    if (!fs::exists(root + "/" + layout)) break;
+    Verifier extra = bat.v[i];
+    bat.v[i].label = "--fl-check-ui (registro)";
+    bat.v[i].baselines = {"tests/flipendo/ui/baseline-python.txt"};
+    bat.v[i].args = {root + "/tests/flipendo/ui/baseline-python.txt"};
+    extra.label = "--fl-check-ui (dibujo)";
+    extra.baselines = {layout};
+    extra.args = {root + "/" + layout};
+    extra.gui = true;
+    extra.gui_reason = "el volcado de dibujo necesita una ventana real";
+    bat.v.push_back(extra);
+    break;
+  }
+
+  std::sort(bat.v.begin(), bat.v.end(), [](const Verifier &a, const Verifier &b) {
+    if (a.gui != b.gui) return !a.gui;
+    if (a.kind != b.kind) return a.kind < b.kind;
+    return a.label < b.label;
+  });
+
+  /* Ejecuta UNA vez y deja el veredicto en `v`. No cuenta nada: contar es del
+   * bucle, porque un rojo se repite antes de darlo por rojo. */
+  auto execute = [&](Verifier &v) {
+    std::remove(v.out_file.c_str());
+    std::vector<std::string> argv = {binary};
+    if (!v.gui) argv.push_back("--background");
+    argv.push_back("--factory-startup");
+    argv.push_back(v.flag);
+    for (const std::string &a : v.args) argv.push_back(a);
+
+    ProcResult r = run_process(argv, root, "", 900);
+    v.ran = true;
+    v.rc = r.rc;
+    v.timed_out = r.timed_out;
+    v.secs = r.secs;
+    v.mode = v.gui ? "grafico" : "background";
+    v.detail = meaningful_tail(r.out);
+
+    if (r.timed_out) {
+      v.verdict = "ROJO";
+      v.detail = "se pasó del tiempo máximo (900 s) y hubo que matarlo";
+      return;
+    }
+    /* Trampa medida: un verificador al que le falta su argumento imprime el
+     * error y SALE CON 0. Darlo por verde sería mentir. */
+    if (contains(v.detail, "falta la linea base") || contains(v.detail, "falta el fichero")) {
+      v.verdict = "SIN LINEA BASE";
+      v.detail = "no se le pudo resolver la linea base: " + v.detail;
+      return;
+    }
+    if (v.kind == "check") {
+      /* El comprobador compara él mismo y sale con EXIT_FAILURE si no cuadra. */
+      v.baseline_used = v.baselines.empty() ? "" : v.baselines[0];
+      v.verdict = r.rc == 0 ? "VERDE" : "ROJO";
+      return;
+    }
+    /* Un `--fl-selftest-*` es un VOLCADOR, no una prueba: escribe el fichero y
+     * sale con 0 aunque no haya escrito nada (medido: sin argumento imprime
+     * «falta el fichero de salida» y devuelve 0 igual). El veredicto se saca
+     * comparando el volcado con su línea base, que es lo que hace su
+     * `--fl-check-*` hermano cuando existe. */
+    std::string dump;
+    if (!(read_file(v.out_file, dump) && !dump.empty())) {
+      v.verdict = "ROJO";
+      if (v.detail.empty()) v.detail = "no escribió volcado";
+      return;
+    }
+    long long dump_lines = 0;
+    for (char c : dump) if (c == '\n') ++dump_lines;
+    if (v.baselines.empty()) {
+      v.verdict = "SIN LINEA BASE";
+      v.detail = sfmt("informe de %lld lineas; no hay linea base congelada en el arbol", dump_lines);
+      return;
+    }
+    std::string why;
+    for (size_t i = 0; i < v.baselines.size(); ++i) {
+      std::string w;
+      if (same_file(v.out_file, root + "/" + v.baselines[i], w)) {
+        v.verdict = "VERDE";
+        v.baseline_used = v.baselines[i];
+        v.detail = sfmt("%lld lineas identicas a %s", dump_lines, v.baselines[i].c_str());
+        if (i > 0)
+          v.detail += sfmt(" (NO a la preferente %s: %s)", v.baselines[0].c_str(), why.c_str());
+        return;
+      }
+      if (i == 0) why = w;
+    }
+    v.verdict = "ROJO";
+    v.baseline_used = v.baselines[0];
+    v.detail = why;
+  };
+
+  const double t0 = now_secs();
+  for (Verifier &v : bat.v) {
+    if (v.gui && !do_gui) {
+      v.verdict = "NO EJECUTADO";
+      v.detail = "grupo gráfico desactivado (--sin-grafico)";
+      bat.skipped++;
+      continue;
+    }
+    execute(v);
+    /* «Si un volcado no se reproduce a sí mismo, no es una línea base»
+     * (REGLAMENTO, lección de las 03:50: el cálculo de normales no es
+     * determinista). Un rojo se repite antes de firmarlo: si la segunda pasada
+     * sale verde, lo que hay no es un fallo, es un verificador INESTABLE, y eso
+     * se dice con esas palabras en vez de esconderlo en un rojo o en un verde. */
+    /* Un verificador lento no se repite tres veces: `--fl-check-ui` de dibujo
+     * tarda minutos y triplicarlo convertiría la batería en media hora. Si es
+     * lento, el rojo se firma con una sola pasada y el informe lo dice. */
+    if (v.verdict == "ROJO" && v.secs > 60.0) {
+      v.detail += sfmt("  [una sola pasada: tarda %.0f s y no se repite]", v.secs);
+    }
+    else if (v.verdict == "ROJO") {
+      const std::string first = v.detail;
+      const double first_secs = v.secs;
+      long long fails = 1;
+      std::string last_green;
+      for (int pass = 2; pass <= 3; ++pass) {
+        execute(v);
+        if (v.verdict == "ROJO") fails++;
+        else last_green = v.detail;
+      }
+      v.secs += first_secs;
+      if (fails == 3) {
+        v.verdict = "ROJO";
+        v.detail = first + "  [reproducido en las 3 pasadas]";
+      }
+      else {
+        v.verdict = "INESTABLE";
+        v.detail = sfmt("falla %lld de 3 pasadas con el mismo binario y la misma escena. "
+                        "Pasada en rojo: %s. Pasada en verde: %s",
+                        fails, first.c_str(),
+                        last_green.empty() ? "(sin detalle)" : last_green.c_str());
+      }
+    }
+    if (v.verdict == "VERDE") bat.green++;
+    else if (v.verdict == "ROJO") bat.red++;
+    else if (v.verdict == "INESTABLE") bat.unstable++;
+    else bat.nobase++;
+  }
+  bat.secs = now_secs() - t0;
+  bat.ran_gui = do_gui;
+  fs::remove_all(tmpdir, ec);
+  return bat;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Auditoría de lo que afirman los documentos                                  */
+
+struct DocFinding {
+  std::string doc, said, measured, how;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Modo antiguo: recorrer el disco                                             */
+
+static int walk_disk(const std::string &root)
+{
+  std::map<std::string, std::pair<long long, long long>> maint, vend;
   std::error_code ec;
   for (auto it = fs::recursive_directory_iterator(root, fs::directory_options::skip_permission_denied, ec);
        it != fs::recursive_directory_iterator(); it.increment(ec)) {
     if (ec) break;
     if (!it->is_regular_file(ec)) continue;
     const fs::path &p = it->path();
-    std::string e = p.extension().string();
-    std::transform(e.begin(), e.end(), e.begin(), ::tolower);
-    auto l = lang.find(e);
-    if (l == lang.end()) continue;
+    const char *lg = lang_of(p.string());
+    if (!lg) continue;
     std::string sp = p.string();
-    // Terceros vendorizados: `extern/` y `lib/`, tal y como los marca
-    // .gitattributes:107-108 (linguist-vendored) y los define la «Decisión del
-    // 2026-09-11» de politicas/LENGUAJE-CPP.md. La versión anterior solo
-    // separaba `extern/` y metía `lib/` en el saco de Flipendo.
-    bool is_vendored = sp.find("/extern/") != std::string::npos ||
-                       sp.find("/lib/") != std::string::npos;
-    auto &tgt = is_vendored ? vend : maint;
-    auto &slot = tgt[l->second];
+    bool is_vendored = contains(sp, "/extern/") || contains(sp, "/lib/");
+    std::ifstream f(p, std::ios::binary);
+    long long n = 0;
+    char c;
+    while (f.get(c)) if (c == '\n') ++n;
+    auto &slot = (is_vendored ? vend : maint)[lg];
     slot.first += 1;
-    slot.second += count_lines(p);
+    slot.second += n;
   }
-  auto dump = [](const char *title, std::map<std::string,std::pair<long long,long long>> &m) {
+  auto dump = [](const char *title, std::map<std::string, std::pair<long long, long long>> &m) {
     long long tf = 0, tl = 0;
     std::printf("\n=== %s ===\n%-16s %8s %12s\n", title, "lenguaje", "ficheros", "lineas");
     for (auto &kv : m) {
       std::printf("%-16s %8lld %12lld\n", kv.first.c_str(), kv.second.first, kv.second.second);
-      tf += kv.second.first; tl += kv.second.second;
+      tf += kv.second.first;
+      tl += kv.second.second;
     }
     std::printf("%-16s %8lld %12lld\n", "TOTAL", tf, tl);
   };
   dump("Flipendo mantenido (sin extern/ ni lib/)", maint);
   dump("Vendorizado (extern/ + lib/)", vend);
+  return 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Informe                                                                     */
+
+static std::string today_local()
+{
+  time_t t = time(nullptr);
+  struct tm lt;
+  localtime_r(&t, &lt);
+  char buf[64];
+  strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M", &lt);
+  return buf;
+}
+
+struct Options {
+  std::string root = ".";
+  std::string rev = "HEAD";
+  std::string build;
+  std::string binary;
+  std::string out;
+  bool estado = false, bateria_only = false, disco = false;
+  bool run_bateria = true, run_gui = true;
+};
+
+static void emit_lang_table(std::string &r,
+                            const std::map<std::string, std::pair<long long, long long>> &m,
+                            long long total_lines)
+{
+  std::vector<std::pair<std::string, std::pair<long long, long long>>> rows(m.begin(), m.end());
+  std::sort(rows.begin(), rows.end(), [](const auto &a, const auto &b) {
+    int ra = lang_rank(a.first), rb = lang_rank(b.first);
+    if (ra != rb) return ra < rb;
+    return a.second.second > b.second.second;
+  });
+  r += "| Lenguaje | Ficheros | Líneas | % |\n|---|---:|---:|---:|\n";
+  for (const auto &kv : rows) {
+    r += sfmt("| %s | %s | %s | %s |\n", kv.first.c_str(), mil(kv.second.first).c_str(),
+              mil(kv.second.second).c_str(), pct(kv.second.second, total_lines).c_str());
+  }
+}
+
+int main(int argc, char **argv)
+{
+  signal(SIGPIPE, SIG_IGN);
+  Options op;
+  std::vector<std::string> pos;
+  for (int i = 1; i < argc; ++i) {
+    std::string a = argv[i];
+    auto next = [&]() -> std::string { return i + 1 < argc ? argv[++i] : std::string(); };
+    if (a == "--estado") op.estado = true;
+    else if (a == "--bateria" || a == "--batería") { op.bateria_only = true; }
+    else if (a == "--sin-bateria" || a == "--sin-batería") op.run_bateria = false;
+    else if (a == "--sin-grafico" || a == "--sin-gráfico") op.run_gui = false;
+    else if (a == "--disco") op.disco = true;
+    else if (a == "--rev") op.rev = next();
+    else if (a == "--build") op.build = next();
+    else if (a == "--binario") op.binary = next();
+    else if (a == "--salida") op.out = next();
+    else if (a == "-h" || a == "--ayuda" || a == "--help") {
+      std::printf(
+          "flipendo-metrics — el estado de Flipendo, medido desde el arbol.\n\n"
+          "  flipendo-metrics [raiz]              tabla de composicion (git, al commit)\n"
+          "  flipendo-metrics --estado [raiz]     informe completo -> politicas/ESTADO.md\n"
+          "  flipendo-metrics --bateria [raiz]    solo los verificadores del binario\n\n"
+          "  --rev <commit>   medir a otro commit (por defecto HEAD)\n"
+          "  --sin-bateria    no ejecutar los verificadores\n"
+          "  --sin-grafico    no ejecutar el grupo que necesita pantalla\n"
+          "  --disco          recorrer el disco en vez de git (no reproducible)\n"
+          "  --build <dir>    arbol de compilacion (por defecto <raiz>/../build)\n"
+          "  --binario <ruta> binario a verificar\n"
+          "  --salida <ruta>  donde escribir el informe\n");
+      return 0;
+    }
+    else pos.push_back(a);
+  }
+  if (!pos.empty()) op.root = pos[0];
+
+  std::error_code ec;
+  fs::path rootp = fs::canonical(op.root, ec);
+  if (ec) { std::fprintf(stderr, "No existe la raiz '%s'\n", op.root.c_str()); return 2; }
+  const std::string root = rootp.string();
+
+  if (op.disco) return walk_disk(root);
+
+  Git git{root};
+  if (git.line({"rev-parse", "--git-dir"}).empty()) {
+    std::fprintf(stderr, "'%s' no es un arbol de git; usa --disco si de verdad quieres el disco.\n",
+                 root.c_str());
+    return 2;
+  }
+  if (op.build.empty()) op.build = (rootp.parent_path() / "build").string();
+  if (op.binary.empty())
+    op.binary = op.build + "/bin/Blender.app/Contents/MacOS/Blender";
+  if (op.out.empty()) op.out = root + "/politicas/ESTADO.md";
+
+  /* ---- medición ---- */
+  BridgeScan bs;
+  Snapshot snap = take_snapshot(git, op.rev, bridge_scan, &bs);
+  if (snap.files.empty()) { std::fprintf(stderr, "No se pudo leer el arbol a '%s'\n", op.rev.c_str()); return 2; }
+  LangTotals tot = totals_of(snap);
+
+  if (!op.estado && !op.bateria_only) {
+    std::printf("\n=== Flipendo a %s (%s) ===\n", snap.shortrev.c_str(), snap.date.c_str());
+    std::printf("\n--- codigo propio (sin los vendorizados) ---\n%-16s %8s %12s\n",
+                "lenguaje", "ficheros", "lineas");
+    for (const auto &kv : tot.own)
+      std::printf("%-16s %8lld %12lld\n", kv.first.c_str(), kv.second.first, kv.second.second);
+    std::printf("%-16s %8lld %12lld\n", "TOTAL", tot.own_files, tot.own_lines);
+    std::printf("\n--- terceros vendorizados ---\n");
+    for (const auto &kv : tot.vend)
+      std::printf("%-16s %8lld %12lld\n", kv.first.c_str(), kv.second.first, kv.second.second);
+    std::printf("%-16s %8lld %12lld\n", "TOTAL", tot.vend_files, tot.vend_lines);
+    std::printf("\n(informe completo: flipendo-metrics --estado %s)\n", op.root.c_str());
+    return 0;
+  }
+
+  std::string creator_src = git.show(snap.rev, "source/creator/creator_args.cc");
+  const bool have_binary = fs::exists(op.binary);
+  Battery bat;
+  if ((op.run_bateria || op.bateria_only) && have_binary && !creator_src.empty())
+    bat = run_battery(root, op.binary, creator_src, op.run_gui);
+
+  if (op.bateria_only) {
+    std::printf("\n=== bateria de verificadores (%s) ===\n", snap.shortrev.c_str());
+    for (const Verifier &v : bat.v)
+      std::printf("%-34s %-13s %-11s %5.1fs  %s\n", v.label.c_str(), v.verdict.c_str(),
+                  v.mode.c_str(), v.secs, v.detail.c_str());
+    std::printf("\nverde %lld · rojo %lld · inestable %lld · sin linea base %lld · "
+                "no ejecutados %lld · %.0f s\n",
+                bat.green, bat.red, bat.unstable, bat.nobase, bat.skipped, bat.secs);
+    return bat.red == 0 ? 0 : 1;
+  }
+
+  BuildFacts build = read_build(op.build, root);
+
+  /* ---- historia ---- */
+  std::vector<Commit> commits = commit_list(git, snap.rev);
+  std::vector<HistPoint> daily, hourly;
+  {
+    std::set<std::string> seen_day;
+    std::vector<std::string> day_revs;
+    for (const Commit &c : commits) {   /* del más nuevo al más viejo */
+      if (seen_day.insert(c.day).second) day_revs.push_back(c.hash);
+    }
+    std::reverse(day_revs.begin(), day_revs.end());
+    /* El primer commit del repositorio es la línea base y tiene que salir. */
+    if (!commits.empty()) {
+      const std::string first = commits.back().hash;
+      if (std::find(day_revs.begin(), day_revs.end(), first) == day_revs.end())
+        day_revs.insert(day_revs.begin(), first);
+    }
+    for (const std::string &r : day_revs) daily.push_back(measure_point(git, r, snap.vendored_prefixes));
+
+    std::set<std::string> seen_hour;
+    std::vector<std::string> hour_revs;
+    const std::string last_day = commits.empty() ? "" : commits.front().day;
+    for (const Commit &c : commits) {
+      if (c.day != last_day) break;
+      if (seen_hour.insert(c.hour).second) hour_revs.push_back(c.hash);
+    }
+    std::reverse(hour_revs.begin(), hour_revs.end());
+    for (const std::string &r : hour_revs) hourly.push_back(measure_point(git, r, snap.vendored_prefixes));
+  }
+
+  /* ---- shell por *shebang*, no por extensión ---- */
+  std::vector<std::string> shebang_files;
+  {
+    ProcResult r = git.run({"grep", "-l", "-I", "-E", "^#!.*(bash|/bin/sh|zsh|ksh)", snap.rev, "--", "*"},
+                           "", false);
+    for (const std::string &ln : split_lines(r.out)) {
+      std::string p = trim(ln);
+      size_t c = p.find(':');
+      if (c != std::string::npos) p = p.substr(c + 1);
+      if (p.empty()) continue;
+      bool vend = false;
+      for (const std::string &pre : snap.vendored_prefixes) if (starts_with(p, pre)) vend = true;
+      if (!vend) shebang_files.push_back(p);
+    }
+    std::sort(shebang_files.begin(), shebang_files.end());
+  }
+
+  /* ---- auditoría de documentos ---- */
+  std::vector<DocFinding> findings;
+  {
+    std::string readme;
+    if (read_file(root + "/README.md", readme)) {
+      size_t p = readme.find("verificadores-");
+      if (p != std::string::npos) {
+        size_t a = p + 14, e = a;
+        while (e < readme.size() && isdigit((unsigned char)readme[e])) ++e;
+        long long said = strtoll(readme.substr(a, e - a).c_str(), nullptr, 10);
+        if (bat.fl_args_total && said != bat.distinct_flags) {
+          std::string why;
+          if (said == bat.distinct_flags + bat.dumpers)
+            why = sfmt(" La cifra de la insignia sale de sumar los %lld volcadores "
+                       "`--fl-dump-*`, que no dan veredicto: no se pueden poner «en verde».",
+                       bat.dumpers);
+          findings.push_back({
+              "README.md (insignia)",
+              sfmt("«verificadores — %lld»", said),
+              sfmt("%lld banderas `--fl-check-*`/`--fl-selftest-*` registradas en "
+                   "`creator_args.cc` (+ %lld volcadores `--fl-dump-*` y %lld conversores: "
+                   "%lld banderas `--fl-*` en total).%s",
+                   bat.distinct_flags, bat.dumpers, bat.converters, bat.fl_args_total,
+                   why.c_str()),
+              "contando las cadenas `\"--fl-...\"` de `source/creator/creator_args.cc` al commit medido"});
+        }
+      }
+    }
+    std::string metricas;
+    if (read_file(root + "/politicas/METRICAS.md", metricas)) {
+      size_t p = metricas.find("commit `");
+      if (p != std::string::npos) {
+        size_t a = p + 8, e = metricas.find('`', a);
+        std::string said_rev = metricas.substr(a, e - a);
+        std::string full = git.line({"rev-parse", said_rev});
+        if (!full.empty() && full != snap.rev) {
+          std::string behind = git.line({"rev-list", "--count", said_rev + ".." + snap.rev});
+          HistPoint then = measure_point(git, said_rev, snap.vendored_prefixes);
+          auto delta = [](long long a, long long b) {
+            long long d = b - a;
+            return sfmt("%s → %s (%s%s)", mil(a).c_str(), mil(b).c_str(), d >= 0 ? "+" : "−",
+                        mil(d >= 0 ? d : -d).c_str());
+          };
+          findings.push_back({
+              "politicas/METRICAS.md (cabecera)",
+              sfmt("medido al commit `%s`", said_rev.c_str()),
+              sfmt("ese commit va **%s commits por detrás** del medido aquí (`%s`). Entre uno y "
+                   "otro: Python %s, C++ %s, Objective-C++ %s, `.hpp` %s",
+                   behind.c_str(), snap.shortrev.c_str(),
+                   delta(then.py_lines, lines_of(tot, "Python")).c_str(),
+                   delta(then.cpp, lines_of(tot, "C++")).c_str(),
+                   delta(then.mm, lines_of(tot, "Objective-C++")).c_str(),
+                   delta(then.hpp, lines_of(tot, ".hpp")).c_str()),
+              "`git rev-list --count` entre los dos commits y una medición completa de cada uno"});
+        }
+      }
+    }
+  }
+
+  /* ---- informe ---- */
+  std::string r;
+  const long long own = tot.own_lines;
+  const long long cpp = lines_of(tot, "C++"), hh = lines_of(tot, ".hh"),
+                  hpp = lines_of(tot, ".hpp"), hlegacy = lines_of(tot, ".h heredada");
+  const long long py = lines_of(tot, "Python"), glsl = lines_of(tot, "GLSL"),
+                  mm = lines_of(tot, "Objective-C++"), msl = lines_of(tot, "MSL"),
+                  metal = lines_of(tot, "Metal"), cc = lines_of(tot, "C"),
+                  sh = lines_of(tot, "shell");
+
+  r += "# Estado de Flipendo — medido, no escrito\n\n";
+  r += "> **FICHERO GENERADO. NO SE EDITA A MANO.** Cualquier cambio que escribas aquí\n";
+  r += "> lo borra la siguiente regeneración. Se genera con\n";
+  r += "> `tools/flipendo_metrics/flipendo_metrics.cpp`, que es C++ y mide el árbol:\n";
+  r += "> ninguna cifra de este documento está copiada de otro documento.\n";
+  r += ">\n";
+  r += sfmt("> **Medido el %s sobre el commit `%s`** (%s — «%s»).\n",
+            today_local().c_str(), snap.shortrev.c_str(), snap.date.c_str(), snap.subject.c_str());
+  r += ">\n";
+  r += "> Regenerar:\n";
+  r += "> ```sh\n";
+  r += "> c++ -std=c++17 -O2 -o ~/Flipendo/bin/flipendo-metrics \\\n";
+  r += ">     ~/Flipendo/dev/upbge/tools/flipendo_metrics/flipendo_metrics.cpp\n";
+  r += "> flipendo-metrics --estado ~/Flipendo/dev/upbge\n";
+  r += "> ```\n\n";
+  r += "Por qué existe: `politicas/METRICAS.md` publicó el 8 de septiembre una cifra de\n";
+  r += "Python medida el 5 —entre medias habían caído 109.442 líneas sin registrarse— y el\n";
+  r += "backlog describía zonas que el árbol ya no tenía. Un documento a mano envejece en\n";
+  r += "horas cuando hay siete carriles trabajando. La solución no es escribir mejor: es\n";
+  r += "**generar**.\n\n";
+  r += "---\n\n";
+
+  /* §1 método */
+  r += "## 1. Cómo se mide cada cifra\n\n";
+  r += "- **A un commit, nunca al árbol de trabajo.** Con varios carriles vivos, medir el\n";
+  r += "  disco no es reproducible ni por quien lo hizo: se ven ficheros sin versionar y no\n";
+  r += "  se ve lo que otro acaba de borrar. El árbol se lee con `git ls-tree -r` y un solo\n";
+  r += "  `git cat-file --batch`, al commit de la cabecera.\n";
+  r += "- **Una línea es un `\\n`**, como `wc -l`.\n";
+  r += "- **Propio contra vendorizado**: los prefijos no están escritos en la herramienta,\n";
+  r += "  se leen de `.gitattributes` (todo patrón marcado `linguist-vendored`). Hoy son: ";
+  for (size_t i = 0; i < snap.vendored_prefixes.size(); ++i)
+    r += sfmt("%s`%s`", i ? ", " : "", snap.vendored_prefixes[i].c_str());
+  r += ".\n";
+  r += "- **Compilado o no** sale de `build.ninja` y `CMakeCache.txt` del árbol de\n";
+  r += "  compilación, no de lo que diga una política.\n";
+  r += "- **La evolución** sale del historial de git: se mide de verdad cada commit\n";
+  r += "  muestreado, no se copia de ninguna tabla.\n";
+  r += "- **La batería** se ejecuta: cada verificador del binario, con su línea base, y el\n";
+  r += "  código de salida es el veredicto.\n\n";
+  r += sfmt("Ficheros versionados al commit medido: **%s**. De ellos, **%s son de código**:\n"
+            "%s propios y %s vendorizados. El resto (%s) son datos, assets, textos y\n"
+            "configuración, que por doctrina no son código.\n\n",
+            mil(snap.tracked_total).c_str(), mil(tot.own_files + tot.vend_files).c_str(),
+            mil(tot.own_files).c_str(), mil(tot.vend_files).c_str(),
+            mil(snap.tracked_total - tot.own_files - tot.vend_files).c_str());
+  r += "---\n\n";
+
+  /* §2 composición */
+  r += "## 2. Composición: código propio\n\n";
+  emit_lang_table(r, tot.own, own);
+  r += sfmt("| **TOTAL propio** | **%s** | **%s** | 100 %% |\n\n",
+            mil(tot.own_files).c_str(), mil(own).c_str());
+  {
+    const long long fam = cpp + hh + hpp + hlegacy + cc;
+    const long long fam_strict = cpp + hh + hpp;
+    const long long nocpp = py + glsl + mm + msl + metal + cc + sh + lines_of(tot, "Objective-C");
+    r += sfmt("- Familia C/C++ contando las `.h` heredadas: **%s → %s**.\n",
+              mil(fam).c_str(), pct(fam, own).c_str());
+    r += sfmt("- C++ en sentido estricto (`.cc`/`.cpp`/`.hh`/`.hpp`): **%s → %s**.\n",
+              mil(fam_strict).c_str(), pct(fam_strict, own).c_str());
+    r += sfmt("- Todo lo que no es C++ (Python + GLSL + ObjC++ + MSL + Metal + C + shell):\n"
+              "  **%s → %s**.\n\n", mil(nocpp).c_str(), pct(nocpp, own).c_str());
+  }
+  r += "### Terceros vendorizados — no son de Flipendo\n\n";
+  r += "Se mantienen verbatim y se actualizan desde upstream; reescribirlos a mano no es\n";
+  r += "propiedad del código, es asumir el mantenimiento de bibliotecas ajenas\n";
+  r += "(`LENGUAJE-CPP.md`, decisión del 2026-09-11).\n\n";
+  emit_lang_table(r, tot.vend, tot.vend_lines);
+  r += sfmt("| **TOTAL vendorizado** | **%s** | **%s** | 100 %% |\n\n",
+            mil(tot.vend_files).c_str(), mil(tot.vend_lines).c_str());
+
+  /* shell por shebang */
+  r += "### Shell: cero `.sh` no es cero shell\n\n";
+  if (shebang_files.empty()) {
+    r += "Buscando por *shebang* en vez de por extensión, fuera de los vendorizados no\n";
+    r += "aparece ningún fichero de shell.\n\n";
+  }
+  else {
+    r += sfmt("Buscando por *shebang* (`git grep -l -E '^#!.*(bash|/bin/sh|zsh|ksh)'`) y no\n"
+              "por extensión, fuera de los vendorizados aparecen **%zu ficheros** que ninguna\n"
+              "tabla por extensión ve:\n\n", shebang_files.size());
+    for (const std::string &f : shebang_files) r += sfmt("- `%s`\n", f.c_str());
+    r += "\n";
+  }
+  r += "---\n\n";
+
+  /* §3 Python por zonas */
+  r += "## 3. El Python que queda, por zonas\n\n";
+  r += "Las zonas no son una lista escrita a mano: son los directorios del árbol. Si una\n";
+  r += "se vacía, desaparece sola de esta tabla.\n\n";
+  {
+    std::map<std::string, std::pair<long long, long long>> zones;
+    for (const FileRec &f : snap.files) {
+      if (f.vendored || f.lang != "Python") continue;
+      auto &z = zones[py_zone(f.path)];
+      z.first++;
+      z.second += f.lines;
+    }
+    std::vector<std::pair<std::string, std::pair<long long, long long>>> rows(zones.begin(), zones.end());
+    std::sort(rows.begin(), rows.end(),
+              [](const auto &a, const auto &b) { return a.second.second > b.second.second; });
+    r += "| Zona | Ficheros | Líneas | % del Python |\n|---|---:|---:|---:|\n";
+    for (const auto &kv : rows)
+      r += sfmt("| `%s` | %s | %s | %s |\n", kv.first.c_str(), mil(kv.second.first).c_str(),
+                mil(kv.second.second).c_str(), pct(kv.second.second, py).c_str());
+    r += sfmt("| **TOTAL** | **%s** | **%s** | 100 %% |\n\n",
+              mil(files_of(tot, "Python")).c_str(), mil(py).c_str());
+  }
+  r += "---\n\n";
+
+  /* §4 lo que compila */
+  r += "## 4. Lo que el binario COMPILA y lo que no\n\n";
+  if (!build.have_ninja) {
+    r += sfmt("No se pudo leer `%s`: esta sección no se ha medido.\n\n", build.ninja_path.c_str());
+  }
+  else {
+    r += sfmt("Medido sobre `%s` (%s aristas de objeto) y `%s`.\n\n",
+              build.ninja_path.c_str(), mil(build.object_edges).c_str(), build.cache_path.c_str());
+    r += "La diferencia importa: **código que no entra en el binario no es trabajo\n";
+    r += "pendiente, es código muerto**, y ninguna tabla por extensión la hacía.\n\n";
+    r += "| Lenguaje | Ficheros | Líneas | Con objeto en el build | Líneas que compilan |\n";
+    r += "|---|---:|---:|---:|---:|\n";
+    std::map<std::string, std::pair<long long, long long>> comp;   /* lenguaje -> {ficheros, líneas} compilados */
+    for (const FileRec &f : snap.files) {
+      if (f.vendored) continue;
+      if (!build.objects.count(root + "/" + f.path)) continue;
+      auto &c = comp[f.lang];
+      c.first++;
+      c.second += f.lines;
+    }
+    std::vector<std::string> interesting = {"C++", "Objective-C++", "Objective-C", "C", "Metal", "MSL", "GLSL"};
+    for (const std::string &l : interesting) {
+      if (!tot.own.count(l)) continue;
+      if (!lang_makes_objects(l)) {
+        long long fmen = 0, lmen = 0;
+        for (const FileRec &f : snap.files) {
+          if (f.vendored || f.lang != l) continue;
+          if (build.mentioned.count(root + "/" + f.path)) { fmen++; lmen += f.lines; }
+        }
+        r += sfmt("| %s | %s | %s | (no produce `.o`) | %s lineas en %s ficheros citados en el build |\n", l.c_str(),
+                  mil(files_of(tot, l.c_str())).c_str(), mil(lines_of(tot, l.c_str())).c_str(),
+                  mil(lmen).c_str(), mil(fmen).c_str());
+        continue;
+      }
+      r += sfmt("| %s | %s | %s | %s | **%s** |\n", l.c_str(),
+                mil(files_of(tot, l.c_str())).c_str(), mil(lines_of(tot, l.c_str())).c_str(),
+                mil(comp[l].first).c_str(), mil(comp[l].second).c_str());
+    }
+    r += "\n";
+
+    /* Objective-C++ al detalle: es el frente abierto de la decisión del 11. */
+    r += "### Objective-C++, fichero a fichero\n\n";
+    std::vector<const FileRec *> mms;
+    for (const FileRec &f : snap.files)
+      if (!f.vendored && (f.lang == "Objective-C++" || f.lang == "Objective-C")) mms.push_back(&f);
+    if (mms.empty()) {
+      r += "**No queda ni un fichero `.mm` ni `.m` propio.** Objetivo cumplido.\n\n";
+    }
+    else {
+      std::sort(mms.begin(), mms.end(), [](const FileRec *a, const FileRec *b) { return a->lines > b->lines; });
+      r += "| Fichero | Líneas | ¿Produce objeto? |\n|---|---:|---|\n";
+      long long dead = 0, alive = 0;
+      for (const FileRec *f : mms) {
+        bool o = build.objects.count(root + "/" + f->path) != 0;
+        r += sfmt("| `%s` | %s | %s |\n", f->path.c_str(), mil(f->lines).c_str(),
+                  o ? "**sí**" : "no");
+        if (o) alive += f->lines; else dead += f->lines;
+      }
+      r += sfmt("\n**%s líneas de Objective-C++ propio, de las cuales %s COMPILAN y %s no.**\n\n",
+                mil(alive + dead).c_str(), mil(alive).c_str(), mil(dead).c_str());
+      /* ¿A qué subsistema pertenece lo que no compila, y por qué está apagado? */
+      std::map<std::string, long long> by_top;
+      for (const FileRec *f : mms) {
+        if (build.objects.count(root + "/" + f->path)) continue;
+        size_t s1 = f->path.find('/');
+        size_t s2 = s1 == std::string::npos ? std::string::npos : f->path.find('/', s1 + 1);
+        by_top[f->path.substr(0, s2)] += f->lines;
+      }
+      for (const auto &kv : by_top) {
+        r += sfmt("- `%s`: %s líneas sin compilar.", kv.first.c_str(), mil(kv.second).c_str());
+        if (contains(kv.first, "cycles")) {
+          auto it = build.cache.find("WITH_CYCLES");
+          r += sfmt(" `WITH_CYCLES` está en **%s** en `CMakeCache.txt`",
+                    it == build.cache.end() ? "(no aparece)" : it->second.c_str());
+          long long objs = 0, ment = 0;
+          for (const auto &o : build.objects) if (contains(o, "/intern/cycles/")) objs++;
+          for (const auto &m : build.mentioned) if (contains(m, "/intern/cycles/")) ment++;
+          r += sfmt(" y el build no genera **ningún** objeto de `intern/cycles` (%lld objetos, "
+                    "%lld ficheros fuente citados).", objs, ment);
+          r += "\n  Ojo con cómo se dice: `build.ninja` **sí** nombra `intern/cycles/blender`, pero\n"
+               "  como `-I` en las líneas de `INCLUDES` de otros objetivos. «Cero referencias» es\n"
+               "  falso; lo cierto y lo que importa es **cero objetos compilados**.\n";
+        }
+        else r += "\n";
+      }
+      r += "\n";
+    }
+  }
+  r += "---\n\n";
+
+  /* §5 evolución */
+  r += "## 5. Evolución, medida commit a commit\n\n";
+  r += "Cada fila de estas tablas se ha medido ejecutando la misma medición sobre ese\n";
+  r += "commit. No hay ni una cifra copiada de ningún documento anterior.\n\n";
+  r += "Un aviso de método que cambia las cifras viejas: el `.gitattributes` que marca\n";
+  r += "`extern` y `lib` como vendorizados se añadió a media historia. Para que la serie\n";
+  r += "sea comparable consigo misma se imponen a TODAS las filas los prefijos\n";
+  r += "vendorizados del commit de la cabecera; si no, los commits anteriores contarían\n";
+  r += "las bibliotecas ajenas como código de Flipendo y la caída parecería mayor de lo\n";
+  r += "que es.\n\n";
+  r += "### Por días (último commit de cada día)\n\n";
+  r += "| Commit | Fecha | Python (f.) | Python | C++ | ObjC++ | GLSL | `.h` | `.hpp` | C |\n";
+  r += "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|\n";
+  for (const HistPoint &h : daily)
+    r += sfmt("| `%s` | %s | %s | **%s** | %s | %s | %s | %s | %s | %s |\n", h.shortrev.c_str(),
+              h.when.c_str(), mil(h.py_files).c_str(), mil(h.py_lines).c_str(), mil(h.cpp).c_str(),
+              mil(h.mm).c_str(), mil(h.glsl).c_str(), mil(h.h).c_str(), mil(h.hpp).c_str(),
+              mil(h.c).c_str());
+  r += "\n";
+  if (daily.size() >= 2) {
+    long long d = daily.front().py_lines - daily.back().py_lines;
+    r += sfmt("De %s a %s líneas de Python propio: **%s%s líneas, %s** desde `%s` (%s).\n\n",
+              mil(daily.front().py_lines).c_str(), mil(daily.back().py_lines).c_str(),
+              d > 0 ? "−" : "+", mil(d > 0 ? d : -d).c_str(),
+              pct(d > 0 ? d : -d, daily.front().py_lines).c_str(),
+              daily.front().shortrev.c_str(), daily.front().when.c_str());
+  }
+  if (hourly.size() > 1) {
+    r += sfmt("### Hora a hora del último día medido (%s)\n\n", hourly.front().when.substr(0, 10).c_str());
+    r += "| Commit | Hora | Python | C++ | ObjC++ | Total propio |\n|---|---|---:|---:|---:|---:|\n";
+    for (const HistPoint &h : hourly)
+      r += sfmt("| `%s` | %s | %s | %s | %s | %s |\n", h.shortrev.c_str(), h.when.c_str(),
+                mil(h.py_lines).c_str(), mil(h.cpp).c_str(), mil(h.mm).c_str(),
+                mil(h.own_lines).c_str());
+    r += "\n";
+  }
+  r += "---\n\n";
+
+  /* §6 puentes */
+  r += "## 6. Los puentes que quedan de C++ a Python\n\n";
+  r += "No son líneas de Python: son **llamadas reales desde el C++** al intérprete. Miden\n";
+  r += "lo que todavía depende de CPython aunque el `.py` ya no exista.\n\n";
+  r += "| Puente | Ocurrencias | Ficheros | Qué es |\n|---|---:|---:|---|\n";
+  long long bridge_total = 0;
+  for (const BridgePattern &bp : kBridges) {
+    long long c = bs.occ.count(bp.pat) ? bs.occ[bp.pat] : 0;
+    if (!c) continue;
+    bridge_total += c;
+    r += sfmt("| `%s` | %s | %s | %s |\n", bp.pat, mil(c).c_str(),
+              mil((long long)bs.pat_files[bp.pat].size()).c_str(), bp.what);
+  }
+  r += sfmt("| **TOTAL de llamadas** | **%s** | **%s** | |\n\n", mil(bridge_total).c_str(),
+            mil((long long)bs.file_calls.size()).c_str());
+  r += sfmt("Además, **%s líneas de preprocesador** (`#if*` con `WITH_PYTHON`) en **%s\n"
+            "ficheros** esconden capacidad detrás de la compilación con Python: son los\n"
+            "sitios donde el binario sin intérprete hace menos cosas. `WITH_PYTHON` aparece\n"
+            "%s veces en total en el código propio.\n\n",
+            mil(bs.guard_lines).c_str(), mil((long long)bs.guard_files.size()).c_str(),
+            mil(bs.with_python_occ).c_str());
+  {
+    std::vector<std::pair<std::string, long long>> top(bs.file_calls.begin(), bs.file_calls.end());
+    std::sort(top.begin(), top.end(), [](const auto &a, const auto &b) {
+      if (a.second != b.second) return a.second > b.second;
+      return a.first < b.first;
+    });
+    r += "Los ficheros que más puentes concentran (ahí es donde está el trabajo):\n\n";
+    r += "| Fichero | Llamadas | ¿Lo compila el binario? |\n|---|---:|---|\n";
+    for (size_t i = 0; i < top.size() && i < 15; ++i) {
+      bool o = build.have_ninja && build.objects.count(root + "/" + top[i].first);
+      r += sfmt("| `%s` | %s | %s |\n", top[i].first.c_str(), mil(top[i].second).c_str(),
+                build.have_ninja ? (o ? "sí" : "no") : "(no medido)");
+    }
+    r += "\n";
+  }
+  r += "---\n\n";
+
+  /* §7 batería */
+  r += "## 7. La batería de verificación, ejecutada\n\n";
+  if (!have_binary) {
+    r += sfmt("**No medida**: no existe el binario `%s`. Compila con `nb install` y vuelve a\n"
+              "generar este documento.\n\n", op.binary.c_str());
+  }
+  else if (bat.v.empty()) {
+    r += "**No medida**: no se pudo leer `source/creator/creator_args.cc` al commit.\n\n";
+  }
+  else {
+    const long long nchecks = bat.n_checks, nselfs = bat.n_selfs;
+    r += sfmt("Los verificadores se descubren leyendo las banderas `\"--fl-...\"` registradas en\n"
+              "`source/creator/creator_args.cc`: **%s banderas `--fl-*` en total**, de las cuales\n"
+              "**%lld** son comprobadores (`--fl-check-*` %lld + `--fl-selftest-*` %lld), **%lld**\n"
+              "son volcadores `--fl-dump-*` (no dan veredicto: escriben estado) y **%lld** son\n"
+              "conversores o preparadores de escena. Aquí se ejecutan **%zu** comprobaciones,\n"
+              "porque `--fl-check-ui` admite dos líneas base (registro y dibujo) y son dos\n"
+              "comprobaciones distintas.\n\n",
+              mil(bat.fl_args_total).c_str(), bat.distinct_flags, nchecks, nselfs, bat.dumpers,
+              bat.converters, bat.v.size());
+    r += "**Un `--fl-selftest-*` no es una prueba, es un volcador**: escribe un fichero y sale\n";
+    r += "con 0 aunque no haya escrito nada (medido: sin argumento imprime «falta el fichero\n";
+    r += "de salida» y devuelve 0 igual). Contarlos como «verdes» por su código de salida\n";
+    r += "sería un verde falso. Aquí el veredicto de un selftest se saca comparando su\n";
+    r += "volcado byte a byte con su línea base, que es lo que hace su `--fl-check-*` hermano\n";
+    r += "cuando existe.\n\n";
+    r += "Y un rojo no se firma a la primera: **todo rojo se repite hasta tres veces**, porque\n";
+    r += "el REGLAMENTO ya midió que hay resultados no deterministas (el cálculo de normales\n";
+    r += "acumula en paralelo y en coma flotante). Si alguna pasada sale verde, el veredicto\n";
+    r += "es **INESTABLE**, que no es lo mismo que un fallo ni que un aprobado. Excepción\n";
+    r += "declarada: un verificador que tarde más de 60 s no se repite —triplicarlo se comería\n";
+    r += "la batería— y su fila dice que va con una sola pasada.\n\n";
+    r += sfmt("**Resultado: %lld en verde, %lld en rojo, %lld inestables, %lld sin línea base con\n"
+              "la que comparar", bat.green, bat.red, bat.unstable, bat.nobase);
+    if (bat.skipped) r += sfmt(", %lld no ejecutados", bat.skipped);
+    r += sfmt(".** Tardó %.0f segundos en total; el más lento, %.0f s.\n\n", bat.secs, [&] {
+      double m = 0;
+      for (const Verifier &v : bat.v) m = std::max(m, v.secs);
+      return m;
+    }());
+
+    for (int pass = 0; pass < 2; ++pass) {
+      std::vector<const Verifier *> group;
+      for (const Verifier &v : bat.v) if ((int)v.gui == pass) group.push_back(&v);
+      if (group.empty()) continue;
+      if (pass == 0) {
+        r += "### Grupo 1 — valen en `--background`\n\n";
+      }
+      else {
+        r += "### Grupo 2 — necesitan modo gráfico\n\n";
+        r += "En `--background` no se carga el keymap por defecto y los volcados de interfaz no\n";
+        r += "tienen ventana: estos hay que pasarlos con pantalla, y por eso van aparte.\n\n";
+      }
+      r += "| Verificador | Veredicto | Tiempo | Cifras |\n|---|---|---:|---|\n";
+      for (const Verifier *v : group) {
+        std::string det = v->detail;
+        for (auto &c : det) if (c == '|') c = '/';
+        if (det.size() > 160) det = det.substr(0, 160) + "...";
+        r += sfmt("| `%s` | %s | %.1f s | %s |\n", v->label.c_str(),
+                  v->verdict == "VERDE" ? "verde" :
+                  v->verdict == "ROJO" ? "**ROJO**" :
+                  v->verdict == "INESTABLE" ? "**inestable**" :
+                  v->verdict == "SIN LINEA BASE" ? "sin línea base" : "no ejecutado",
+                  v->secs, det.empty() ? "(sin salida)" : det.c_str());
+      }
+      r += "\n";
+      if (pass == 1) {
+        for (const Verifier *v : group)
+          if (!v->gui_reason.empty())
+            r += sfmt("- `%s` necesita pantalla: %s.\n", v->label.c_str(), v->gui_reason.c_str());
+        r += "\n";
+      }
+    }
+    if (bat.red || bat.unstable || bat.nobase) {
+      r += "### Lo que no está en verde, con su detalle\n\n";
+      for (const Verifier &v : bat.v) {
+        if (v.verdict == "VERDE" || v.verdict == "NO EJECUTADO") continue;
+        r += sfmt("- **`%s`** — %s (rc=%d, modo %s)", v.label.c_str(), v.verdict.c_str(), v.rc,
+                  v.mode.c_str());
+        if (!v.baseline_used.empty()) r += sfmt(", línea base `%s`", v.baseline_used.c_str());
+        r += sfmt(":\n  %s\n", v.detail.empty() ? "(sin detalle)" : v.detail.c_str());
+      }
+      r += "\n";
+    }
+    /* Un `--fl-check-X` y su `--fl-selftest-X` miran lo mismo por dos caminos: el
+     * comprobador compara elemento a elemento mientras ejecuta, el volcador
+     * escribe el fichero y aquí se compara byte a byte. Que discrepen es una
+     * señal, no un empate: casi siempre significa que el resultado no es
+     * determinista y que uno de los dos caminos tuvo suerte. */
+    {
+      std::string pairs;
+      for (const Verifier &a : bat.v) {
+        if (a.kind != "check" || contains(a.label, "(")) continue;
+        std::string sibling = a.flag;
+        sibling.replace(0, std::string("--fl-check-").size(), "--fl-selftest-");
+        for (const Verifier &b : bat.v) {
+          if (b.flag != sibling || b.verdict == "NO EJECUTADO" || a.verdict == "NO EJECUTADO") continue;
+          if (a.verdict == b.verdict) continue;
+          pairs += sfmt("- `%s` da **%s** y `%s` da **%s** sobre la misma línea base.\n",
+                        a.label.c_str(), a.verdict.c_str(), b.label.c_str(), b.verdict.c_str());
+        }
+      }
+      if (!pairs.empty()) {
+        r += "### Un comprobador y su volcador que no dicen lo mismo\n\n";
+        r += pairs;
+        r += "\nMiran lo mismo por dos caminos —el comprobador compara mientras ejecuta, el\n"
+             "volcador escribe el fichero y aquí se compara byte a byte—, así que discrepar es\n"
+             "una señal: el resultado no es determinista y uno de los dos caminos tuvo suerte.\n"
+             "Vale la lección del REGLAMENTO: una línea base que no se reproduce a sí misma\n"
+             "tres veces seguidas no es una línea base.\n\n";
+      }
+    }
+    r += "Cómo se pasan todos de una vez:\n\n```sh\n";
+    r += "flipendo-metrics --bateria ~/Flipendo/dev/upbge          # los dos grupos\n";
+    r += "flipendo-metrics --bateria --sin-grafico ~/Flipendo/dev/upbge  # solo --background\n";
+    r += "```\n\n";
+    r += "Sale con 0 si no hay ningún rojo, así que vale de guardián antes de un push.\n\n";
+  }
+  r += "---\n\n";
+
+  /* §8 discrepancias */
+  r += "## 8. Discrepancias entre lo que dicen los documentos y lo que mide el árbol\n\n";
+  if (findings.empty()) {
+    r += "En esta pasada no se ha encontrado ninguna. Se comprueban automáticamente la\n";
+    r += "insignia de verificadores del `README.md` y el commit de la cabecera de\n";
+    r += "`politicas/METRICAS.md`.\n\n";
+  }
+  else {
+    for (const DocFinding &f : findings) {
+      r += sfmt("### %s\n\n- **Decía:** %s\n- **Mide el árbol:** %s\n- **Cómo se comprobó:** %s\n\n",
+                f.doc.c_str(), f.said.c_str(), f.measured.c_str(), f.how.c_str());
+    }
+  }
+  r += "---\n\n";
+  r += "## 9. Qué falta para «cero Python»\n\n";
+  r += sfmt("Quedan **%s líneas de Python propio** en %s ficheros, **%s llamadas** desde C++ al\n"
+            "intérprete y **%s guardas `#if*` con `WITH_PYTHON`**. El documento que ordena el\n"
+            "trabajo por zonas es [`BACKLOG-EDITOR-PYTHON.md`](BACKLOG-EDITOR-PYTHON.md); la\n"
+            "doctrina, [`LENGUAJE-CPP.md`](LENGUAJE-CPP.md); la historia de las mediciones,\n"
+            "[`METRICAS.md`](METRICAS.md).\n\n",
+            mil(py).c_str(), mil(files_of(tot, "Python")).c_str(), mil(bridge_total).c_str(),
+            mil(bs.guard_lines).c_str());
+  r += sfmt("<!-- generado por tools/flipendo_metrics/flipendo_metrics.cpp a %s -->\n",
+            snap.rev.c_str());
+
+  std::ofstream of(op.out, std::ios::binary);
+  if (!of) { std::fprintf(stderr, "No se pudo escribir '%s'\n", op.out.c_str()); return 2; }
+  of << r;
+  of.close();
+
+  std::printf("Escrito %s\n", op.out.c_str());
+  std::printf("  commit %s (%s)\n", snap.shortrev.c_str(), snap.date.c_str());
+  std::printf("  propio %s lineas · Python %s · ObjC++ %s · GLSL %s\n", mil(own).c_str(),
+              mil(py).c_str(), mil(mm).c_str(), mil(glsl).c_str());
+  if (!bat.v.empty())
+    std::printf("  bateria: %lld verde, %lld rojo, %lld inestable, %lld sin linea base, "
+                "%lld no ejecutados\n",
+                bat.green, bat.red, bat.unstable, bat.nobase, bat.skipped);
   return 0;
 }
