@@ -56,7 +56,7 @@ Tres decisiones de método, cada una con su motivo:
 | MSL (`.msl`) | 4 | 1.722 | pegamento del backend Metal |
 | Metal (`.metal`) | 1 | 832 | kernel de Cycles, **no se compila** (`WITH_CYCLES=OFF`) |
 | **C** (`.c`) | **0** | **0** | ✅ objetivo cumplido el 5 de septiembre |
-| **shell** (`.sh`) | **0** | **0** | ✅ objetivo cumplido |
+| **shell** (`.sh`) | **0** | **0** | ✅ objetivo cumplido — **con el matiz de abajo** |
 | Objective-C (`.m`), HLSL, Lua, JS | **0** | **0** | nunca existieron o ya no existen |
 
 **Total de código propio: 3.410.534 líneas.**
@@ -70,6 +70,27 @@ El `.metal` de Cycles (832 líneas) **no lo contaba el contador del proyecto**, 
 solo conoce la extensión `.msl`. Aparece aquí por primera vez. No cambia nada
 práctico —`WITH_CYCLES:BOOL=OFF` en `dev/build/CMakeCache.txt`, no entra en el
 binario— pero una métrica que ignora una extensión entera no es una métrica.
+
+### El matiz del shell: cero `.sh` no es cero shell
+
+Las dos filas de cero de arriba son ciertas **por extensión**. Buscando por *shebang*
+en vez de por extensión aparecen dos ficheros que ninguna tabla de este documento ve:
+
+```sh
+git grep -l -E '^#!.*(bash|/bin/sh|zsh|ksh)' HEAD -- '*' \
+  | sed 's|^HEAD:||' | grep -vE '^(extern|lib)/'
+```
+
+- `tools/flipendo_cli/flipendo.bash.legacy` (127 líneas): el gestor de versiones en
+  bash, **conservado a propósito** como registro de lo que se migró a
+  `flipendo_cli.cpp`. No se ejecuta ni se instala.
+- `release/darwin/scripts/blender-system-info.sh.in` (16 líneas): plantilla que CMake
+  configura para el informe de sistema del bundle de macOS. Heredada de Blender.
+
+**143 líneas, ninguna en el motor ni en el juego.** El objetivo «cero shell propio» se
+da por cumplido sabiendo esto, no por no haber mirado — que es exactamente la
+diferencia entre una métrica y un titular. Registradas en
+[`REGISTRO-LEGACY.md`](REGISTRO-LEGACY.md).
 
 ---
 
