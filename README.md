@@ -1,6 +1,28 @@
-# Flipendo
+<h1 align="center">Flipendo</h1>
 
-**Motor de juego derivado de [UPBGE](https://github.com/UPBGE/upbge), en migración a C++ puro, para macOS con backend Metal.**
+<p align="center">
+  <strong>Motor de juego en C++ para macOS con Metal.</strong><br>
+  Un fork de <a href="https://github.com/UPBGE/upbge">UPBGE</a> / Blender 4.5 al que le estamos quitando el intérprete de Python.
+</p>
+
+<p align="center">
+  <img alt="Licencia GPL-2.0-or-later" src="https://img.shields.io/badge/licencia-GPL--2.0--or--later-blue">
+  <img alt="macOS Intel con Metal" src="https://img.shields.io/badge/plataforma-macOS%20Intel%20%C2%B7%20Metal-111111">
+  <img alt="C++17" src="https://img.shields.io/badge/C%2B%2B-17-00599C">
+  <img alt="Cero Python en el juego exportado" src="https://img.shields.io/badge/Python%20en%20el%20juego-0%20ficheros-2ea44f">
+  <img alt="47 verificadores integrados en el binario" src="https://img.shields.io/badge/verificadores-47-orange">
+</p>
+
+<p align="center">
+  <a href="#compilar-macos">Compilar</a> ·
+  <a href="#ánima--el-juego-que-se-hace-con-él">El juego</a> ·
+  <a href="#metas-cercanas">Metas</a> ·
+  <a href="#comparativa-flipendo-upbge-unreal-y-unity">Comparativa</a> ·
+  <a href="politicas/">Doctrina y estado</a>
+</p>
+
+![El molino de La Mancha, la pieza que fija el listón de calidad del proyecto](docs/img/anima/molino-CamHeroe.jpg)
+
 
 Blender eliminó el soporte de macOS Intel en la versión 5.0, y con él murió la línea de UPBGE para estos equipos (el último binario oficial es UPBGE 0.44, con el backend Metal a medias). Flipendo continúa esa línea por su cuenta: base de Blender 4.5 + game engine, compilado y probado en hardware real (MacBook Pro 2019, Radeon Pro 5300M).
 
@@ -65,7 +87,11 @@ Estado real, medido y verificable en el propio binario:
 | Sistema de herramientas | **100% C++, sin una sola línea de Python**: catálogo, activación, consultas, operadores, barra, ajustes, cabecera, reserva y keymap del popup. Verificado contra el Python real (416 + 474 + 416 + 912 casos), la barra y la cabecera píxel a píxel. Retiradas 5.606 líneas de Python |
 | El build necesita Python | **no** (el último generador pasó a C++) |
 | Player sin CPython | **compila y juega** — 0 símbolos `_Py`, 536 MB frente a 771 MB |
-| Python restante | ~248.000 líneas, todas del editor |
+| Python restante | **191.224 líneas**, todas del editor (eran 493.742 al empezar el proyecto) |
+| Ficheros `.py` dentro del juego exportado | **0** |
+| Objective-C++ | 30.304 líneas; la capa de cabeceras de Metal ya es C++ puro y el resto son **441 envíos de mensaje**, no 21.000 líneas |
+| C, shell y presets propios | **0** |
+| Verificadores integrados en el binario | **47** opciones `--fl-check-*` / `--fl-dump-*` |
 
 **Cómo se verifica.** Nada se da por migrado leyendo el código: se congela lo que produce el Python y el C++ tiene que reproducirlo exactamente. Para la interfaz, eso significa capturas. Cada par de columnas es la barra de herramientas del mismo editor y modo, dibujada por **Python a la izquierda** y por **C++ a la derecha** — vista 3D en modo objeto, edición y escultura; editor UV, nodos y secuenciador:
 
@@ -101,7 +127,7 @@ Contexto honesto: Unreal y Unity son ecosistemas industriales con miles de perso
 | **Intérprete en el juego exportado** | **ninguno** — el Player sin CPython compila y juega | CPython embebido | ninguno (C++ compilado) | Mono/IL2CPP |
 | **Tamaño del runtime** | **536 MB** y bajando (era 771 MB con CPython) | ~770 MB | ~1 GB+ por proyecto vacío | varía según backend |
 | **Post-proceso en Mac Intel** | ✅ filtros 2D en Metal (arreglado en este fork; acepta también la sintaxis GLSL antigua de los tutoriales) | ❌ en 0.44/macOS ni compilaba; 0.50 no existe para Intel | ✅ | ✅ |
-| **Render-to-texture en Mac Intel** (espejos, minimapas, CCTV) | ✅ restaurado en este fork ⚠️ hoy solo por API Python; la fachada C++ está pendiente | ❌ (mismo motivo) | ✅ | ✅ |
+| **Render-to-texture en Mac Intel** (espejos, minimapas, CCTV) | ✅ restaurado **y nativo en C++**: funciona en el Player sin intérprete | ❌ (mismo motivo) | ✅ | ✅ |
 | **Motor de render** | EEVEE (rasterizador tiempo real de Blender) | EEVEE | Nanite+Lumen (no en Mac Intel), rasterizador clásico como alternativa | URP / HDRP |
 | **Plataformas de exportación** | macOS (hoy); el código heredó soporte Win/Linux de UPBGE pero se **podó a propósito** para simplificar | Windows, Linux, macOS ARM | Todas: PC, consolas, móvil | Todas: PC, consolas, móvil, web |
 | **Licencia y coste** | GPL-2.0+, gratis, código abierto completo | GPL-2.0+, gratis | Gratis hasta 1 M$ de ingresos, luego 5% de royalties; código fuente visible pero no libre | Gratis hasta 200 k$ (Personal); suscripción por asiento después; código cerrado |
@@ -118,7 +144,9 @@ La fila que más cambia el cálculo es la de add-ons: quitar Python **cuesta** e
 |---|---|---|
 | Filtros 2D (post-proceso) | ❌ el shader ni compila en Metal | ✅ presets y custom |
 | Filtros custom con sintaxis GLSL antigua (`gl_FragColor`, `texture2D`) | ❌ | ✅ traductor integrado |
-| `bge.texture` / VideoTexture (render-to-texture) | ❌ `Texture is not available` | ✅ ImageRender vía GPUViewport |
+| `bge.texture` / VideoTexture (render-to-texture) | ❌ `Texture is not available` | ✅ ImageRender vía GPUViewport, **con fachada C++**: funciona sin Python |
+| Interfaz de juego | `bgui`, en Python | ✅ lienzo y widgets **nativos en C++**, dibujados sin intérprete |
+| Publicar y exportar el juego | addons Python (dos de los cinco, rotos desde 2019) | ✅ operadores nativos en C++, verificados publicando el juego real |
 | Cierre del player con `ImageRender` activo | ❌ segfault | ✅ (use-after-free corregido) |
 | Componentes de gameplay | Python | ✅ C++ nativo |
 | Mapa de teclado | script de 8.669 líneas | ✅ C++, verificado atajo a atajo |
