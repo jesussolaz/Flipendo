@@ -1109,6 +1109,7 @@ void ED_spacetype_buttons()
   /* La pestana Effects, que venia de `properties_data_shaderfx.py`. */
   buttons_properties_data_shaderfx_register(art);
   /* La pestana Mundo completa, antes `properties_world.py`. */
+  fl_properties_data_empty_register(art);
   fl_world_buttons_register(art);
   BLI_addhead(&st->regiontypes, art);
 
