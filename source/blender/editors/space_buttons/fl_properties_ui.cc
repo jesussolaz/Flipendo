@@ -74,6 +74,25 @@ void draw_action_and_slot_selector(const bContext *C, uiLayout *layout, ID *id)
                    "ANIM_OT_slot_unassign_from_id");
 }
 
+/* El `draw()` del propio `PropertiesAnimationMixin` (`bl_ui/space_properties.py`):
+ *
+ *     col = layout.column(align=True)
+ *     col.use_property_split = True
+ *     col.use_property_decorate = False
+ *     self.draw_action_and_slot_selector(context, col, self._animated_id(context))
+ *
+ * Ojo: la separacion y el decorador se ponen en la COLUMNA, no en el layout raiz.
+ * En el volcado se ve: la raiz queda `prop_sep=no prop_decorate=si` y la columna
+ * `prop_sep=si prop_decorate=no`. Ponerlos en la raiz cambia los dos bloques.
+ */
+void draw_animation_panel(const bContext *C, uiLayout *layout, ID *id)
+{
+  uiLayout *col = &layout->column(true);
+  uiLayoutSetPropSep(col, true);
+  uiLayoutSetPropDecorate(col, false);
+  draw_action_and_slot_selector(C, col, id);
+}
+
 /* Núcleo de `rna_prop_ui.draw()` para un ID. Mantiene también las ramas que la
  * escena de fábrica no ejercita: valores complejos, punteros ID y edición. */
 void draw_custom_properties(const bContext *C,

@@ -83,6 +83,7 @@ void fl_properties_data_empty_register(ARegionType *art);
 void fl_properties_physics_geometry_nodes_register(ARegionType *art);
 void fl_properties_collection_register(ARegionType *art);
 void fl_properties_data_lattice_register(ARegionType *art);
+void fl_properties_data_metaball_register(ARegionType *art);
 void fl_world_buttons_register(ARegionType *art);
 ID *buttons_context_id_path(const bContext *C);
 

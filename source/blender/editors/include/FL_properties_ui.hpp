@@ -32,6 +32,17 @@ void world_viewport_display_draw(const bContext *C, Panel *panel);
 void draw_action_and_slot_selector(const bContext *C, uiLayout *layout, ID *id);
 
 /**
+ * El `draw()` generico del propio `PropertiesAnimationMixin`, que es lo que usan
+ * las pestanas que NO lo sobrescriben (metaball, altavoz, volumen, camara...):
+ * una columna alineada con separacion de propiedad y sin decorador, y dentro el
+ * selector de accion y ranura.
+ *
+ * Las pestanas que si lo sobrescriben (malla, rejilla) siguen llamando
+ * directamente a `draw_action_and_slot_selector()` con su propia disposicion.
+ */
+void draw_animation_panel(const bContext *C, uiLayout *layout, ID *id);
+
+/**
  * El nucleo de `rna_prop_ui.draw()`, o sea el mixin `PropertyPanel`: la lista de
  * propiedades personalizadas de un ID, ordenada por nombre, con sus botones de
  * anadir, editar y quitar.
