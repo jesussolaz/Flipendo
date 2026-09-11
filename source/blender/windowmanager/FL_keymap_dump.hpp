@@ -24,6 +24,7 @@
 #define __FL_KEYMAP_DUMP_HPP__
 
 struct wmWindowManager;
+struct bContext;
 
 /**
  * Escribe en `filepath` el volcado de las configuraciones de teclado de `wm`.
@@ -48,5 +49,11 @@ bool FL_keyconfig_dump_native(wmWindowManager *wm, const char *filepath);
  * Devuelve true si todos los transliterados coinciden.
  */
 bool FL_keyconfig_check_native(wmWindowManager *wm, const char *baseline_filepath);
+
+/**
+ * Ejecuta el cambio de configuracion y una preferencia por caminos enteramente
+ * nativos. Vuelca cifras y un atajo representativo para poder congelar evidencia.
+ */
+bool FL_keyconfig_selftest(bContext *C, const char *filepath);
 
 #endif /* __FL_KEYMAP_DUMP_HPP__ */

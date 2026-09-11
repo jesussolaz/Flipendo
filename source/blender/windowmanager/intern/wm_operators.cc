@@ -4179,6 +4179,27 @@ void WM_OT_context_cycle_int(wmOperatorType *ot);
 void WM_OT_context_cycle_enum(wmOperatorType *ot);
 void WM_OT_context_scale_float(wmOperatorType *ot);
 void WM_OT_context_scale_int(wmOperatorType *ot);
+void WM_OT_context_set_value(wmOperatorType *ot);
+void WM_OT_context_cycle_array(wmOperatorType *ot);
+void WM_OT_context_menu_enum(wmOperatorType *ot);
+void WM_OT_context_pie_enum(wmOperatorType *ot);
+void WM_OT_operator_pie_enum(wmOperatorType *ot);
+void WM_OT_context_set_id(wmOperatorType *ot);
+void WM_OT_context_collection_boolean_set(wmOperatorType *ot);
+void WM_OT_context_modal_mouse(wmOperatorType *ot);
+/* wm_system_ops.cc */
+void WM_OT_url_open(wmOperatorType *ot);
+void WM_OT_url_open_preset(wmOperatorType *ot);
+void WM_OT_path_open(wmOperatorType *ot);
+void WM_OT_doc_view(wmOperatorType *ot);
+/* wm_property_ops.cc */
+void WM_OT_properties_add(wmOperatorType *ot);
+void WM_OT_properties_context_change(wmOperatorType *ot);
+void WM_OT_properties_remove(wmOperatorType *ot);
+void WM_OT_owner_enable(wmOperatorType *ot);
+void WM_OT_owner_disable(wmOperatorType *ot);
+void PREFERENCES_OT_keyconfig_activate(wmOperatorType *ot);
+void WM_OT_drop_blend_file(wmOperatorType *ot);
 
 void wm_operatortypes_register()
 {
@@ -4198,6 +4219,25 @@ void wm_operatortypes_register()
   WM_operatortype_append(WM_OT_context_cycle_enum);
   WM_operatortype_append(WM_OT_context_scale_float);
   WM_operatortype_append(WM_OT_context_scale_int);
+  WM_operatortype_append(WM_OT_context_set_value);
+  WM_operatortype_append(WM_OT_context_cycle_array);
+  WM_operatortype_append(WM_OT_context_menu_enum);
+  WM_operatortype_append(WM_OT_context_pie_enum);
+  WM_operatortype_append(WM_OT_operator_pie_enum);
+  WM_operatortype_append(WM_OT_context_set_id);
+  WM_operatortype_append(WM_OT_context_collection_boolean_set);
+  WM_operatortype_append(WM_OT_context_modal_mouse);
+  WM_operatortype_append(WM_OT_url_open);
+  WM_operatortype_append(WM_OT_url_open_preset);
+  WM_operatortype_append(WM_OT_path_open);
+  WM_operatortype_append(WM_OT_doc_view);
+  WM_operatortype_append(WM_OT_properties_add);
+  WM_operatortype_append(WM_OT_properties_context_change);
+  WM_operatortype_append(WM_OT_properties_remove);
+  WM_operatortype_append(WM_OT_owner_enable);
+  WM_operatortype_append(WM_OT_owner_disable);
+  WM_operatortype_append(PREFERENCES_OT_keyconfig_activate);
+  WM_operatortype_append(WM_OT_drop_blend_file);
   WM_operatortype_append(WM_OT_window_close);
   WM_operatortype_append(WM_OT_window_new);
   WM_operatortype_append(WM_OT_window_new_main);

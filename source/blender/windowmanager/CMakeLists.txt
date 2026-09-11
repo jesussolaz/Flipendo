@@ -20,6 +20,7 @@ set(INC_SYS
 
 set(SRC
   intern/fl_keymap_dump.cc
+  intern/fl_operator_dump.cc
   manual/fl_manual_reference.cc
   preset/fl_preset_file.cc
   preset/fl_preset_spec.cc
@@ -28,6 +29,8 @@ set(SRC
   preset/fl_preset_check.cc
   intern/wm_tool_ops.cc
   intern/wm_context_ops.cc
+  intern/wm_property_ops.cc
+  intern/wm_system_ops.cc
   toolsystem/fl_toolsystem_registry.cc
   toolsystem/fl_toolsystem_activate.cc
   toolsystem/fl_toolbar_keymap.cc
@@ -86,6 +89,7 @@ set(SRC
   intern/wm_cursors.cc
   intern/wm_dragdrop.cc
   intern/wm_draw.cc
+  intern/wm_drop_ops.cc
   intern/wm_event_query.cc
   intern/wm_event_system.cc
   intern/wm_files.cc
@@ -94,6 +98,7 @@ set(SRC
   intern/wm_gesture_ops.cc
   intern/wm_init_exit.cc
   intern/wm_jobs.cc
+  intern/wm_keyconfig_ops.cc
   intern/wm_keymap.cc
   intern/wm_keymap_utils.cc
   intern/wm_menu_type.cc
@@ -125,6 +130,7 @@ set(SRC
   message_bus/intern/wm_message_bus_static.cc
 
   FL_keymap_dump.hpp
+  FL_operator_dump.hpp
   manual/FL_manual_reference.hpp
   preset/FL_preset.hpp
   toolsystem/FL_toolsystem.hpp

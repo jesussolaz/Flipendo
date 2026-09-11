@@ -70,6 +70,7 @@
 #  include "FL_mesh_ops_selftest.hh"
 #  include "FL_numinput_native.hh"
 #  include "FL_object_ops_selftest.hh"
+#  include "FL_operator_dump.hpp"
 #  include "FL_optype_surface.hh"
 #  include "FL_rigidbody_ops_selftest.hh"
 #  include "FL_ui_dump.hpp"
@@ -2514,6 +2515,86 @@ static int arg_handle_fl_dump_keymap(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_dump_operators_doc[] =
+    "<filepath>\n"
+    "\tVuelca el contrato observable de todos los operadores registrados y sale.\n"
+    "\tNo incluye si cada operador procede de Python o C++.";
+static int arg_handle_fl_dump_operators(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_operators_dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_context_ops_doc[] =
+    "<filepath>\n"
+    "\tEjecuta los siete operadores wm.context_* pendientes sobre datos reales y sale.";
+static int arg_handle_fl_selftest_context_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_context_operators_selftest_schedule(C, argv[1]);
+    if (!ok) {
+      WM_exit(C, EXIT_FAILURE);
+    }
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_wm_system_ops_doc[] =
+    "<filepath>\n"
+    "\tComprueba resolucion de URL/documentacion y errores seguros de wm.path_open.";
+static int arg_handle_fl_selftest_wm_system_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_wm_system_operators_selftest(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_wm_property_ops_doc[] =
+    "<filepath>\n"
+    "\tEjecuta add/remove/context-change sobre IDProperties y un editor real.";
+static int arg_handle_fl_selftest_wm_property_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_wm_property_operators_selftest_schedule(C, argv[1]);
+    if (!ok) {
+      WM_exit(C, EXIT_FAILURE);
+    }
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_wm_owner_ops_doc[] =
+    "<filepath>\n"
+    "\tEjecuta enable/disable sobre las etiquetas del workspace real.";
+static int arg_handle_fl_selftest_wm_owner_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_wm_owner_operators_selftest(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_keymap_native_doc[] =
     "<filepath>\n"
     "\tVuelca el mapa de teclado NATIVO (C++) a un fichero y sale.\n"
@@ -2542,6 +2623,21 @@ static int arg_handle_fl_check_keymap(int argc, const char **argv, void *data)
     return 1;
   }
   fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_keyconfig_doc[] =
+    "<filepath>\n"
+    "\tActiva Blender y cambia select_mouse por los caminos nativos; vuelca cifras y sale.";
+static int arg_handle_fl_selftest_keyconfig(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = FL_keyconfig_selftest(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
   return 0;
 }
 
@@ -2772,7 +2868,6 @@ static int arg_handle_fl_dump_runtime(int argc, const char **argv, void *data)
   fprintf(stderr, "\nError: falta la ruta del bundle despues de '%s'.\n", argv[0]);
   return 0;
 }
-
 
 static const char arg_handle_fl_selftest_object_ops_doc[] =
     "<filepath>\n"
@@ -3446,8 +3541,28 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--python-text", CB(arg_handle_python_text_run), C);
   BLI_args_add(ba, nullptr, "--python-expr", CB(arg_handle_python_expr_run), C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap", CB(arg_handle_fl_dump_keymap), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-operators", CB(arg_handle_fl_dump_operators), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-selftest-context-ops", CB(arg_handle_fl_selftest_context_ops), C);
+  BLI_args_add(ba,
+               nullptr,
+               "--fl-selftest-wm-system-ops",
+               CB(arg_handle_fl_selftest_wm_system_ops),
+               C);
+  BLI_args_add(ba,
+               nullptr,
+               "--fl-selftest-wm-property-ops",
+               CB(arg_handle_fl_selftest_wm_property_ops),
+               C);
+  BLI_args_add(ba,
+               nullptr,
+               "--fl-selftest-wm-owner-ops",
+               CB(arg_handle_fl_selftest_wm_owner_ops),
+               C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap-native", CB(arg_handle_fl_dump_keymap_native), C);
   BLI_args_add(ba, nullptr, "--fl-check-keymap", CB(arg_handle_fl_check_keymap), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-selftest-keyconfig", CB(arg_handle_fl_selftest_keyconfig), C);
   BLI_args_add(ba, nullptr, "--fl-dump-tools", CB(arg_handle_fl_dump_tools), C);
   BLI_args_add(ba, nullptr, "--fl-check-tools", CB(arg_handle_fl_check_tools), C);
   BLI_args_add(

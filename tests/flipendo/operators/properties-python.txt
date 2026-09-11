@@ -1,0 +1,3 @@
+add status=['FINISHED'] names=['prop', 'prop1'] value=1.0
+remove status=['FINISHED'] exists=False
+context status=['FINISHED'] old=OBJECT requested=WORLD now=WORLD

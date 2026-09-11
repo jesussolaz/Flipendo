@@ -1,0 +1,7 @@
+context_set_value status=4 mesh_select_mode=2
+context_cycle_array status=4 cursor=[1,2,3]
+context_set_id status=4 world=FL Operator Test World
+context_collection_boolean_set status=4 show_wire=1
+context_modal_mouse invoke=1 move=1 finish=4 value=2.25 header="Empty Display Size: 2.250"
+context_menu_enum status=4
+context_pie_enum status=4

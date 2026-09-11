@@ -20,9 +20,21 @@
 #include <string>
 #include <vector>
 
+#include "MEM_guardedalloc.h"
+
 #include "DNA_windowmanager_types.h"
+#include "DNA_space_types.h"
+#include "DNA_userdef_types.h"
 
 #include "BLI_listbase.h"
+
+#include "BKE_context.hh"
+#include "BKE_global.hh"
+#include "BKE_idprop.hh"
+#include "BKE_keyconfig.h"
+
+#include "RNA_access.hh"
+#include "RNA_prototypes.hh"
 
 #include "WM_api.hh"
 #include "WM_keymap.hh"
@@ -438,6 +450,149 @@ bool FL_keyconfig_check_native(wmWindowManager *wm, const char *baseline_filepat
 
   WM_keyconfig_remove(wm, kc);
   return bad == 0;
+}
+
+bool FL_keyconfig_selftest(bContext *C, const char *filepath)
+{
+  wmWindowManager *wm = CTX_wm_manager(C);
+  if (wm == nullptr || wm->defaultconf == nullptr) {
+    std::fprintf(stderr, "FL_keyconfig_selftest: no hay configuracion por defecto\n");
+    return false;
+  }
+  FILE *fp = std::fopen(filepath, "w");
+  if (fp == nullptr) {
+    std::fprintf(stderr, "FL_keyconfig_selftest: no se pudo escribir %s\n", filepath);
+    return false;
+  }
+
+  auto counts = [](const wmKeyConfig *kc) {
+    size_t keymaps = 0;
+    size_t items = 0;
+    LISTBASE_FOREACH (const wmKeyMap *, km, &kc->keymaps) {
+      keymaps++;
+      items += size_t(BLI_listbase_count(&km->items));
+    }
+    return std::pair(keymaps, items);
+  };
+  auto first_view3d_select = [](wmKeyConfig *kc) -> wmKeyMapItem * {
+    wmKeyMap *km = WM_keymap_list_find(&kc->keymaps, "3D View", SPACE_VIEW3D, 0);
+    if (km != nullptr) {
+      LISTBASE_FOREACH (wmKeyMapItem *, kmi, &km->items) {
+        if (STREQ(kmi->idname, "VIEW3D_OT_select")) {
+          return kmi;
+        }
+      }
+    }
+    return nullptr;
+  };
+
+  /* El mismo operador que invoca USERPREF_MT_keyconfigs. */
+  PointerRNA *op_ptr = nullptr;
+  IDProperty *op_properties = nullptr;
+  WM_operator_properties_alloc(
+      &op_ptr, &op_properties, "PREFERENCES_OT_keyconfig_activate");
+  RNA_string_set(op_ptr, "filepath", "Blender.fpreset");
+  const wmOperatorStatus activate = WM_operator_name_call(
+      C, "PREFERENCES_OT_keyconfig_activate", WM_OP_EXEC_DEFAULT, op_ptr, nullptr);
+  WM_operator_properties_free(op_ptr);
+  MEM_delete(op_ptr);
+
+  const auto [left_keymaps, left_items] = counts(wm->defaultconf);
+  wmKeyMapItem *left_select = first_view3d_select(wm->defaultconf);
+  const int left_select_type = left_select ? int(left_select->type) : -1;
+  const int left_select_value = left_select ? int(left_select->val) : -1;
+  std::fprintf(fp,
+               "activate status=%d active=%s keymaps=%zu items=%zu select_type=%d select_value=%d\n",
+               int(activate),
+               U.keyconfigstr,
+               left_keymaps,
+               left_items,
+               left_select_type,
+               left_select_value);
+
+  wmKeyConfigPref *kpt = BKE_keyconfig_pref_ensure(&U, WM_KEYCONFIG_STR_DEFAULT);
+  IDProperty *old_select = IDP_GetPropertyFromGroup(kpt->prop, "select_mouse");
+  const bool had_select = old_select != nullptr;
+  const int old_value = had_select ? old_select->data.val : 0;
+  if (old_select == nullptr) {
+    old_select = blender::bke::idprop::create("select_mouse", 1).release();
+    IDP_AddToGroup(kpt->prop, old_select);
+  }
+
+  PointerRNA prefs = RNA_pointer_create_discrete(
+      nullptr, &RNA_BlenderKeyConfigPreferences, kpt->prop);
+  static const char *native_property_names[] = {
+      "select_mouse",
+      "spacebar_action",
+      "tool_key_mode",
+      "rmb_action",
+      "use_region_toggle_pie",
+      "use_alt_click_leader",
+      "use_alt_tool",
+      "use_alt_cursor",
+      "use_select_all_toggle",
+      "gizmo_action",
+      "use_v3d_tab_menu",
+      "use_v3d_shade_ex_pie",
+      "v3d_tilde_action",
+      "v3d_mmb_action",
+      "v3d_alt_mmb_drag_action",
+      "use_pie_click_drag",
+      "use_file_single_click",
+      "use_alt_navigation",
+  };
+  size_t native_properties = 0;
+  for (const char *name : native_property_names) {
+    native_properties += RNA_struct_find_property(&prefs, name) != nullptr;
+  }
+  const bool native_draw = RNA_struct_find_function(prefs.type, "draw") != nullptr;
+  std::fprintf(fp,
+               "preferences type=%s properties=%zu effective=17 draw=%d\n",
+               RNA_struct_identifier(prefs.type),
+               native_properties,
+               int(native_draw));
+
+  PropertyRNA *select_prop = RNA_struct_find_property(&prefs, "select_mouse");
+  RNA_property_enum_set(&prefs, select_prop, 1);
+  RNA_property_update(C, &prefs, select_prop);
+
+  const auto [right_keymaps, right_items] = counts(wm->defaultconf);
+  wmKeyMapItem *right_select = first_view3d_select(wm->defaultconf);
+  const int right_select_type = right_select ? int(right_select->type) : -1;
+  const int right_select_value = right_select ? int(right_select->val) : -1;
+  std::fprintf(fp,
+               "select_mouse=RIGHT keymaps=%zu items=%zu select_type=%d select_value=%d\n",
+               right_keymaps,
+               right_items,
+               right_select_type,
+               right_select_value);
+
+  RNA_property_enum_set(&prefs, select_prop, 0);
+  RNA_property_update(C, &prefs, select_prop);
+  const auto [restored_keymaps, restored_items] = counts(wm->defaultconf);
+  std::fprintf(fp,
+               "select_mouse=LEFT keymaps=%zu items=%zu\n",
+               restored_keymaps,
+               restored_items);
+
+  if (had_select) {
+    old_select->data.val = old_value;
+  }
+  else {
+    IDP_RemoveFromGroup(kpt->prop, old_select);
+    IDP_FreeProperty(old_select);
+  }
+  WM_keyconfig_reload(C);
+  WM_keyconfig_update_tag(nullptr, nullptr);
+  WM_keyconfig_update(wm);
+
+  std::fclose(fp);
+  return activate == OPERATOR_FINISHED && left_keymaps == 248 && left_items == 3673 &&
+         left_select_type == LEFTMOUSE && left_select_value == KM_CLICK && right_keymaps == 248 &&
+         right_items == 3591 && right_select_type == RIGHTMOUSE &&
+         right_select_value == KM_PRESS &&
+         restored_keymaps == 248 && restored_items == 3673 && native_properties == 18 &&
+         native_draw;
 }
 
 /** \} */

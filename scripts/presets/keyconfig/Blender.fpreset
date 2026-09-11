@@ -1,0 +1,7 @@
+# Configuracion de teclado integrada de Flipendo.
+#
+# Este fichero solo es la entrada de datos que descubre el menu de Preferencias.
+# El operador PREFERENCES_OT_keyconfig_activate reconoce el nombre "Blender" y
+# reconstruye los 248 keymaps mediante flipendo::keymap::register_default().
+keyconfig 1
+builder default
