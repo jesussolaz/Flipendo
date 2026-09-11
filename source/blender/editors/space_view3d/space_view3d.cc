@@ -45,6 +45,7 @@
 
 #include "FL_toolbar_ui.hh"
 #include "FL_view3d_menus.hh"
+#include "FL_view3d_panels.hh"
 #include "ED_asset_shelf.hh"
 #include "ED_geometry.hh"
 #include "ED_info.hh"
@@ -1624,6 +1625,10 @@ void ED_spacetype_view3d()
   art->message_subscribe = view3d_main_region_message_subscribe;
   art->cursor = view3d_main_region_cursor;
   art->lock = 1; /* can become flag, see BKE_spacedata_draw_locks */
+  /* Paneles nativos de la region principal. Son los cuatro PRIMEROS de la lista de
+   * `VIEW_3D WINDOW` en la linea base, y por eso se pueden dar de alta aqui —antes que
+   * el Python— sin mover de sitio a los otros siete: ver `FL_view3d_panels.hh`. */
+  blender::ed::view3d::view3d_paint_panels_register(art);
   BLI_addhead(&st->regiontypes, art);
 
   /* regions: list-view/buttons */

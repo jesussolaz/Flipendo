@@ -6610,121 +6610,6 @@ class VIEW3D_PT_grease_pencil_sculpt_automasking(Panel):
         col.prop(tool_settings.gpencil_sculpt, "use_automasking_material_active", text="Active Material")
 
 
-class VIEW3D_PT_paint_vertex_context_menu(Panel):
-    # Only for popover, these are dummy values.
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Vertex Paint"
-
-    def draw(self, context):
-        layout = self.layout
-
-        brush = context.tool_settings.vertex_paint.brush
-        capabilities = brush.vertex_paint_capabilities
-
-        if capabilities.has_color:
-            split = layout.split(factor=0.1)
-            UnifiedPaintPanel.prop_unified_color(split, context, brush, "color", text="")
-            UnifiedPaintPanel.prop_unified_color_picker(split, context, brush, "color", value_slider=True)
-            layout.prop(brush, "blend", text="")
-
-        UnifiedPaintPanel.prop_unified(
-            layout,
-            context,
-            brush,
-            "size",
-            unified_name="use_unified_size",
-            pressure_name="use_pressure_size",
-            slider=True,
-        )
-        UnifiedPaintPanel.prop_unified(
-            layout,
-            context,
-            brush,
-            "strength",
-            unified_name="use_unified_strength",
-            pressure_name="use_pressure_strength",
-            slider=True,
-        )
-
-
-class VIEW3D_PT_paint_texture_context_menu(Panel):
-    # Only for popover, these are dummy values.
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Texture Paint"
-
-    def draw(self, context):
-        layout = self.layout
-
-        brush = context.tool_settings.image_paint.brush
-        capabilities = brush.image_paint_capabilities
-
-        if capabilities.has_color:
-            split = layout.split(factor=0.1)
-            UnifiedPaintPanel.prop_unified_color(split, context, brush, "color", text="")
-            UnifiedPaintPanel.prop_unified_color_picker(split, context, brush, "color", value_slider=True)
-            layout.prop(brush, "blend", text="")
-
-        if capabilities.has_radius:
-            UnifiedPaintPanel.prop_unified(
-                layout,
-                context,
-                brush,
-                "size",
-                unified_name="use_unified_size",
-                pressure_name="use_pressure_size",
-                slider=True,
-            )
-            UnifiedPaintPanel.prop_unified(
-                layout,
-                context,
-                brush,
-                "strength",
-                unified_name="use_unified_strength",
-                pressure_name="use_pressure_strength",
-                slider=True,
-            )
-
-
-class VIEW3D_PT_paint_weight_context_menu(Panel):
-    # Only for popover, these are dummy values.
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Weights"
-
-    def draw(self, context):
-        layout = self.layout
-
-        brush = context.tool_settings.weight_paint.brush
-        UnifiedPaintPanel.prop_unified(
-            layout,
-            context,
-            brush,
-            "weight",
-            unified_name="use_unified_weight",
-            slider=True,
-        )
-        UnifiedPaintPanel.prop_unified(
-            layout,
-            context,
-            brush,
-            "size",
-            unified_name="use_unified_size",
-            pressure_name="use_pressure_size",
-            slider=True,
-        )
-        UnifiedPaintPanel.prop_unified(
-            layout,
-            context,
-            brush,
-            "strength",
-            unified_name="use_unified_strength",
-            pressure_name="use_pressure_strength",
-            slider=True,
-        )
-
-
 class VIEW3D_PT_sculpt_automasking(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
@@ -6808,73 +6693,6 @@ class VIEW3D_PT_sculpt_automasking(Panel):
             col = layout.column(align=True)
             col.prop(sculpt, "automasking_start_normal_limit", text="Limit")
             col.prop(sculpt, "automasking_start_normal_falloff", text="Falloff")
-
-
-class VIEW3D_PT_sculpt_context_menu(Panel):
-    # Only for popover, these are dummy values.
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'WINDOW'
-    bl_label = "Sculpt"
-
-    def draw(self, context):
-        layout = self.layout
-
-        brush = context.tool_settings.sculpt.brush
-        capabilities = brush.sculpt_capabilities
-
-        if capabilities.has_color:
-            split = layout.split(factor=0.1)
-            UnifiedPaintPanel.prop_unified_color(split, context, brush, "color", text="")
-            UnifiedPaintPanel.prop_unified_color_picker(split, context, brush, "color", value_slider=True)
-            layout.prop(brush, "blend", text="")
-
-        ups = context.tool_settings.unified_paint_settings
-        size = "size"
-        size_owner = ups if ups.use_unified_size else brush
-        if size_owner.use_locked_size == 'SCENE':
-            size = "unprojected_radius"
-
-        UnifiedPaintPanel.prop_unified(
-            layout,
-            context,
-            brush,
-            size,
-            unified_name="use_unified_size",
-            pressure_name="use_pressure_size",
-            text="Radius",
-            slider=True,
-        )
-        UnifiedPaintPanel.prop_unified(
-            layout,
-            context,
-            brush,
-            "strength",
-            unified_name="use_unified_strength",
-            pressure_name="use_pressure_strength",
-            slider=True,
-        )
-
-        if capabilities.has_auto_smooth:
-            layout.prop(brush, "auto_smooth_factor", slider=True)
-
-        if capabilities.has_normal_weight:
-            layout.prop(brush, "normal_weight", slider=True)
-
-        if capabilities.has_pinch_factor:
-            text = "Pinch"
-            if brush.sculpt_tool in {'BLOB', 'SNAKE_HOOK'}:
-                text = "Magnify"
-            layout.prop(brush, "crease_pinch_factor", slider=True, text=text)
-
-        if capabilities.has_rake_factor:
-            layout.prop(brush, "rake_factor", slider=True)
-
-        if capabilities.has_plane_offset:
-            layout.prop(brush, "plane_offset", slider=True)
-            layout.prop(brush, "plane_trim", slider=True, text="Distance")
-
-        if capabilities.has_height:
-            layout.prop(brush, "height", slider=True, text="Height")
 
 
 class TOPBAR_PT_grease_pencil_materials(GreasePencilMaterialsPanel, Panel):
@@ -7293,11 +7111,7 @@ classes = (
     VIEW3D_PT_overlay_grease_pencil_options,
     VIEW3D_PT_overlay_grease_pencil_canvas_options,
     VIEW3D_PT_context_properties,
-    VIEW3D_PT_paint_vertex_context_menu,
-    VIEW3D_PT_paint_texture_context_menu,
-    VIEW3D_PT_paint_weight_context_menu,
     VIEW3D_PT_sculpt_automasking,
-    VIEW3D_PT_sculpt_context_menu,
     TOPBAR_PT_grease_pencil_materials,
     TOPBAR_PT_grease_pencil_vertex_color,
     TOPBAR_PT_annotation_layers,

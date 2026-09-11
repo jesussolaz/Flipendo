@@ -28,6 +28,7 @@ set(SRC
   fl_view3d_menus_context.cc
   fl_view3d_menus_ctxmode.cc
   fl_view3d_menus_object.cc
+  fl_view3d_panels_paint.cc
   space_view3d.cc
   view3d_buttons.cc
   view3d_camera_control.cc
@@ -77,6 +78,7 @@ set(SRC
   view3d_view.cc
 
   FL_view3d_menus.hh
+  FL_view3d_panels.hh
   view3d_intern.hh
   view3d_navigate.hh
 )

@@ -39,6 +39,7 @@ set(SRC
   fl_tool_settings_view3d_add.cc
   fl_tool_settings_uv_sculpt.cc
   fl_tool_settings_annotate.cc
+  fl_paint_common.cc
   fl_tool_settings_paint.cc
   fl_tool_settings_edit_mesh.cc
   fl_tool_settings_gp_edit.cc
