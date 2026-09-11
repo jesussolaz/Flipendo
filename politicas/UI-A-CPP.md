@@ -690,3 +690,84 @@ deshecho, vuelve a 2.113/2.113.
 semanas acumulando. Antes de congelar una línea base: borrar el árbol de scripts del
 bundle, `nb install`, y comprobar que no quedan huérfanos
 (`comm -23 <bundle .py> <repo .py>` tiene que salir vacío).
+
+## D6: la línea base no puede llevar dentro dónde está instalado el programa
+
+La batería final, pasada desde una copia del bundle en otra ruta, dio **21 bloques
+distintos** sin que nada hubiera cambiado. La causa: los menús de presets y de
+plantillas meten en el argumento del operador la **ruta completa** del fichero, que
+empieza por donde esté `Blender.app`:
+
+```
+base:  ...script.execute_preset(filepath="/tmp/Blender-D5.app/.../presets/camera/1_inch.fpreset"...)
+ahora: ...script.execute_preset(filepath="/tmp/Blender-FINAL.app/.../presets/camera/1_inch.fpreset"...)
+```
+
+Con la ruta dentro, **la línea base solo valía desde el directorio exacto donde se
+congeló**. Es el mismo defecto que la fecha de compilación del menú «Acerca de», y se
+arregla con el mismo criterio: *lo que no es del árbol, no entra en la línea base*.
+
+El volcado sustituye ahora el prefijo de la carpeta de scripts por `<SCRIPTS>` — 203
+rutas en el volcado de dibujo. Lo comparado sigue siendo lo que importa (que el fichero
+es ese, con ese nombre y en ese orden) y deja de depender de la instalación.
+
+**Verificado desde tres rutas distintas** —dos copias en `/tmp` y el propio
+`dev/build/bin/Blender.app`—: las dos comprobaciones dan **0 distintos, 0 faltan, 0
+sobran** en las tres, y los volcados se reproducen byte a byte entre bundles distintos.
+
+## Cifras finales de la noche
+
+Sobre bundle recién instalado (291 `.py`, **0 huérfanos**):
+
+| | Bloques | Resultado |
+|---|---:|---|
+| Registro (`--fl-dump-ui`) | **2.113** | 1.390 paneles · 589 menús · 25 cabeceras · 59 regiones · 40 listas · 10 estanterías |
+| Dibujo (`--fl-dump-ui-layout`) | **2.004** | **1.095 dibujados**, 909 no cubiertos, 0 fallos |
+
+`--fl-check-ui`: **2.113/2.113** y **2.004/2.004**, cero diferencias, desde cualquier
+ruta. Y sigue detectando: cambiada a mano la etiqueta de `NODE_PT_backdrop`, sale el
+bloque con su línea y salida 1; deshecho, vuelve a cero.
+
+## El editor de nodos: entrega para quien lo coja
+
+**No se migró**, y la razón es de reloj, no de capacidad: a las 04:25, con la cabecera
+—190 líneas de Python con ramas por tipo de árbol, `template_ID` con operadores `new=`,
+popovers y `separator_spacer`— aún sin empezar, no había margen para escribirlo **y**
+verificarlo antes de las 06:00. Un editor a medias aborta el registro de todo `bl_ui`,
+así que se paró con el árbol limpio en vez de a mitad.
+
+Queda leído entero y desmenuzado. Lo que necesita quien siga:
+
+**29 tipos propios**, todos con su equivalente C++ ya comprobado:
+
+| Construcción del Python | C++ |
+|---|---|
+| `layout.template_header()` | `uiTemplateHeader(layout, C)` |
+| `layout.template_ID(ptr, "prop", new="op")` | `uiTemplateID(layout, C, &ptr, "prop", "op", nullptr, nullptr)` |
+| `layout.menu_contents("X")` | `uiItemMContents(layout, "X")` |
+| `layout.separator_spacer()` | `uiItemSpacer(layout)` |
+| `row.popover(panel="X")` | `uiItemPopoverPanel(row, C, "X", ...)` |
+| `layout.operator_menu_enum("op", "prop")` | `uiItemMenuEnumO(layout, C, "OP_OT_x", "prop", name, icon)` |
+| `layout.template_node_tree_interface(...)` | `uiTemplateNodeTreeInterface(layout, C, &ptr)` |
+| `layout.template_node_inputs(node)` | `uiTemplateNodeInputs(layout, C, &ptr)` |
+| `layout.panel("id")` | `layout->panel(C, "id", default_closed)` |
+| `self.bl_label = ...` en `draw_header` | `UI_panel_drawname_set(panel, nombre)` |
+| `Menu.draw_collapsible()` | el patrón de `logic_ui.cc` |
+| `NODE_PT_node_color_presets` | `flipendo::preset::ui::draw_panel()` (D4.1) |
+
+Campos del DNA ya localizados: `SpaceNode::tree_idname` (el `tree_type` del Python es
+una cadena, no una enumeración), `edittree`, `nodetree` y `flag & SNODE_BACKDRAW`.
+
+**8 tipos que NO deben escribirse aquí**, porque son de otro dominio y la decisión del
+proyecto es función compartida, no copia:
+
+- Los **7 clones** de `node_panel()` desde las pestañas de Propiedades.
+- **`NODE_PT_annotation`**, que hereda `AnnotationDataPanel` (98 líneas compartidas con
+  la vista 3D, el editor de clips, el de imagen y el de secuencias). Su sitio es una
+  función pública de anotaciones, no el fichero de cada editor.
+
+Mientras esas ocho no existan como función compartida, `space_node.py` se queda
+reducido a ellas: sin colisión de `idname` y con el resto en C++.
+
+Lo único que se pierde de verdad al migrar: la rama `nodeitems_utils` de `NODE_MT_add`,
+que dibuja categorías de nodos de add-ons de terceros. Sin intérprete no hay add-ons.

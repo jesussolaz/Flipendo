@@ -42,6 +42,7 @@
 #include "BLI_utildefines.h"
 #include "BLI_vector.hh"
 
+#include "BKE_appdir.hh"
 #include "BKE_context.hh"
 #include "BKE_screen.hh"
 
@@ -668,6 +669,47 @@ bool dump_registry(const bContext * /*C*/, const char *filepath)
 /* -------------------------------------------------------------------- */
 /** \name El dibujo: serializar el arbol de uiLayout
  * \{ */
+/**
+ * Cambia las rutas absolutas del bundle por una marca.
+ *
+ * Los menus de presets y de plantillas meten en el argumento del operador la RUTA
+ * COMPLETA del fichero, que empieza por donde este instalado `Blender.app`. Con la
+ * ruta dentro, la linea base solo vale desde ese mismo sitio: al comprobarla desde
+ * otra copia, los 21 bloques de presets y plantillas salen "distintos" sin que nada
+ * haya cambiado. Es el mismo defecto que la fecha de compilacion del menu "Acerca de",
+ * y se arregla igual: lo que no es del arbol, no entra en la linea base.
+ *
+ * Se sustituye por `<SCRIPTS>` el prefijo de la carpeta de scripts, de forma que lo
+ * comparado sigue siendo lo que importa — que el fichero es ese, con ese nombre y en
+ * ese orden — pero deja de depender de donde este instalado el programa.
+ */
+static void rutas_normalizar(std::string &texto)
+{
+  static const blender::Vector<std::string> prefijos = []() {
+    blender::Vector<std::string> out;
+    for (const int id : {BLENDER_SYSTEM_SCRIPTS, BLENDER_USER_SCRIPTS}) {
+      if (const std::optional<std::string> p = BKE_appdir_folder_id(id, nullptr)) {
+        if (!p->empty()) {
+          out.append(*p);
+        }
+      }
+    }
+    /* El mas largo primero, para que un prefijo no se coma al otro. */
+    std::sort(out.begin(), out.end(), [](const std::string &a, const std::string &b) {
+      return a.size() > b.size();
+    });
+    return out;
+  }();
+
+  for (const std::string &prefijo : prefijos) {
+    size_t pos = 0;
+    while ((pos = texto.find(prefijo, pos)) != std::string::npos) {
+      texto.replace(pos, prefijo.size(), "<SCRIPTS>");
+      pos += strlen("<SCRIPTS>");
+    }
+  }
+}
+
 
 static void serializar_boton(const uiBut *but,
                              bContext *C,
@@ -686,8 +728,8 @@ static void serializar_boton(const uiBut *but,
   if (but->optype) {
     /* Con `all_args=false` solo salen los argumentos que el panel cambio: es lo
      * que distingue `game_property_move(direction='UP')` de su gemelo 'DOWN'. */
-    const std::string op = WM_operator_pystring_ex(
-        C, nullptr, false, true, but->optype, but->opptr);
+    std::string op = WM_operator_pystring_ex(C, nullptr, false, true, but->optype, but->opptr);
+    rutas_normalizar(op);
     linea += " op=" + quoted(op.c_str());
   }
   else {
