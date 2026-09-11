@@ -66,9 +66,12 @@
 
 #  include "FL_game_runtime.hh"
 #  include "FL_keymap_dump.hpp"
+#  include "manual/FL_manual_reference.hpp"
 #  include "FL_mesh_ops_selftest.hh"
 #  include "FL_numinput_native.hh"
 #  include "FL_object_ops_selftest.hh"
+#  include "FL_optype_surface.hh"
+#  include "FL_rigidbody_ops_selftest.hh"
 #  include "FL_ui_dump.hpp"
 #  include "preset/FL_preset.hpp"
 #  include "toolsystem/FL_toolsystem_dump.hpp"
@@ -2654,6 +2657,55 @@ static int arg_handle_fl_check_presets(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_convert_manual_reference_doc[] =
+    "<rna_manual_reference.py> <salida.txt>\n"
+    "\tConvierte la tabla del manual en linea de Python a datos.\n"
+    "\tGenero release/datafiles/manual/rna_manual_reference.txt. Vale en --background.";
+static int arg_handle_fl_convert_manual_reference(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 2) {
+    const bool ok = flipendo::manual::convert_py_table(argv[1], argv[2]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 2;
+  }
+  fprintf(stderr, "\nError: hacen falta <entrada.py> y <salida.txt> despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_dump_manual_doc[] =
+    "<lista> <salida>\n"
+    "\tPara cada ruta RNA de <lista> vuelca la URL del manual que devuelve el\n"
+    "\tlector nativo. Se compara con tests/flipendo/manual/baseline-python.txt.\n"
+    "\tVale en --background.";
+static int arg_handle_fl_dump_manual(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 2) {
+    const bool ok = flipendo::manual::dump_urls(C, argv[1], argv[2]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 2;
+  }
+  fprintf(stderr, "\nError: hacen falta <lista> y <salida> despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_manual_doc[] =
+    "<linea-base>\n"
+    "\tCompara la URL del manual de cada ruta RNA contra una linea base congelada\n"
+    "\tcon el Python vivo. Vale en --background.";
+static int arg_handle_fl_check_manual(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::manual::check_urls(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_ui_doc[] =
     "<filepath>\n"
     "\tVuelca el REGISTRO de interfaz (paneles, menus y cabeceras) y sale.\n"
@@ -2768,6 +2820,75 @@ static int arg_handle_fl_check_mesh_ops(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::mesh_ops_selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_rigidbody_ops_doc[] =
+    "<filepath>\n"
+    "\tConstruye escenas deterministas de cuerpo rigido, invoca\n"
+    "\t`rigidbody.object_settings_copy` y `rigidbody.connect` por su idname y vuelca el\n"
+    "\testado resultante. Se compara con\n"
+    "\ttests/flipendo/rigidbody/baseline-python.txt (Carril C).";
+static int arg_handle_fl_selftest_rigidbody_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::rigidbody_ops_selftest::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_rigidbody_ops_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-rigidbody-ops, pero compara con la linea base indicada y dice\n"
+    "\tcuantos elementos coinciden por caso. Sale con codigo 0 solo si no hay ni una\n"
+    "\tdiferencia (Carril C).";
+static int arg_handle_fl_check_rigidbody_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::rigidbody_ops_selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_dump_optypes_doc[] =
+    "<filepath>\n"
+    "\tVuelca la superficie de registro (idname, nombre, descripcion y todas las\n"
+    "\tpropiedades con tipo, subtipo, defecto, rangos y enums) de los operadores que el\n"
+    "\tcarril C migra de Python a C++. Se compara con\n"
+    "\ttests/flipendo/optypes/baseline-python.txt.";
+static int arg_handle_fl_dump_optypes(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::optype_surface::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_optypes_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-dump-optypes, pero compara con la linea base indicada. Sale con codigo\n"
+    "\t0 solo si no hay ni una diferencia (Carril C).";
+static int arg_handle_fl_check_optypes(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::optype_surface::check(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
@@ -3342,6 +3463,13 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-check-presets", CB(arg_handle_fl_check_presets), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-numinput", CB(arg_handle_fl_selftest_numinput), C);
   BLI_args_add(ba, nullptr, "--fl-dump-runtime", CB(arg_handle_fl_dump_runtime), C);
+  BLI_args_add(ba,
+               nullptr,
+               "--fl-convert-manual-reference",
+               CB(arg_handle_fl_convert_manual_reference),
+               C);
+  BLI_args_add(ba, nullptr, "--fl-dump-manual", CB(arg_handle_fl_dump_manual), C);
+  BLI_args_add(ba, nullptr, "--fl-check-manual", CB(arg_handle_fl_check_manual), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);
@@ -3349,6 +3477,12 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
       ba, nullptr, "--fl-selftest-object-ops", CB(arg_handle_fl_selftest_object_ops), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-mesh-ops", CB(arg_handle_fl_selftest_mesh_ops), C);
   BLI_args_add(ba, nullptr, "--fl-check-mesh-ops", CB(arg_handle_fl_check_mesh_ops), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-selftest-rigidbody-ops", CB(arg_handle_fl_selftest_rigidbody_ops), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-check-rigidbody-ops", CB(arg_handle_fl_check_rigidbody_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-optypes", CB(arg_handle_fl_dump_optypes), C);
+  BLI_args_add(ba, nullptr, "--fl-check-optypes", CB(arg_handle_fl_check_optypes), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

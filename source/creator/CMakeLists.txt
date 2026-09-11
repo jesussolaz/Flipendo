@@ -518,6 +518,13 @@ install(
   DESTINATION ${TARGETDIR_VER}/datafiles
 )
 
+# Tabla del manual en linea (antes scripts/modules/rna_manual_reference.py).
+# Son datos, no codigo: viajan siempre, tambien con WITH_PYTHON=OFF.
+install(
+  DIRECTORY ${CMAKE_SOURCE_DIR}/release/datafiles/manual
+  DESTINATION ${TARGETDIR_VER}/datafiles
+)
+
 # localization
 if(WITH_INTERNATIONAL)
   set(_locale_dir "${CMAKE_SOURCE_DIR}/locale")
