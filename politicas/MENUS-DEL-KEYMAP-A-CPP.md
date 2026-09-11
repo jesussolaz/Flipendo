@@ -245,3 +245,51 @@ layout->op("WM_OT_save_as_runtime", IFACE_("Save as game runtime"), ICON_NONE);
 
 Ninguno de los 51 menús migrados hasta ahora es de Archivo ni de Exportar, así
 que no hay nada que reponer hacia atrás.
+
+### Cuarta a séptima tanda: 32 menús más, y salida de la vista 3D (2026-09-11)
+
+| Familia | Fichero C++ | Menús |
+|---|---|---|
+| 8 · `VIEW3D_MT_add` (Shift-A) | `space_view3d/fl_view3d_menu_add_root.cc` | 1 |
+| 9 · Editor de curvas | `space_graph/fl_graph_menus.cc` | 7 |
+| 10 · Hoja de exposición | `space_action/fl_action_menus.cc` | 5 |
+| 11 · NLA | `space_nla/fl_nla_menus.cc` | 4 |
+| 12 · Editor de imagen y UV | `space_image/fl_image_menus.cc` | 11 |
+| 13 · Editores pequeños (texto, consola, info, esquema) | cuatro `fl_*_menus.cc` | 4 |
+
+**83 de los 133.** Quedan 50.
+
+## Cuatro trampas más
+
+1. **`is_extended()` no se puede preguntar desde C++, y no hace falta.**
+   `VIEW3D_MT_add` mira `VIEW3D_MT_armature_add.is_extended()` —
+   `len(cls.draw._draw_funcs) > 1`, o sea «¿le ha metido filas algún addon?».
+   Sin intérprete no hay addons, así que es estructuralmente falso: se escribe
+   la rama «no extendido». Es una **decisión**, no una copia, y por eso va
+   escrita en la cabecera del fichero.
+2. **`operator_menu_enum` sin `text=`** (ya estaba) y su primo:
+   `layout.operator(...)` cuya propiedad es una **enumeración dinámica**
+   (`grease_pencil.set_material.slot`) necesita `RNA_enum_set_identifier(C, ...)`;
+   con `RNA_string_set` el proceso se cae.
+3. **El guion que quita las clases de Python tiene que cortar en CUALQUIER línea
+   a columna cero.** La primera versión buscaba la siguiente `class`/`def`/
+   `# ***`/`classes = (`, y en `space_image.py` se llevó por delante un
+   `from bl_ui.properties_mask_common import (...)` que venía detrás de un
+   comentario `# ----`. El módulo dejó de cargar (`NameError: MASK_PT_mask`) y
+   con él **todo el registro de `bl_ui`**: el volcado pasó de 2.069 bloques a
+   389, con 1.683 ausencias. Lo cantó el verificador a la primera. Auditoría
+   después del arreglo: cero líneas de columna cero borradas que no fueran
+   `class X(` en ninguno de los ficheros tocados.
+4. **`CMakeLists.txt` del editor puede no depender de la traducción.**
+   `space_console` no dependía de `bf::blentranslation` porque no dibujaba
+   ningún texto desde C++; el primer `IFACE_()` rompe la compilación con
+   `'BLT_translation.hh' file not found`. Hay que añadir la dependencia.
+
+## Lo que queda bloqueado por algo ajeno
+
+| Menú | Bloqueado por | De quién |
+|---|---|---|
+| `VIEW3D_MT_bone_options_toggle` / `_enable` / `_disable` | `wm.context_collection_boolean_set` (ya es C++ en `noche/codex`, pendiente de integrar en `main`) | carril B |
+| `WM_MT_region_toggle_pie` | vive en `bl_operators/wm.py` | carril B |
+| `POSE_MT_selection_sets_select` | `pose.selection_set_select` sigue siendo operador de Python | sin asignar |
+| `OUTLINER_MT_context_menu` | llama a `OUTLINER_MT_collection_new.draw_without_context_menu()`, un método de clase distinto de `draw()`: `uiItemMContents()` no sirve | este carril, cuando toque migrar también ese trozo |
