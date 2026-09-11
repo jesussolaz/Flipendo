@@ -262,38 +262,6 @@ class NODE_MT_editor_menus(Menu):
         layout.menu("NODE_MT_node")
 
 
-class NODE_MT_add(Menu):
-    bl_space_type = 'NODE_EDITOR'
-    bl_label = "Add"
-    bl_translation_context = i18n_contexts.operator_default
-    bl_options = {'SEARCH_ON_KEY_PRESS'}
-
-    def draw(self, context):
-        import nodeitems_utils
-
-        layout = self.layout
-
-        if layout.operator_context == 'EXEC_REGION_WIN':
-            layout.operator_context = 'INVOKE_REGION_WIN'
-            layout.operator("WM_OT_search_single_menu", text="Search...", icon='VIEWZOOM').menu_idname = "NODE_MT_add"
-            layout.separator()
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        snode = context.space_data
-        if snode.tree_type == 'GeometryNodeTree':
-            layout.menu_contents("NODE_MT_geometry_node_add_all")
-        elif snode.tree_type == 'CompositorNodeTree':
-            layout.menu_contents("NODE_MT_compositor_node_add_all")
-        elif snode.tree_type == 'ShaderNodeTree':
-            layout.menu_contents("NODE_MT_shader_node_add_all")
-        elif snode.tree_type == 'TextureNodeTree':
-            layout.menu_contents("NODE_MT_texture_node_add_all")
-        elif nodeitems_utils.has_node_categories(context):
-            # Actual node sub-menus are defined by draw functions from node categories.
-            nodeitems_utils.draw_node_categories_menu(self, context)
-
-
 class NODE_MT_view(Menu):
     bl_label = "View"
 
@@ -418,17 +386,6 @@ class NODE_MT_node(Menu):
         if is_compositor:
             layout.separator()
             layout.operator("node.read_viewlayers", icon='RENDERLAYERS')
-
-
-class NODE_MT_view_pie(Menu):
-    bl_label = "View"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        pie = layout.menu_pie()
-        pie.operator("node.view_all")
-        pie.operator("node.view_selected", icon='ZOOM_SELECTED')
 
 
 class NODE_PT_active_tool(Panel):
@@ -1164,7 +1121,6 @@ def node_panel(cls):
 classes = (
     NODE_HT_header,
     NODE_MT_editor_menus,
-    NODE_MT_add,
     NODE_MT_view,
     NODE_MT_select,
     NODE_MT_node,
@@ -1172,7 +1128,6 @@ classes = (
     NODE_MT_context_menu_show_hide_menu,
     NODE_MT_context_menu_select_menu,
     NODE_MT_context_menu,
-    NODE_MT_view_pie,
     NODE_PT_material_slots,
     NODE_PT_geometry_node_tool_object_types,
     NODE_PT_geometry_node_tool_mode,

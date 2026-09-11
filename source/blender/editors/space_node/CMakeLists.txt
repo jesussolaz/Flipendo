@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../io
   ../../compositor
@@ -21,6 +22,7 @@ set(INC_SYS
 
 set(SRC
   add_menu_assets.cc
+  fl_node_menus.cc
   clipboard.cc
   drawnode.cc
   link_drag_search.cc
@@ -40,6 +42,7 @@ set(SRC
   node_view.cc
   space_node.cc
 
+  FL_node_menus.hh
   node_intern.hh
 )
 
