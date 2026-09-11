@@ -368,3 +368,54 @@ Las dos salidas, y las dos hay que escribirlas antes de tomarlas:
 
 Mientras tanto los doce **están medidos y no tocados**. Migrarlos «porque son
 cortos» habría metido cinco diferencias de región en el parte de otro carril.
+
+## 119 de 133. Los catorce que quedan, y por qué cada uno
+
+| Qué | Cuántos | Por qué no está |
+|---|---|---|
+| Paneles | **12** | La unidad de migración es la región entera (apartado anterior) |
+| `POSE_MT_selection_sets_select` | 1 | `pose.selection_set_select` sigue siendo un operador de Python (`bl_operators/bone_selection_sets.py`) |
+| `OUTLINER_MT_context_menu` | 1 | Ver abajo: se intentó, se sacó, y el motivo merece estar escrito |
+
+### `OUTLINER_MT_context_menu`: intentado, medido y retirado
+
+Es corto, pero arrastra una cadena: su `draw()` llama a
+`OUTLINER_MT_collection_new.draw_without_context_menu()`, y `collection_new`,
+`OUTLINER_MT_collection` y `OUTLINER_MT_object` llaman los tres a
+`OUTLINER_MT_context_menu.draw_common_operators()`. Son **métodos de clase**, no
+`draw()`, así que `uiItemMContents()` no sirve: migrar uno obliga a migrar los
+cuatro, y tres de ellos no están entre los 133.
+
+Se hizo, compiló, y entonces el volcado enseñó algo mejor que un fallo mío:
+
+```
+< ... op='bpy.ops.outliner.id_operation()'                    text='Unlink'   ← Python
+> ... op='bpy.ops.outliner.id_operation(type='<UNKNOWN ENUM>')' text='Unlink'  ← C++
+```
+
+…y **el bloque de Python terminaba ahí**, con quince filas menos que el mío.
+El motivo: `outliner.id_operation.type` es una enumeración **dinámica**, y en el
+contexto del volcador no tiene items; `props.type = 'UNLINK'` **lanza una
+excepción en Python** y el `draw()` se corta a media faena. O sea:
+
+> **la línea base, en ese bloque, no es el menú: es el menú a medio dibujar
+> porque el Python se cayó.**
+
+Reproducir eso en C++ sería codificar un fallo. No reproducirlo deja una
+diferencia permanente en el parte. Ninguna de las dos es aceptable a la ligera,
+así que se **revirtió el cambio entero** (los cuatro menús y sus borrados de
+Python) y se deja escrito. Lo que hace falta para cerrarlo bien:
+
+1. Migrar los cuatro a la vez, con `RNA_enum_set_identifier(C, ...)` —con
+   contexto, para que la enumeración dinámica resuelva de verdad—, y
+2. **volver a congelar la línea base de ese bloque**, porque la actual está
+   contaminada por la excepción. Eso es trabajo del carril D, que es quien manda
+   sobre la línea base.
+
+### Y una lección que vale para toda la migración
+
+Un bloque de la línea base puede ser más corto de lo que el menú debería tener,
+porque el Python se cayó al dibujarlo. Salió dos veces esta noche
+(`VIEW3D_MT_greasepencil_material_active`, que el carril D acabó marcando como
+inestable, y este). Antes de dar por buena una diferencia, hay que mirar si el
+bloque de la línea base **termina donde debería terminar**.
