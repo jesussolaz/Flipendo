@@ -54,6 +54,7 @@
 
 #include "RNA_access.hh"
 
+#include "FL_clip_menus.hh"
 #include "clip_intern.hh" /* own include */
 
 /* -------------------------------------------------------------------- */
@@ -1319,6 +1320,8 @@ void ED_spacetype_clip()
   /* regions: hud */
   art = ED_area_type_hud(st->spaceid);
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::clip::clip_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

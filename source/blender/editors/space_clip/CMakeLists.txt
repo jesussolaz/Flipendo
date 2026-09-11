@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../../makesrna
 
@@ -15,6 +16,7 @@ set(INC_SYS
 
 set(SRC
   clip_buttons.cc
+  fl_clip_menus.cc
   clip_dopesheet_draw.cc
   clip_dopesheet_ops.cc
   clip_draw.cc
@@ -34,6 +36,7 @@ set(SRC
   tracking_ops_utils.cc
   tracking_select.cc
 
+  FL_clip_menus.hh
   clip_intern.hh
   tracking_ops_intern.hh
 )
