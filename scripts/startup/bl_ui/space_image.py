@@ -332,26 +332,6 @@ class IMAGE_MT_uvs_transform(Menu):
         layout.operator("uv.randomize_uv_transform")
 
 
-class IMAGE_MT_uvs_snap(Menu):
-    bl_label = "Snap"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'EXEC_REGION_WIN'
-
-        layout.operator("uv.snap_selected", text="Selected to Pixels").target = 'PIXELS'
-        layout.operator("uv.snap_selected", text="Selected to Cursor").target = 'CURSOR'
-        layout.operator("uv.snap_selected", text="Selected to Cursor (Offset)").target = 'CURSOR_OFFSET'
-        layout.operator("uv.snap_selected", text="Selected to Adjacent Unselected").target = 'ADJACENT_UNSELECTED'
-
-        layout.separator()
-
-        layout.operator("uv.snap_cursor", text="Cursor to Pixels").target = 'PIXELS'
-        layout.operator("uv.snap_cursor", text="Cursor to Selected").target = 'SELECTED'
-        layout.operator("uv.snap_cursor", text="Cursor to Origin").target = 'ORIGIN'
-
-
 class IMAGE_MT_uvs_mirror(Menu):
     bl_label = "Mirror"
 
@@ -366,66 +346,6 @@ class IMAGE_MT_uvs_mirror(Menu):
 
         layout.operator("transform.mirror", text="X Axis").constraint_axis[0] = True
         layout.operator("transform.mirror", text="Y Axis").constraint_axis[1] = True
-
-
-class IMAGE_MT_uvs_align(Menu):
-    bl_label = "Align"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_enum("uv.align", "axis")
-
-
-class IMAGE_MT_uvs_merge(Menu):
-    bl_label = "Merge"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("uv.weld", text="At Center")
-        # Mainly to match the mesh menu.
-        layout.operator("uv.snap_selected", text="At Cursor").target = 'CURSOR'
-
-        layout.separator()
-
-        layout.operator("uv.remove_doubles", text="By Distance")
-
-
-class IMAGE_MT_uvs_split(Menu):
-    bl_label = "Split"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("uv.select_split", text="Selection")
-
-
-class IMAGE_MT_uvs_unwrap(Menu):
-    bl_label = "Unwrap"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        # It would be nice to do: `layout.operator_enum("uv.unwrap", "method")`
-        # However the menu items don't have an "Unwrap" prefix, so inline the operators.
-        layout.operator("uv.unwrap", text="Unwrap Angle Based").method = 'ANGLE_BASED'
-        layout.operator("uv.unwrap", text="Unwrap Conformal").method = 'CONFORMAL'
-        layout.operator("uv.unwrap", text="Unwrap Minimum Stretch").method = 'MINIMUM_STRETCH'
-
-        layout.separator()
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-        layout.operator("uv.smart_project")
-        layout.operator("uv.lightmap_pack")
-        layout.operator("uv.follow_active_quads")
-
-        layout.separator()
-
-        layout.operator_context = 'EXEC_REGION_WIN'
-        layout.operator("uv.cube_project")
-        layout.operator("uv.cylinder_project")
-        layout.operator("uv.sphere_project")
 
 
 class IMAGE_MT_uvs(Menu):
@@ -500,197 +420,6 @@ class IMAGE_MT_uvs(Menu):
         layout.operator("uv.reset")
 
         layout.separator()
-
-
-class IMAGE_MT_uvs_select_mode(Menu):
-    bl_label = "UV Select Mode"
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-        tool_settings = context.tool_settings
-
-        # Do smart things depending on whether uv_select_sync is on.
-
-        if tool_settings.use_uv_select_sync:
-            props = layout.operator("wm.context_set_value", text="Vertex", icon='VERTEXSEL')
-            props.value = "(True, False, False)"
-            props.data_path = "tool_settings.mesh_select_mode"
-
-            props = layout.operator("wm.context_set_value", text="Edge", icon='EDGESEL')
-            props.value = "(False, True, False)"
-            props.data_path = "tool_settings.mesh_select_mode"
-
-            props = layout.operator("wm.context_set_value", text="Face", icon='FACESEL')
-            props.value = "(False, False, True)"
-            props.data_path = "tool_settings.mesh_select_mode"
-
-        else:
-            props = layout.operator("wm.context_set_string", text="Vertex", icon='UV_VERTEXSEL')
-            props.value = 'VERTEX'
-            props.data_path = "tool_settings.uv_select_mode"
-
-            props = layout.operator("wm.context_set_string", text="Edge", icon='UV_EDGESEL')
-            props.value = 'EDGE'
-            props.data_path = "tool_settings.uv_select_mode"
-
-            props = layout.operator("wm.context_set_string", text="Face", icon='UV_FACESEL')
-            props.value = 'FACE'
-            props.data_path = "tool_settings.uv_select_mode"
-
-            props = layout.operator("wm.context_set_string", text="Island", icon='UV_ISLANDSEL')
-            props.value = 'ISLAND'
-            props.data_path = "tool_settings.uv_select_mode"
-
-
-class IMAGE_MT_uvs_context_menu(Menu):
-    bl_label = "UV"
-
-    def draw(self, context):
-        layout = self.layout
-
-        sima = context.space_data
-
-        # UV Edit Mode
-        if sima.show_uvedit:
-            ts = context.tool_settings
-            if ts.use_uv_select_sync:
-                is_vert_mode, is_edge_mode, _ = ts.mesh_select_mode
-            else:
-                uv_select_mode = ts.uv_select_mode
-                is_vert_mode = uv_select_mode == 'VERTEX'
-                is_edge_mode = uv_select_mode == 'EDGE'
-                # is_face_mode = uv_select_mode == 'FACE'
-                # is_island_mode = uv_select_mode == 'ISLAND'
-
-            # Add
-            layout.operator("uv.unwrap")
-            layout.operator("uv.follow_active_quads")
-
-            layout.separator()
-
-            # Modify
-            layout.operator("uv.pin").clear = False
-            layout.operator("uv.pin", text="Unpin").clear = True
-
-            layout.separator()
-
-            layout.menu("IMAGE_MT_uvs_snap")
-
-            layout.operator("transform.mirror", text="Mirror X").constraint_axis[0] = True
-            layout.operator("transform.mirror", text="Mirror Y").constraint_axis[1] = True
-
-            layout.separator()
-
-            layout.operator_enum("uv.align", "axis")  # W, 2/3/4.
-
-            layout.separator()
-
-            if is_vert_mode or is_edge_mode:
-                layout.operator_context = 'INVOKE_DEFAULT'
-
-                if is_vert_mode:
-                    layout.operator("transform.vert_slide")
-
-                if is_edge_mode:
-                    layout.operator("transform.edge_slide")
-
-                layout.operator_context = 'EXEC_REGION_WIN'
-                layout.separator()
-
-            # Remove
-            layout.menu("IMAGE_MT_uvs_merge")
-            layout.operator_context = 'INVOKE_REGION_WIN'
-            layout.operator("uv.stitch")
-            layout.operator_context = 'EXEC_REGION_WIN'
-            layout.menu("IMAGE_MT_uvs_split")
-
-
-class IMAGE_MT_pivot_pie(Menu):
-    bl_label = "Pivot Point"
-
-    def draw(self, context):
-        layout = self.layout
-        pie = layout.menu_pie()
-
-        sima = context.space_data
-
-        pie.prop_enum(sima, "pivot_point", value='CENTER')
-        pie.prop_enum(sima, "pivot_point", value='CURSOR')
-        pie.prop_enum(sima, "pivot_point", value='INDIVIDUAL_ORIGINS')
-        pie.prop_enum(sima, "pivot_point", value='MEDIAN')
-
-
-class IMAGE_MT_uvs_snap_pie(Menu):
-    bl_label = "Snap"
-
-    def draw(self, _context):
-        layout = self.layout
-        pie = layout.menu_pie()
-
-        layout.operator_context = 'EXEC_REGION_WIN'
-
-        pie.operator(
-            "uv.snap_selected",
-            text="Selected to Pixels",
-            icon='RESTRICT_SELECT_OFF',
-        ).target = 'PIXELS'
-        pie.operator(
-            "uv.snap_cursor",
-            text="Cursor to Pixels",
-            icon='PIVOT_CURSOR',
-        ).target = 'PIXELS'
-        pie.operator(
-            "uv.snap_cursor",
-            text="Cursor to Selected",
-            icon='PIVOT_CURSOR',
-        ).target = 'SELECTED'
-        pie.operator(
-            "uv.snap_selected",
-            text="Selected to Cursor",
-            icon='RESTRICT_SELECT_OFF',
-        ).target = 'CURSOR'
-        pie.operator(
-            "uv.snap_selected",
-            text="Selected to Cursor (Offset)",
-            icon='RESTRICT_SELECT_OFF',
-        ).target = 'CURSOR_OFFSET'
-        pie.operator(
-            "uv.snap_selected",
-            text="Selected to Adjacent Unselected",
-            icon='RESTRICT_SELECT_OFF',
-        ).target = 'ADJACENT_UNSELECTED'
-        pie.operator(
-            "uv.snap_cursor",
-            text="Cursor to Origin",
-            icon='PIVOT_CURSOR',
-        ).target = 'ORIGIN'
-
-
-class IMAGE_MT_view_pie(Menu):
-    bl_label = "View"
-
-    def draw(self, context):
-        layout = self.layout
-
-        sima = context.space_data
-        show_uvedit = sima.show_uvedit
-        show_maskedit = sima.show_maskedit
-
-        pie = layout.menu_pie()
-        pie.operator("image.view_all")
-
-        if show_uvedit or show_maskedit:
-            pie.operator("image.view_selected", text="Frame Selected", icon='ZOOM_SELECTED')
-            pie.operator("image.view_center_cursor", text="Center View to Cursor")
-        else:
-            # Add spaces so items stay in the same position through all modes.
-            pie.separator()
-            pie.separator()
-
-        pie.operator("image.view_zoom_ratio", text="Zoom 1:1").ratio = 1
-        pie.operator("image.view_all", text="Frame All Fit").fit_view = True
 
 
 class IMAGE_HT_tool_header(Header):
@@ -981,20 +710,6 @@ class IMAGE_MT_editor_menus(Menu):
         if show_maskedit:
             layout.menu("MASK_MT_add")
             layout.menu("MASK_MT_mask")
-
-
-class IMAGE_MT_mask_context_menu(Menu):
-    bl_label = "Mask"
-
-    @classmethod
-    def poll(cls, context):
-        sima = context.space_data
-        return sima.show_maskedit
-
-    def draw(self, context):
-        layout = self.layout
-        from .properties_mask_common import draw_mask_context_menu
-        draw_mask_context_menu(layout, context)
 
 
 # -----------------------------------------------------------------------------
@@ -1811,18 +1526,7 @@ classes = (
     IMAGE_MT_uvs,
     IMAGE_MT_uvs_showhide,
     IMAGE_MT_uvs_transform,
-    IMAGE_MT_uvs_snap,
     IMAGE_MT_uvs_mirror,
-    IMAGE_MT_uvs_align,
-    IMAGE_MT_uvs_merge,
-    IMAGE_MT_uvs_split,
-    IMAGE_MT_uvs_unwrap,
-    IMAGE_MT_uvs_select_mode,
-    IMAGE_MT_uvs_context_menu,
-    IMAGE_MT_mask_context_menu,
-    IMAGE_MT_pivot_pie,
-    IMAGE_MT_uvs_snap_pie,
-    IMAGE_MT_view_pie,
     IMAGE_HT_tool_header,
     IMAGE_HT_header,
     IMAGE_MT_editor_menus,
