@@ -103,3 +103,169 @@ Capa de identidad renombrada de "UPBGE Key" a **Flipendo**:
 - Carpeta de trabajo: `~/Flipendo` (antes `~/UPBGE-Key`); todas las rutas absolutas corregidas (symlink de libs, build cache, .zshrc, .active).
 - Gestor de versiones: comando `flipendo` (antes `upbge-key`).
 - Motor interno (ejecutable, `--version`, config) sigue siendo Blender/UPBGE: es funcional y lo exige la GPL. Pendiente opcional: título de ventana y splash propios (requiere recompilar).
+
+---
+
+## Del 6 al 10 de septiembre · el hueco que faltaba en este registro
+
+Este registro saltaba del 5 de septiembre a la noche del 10. En esos cinco días (32
+commits) pasaron cuatro cosas que conviene tener fechadas, porque la noche del 10 se
+apoya en ellas:
+
+- **`KX_PythonComponent` eliminado** (08-09, 21:09). `FL_Component` —componentes
+  nativos en C++— queda como el **único** sistema de componentes del motor.
+- **El Player compila, arranca y juega sin CPython** (08-09, 22:01): 0 símbolos de
+  Python, 536 MB frente a 771 MB. La salida no fue inventar un target nuevo, sino
+  **dos configuraciones de build del mismo árbol** (`dev/build` con `WITH_PYTHON=ON`
+  para trabajar, `dev/build-nopy` con `OFF` para empaquetar).
+- **`svn_rev_map`**, el mayor bloque de Python del árbol, convertido en asset binario
+  con lector C++: **−108.812 líneas**.
+- **El keymap del arranque ya no lo genera Python** (09-09, 00:52): 3.673 atajos
+  idénticos, y después **248 keymaps con cero diferencias**.
+
+Efecto medido sobre el árbol (Python propio, sin `extern/` ni `lib/`): **357.084 → 247.642 líneas**.
+
+---
+
+## Flipendo sin Python en el paquete · noche del 10 al 11 de septiembre de 2026
+
+> **No es una versión congelada.** No se ha hecho `flipendo snapshot`: no hay una
+> carpeta en `~/Flipendo/versions/` con este estado. Es un hito del árbol de código,
+> y se registra aquí porque cambia lo que Flipendo *es*.
+
+Once trabajadores en paralelo (Claude en varias pestañas y agentes, Codex, GitHub
+Copilot) dirigidos por una sesión de Claude que hizo de jefe de proyecto, de las
+20:51 del día 10 a las 06:25 del 11. **154 commits** en ese tramo; 192 contando la
+mañana del 11.
+
+Una sola regla, y es la que explica por qué esto se puede creer: **nada se retira de
+Python hasta que su sustituto en C++ demuestra, con un volcado idéntico, que hace
+exactamente lo mismo.**
+
+### Cambios
+
+- **El paquete de distribución no contiene ni un `.py`.** El Player que se envía
+  —`dev/build-nopy`, `WITH_PYTHON=OFF`— no lleva intérprete: **0 símbolos `^_Py`**
+  (antes 2.267), `libpython` no enlazada, y el bundle pasa de **772 a 537 MB**. El
+  juego se **crea** con el editor (`WITH_PYTHON=ON`) y se **envía** con esta segunda
+  configuración; el `.blend` es el mismo a los dos lados.
+- **Sistema de herramientas, en C++** (5.606 líneas): catálogo, activación y sus
+  atajos. Se van `space_toolsystem_toolbar.py` (3.779), `space_toolsystem_common.py`
+  (1.086), `bpy/utils/toolsystem` y `keymap_from_toolbar.py` (394).
+- **Los operadores del Window Manager, en C++.** `bl_operators/wm.py` (3.015 líneas)
+  deja de existir: 24 operadores migrados con el mismo `idname` y las mismas
+  propiedades.
+- **El keymap deja de ser código.** `keymap_data/blender_default.py` (8.669) y
+  `keyconfig/Blender.py` (386) se convierten en un dato (`Blender.fpreset`) que lee
+  C++.
+- **Los presets, también datos.** `scripts/presets/` pasa de **173 ficheros `.py` /
+  10.287 líneas** a **0 `.py` y 172 `.fpreset`**, con lector, escritor y conversor en
+  C++.
+- **52 operadores de objeto, malla, cuerpo rígido y selección** reescritos en C++.
+- **El editor de nodos entero, en C++**: `space_node.py` cae de 1.201 a **84** líneas
+  y de 34 clases registradas a 7. Las 7 que quedan son paneles que este editor
+  *clona* de Propiedades, y no se reimplementan a propósito: esperan a que su
+  original esté en C++ y exponga su `draw()` en una cabecera compartida.
+- **Los paneles de juego de Flipendo, nativos**: `properties_game.py` (899) fuera; el
+  editor de lógica es C++ (`source/blender/editors/space_logic/`).
+- **Vuelven en C++ dos capacidades del motor**: el **render a textura**
+  (VideoTexture) y una **interfaz de juego** nativa (4 de 9 widgets), comparadas
+  píxel a píxel contra el camino antiguo.
+- **ÁNIMA se publica desde el Flipendo nuevo**: `.zip` de 269 MB que arranca.
+- **La instalación dejó de mentir.** Se descubrió que el `install` copiaba pero no
+  borraba: **406 `.py` huérfanos** seguían cargándose desde el paquete, de modo que
+  una migración podía darse por buena con el Python viejo todavía vivo. Ahora el
+  árbol de `scripts/` instalado se poda.
+
+### Verificado, y con qué cifras
+
+Nada de esto se aceptó por lectura del código. El patrón del proyecto es que el
+binario lleve una opción `--fl-dump-*` escrita en C++ que vuelca el estado
+observable, se congela la línea base con el Python aún vivo, y el C++ tiene que
+reproducirla. **Antes de la noche había 8 de esas opciones; hoy hay 50.**
+
+```
+--fl-check-keymap           248 keymaps, 0 por transliterar
+--fl-check-tools            30 secciones, 0 diferencias
+--fl-check-optypes          44/44 identicos
+--fl-check-ui               2113/2113 identicos, 0 faltan, 0 sobran
+--fl-check-manual           7470 identicas, 0 distintas
+--fl-check-external-editor  4326/4326 identicos
+--fl-check-object-select    152/152 identicos
+--fl-check-mesh-ops         13112/13112 identicos
+--fl-check-rigidbody-ops    63/63 identicos
+```
+
+Y una revisión final buscando **capacidad perdida en silencio**, que es el riesgo real
+de una noche así: se extrajeron todos los `bl_idname` y clases registradas de los
+**202 `.py` de `scripts/` borrados** y se buscaron en el binario vivo. **52 de 52
+operadores y 24 de 24 clases de interfaz, presentes.** Los únicos identificadores sin
+rastro eran tres de una plantilla de ejemplo.
+
+Python propio del árbol: **248.065 → 195.611 líneas** en la noche (−52.454; −358
+ficheros), y 191.224 al cerrar la mañana del 11.
+
+### Lo que NO se hizo, dicho claro
+
+- **Flipendo no es «full C++» todavía.** Al ritmo medido, faltan entre **40 y 60
+  noches** como esta. Quedan 191.224 líneas de Python, 248.745 de cabeceras `.h`
+  heredadas, 68.391 de GLSL escrito a mano y 30.304 de Objective-C++.
+- **Dos trabajadores agotaron su cuota** a mitad de faena: Copilot a la 01:20 y Codex
+  a las 04:05. No se compraron créditos.
+- **El fork no tiene trazado de rayos**: `WITH_CYCLES=OFF`. No es de esta noche, pero
+  se descubrió midiendo, y el inventario de Python había dicho expresamente que
+  retirar Cycles era una pérdida de capacidad que no debía hacerse sin sustituto.
+  **Debería ser una decisión, no un `OFF` heredado que nadie ha mirado.**
+- **La suite de tests C++ no corre entera**: entre 448 y 703 casos según el momento;
+  el corredor muere con un doble *free* y 255 casos no llegan a ejecutarse.
+- **44 de los 52 operadores** migrados tienen verificación propiedad a propiedad; los
+  otros ocho se verificaron por comportamiento. La doctrina pide lo primero para
+  todos.
+- **El menú *Plantillas* del editor de texto queda vacío**: se retiraron los 41
+  ficheros de `scripts/templates_py`. Es coherente (sin intérprete no hay script que
+  plantillar), pero el usuario lo notará.
+- **El fork ya no importa ni exporta glTF**, y no exporta FBX: esos addons Python se
+  retiraron. El importador FBX sigue, en C++.
+
+### Tres lecciones que se pagaron caras y quedan en vigor
+
+1. **Hay resultados que no son deterministas.** El cálculo de normales de vértice da
+   valores distintos entre ejecuciones del mismo binario con la misma escena, porque
+   la acumulación va en paralelo y en coma flotante. **Si un volcado no se reproduce a
+   sí mismo tres veces seguidas, no es una línea base**: dos arneses dieron una
+   diferencia en la primera pasada y ninguna en las siguientes.
+2. **Se mide sobre un paquete recién instalado, nunca sobre uno acumulado.** Es la
+   otra cara de los 406 `.py` huérfanos.
+3. **Regenerar una línea base porque sale roja** es exactamente como un verificador se
+   convierte en un sello de goma. Cada diferencia se explica antes de absorberse.
+
+El detalle de cada pieza está en `politicas/` (34 documentos) y el resumen de la noche
+en `politicas/NOCHE-2026-09-11.md`. Las cifras del árbol, medidas y con su método, en
+`politicas/METRICAS.md`.
+
+---
+
+## Decisión del 11 de septiembre por la mañana · «full C++» significa todo
+
+Con el coste sobre la mesa, Jesús decidió que **full C++ incluye también el
+Objective-C++ y los cuerpos de shader**. Hasta entonces la política del proyecto los
+daba por aceptables: el ObjC++ como «plataforma legítima» y el GLSL como «inviable de
+golpe».
+
+- **Objetivo:** cero Python, cero C propio (ya cumplido), cero Objective-C++, cero
+  shell propio (ya cumplido), cero GLSL escrito a mano, y las cabeceras `.h`
+  heredadas a `.hpp` según se reescriba su subsistema.
+- **Única excepción, y es doctrinal:** `extern/` y `lib/` son terceros vendorizados.
+  Se mantienen verbatim y se actualizan desde upstream. Quedan marcados
+  `linguist-vendored` para que ni GitHub se los atribuya a Flipendo.
+- **Por qué el Objective-C++ sí se podía**, contra lo que decía la política anterior:
+  el runtime de Objective-C es una biblioteca de C, y cualquier C++ puede llamar a
+  Cocoa a través de él. La prueba es que `metal-cpp`, el binding oficial de Apple, es
+  exactamente eso. Está vendorizado en `extern/metal-cpp` desde esa mañana.
+- **Y el tamaño real del trabajo no son las líneas**: los 30.304 de `.mm` contienen
+  **441 envíos de mensaje**. `mtl_shader_log.mm` tenía cero —era C++ disfrazado de
+  `.mm`— y el fichero más grande del backend, con 3.413 líneas, tiene 16. Ordenar
+  este trabajo por líneas habría sido ordenarlo al revés de como conviene.
+
+Esta decisión **deroga** dos secciones de `politicas/MIGRACION-CPP.md` (§3.3 y §4),
+que quedan marcadas en su sitio con la fecha y el motivo en lugar de borrarse.
