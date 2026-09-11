@@ -183,7 +183,7 @@ if(APPLE)
   )
   if(WITH_METAL_BACKEND)
     list(APPEND SRC
-      intern/GHOST_ContextCGL.mm
+      intern/GHOST_ContextCGL.cc
 
       intern/GHOST_ContextCGL.hh
     )
