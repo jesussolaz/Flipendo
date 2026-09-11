@@ -104,7 +104,10 @@ std::optional<std::string> url_from_rna_id(bContext *C, const std::string &rna_i
 bool convert_py_table(const char *py_path, const char *out_path);
 
 /**
- * Lee una lista de rutas RNA (una por linea) y vuelca `ruta<TAB>url`.
+ * Lee una lista de rutas RNA (una por linea) y vuelca `ruta<TAB>sufijo`, con el
+ * prefijo en una sola linea `PREFIX`. Se vuelca el sufijo y no la URL entera a
+ * proposito: el prefijo lleva la version de Blender y el idioma, y repetirlos en
+ * cada fila haria roja la linea base al subir de version sin ninguna regresion.
  * `--fl-dump-manual <lista> <salida>`.
  */
 bool dump_urls(bContext *C, const char *ids_path, const char *out_path);

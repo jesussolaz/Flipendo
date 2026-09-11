@@ -2771,9 +2771,11 @@ static int arg_handle_fl_convert_manual_reference(int argc, const char **argv, v
 
 static const char arg_handle_fl_dump_manual_doc[] =
     "<lista> <salida>\n"
-    "\tPara cada ruta RNA de <lista> vuelca la URL del manual que devuelve el\n"
-    "\tlector nativo. Se compara con tests/flipendo/manual/baseline-python.txt.\n"
-    "\tVale en --background.";
+    "\tPara cada ruta RNA de <lista> vuelca el SUFIJO de URL del manual que devuelve\n"
+    "\tel lector nativo, con el prefijo en una unica linea PREFIX (el prefijo lleva\n"
+    "\tdentro la version y el idioma, y repetirlo en 8.000 filas pondria la linea\n"
+    "\tbase roja al subir de version sin ninguna regresion).\n"
+    "\tSe compara con tests/flipendo/manual/baseline-python.txt. Vale en --background.";
 static int arg_handle_fl_dump_manual(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
@@ -2788,8 +2790,8 @@ static int arg_handle_fl_dump_manual(int argc, const char **argv, void *data)
 
 static const char arg_handle_fl_check_manual_doc[] =
     "<linea-base>\n"
-    "\tCompara la URL del manual de cada ruta RNA contra una linea base congelada\n"
-    "\tcon el Python vivo. Vale en --background.";
+    "\tCompara el sufijo de URL del manual de cada ruta RNA, y el prefijo, contra\n"
+    "\tuna linea base congelada con el Python vivo. Vale en --background.";
 static int arg_handle_fl_check_manual(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);

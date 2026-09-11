@@ -531,10 +531,14 @@ bool dump_urls(bContext *C, const char *ids_path, const char *out_path)
       continue;
     }
     n++;
-    const std::optional<std::string> url = url_from_rna_id(C, rna_id);
-    if (url.has_value()) {
+    /* Se vuelca el SUFIJO, no la URL entera: el prefijo lleva dentro la version
+     * de Blender y el idioma, y una linea base que los repita en 17.000 filas se
+     * pone roja el dia que suba la version sin que haya ninguna regresion. El
+     * prefijo se compara una sola vez, arriba. */
+    const std::optional<std::string> suffix = find_url_suffix(rna_id);
+    if (suffix.has_value()) {
       hits++;
-      out << rna_id << "\t" << url.value() << "\n";
+      out << rna_id << "\t" << suffix.value() << "\n";
     }
     else {
       out << rna_id << "\t-\n";
@@ -588,8 +592,8 @@ bool check_urls(bContext *C, const char *baseline_path)
     }
 
     n++;
-    const std::optional<std::string> url = url_from_rna_id(C, key);
-    const std::string got = url.has_value() ? url.value() : std::string("-");
+    const std::optional<std::string> suffix = find_url_suffix(key);
+    const std::string got = suffix.has_value() ? suffix.value() : std::string("-");
     if (got == value) {
       same++;
     }
