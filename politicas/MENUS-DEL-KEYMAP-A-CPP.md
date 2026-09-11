@@ -326,3 +326,45 @@ No es un fallo de la migración ni del volcador: es el alcance de la línea base
 Para cerrarlo haría falta una segunda línea base sobre un `.blend` con clip,
 máscara, partículas y modo edición. Mientras no exista, cada parte dice qué
 bloques quedaron sin cubrir y por qué.
+
+## Los doce que son paneles: por qué no se pueden migrar de uno en uno
+
+De los 133, **doce son `Panel`, no `Menu`**. El keymap los abre con
+`wm.call_panel`, que los busca en el registro global con `WM_paneltype_find()`,
+así que a primera vista bastaría con `flipendo::panels_register()`. No basta, y
+conviene saber por qué antes de empezar.
+
+Un `PanelType` no vive solo en el registro global: vive **en la lista de su
+región**, y el volcado de registro compara esa lista **en orden de lista, no
+alfabético** (es la trampa que ya está escrita en `UI-A-CPP.md`). Y el orden lo
+decide el orden de alta, porque `PanelType::order` vale 0 en los doce:
+`panel_insert_ordered()` inserta detrás del último con `order <= 0`, o sea añade
+al final entre iguales.
+
+El C++ se registra en `ED_spacetypes_init()`; el Python, al cargar los scripts,
+mucho después. Conclusión: **cualquier panel que pase a C++ salta a la cabeza de
+la lista de su región**, y el volcado lo marca como diferencia aunque el panel
+sea idéntico. Medido en la línea base de esta noche:
+
+| Región | Paneles en la lista | De los 133 | Ajenos que quedarían detrás |
+|---|---|---|---|
+| `VIEW_3D WINDOW` | 11 | 8 | 3 (`VIEW3D_PT_curves_sculpt_*`, de `space_view3d_toolbar.py` — carril A2) |
+| `TOPBAR HEADER` | 15 | 3 (posiciones 5, 6 y 7) | 12 |
+| `VIEW_3D HEADER` | 58 | 1 (`VIEW3D_PT_snapping`) | 57 |
+
+O sea: migrar `VIEW3D_PT_snapping` solo cambia su posición de la 1 a la 58 en una
+lista de 58, y el parte lo cantaría. **No es un fallo: es que la unidad de
+migración de los paneles es la región entera, no el panel.**
+
+Las dos salidas, y las dos hay que escribirlas antes de tomarlas:
+
+1. **Migrar la región completa.** Para `VIEW_3D WINDOW` son once paneles, de los
+   que tres son de `space_view3d_toolbar.py` (carril A2): hay que coordinarlo,
+   no se puede hacer desde aquí sin pisar a otro carril.
+2. **Dar `order` explícito** a los migrados para que caigan donde caían. Es
+   posible, pero `order` es una prioridad y no una posición, y con todo a 0 no
+   se puede intercalar nativo y Python de forma estable. Sería una decisión, no
+   una copia, y habría que justificarla por escrito.
+
+Mientras tanto los doce **están medidos y no tocados**. Migrarlos «porque son
+cortos» habría metido cinco diferencias de región en el parte de otro carril.
