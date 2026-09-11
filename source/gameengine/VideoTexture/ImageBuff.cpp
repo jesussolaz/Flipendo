@@ -237,7 +237,7 @@ static PyObject *load(PyImage *self, PyObject *args)
   // calc proper buffer size
   // use pixel size from filter
   if (self->m_image->getFilter() != nullptr)
-    pixSize = self->m_image->getFilter()->m_filter->firstPixelSize();
+    pixSize = self->m_image->getFilter()->firstPixelSize();
   else
     pixSize = defFilter.firstPixelSize();
 

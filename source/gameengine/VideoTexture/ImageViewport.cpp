@@ -136,7 +136,13 @@ void ImageViewport::calcViewport(unsigned int textid, double ts)
   if (!m_texInit) {
     if (m_texture) {
       m_texture->loadTexture(m_image, m_size, false, m_internalFormat);
-      m_texInit = true;
+      /* Flipendo: no darlo por hecho. Blender sube la textura de GPU de una
+       * imagen de forma perezosa, en el primer dibujado, asi que en los primeros
+       * frames `loadTexture` no tiene nada donde intercambiar y no intercambia
+       * nada. Marcarlo como hecho ahi dejaba la pantalla con la imagen original
+       * para siempre. Solo se da por inicializada cuando el intercambio ocurrio
+       * de verdad, y si no, se reintenta al frame siguiente. */
+      m_texInit = (m_texture->m_origGpuTex != nullptr);
     }
   }
 }
