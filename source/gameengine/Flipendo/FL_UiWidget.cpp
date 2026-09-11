@@ -101,6 +101,7 @@ void FL_UiWidget::DrawTree(FL_UiCanvas &canvas)
   for (FL_UiWidget *child : orden) {
     child->DrawTree(canvas);
   }
+  PostDraw(canvas);
 }
 
 bool FL_UiWidget::DispatchMouse(float x, float y, FL_UiMouse event)
@@ -132,12 +133,14 @@ bool FL_UiWidget::DispatchMouse(float x, float y, FL_UiMouse event)
   /* Entrar y salir se avisan aunque el widget esté congelado: son informativos. */
   if (dentro && !m_hover) {
     m_hover = true;
+    HandleMouseEnter();
     if (onMouseEnter) {
       onMouseEnter(*this);
     }
   }
   else if (!dentro && m_hover) {
     m_hover = false;
+    HandleMouseExit();
     if (onMouseExit) {
       onMouseExit(*this);
     }
@@ -147,21 +150,25 @@ bool FL_UiWidget::DispatchMouse(float x, float y, FL_UiMouse event)
     return tomado;
   }
 
+  HandleHover();
   if (onHover) {
     onHover(*this);
   }
   switch (event) {
     case FL_UiMouse::Click:
+      HandleClick();
       if (onClick) {
         onClick(*this);
       }
       break;
     case FL_UiMouse::Release:
+      HandleRelease();
       if (onRelease) {
         onRelease(*this);
       }
       break;
     case FL_UiMouse::Active:
+      HandleActive();
       if (onActive) {
         onActive(*this);
       }
@@ -208,6 +215,78 @@ void FL_UiLabel::Draw(FL_UiCanvas &canvas)
   canvas.Text(text, m_frame.x, m_frame.y, ptSize, color);
 }
 
+/* ---------------------------------------------------------- FL_UiFrameButton */
+
+FL_UiFrameButton::FL_UiFrameButton(const std::string &name, int options)
+    : FL_UiWidget(name, options)
+{
+  /* Los mismos valores por defecto que el tema de bgui para FrameButton. */
+  baseColors[0] = FL_Color(0.4f, 0.4f, 0.4f, 1.0f);
+  baseColors[1] = FL_Color(0.4f, 0.4f, 0.4f, 1.0f);
+  baseColors[2] = FL_Color(0.7f, 0.7f, 0.7f, 1.0f);
+  baseColors[3] = FL_Color(0.7f, 0.7f, 0.7f, 1.0f);
+  for (int i = 0; i < 4; ++i) {
+    m_drawColors[i] = baseColors[i];
+  }
+}
+
+void FL_UiFrameButton::SetBaseColor(const FL_Color &c)
+{
+  for (int i = 0; i < 4; ++i) {
+    baseColors[i] = c;
+    m_drawColors[i] = c;
+  }
+}
+
+void FL_UiFrameButton::Tint(float delta)
+{
+  for (int i = 0; i < 4; ++i) {
+    m_drawColors[i] = FL_Color(baseColors[i].r + delta,
+                               baseColors[i].g + delta,
+                               baseColors[i].b + delta,
+                               baseColors[i].a);
+  }
+}
+
+void FL_UiFrameButton::HandleHover()
+{
+  Tint(0.1f);
+}
+
+void FL_UiFrameButton::HandleActive()
+{
+  Tint(-0.1f);
+}
+
+void FL_UiFrameButton::Draw(FL_UiCanvas &canvas)
+{
+  canvas.GradientRect(m_frame, m_drawColors[0], m_drawColors[1], m_drawColors[2], m_drawColors[3]);
+  if (border > 0.0f) {
+    canvas.Border(m_frame, border, borderColor);
+  }
+  if (!text.empty()) {
+    /* Centrado midiendo el texto en el momento de pintar, que es cuando hay
+     * fuente cargada y tamaño fijado. */
+    const float w = canvas.TextWidth(text, ptSize);
+    const float h = canvas.TextHeight(ptSize);
+    canvas.Text(text,
+                m_frame.x + (m_frame.w - w) * 0.5f,
+                m_frame.y + (m_frame.h - h) * 0.5f,
+                ptSize,
+                textColor);
+  }
+}
+
+void FL_UiFrameButton::PostDraw(FL_UiCanvas &canvas)
+{
+  (void)canvas;
+  /* Igual que bgui: el tinte del estado dura un frame y luego se vuelve al reposo.
+   * Si el ratón sigue encima, el reparto del frame siguiente lo vuelve a poner. */
+  for (int i = 0; i < 4; ++i) {
+    m_drawColors[i] = baseColors[i];
+  }
+}
+
 /* --------------------------------------------------------------- FL_UiSystem */
 
 FL_UiSystem::FL_UiSystem() : FL_UiWidget("<System>", FL_UI_NO_NORMALIZE | FL_UI_NO_FOCUS)
@@ -248,6 +327,7 @@ void FL_UiSystem::Detach()
 
 void FL_UiRunAll()
 {
+  FL_UiRunSelfTest();
   for (FL_UiSystem *sistema : EnganchadosLista()) {
     sistema->Run();
   }
@@ -313,6 +393,37 @@ void FL_UiSystem::Run()
 
 /* ------------------------------------------------- demostracion verificable */
 
+/* El arbol de demostracion vive aqui para que la autoprueba pueda empujarle
+ * eventos sinteticos. */
+static std::unique_ptr<FL_UiSystem> &DemoSistema()
+{
+  static std::unique_ptr<FL_UiSystem> sistema;
+  return sistema;
+}
+
+/* Registro de lo que ha recibido cada widget, en orden. Es la evidencia. */
+static std::vector<std::string> &DemoEventos()
+{
+  static std::vector<std::string> eventos;
+  return eventos;
+}
+
+static void Apunta(const std::string &quien, const char *que)
+{
+  DemoEventos().push_back(quien + ":" + que);
+}
+
+static void SuscribeTodo(FL_UiWidget *w)
+{
+  const std::string quien = w->Name();
+  w->onMouseEnter = [quien](FL_UiWidget &) { Apunta(quien, "entra"); };
+  w->onMouseExit = [quien](FL_UiWidget &) { Apunta(quien, "sale"); };
+  w->onHover = [quien](FL_UiWidget &) { Apunta(quien, "encima"); };
+  w->onClick = [quien](FL_UiWidget &) { Apunta(quien, "pulsa"); };
+  w->onActive = [quien](FL_UiWidget &) { Apunta(quien, "mantiene"); };
+  w->onRelease = [quien](FL_UiWidget &) { Apunta(quien, "suelta"); };
+}
+
 /* Con FL_UI_DEMO=1 se monta un arbol de widgets: un panel (FL_UiFrame) con
  * degradado de cuatro esquinas y borde, dos etiquetas (FL_UiLabel) y una barra de
  * progreso hecha con dos marcos anidados. Sirve de linea base para comparar los
@@ -331,13 +442,13 @@ void FL_UiMaybeAddDemo()
     return;
   }
 
-  static std::unique_ptr<FL_UiSystem> sistema;
-  sistema = std::make_unique<FL_UiSystem>();
+  DemoSistema() = std::make_unique<FL_UiSystem>();
+  FL_UiSystem *sistema = DemoSistema().get();
 
   auto panelPtr = std::make_unique<FL_UiFrame>("panel", FL_UI_NO_NORMALIZE);
   FL_UiFrame *panel = sistema->Add(std::move(panelPtr));
   panel->SetPosition(40.0f, 40.0f);
-  panel->SetSize(420.0f, 150.0f);
+  panel->SetSize(420.0f, 195.0f);
   panel->colors[0] = FL_Color(0.05f, 0.08f, 0.14f, 0.92f);
   panel->colors[1] = FL_Color(0.10f, 0.14f, 0.24f, 0.92f);
   panel->colors[2] = FL_Color(0.04f, 0.06f, 0.10f, 0.92f);
@@ -371,9 +482,89 @@ void FL_UiMaybeAddDemo()
   relleno->SetSize(0.62f, 1.0f);
   relleno->SetColor(FL_Color(0.20f, 0.80f, 0.35f, 1.0f));
 
+  /* El boton: coloreado como el tema por defecto de bgui.FrameButton, y con todos
+   * sus eventos suscritos para la autoprueba. */
+  FL_UiFrameButton *boton = panel->Add(
+      std::make_unique<FL_UiFrameButton>("boton", FL_UI_NO_NORMALIZE));
+  boton->SetPosition(240.0f, 145.0f);
+  boton->SetSize(162.0f, 34.0f);
+  boton->text = "JUGAR";
+  boton->ptSize = 18;
+  boton->border = 1.0f;
+  boton->borderColor = FL_Color(0.95f, 0.62f, 0.10f, 1.0f);
+  SuscribeTodo(boton);
+  SuscribeTodo(panel);
+
   sistema->Attach();
   CM_Message("FL_UI_DEMO: arbol de widgets nativo montado y enganchado ("
-             << "panel + 2 etiquetas + barra con relleno normalizado)");
+             << "panel + 2 etiquetas + barra con relleno normalizado + boton)");
+}
+
+/* ---------------------------------------------------------- la autoprueba */
+
+void FL_UiRunSelfTest()
+{
+  static bool hecho = false;
+  if (hecho) {
+    return;
+  }
+  const char *v = std::getenv("FL_UI_SELFTEST");
+  if (!v || v[0] == '\0' || v[0] == '0') {
+    hecho = true;
+    return;
+  }
+  FL_UiSystem *sistema = DemoSistema().get();
+  if (!sistema) {
+    return;
+  }
+  FL_UiWidget *boton = sistema->Find("boton");
+  if (!boton || boton->Frame().w <= 0.0f) {
+    /* Todavia no se ha colocado el arbol (eso pasa en el primer dibujado). */
+    return;
+  }
+  hecho = true;
+
+  const FL_Rect &r = boton->Frame();
+  const float cx = r.x + r.w * 0.5f;
+  const float cy = r.y + r.h * 0.5f;
+  /* Un punto que esta dentro del panel pero FUERA del boton, para comprobar que
+   * el hijo se queda el evento y el padre no lo ve. */
+  const float px = r.x - 60.0f;
+  const float py = cy;
+
+  struct Paso {
+    const char *nombre;
+    float x, y;
+    FL_UiMouse estado;
+  };
+  const Paso pasos[] = {
+      {"fuera del panel", 700.0f, 500.0f, FL_UiMouse::None},
+      {"sobre el panel, fuera del boton", px, py, FL_UiMouse::None},
+      {"sobre el boton", cx, cy, FL_UiMouse::None},
+      {"pulsando el boton", cx, cy, FL_UiMouse::Click},
+      {"manteniendo el boton", cx, cy, FL_UiMouse::Active},
+      {"soltando el boton", cx, cy, FL_UiMouse::Release},
+      {"fuera del panel otra vez", 700.0f, 500.0f, FL_UiMouse::None},
+  };
+
+  CM_Message("FL_UI_SELFTEST: boton en (" << int(r.x) << "," << int(r.y) << ") "
+                                          << int(r.w) << "x" << int(r.h));
+  for (const Paso &paso : pasos) {
+    DemoEventos().clear();
+    sistema->DispatchMouse(paso.x, paso.y, paso.estado);
+    std::string linea;
+    for (const std::string &e : DemoEventos()) {
+      if (!linea.empty()) {
+        linea += " ";
+      }
+      linea += e;
+    }
+    if (linea.empty()) {
+      linea = "(nada)";
+    }
+    CM_Message("FL_UI_SELFTEST: " << paso.nombre << " -> " << linea);
+  }
+  CM_Message("FL_UI_SELFTEST: fin");
 }
 
 }  // namespace flipendo

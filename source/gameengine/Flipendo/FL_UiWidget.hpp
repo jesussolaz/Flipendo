@@ -112,6 +112,21 @@ class FL_UiWidget {
   {
     (void)canvas;
   }
+  /// Después de pintar los hijos. bgui lo usa para devolver el estado al reposo.
+  virtual void PostDraw(FL_UiCanvas &canvas)
+  {
+    (void)canvas;
+  }
+
+  /* Ganchos internos del widget, que corren ANTES de la llamada del usuario.
+   * Son los `_handle_*` de bgui: el widget reacciona a su estado (un botón se
+   * aclara al pasar por encima) y además avisa a quien se haya suscrito. */
+  virtual void HandleClick() {}
+  virtual void HandleRelease() {}
+  virtual void HandleHover() {}
+  virtual void HandleActive() {}
+  virtual void HandleMouseEnter() {}
+  virtual void HandleMouseExit() {}
 
   std::string m_name;
   int m_options = FL_UI_DEFAULT;
@@ -156,6 +171,44 @@ class FL_UiLabel : public FL_UiWidget {
   void Draw(FL_UiCanvas &canvas) override;
 };
 
+/** Botón de color con texto centrado, como `bgui.FrameButton`.
+ *
+ * Los colores y el comportamiento son los de bgui: cuatro colores de base (por
+ * defecto gris 0,4 arriba y 0,7 abajo), **+0,1 en RGB al pasar el ratón por
+ * encima** y **−0,1 mientras se mantiene pulsado**, y vuelta al reposo después
+ * de pintar.
+ *
+ * Diferencia deliberada: bgui compone el botón con un `Frame` y un `Label`
+ * hijos; aquí es una hoja que se pinta ella misma y centra el texto midiéndolo
+ * en el momento de dibujar. El resultado en pantalla es el mismo y se ahorra un
+ * árbol de tres nodos por botón. */
+class FL_UiFrameButton : public FL_UiWidget {
+ public:
+  FL_UiFrameButton(const std::string &name = "button", int options = FL_UI_DEFAULT);
+
+  std::string text;
+  int ptSize = 20;
+  FL_Color textColor{1.0f, 1.0f, 1.0f, 1.0f};
+
+  /// Colores de base de las cuatro esquinas (arriba-izq, arriba-der, abajo-der, abajo-izq).
+  FL_Color baseColors[4];
+  float border = 1.0f;
+  FL_Color borderColor{0.0f, 0.0f, 0.0f, 1.0f};
+
+  /// Pone el mismo color de base en las cuatro esquinas.
+  void SetBaseColor(const FL_Color &c);
+
+ protected:
+  void Draw(FL_UiCanvas &canvas) override;
+  void PostDraw(FL_UiCanvas &canvas) override;
+  void HandleHover() override;
+  void HandleActive() override;
+
+ private:
+  void Tint(float delta);
+  FL_Color m_drawColors[4];
+};
+
 /* ------------------------------------------------------------- el sistema */
 
 /** Raíz del árbol: se dimensiona con la pantalla, se dibuja sola y reparte el
@@ -193,6 +246,12 @@ class FL_UiSystem : public FL_UiWidget {
  * por frame; un juego que prefiera hacerlo a mano puede no enganchar el sistema y
  * llamar a `Run()` desde su propio `FL_Component`. */
 void FL_UiRunAll();
+
+/** Autoprueba del reparto de eventos, sin ratón de verdad: con `FL_UI_SELFTEST=1`
+ * se envían posiciones y estados sintéticos al árbol de demostración y se
+ * imprime, en orden, qué widget recibió qué. La salida es determinista, así que
+ * comparar los dos binarios es un `diff`. La llama `FL_UiRunAll`. */
+void FL_UiRunSelfTest();
 
 }  // namespace flipendo
 
