@@ -481,3 +481,99 @@ Ahora se lee la región `RGN_TYPE_TOOLS` directamente, igual que hace el captado
 > Lección, y es la misma de siempre en esta migración: **el volcado no ve el dibujo**. Los
 > nueve campos de la línea base decían que `builtin.loop_cut` tenía sus dos ajustes, y era
 > cierto: estaban en la tabla. Solo que no se pintaban.
+
+---
+
+## Fase 5: el Python del subsistema, retirado
+
+Con el dibujo verificado, lo que quedaba no era migrar: era **dejar sin lectores** al
+armazón y al catálogo, y borrarlos.
+
+### Once consumidores, no seis
+
+El análisis contaba «seis módulos de UI, ~25 puntos». Medido con `grep`, eran **once**:
+los seis de `bl_ui` más `bl_keymap_utils/keymap_hierarchy.py`,
+`bl_i18n_utils/bl_extract_messages.py`, `bpy/utils/__init__.py`,
+`bpy/utils/toolsystem.py` y la plantilla `templates_py/ui_tool_simple.py`.
+
+### Tres consultas nativas nuevas, y ninguna más
+
+| RNA | Sustituye a | Por qué hacía falta |
+|---|---|---|
+| `WorkSpaceTools.from_active_space(create=False)` | `_tool_active_from_context` | Las cuatro `from_space_*` exigen espacio **y** modo, y cada espacio saca el suyo de un sitio distinto. Incluye PROPERTIES → VIEW_3D. |
+| `WorkSpaceTools.has_tool_with_brush_type(bt)` | `BrushAssetShelf.has_tool_with_brush_type` | La única consulta del subsistema que no tenía línea base propia. |
+| `WindowManager.tool_keymap_names(space, mode)` | `keymap_ui_hierarchy` | El árbol del editor de keymaps. RNA no devuelve listas de cadenas: van una por línea, con aviso por stderr si no caben en 4.096 (el peor modo ocupa 1.208). |
+
+### Dos cosas que se replican a propósito, aunque parezcan errores
+
+- **`has_tool_with_brush_type` busca con `context.mode` también fuera de la vista 3D.** En
+  el editor de imagen los modos del catálogo se llaman de otra forma, así que allí no casa
+  ninguno y el estante **nunca** filtra por tipo de pincel. Buscar con el modo del espacio,
+  que es lo natural, hace desaparecer del estante los cinco pinceles de pintura 2D.
+- **`tool_keymap_names` salta las entradas con `poll` y las generadas de una enumeración**,
+  porque en el Python son objetos función y `_tools_flatten` —el que usa esa consulta, a
+  diferencia del registro de keymaps— devuelve `None` para ellos.
+
+### Una regresión mía, y la prueba que la cazó
+
+La primera versión de `tool_with_brush_type_exists` sacaba el modo de pintura de la
+herramienta **activa**, y devolvía «no» si no había ninguna. En un modo recién estrenado,
+cuya barra aún no se ha dibujado, `WM_toolsystem_ref_find` devuelve nulo: el estante
+escondía **todos** los pinceles del modo. La prueba diferencial lo cazó en los cuatro
+modos de lápiz de grasa —10 diferencias, todas «el nativo dice que no y el Python que
+sí»—. El modo sale ahora del contexto, que es de donde lo sacaba el Python.
+
+`check_brush_type_query.py` lleva además un guardia contra sí misma: cuenta cuántos «sí»
+da cada lado y falla si el lado Python no dijo que sí ni una vez. Dos lados que siempre
+dicen que no coinciden sin comprobar nada.
+
+### La extracción de traducciones no necesitaba equivalente nativo
+
+El análisis lo dio por perdido («necesitará su equivalente nativo»). No hacía falta: las
+425 cadenas están envueltas en `N_()` dentro de `toolsystem/fl_tool_defs_*.cc`, y
+`bl_extract_messages.dump_src_messages` ya recorre las fuentes C/C++ buscando esas macros
+(`.cc`, `.hh` y `.hpp` están en `PYGETTEXT_ALLOWED_EXTS`). Cambia el `msgsrc`, que es
+procedencia, no traducción.
+
+### Lo que se pierde, y estaba escrito
+
+`bpy.utils.register_tool` / `unregister_tool` y `bpy/utils/toolsystem.py`. Mutaban las
+listas del catálogo Python, que ya no existen. Cae con ellas la plantilla
+`templates_py/ui_tool_simple.py`, su único ejemplo.
+
+### Deuda que queda, con nombre y apellidos
+
+- **Los cinco paneles `*_PT_active_tool` siguen siendo Python** (cuatro líneas cada uno
+  que llaman a `template_tool_header`). Migrarlos a `PanelType` nativo cambia el orden de
+  registro dentro de la pestaña «Tool», donde conviven con los paneles de
+  `space_view3d_toolbar.py`: es trabajo de la migración de `bl_ui` (lote 3), no de este
+  subsistema.
+- **Las tres herramientas de anotación** siguen abriendo el popover del panel Python
+  `TOPBAR_PT_annotation_layers`. Dependen de `bl_ui`, no de aquí.
+
+### Qué quedó comparado visualmente, y qué no
+
+La comparación de las 819 huellas es cara (más de una hora de captura con ventana abierta)
+y frágil (se colgó dos veces con la máquina cargada por otros carriles). Se cerró así:
+
+- **Pasada completa, con el binario de antes de los arreglos**: las 819 huellas, los 30
+  espacios y modos. De ahí salen las 38 diferencias y su reparto (22 del arnés, 16 reales).
+- **Pasada de confirmación, con el binario ya arreglado**: `VIEW_3D EDIT_MESH` (43
+  herramientas), `VIEW_3D PAINT_GREASE_PENCIL` (13) y `SEQUENCE_EDITOR SEQUENCER` (2).
+  **112 huellas, 0 diferencias.**
+
+Esos tres modos no se eligieron por cómodos: entre ellos están **las tres familias de
+fallo** —las rutas de sub-operador de macro (Loop Cut, Poly Build, Rip Region, Extrude
+Along Normals), la fila alineada (Extrude Region, Spin, Blade) y las dos propiedades en
+una fila (`builtin.trim`)— y 12 de las 16 diferencias reales.
+
+**Lo que no se volvió a capturar**, y por qué se puede dar por cubierto: `builtin.extrude`
+en `EDIT_CURVE` y `EDIT_ARMATURE` y `builtin.cloth_filter` en `SCULPT` comparten *tabla y
+camino de código* con herramientas ya confirmadas (`VIEW3D_GGT_xform_extrude` y
+`PROP_ROW_ALIGN`), y `builtin.blade` en `SEQUENCER_PREVIEW` es la misma herramienta que en
+`SEQUENCER`. No hay ninguna rama de dibujo sin confirmar; lo que falta son repeticiones de
+ramas ya confirmadas, en los 27 modos restantes.
+
+> Y una advertencia para quien retome esto: el arnés diferencial **ya no puede ejecutarse**.
+> Su oráculo era el Python que esta fase retiró. Queda en el árbol como receta y como
+> registro del método, no como prueba ejecutable.

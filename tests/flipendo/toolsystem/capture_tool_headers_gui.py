@@ -285,6 +285,20 @@ def preparar_area():
             pass
 
 
+def volcar():
+    """Escribe lo capturado hasta ahora.
+
+    Se llama al terminar cada modo, no solo al final. Una tanda completa son 30 modos y
+    mas de una hora; si se corta a mitad —y se corto—, sin esto se pierde todo lo medido
+    y hay que repetirlo entero.
+    """
+    for modo, nombre in (("NATIVO", "cabeceras-nativo.txt"), ("PYTHON", "cabeceras-python.txt")):
+        if modo == "PYTHON" and not oraculo_usado:
+            continue
+        with open(os.path.join(outdir, nombre), "w") as f:
+            f.write("\n".join(lineas[modo]) + "\n")
+
+
 def avisar(texto):
     lineas["NATIVO"].append(texto)
     lineas["PYTHON"].append(texto)
@@ -389,6 +403,7 @@ def recorrer(space, mode):
             continue
         capturar("%s %s %s" % (space, mode, idname))
         print("  %s" % idname, flush=True)
+    volcar()
 
 
 def activar_objeto(ob):
@@ -484,11 +499,7 @@ try:
 except Exception:
     avisar("EXCEPCION\n" + traceback.format_exc())
 finally:
-    for modo, nombre in (("NATIVO", "cabeceras-nativo.txt"), ("PYTHON", "cabeceras-python.txt")):
-        if modo == "PYTHON" and not oraculo_usado:
-            continue
-        with open(os.path.join(outdir, nombre), "w") as f:
-            f.write("\n".join(lineas[modo]) + "\n")
+    volcar()
     if not oraculo_usado:
         print("HEADERS_CAPTURE_SIN_ORACULO: solo se capturo el dibujo nativo.")
     print("HEADERS_CAPTURE_DONE", len(lineas["NATIVO"]), len(lineas["PYTHON"]))
