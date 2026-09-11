@@ -66,6 +66,8 @@ class FL_ComponentManager {
 void FL_RegisterBuiltinComponents(FL_ComponentManager &mgr);
 /* Definida en FL_RenderToTexture.cpp: el componente "CctvMonitor". */
 void FL_RegisterRenderToTextureComponents(FL_ComponentManager &mgr);
+/* Definida en FL_TemplateComponents.cpp: las plantillas de ejemplo para el usuario. */
+void FL_RegisterTemplateComponents(FL_ComponentManager &mgr);
 
 struct FL_AutoRegister {
   FL_AutoRegister(const std::string &name, FL_ComponentManager::Factory f) {

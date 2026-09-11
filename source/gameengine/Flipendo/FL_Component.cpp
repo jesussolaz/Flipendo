@@ -29,6 +29,7 @@ void FL_ComponentManager::AttachScene(KX_Scene *scene)
     m_builtinsRegistered = true;
     FL_RegisterBuiltinComponents(*this);
     FL_RegisterRenderToTextureComponents(*this);
+    FL_RegisterTemplateComponents(*this);
   }
   for (KX_Scene *s : m_attachedScenes) {
     if (s == scene) {
