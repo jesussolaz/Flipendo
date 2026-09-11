@@ -337,6 +337,121 @@ del rechazo y «Preset no convertible a datos, se ejecuta como script». Se va c
 
 ---
 
+## El envoltorio de Python, cerrado casi entero (carril OPS-3, 2026-09-11, 21:50)
+
+El plan de cuatro pasos de más abajo se ha ejecutado en el orden recomendado (2 → 1),
+y con él **`presets.py` baja de 1.022 líneas a 443** (−579, el 57 %).
+
+### Qué se llevó a C++
+
+| Qué | Dónde | Cómo se verificó |
+|---|---|---|
+| Los **20** `*_preset_add` / `*_preset_remove` no-tema | `preset/fl_preset_add_ops.cc`, **una fila por familia** | `--fl-check-preset-optypes` 93/93 · `--fl-check-preset-ops` 89/89 |
+| `wm.operator_presets_cleanup` | el mismo fichero | `--fl-check-preset-optypes` |
+| `WindowManager.preset_name` | `register_add_preset_types()` | `--fl-dump-preset-panel`, idéntico |
+| El `bl_label` del menú | `flipendo::preset::ui::menu_label_set/get` | `--fl-check-preset-ops`, casos 0-6 y 8, 12 |
+
+Las 298 líneas de tabla son ahora 20 filas de una estructura. Las 24 subclases eran
+datos: nunca fueron código.
+
+### Los dos arneses nuevos
+
+```
+Blender -b --fl-check-preset-optypes tests/flipendo/presetops/baseline-python.txt
+  TOTAL 93/93 elementos identicos, 117/117 lineas      (23 operadores)
+
+BLENDER_USER_SCRIPTS=<carpeta vacía> \
+Blender -b --fl-check-preset-ops tests/flipendo/presetops/comportamiento-python.txt
+  TOTAL 89/89 elementos identicos, 103/103 lineas      (13 casos)
+```
+
+El primero compara la **superficie de registro**; el segundo, la **conducta**: escribe
+presets de verdad, los aplica, los borra y vuelca el contenido de los ficheros byte a
+byte. Las dos líneas base se capturaron con un guion Python efímero contra una copia del
+binario anterior (`/tmp/Blender-ref-ops3.app`, con los `.py` dentro de su *bundle*), y
+**las dos se repitieron tres veces con el mismo md5** antes de darlas por buenas.
+
+El arnés de conducta se puede ejecutar en `--background` porque redirige la carpeta de
+scripts del usuario con `BLENDER_USER_SCRIPTS`. Sin eso escribiría en los presets de
+verdad del usuario — que es exactamente lo que pasó la primera vez, por la trampa 1.
+
+### Las cuatro trampas, medidas
+
+1. **`bpy.utils.user_resource(create=True)` NO es `BKE_appdir_folder_id_create()`.**
+   Ésta prueba primero con `BKE_appdir_folder_id()`, que **exige que la carpeta exista**,
+   y sólo si no existe cae al camino del usuario; aquélla va siempre al camino del
+   usuario (`folder_id_user_notest`) y crea lo que falte. Con `BLENDER_USER_SCRIPTS`
+   puesto pero su `presets/<familia>` todavía sin crear, y la carpeta por defecto ya
+   creada por otro carril, la versión de C escribía en la **por defecto**. Lo cazó el
+   arnés dejando siete presets en la carpeta real del usuario.
+2. **Una propiedad declarada desde Python no es animable.** `bpy_props` limpia
+   `PROP_ANIMATABLE` salvo que se pida; `RNA_def_boolean()` lo deja puesto. Sin
+   `RNA_def_property_clear_flag(prop, PROP_ANIMATABLE)` el contrato cambia sin que se
+   note. Por eso el volcado nuevo incluye **banderas**, que el v1 no llevaba.
+3. **`RNA_def_collection()` con el tipo por nombre sólo vale en el preproceso.** En
+   ejecución imprime «`".properties": only during preprocessing`» y deja la colección
+   **sin tipo de elemento**: existe, se registra igual, y no se puede recorrer. En
+   ejecución se pone con el puntero (`RNA_def_property_struct_runtime`). El volcado daba
+   «idéntico» con la colección rota hasta que se le añadió `srna=`.
+4. **`maxlen=64` se registra como 65.** Ya estaba escrito en `OBJECT-SELECT-A-CPP.md`;
+   aquí afecta a `name` y a `operator`.
+
+### Una corrección y una ampliación, las dos deliberadas
+
+- **`wm.keyconfig_preset_remove` estaba muerto.** Su `invoke` buscaba el fichero con
+  `ext=".py"` cuando el carril B4 ya había cambiado la extensión de la familia a
+  `.fkeyconfig`: nunca encontraba nada y siempre decía «Built-in keymap configurations
+  cannot be removed». Ahora busca con la extensión de la familia y después con `.py`.
+  Es un fallo **introducido por esta migración**, no de Blender.
+- **`wm.operator_presets_cleanup` sólo limpiaba `.py`**, y los presets de operador se
+  escriben hoy como `.fpreset`: el operador existía y no limpiaba nada de lo nuevo. El
+  nativo hace las dos cosas, con el mismo filtro de líneas y el mismo `\b` tras el
+  nombre de la propiedad (sin él, quitar `files` se llevaría `files_extra`).
+
+### Deuda nueva, con nombre y apellidos
+
+1. **El `bl_label` de un menú de presets que todavía sea Python.** La etiqueta vive
+   ahora en un registro nativo, y `menu_label_set` escribe además el `label` del
+   `MenuType`/`PanelType` registrado. Lo que **no** se puede tocar sin intérprete es el
+   atributo de clase de Python, que es lo que leen estos doce ficheros de `bl_ui` cuando
+   dibujan el botón con `text=CLS.bl_label`: `properties_output.py`,
+   `properties_data_camera.py`, `properties_render.py`, `properties_physics_cloth.py`,
+   `properties_physics_fluid.py`, `properties_particle.py`,
+   `properties_material_gpencil.py`, `space_clip.py`, `space_userpref.py`,
+   `space_view3d_toolbar.py` y `bl_ui/utils.py` (`PresetPanel.draw_menu`). Consecuencia
+   concreta: en esos paneles el botón sigue diciendo lo que decía antes de guardar. Se
+   cierra solo según migre `bl_ui`; los paneles nativos ya leen el registro.
+2. **Los tres operadores de tema y la rama `.xml` de `script.execute_preset`.** Ver
+   abajo: siguen atados a `rna_xml.py`. Es el bloqueo del paso 3 del plan.
+3. **`tests/flipendo/presets/aplicacion-nativa.txt` está desfasado** respecto del árbol:
+   dice 166 presets y hoy hay 172, y no incluye el `ILEGIBLE` de
+   `keyconfig/Blender.fpreset` (que es un marcador, no un preset de propiedades).
+   Comprobado que el binario de referencia da **exactamente la misma salida** que el de
+   hoy, así que la diferencia es anterior a este trabajo. Toca recapturarlo a quien lleve
+   los presets como datos.
+4. **Sin verificar por ejecución**: la rama de añadir/quitar de la familia `keyconfig`
+   (llama a `preferences.keyconfig_export`/`import`, que necesitan una configuración de
+   teclado viva) y los `invoke` con diálogo (necesitan ventana). De los dos está
+   verificado que **se registran igual**.
+
+### Lo que queda de `presets.py` (443 líneas, 7 clases)
+
+`AddPresetBase` (sólo ya para las tres de tema), `ExecutePreset`,
+`AddPresetInterfaceTheme` / `RemovePresetInterfaceTheme` / `SavePresetInterfaceTheme`,
+`WM_MT_operator_presets` y `WM_PT_operator_presets` (dos clases de interfaz, se van con
+`bl_ui`) y la función `_operator_path`, que es la copia mínima de
+`AddPresetOperator.operator_path` que esas dos necesitan.
+
+**El paso 3 del plan (`script.execute_preset` a C++) está bloqueado**, y por una razón
+concreta y no por falta de tiempo: su rama `.xml` aplica temas con `rna_xml.py`, y sus
+dos únicos ganchos `reset_cb`/`post_cb` del árbol —contados, son dos, los de
+`USERPREF_MT_interface_theme_presets`— también son de temas. Migrarlo hoy significaría o
+perder los temas o dejar una llamada de C++ a Python nueva. **Lo que lo desbloquea es un
+lector/escritor de temas nativo** (`rna_xml.py`, 422 líneas, formato XML), que es la
+deuda 6 de este documento y una pieza propia.
+
+---
+
 ## Auditoría de `bl_operators/presets.py` (carril C, 2026-09-11, 04:30)
 
 El encargo lo describía como "el más redundante que queda". **Medido, no lo es**: no hay
