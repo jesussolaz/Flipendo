@@ -395,21 +395,6 @@ class POSE_MT_selection_set_create(Menu):
         layout.operator("pose.selection_set_add_and_assign", text="New Selection Set")
 
 
-class POSE_MT_selection_sets_select(Menu):
-    bl_label = "Select Selection Set"
-
-    @classmethod
-    def poll(cls, context):
-        return bpy.types.POSE_OT_selection_set_select.poll(context)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator_context = 'EXEC_DEFAULT'
-        for idx, sel_set in enumerate(context.object.selection_sets):
-            props = layout.operator("pose.selection_set_select", text=sel_set.name)
-            props.selection_set_index = idx
-
-
 classes = (
     DATA_PT_context_arm,
     DATA_PT_pose,
@@ -426,7 +411,6 @@ classes = (
     DATA_PT_custom_props_bcoll,
     POSE_MT_selection_set_create,
     POSE_MT_selection_sets_context_menu,
-    POSE_MT_selection_sets_select,
     POSE_PT_selection_sets,
     POSE_UL_selection_set,
 )

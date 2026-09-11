@@ -18,6 +18,7 @@ set(SRC
   armature_edit.cc
   armature_naming.cc
   armature_ops.cc
+  fl_armature_menus.cc
   armature_relations.cc
   armature_select.cc
   armature_skinning.cc
@@ -32,6 +33,7 @@ set(SRC
   pose_transform.cc
   pose_utils.cc
 
+  FL_armature_menus.hh
   armature_intern.hh
   meshlaplacian.h
 )

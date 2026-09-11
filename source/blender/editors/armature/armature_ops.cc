@@ -14,12 +14,18 @@
 #include "ED_armature.hh"
 #include "ED_screen.hh"
 
+#include "FL_armature_menus.hh"
 #include "armature_intern.hh"
 
 /* ************************** registration **********************************/
 
 void ED_operatortypes_armature()
 {
+  /* Menus nativos del esqueleto. El esqueleto no tiene editor propio, asi que su alta
+   * cuelga de aqui, como la de las mascaras. Antes de los operadores: el registro de
+   * menus es independiente y asi se ve de un vistazo. */
+  blender::ed::armature::menus_register();
+
   /* Both operators `ARMATURE_OT_*` and `POSE_OT_*` are registered here. */
 
   /* EDIT ARMATURE */
