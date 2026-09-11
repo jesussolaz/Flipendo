@@ -2,32 +2,123 @@
 
 > Repo: `/Users/jesussolaz/Flipendo/dev/upbge`. Doctrina: todo el código estructural propio converge a C++. Sin sync con upstream (divergencia total permitida).
 
+> ## 🔄 REMEDIDO EL 2026-09-11 — el árbol que describía este documento ya no existe
+>
+> Este backlog se escribió el 5 de septiembre y describe un `addons_core` con
+> rigify, glTF2, FBX y bge_mixer que **hoy no está**, y llama «plurianual» a un
+> trabajo que medía 479k líneas cuando se escribió la frase y mide **191.224** ahora.
+> Todas las cifras de abajo se han vuelto a medir al commit `87ce606a318`
+> (`git ls-tree` + `git grep -c ''`, sin `extern/` ni `lib/`). Lo que estaba mal se
+> corrige diciendo que estaba mal y por qué; lo que ya está conseguido se marca en el
+> nuevo §0.
+
 ---
 
-## 1. Resumen honesto de magnitud
+## 0. Lo ya conseguido (medido, no recordado)
 
-El macizo Python del editor es **~292.753 líneas en 882 ficheros `.py` (17 MB)** bajo `scripts/`. Medido de verdad. Se reparte así:
+Estas piezas estaban aquí como trabajo futuro y **están hechas**, cada una con su
+volcado idéntico como prueba y su política. Se listan para que nadie vuelva a
+planificarlas.
 
-| Bloque | Líneas | Naturaleza |
-|---|---:|---|
-| `scripts/addons_core` (14 dirs + 7 sueltos) | ~151.293 | Autoría de editor (upstream). NINGÚN fichero importa `bge`. |
-| `scripts/startup/bl_ui` (78 ficheros) | 64.452 | UI declarativa del editor (1173 Panel, 562 Menu…). 0 importan `bge`. |
-| `scripts/startup/bl_operators` (34) | 19.165 | Operadores `bpy.types.Operator`. |
-| `scripts/modules` (~90) | 31.544 | Módulos base + glue CPython (`bpy/`, `bpy_types.py`…). |
-| **Runtime del juego (objetivo real)** | **4.186** | `bgui` 2.391 + `bge_extras` 158 + `templates_py_components` 1.637. |
+| Pieza | Antes (10 sep 23:19) | Hoy | Prueba | Política |
+|---|---:|---:|---|---|
+| **Sistema de herramientas** | `space_toolsystem_toolbar.py` 3.779 + `space_toolsystem_common.py` 1.086 + `bpy/utils/toolsystem` + `keymap_from_toolbar.py` 394 | **0** | catálogo 30/30 · activación 474/474 · `--fl-check-tools` 0 diferencias | `TOOLSYSTEM-A-CPP.md` |
+| **Keymap** | `keyconfig/keymap_data/blender_default.py` 8.669 + `keyconfig/Blender.py` 386 | **0** → `Blender.fpreset` + `fl_keyconfig_io.cc` | `--fl-check-keymap` 248 keymaps, 0 por transliterar | `KEYMAP-A-CPP.md`, `MENUS-DEL-KEYMAP-A-CPP.md` |
+| **Presets (los datos)** | `scripts/presets/` 173 `.py` / 10.287 | **0 `.py`**, 172 `.fpreset` | `--fl-check-presets` 148/166 idénticos, **0 distintos** | `PRESETS-A-DATOS.md` |
+| **`bl_operators/wm.py`** | 3.015 | **no existe** | `--fl-dump-operators` cmp=0 · 24 operadores | `WM-SISTEMA-A-CPP.md` y familia |
+| **Editor de nodos** | `space_node.py` 1.201 (34 clases) | **84** (7 clases) | 27 de 34 tipos en `fl_node_ui.cc` (1.912 líneas) | `UI-A-CPP.md` |
+| **Paneles de juego** | `properties_game.py` 899 | **0** | `--fl-check-ui` 2.113/2.113 | `UI-A-CPP.md` |
+| **Addons del motor** | 4 `.py` de `addons_core` (1.617) | **0** | ÁNIMA publicada, `.zip` de 269 MB que arranca | `ADDONS-MOTOR-A-CPP.md` |
+| **Player sin CPython** | — | **hecho** | 0 símbolos `^_Py`, bundle 772 → 537 MB, 5/5 componentes | `PLAYER-SIN-CPYTHON.md` |
+
+Las **84 líneas que quedan de `space_node.py`** merecen una nota, porque son la regla
+del proyecto hecha código: son los paneles que el editor de nodos **clona** de
+Propiedades. No se reimplementan aquí; esperan a que su original esté en C++ y exponga
+su `draw()` en una cabecera pública. Dos copias de la misma lógica se desincronizan.
+
+---
+
+## 1. Resumen honesto de magnitud — **remedido el 2026-09-11**
+
+Python propio en todo el repo: **191.224 líneas en 613 ficheros**. Bajo `scripts/`,
+que es de lo que trata este backlog: **119.105 líneas en 251 ficheros**.
+
+| Bloque | Decía (5 sep) | **Hoy** | Ficheros | Qué pasó |
+|---|---:|---:|---:|---|
+| `scripts/startup/bl_ui` | 64.452 | **51.741** | 67 | toolsystem, nodos y paneles de juego, en C++ |
+| `scripts/modules` | 31.544 | **24.544** | 87 | |
+| `scripts/addons_core` | ~151.293 | **22.703** | 17 | rigify, glTF2, FBX y bge_mixer **ya no están** |
+| `scripts/startup/bl_operators` | 19.165 | **12.569** | 27 | `wm.py` entero fuera |
+| `scripts/freestyle` | 6.541 | **6.541** | 46 | intacto |
+| `scripts/presets` | ~14.323 | **0** | 0 | datos + lector C++ |
+| **Runtime del juego** | **4.186** | **2.391** | 15 | solo `bgui`; `bge_extras` y `templates_py_components`, fuera |
+
+Fuera de `scripts/` quedan 72.119 líneas más de Python: `tests/` 44.842 (278 f.),
+`intern/` 6.262, `release/` 2.063, `build_files/` 1.879, `doc/` 1.484 y utillaje.
+**No se distribuyen**, pero cuentan para la doctrina y para el total de arriba.
+
+### Qué decía este §1 antes, y por qué estaba mal
+
+1. **«~292.753 líneas en 882 ficheros `.py` (17 MB)».** Hoy son **119.105 en 251**.
+   El documento no envejeció: **nació ya con dos días de retraso**, porque la cifra
+   venía de `METRICAS.md`, que el 8 de septiembre publicaba un «snapshot» que en
+   realidad era del 5 (ver `METRICAS.md §6.1`). La consecuencia es concreta: se
+   llamó «plurianual» a un trabajo cuyo tamaño ya era un 30 % menor cuando se
+   escribió la frase.
+
+2. **El desglose de `addons_core` describe un directorio que no existe.** Decía
+   «14 dirs + 7 sueltos, ~151.293 líneas: rigify 46.480, bge_mixer 21.870, bl_pkg
+   19.687, glTF2 30.333, FBX-python 11.943». Medido hoy: **17 ficheros `.py`,
+   22.703 líneas**, y de aquella lista solo sobrevive `bl_pkg`:
+
+   | Fichero | Líneas |
+   |---|---:|
+   | `bl_pkg/` (gestor de extensiones, 14 f.) | 19.677 |
+   | `game_engine_spring_bones.py` | 1.301 |
+   | `copy_global_transform.py` | 1.261 |
+   | `normal_map_to_group.py` | 464 |
+
+3. **«4 dirs `bge_*` vacíos […] Limpieza: eliminar directorios»: consejo peligroso,
+   corregido.** No son directorios vacíos: son **submódulos de git** (`.gitmodules`,
+   modo `160000`) que apuntan a `UPBGE-logicnodes`, `bricky-nodes`, `EasyOnline` y
+   `The_Lightmapper`. Están vacíos porque **no están inicializados**, no porque no
+   tengan nada dentro. Borrarlos con `rmdir` no es limpieza: es retirar del fork
+   cuatro addons de UPBGE, uno de ellos (`bge_netlogic`) el sistema de nodos
+   lógicos, que es capacidad **de motor de juego**, no de editor. Si se retiran,
+   se retiran con la doctrina delante —demostrando que no son capacidad, o
+   sustituyéndolos— y por su camino de submódulo. Y hay una segunda razón para no
+   tocarlos a la ligera: la lección de las 02:30 de la noche del 10 al 11 es
+   justamente que una operación de git sobre un gitlink dejó el árbol sin compilar
+   para todos los carriles.
+
+4. **La conclusión de fondo está desmentida.** Decía: *«convertir 293k líneas es
+   plurianual y en su mayoría nunca compensa […] el resto del editor Python se queda
+   en Python»*. En una noche cayeron **52.454 líneas** de Python sin perder una sola
+   capacidad: 52/52 operadores y 24/24 clases de interfaz de los `.py` retirados
+   están presentes y medidos **en el binario**
+   (`REVISION-FINAL-2026-09-11.md §2.1`). Lo que sí sigue siendo cierto de aquel
+   párrafo es la **prioridad**: quitar CPython del Player era lo que tenía retorno
+   inmediato, y se hizo primero.
 
 **La distinción que ordena todo el backlog:**
 
-- **Editor-solo (~288.500 líneas, >98%):** no lo carga jamás el Player exportado. El juego usa `.blend`/LibLoad y lógica C++, no `bpy`. Migrar esto a C++ tiene **valor CERO para el juego exportado** y solo entra en juego si algún día el editor entero converge a C++ (horizonte aspiracional).
-- **Runtime-juego (~4.186 líneas + glue CPython del Player):** lo único con retorno doctrinal inmediato. El único módulo Python que el Player exportado **sí** carga es `bge_extras.logger` (`KX_PythonInit.cpp:2059`, `PyImport_ImportModule("bge_extras.logger")`).
+- **Editor-solo (~288.500 líneas, >98% → hoy ~116.700):** no lo carga jamás el Player exportado. El juego usa `.blend`/LibLoad y lógica C++, no `bpy`. Migrar esto a C++ tiene **valor CERO para el juego exportado** y solo entra en juego si algún día el editor entero converge a C++ ~~(horizonte aspiracional)~~ → **decidido el 2026-09-11: sí converge**.
+- **Runtime-juego (~4.186 líneas → hoy 2.391, solo `bgui`):** ~~lo único con retorno doctrinal inmediato~~ → **conseguido.** `bge_extras` ya no existe: el Player exportado **no importa ningún módulo Python al arrancar**, y en la configuración de distribución no lleva intérprete (0 símbolos `^_Py`). De `bgui` hay 4 de 9 widgets con equivalente nativo (`UI-JUEGO-NATIVA.md`, `K1`/`K2`), comparados píxel a píxel: 316 px distintos de 63.000.
 
-**La honestidad de fondo:** convertir 293k líneas es **plurianual y en su mayoría nunca compensa**. El trabajo con retorno real no es "migrar el editor" sino **quitar CPython del Player** (~4k líneas Python + purga transversal de `#ifdef WITH_PYTHON` en el gameengine). El resto del editor Python se **queda en Python** o se **borra al recortar el editor**; no se reescribe a C++ salvo decisión estratégica de años.
+~~**La honestidad de fondo:** convertir 293k líneas es **plurianual y en su mayoría nunca compensa**. El trabajo con retorno real no es "migrar el editor" sino **quitar CPython del Player** (~4k líneas Python + purga transversal de `#ifdef WITH_PYTHON` en el gameengine). El resto del editor Python se **queda en Python** o se **borra al recortar el editor**; no se reescribe a C++ salvo decisión estratégica de años.~~
 
-**Framework nativo ya disponible (no partimos de cero):**
-- Operadores nativos: **275 ficheros** en `source/blender/editors` definen `wmOperatorType` (mismo namespace `bpy.ops.xxx.yyy` que los Python → migrar uno mantiene idénticos los call-sites).
+> **Corregido el 2026-09-11**, ver el punto 4 de arriba: el Player sin CPython está
+> hecho **y** el editor se está migrando, sin que lo segundo dependiera de una
+> «decisión estratégica de años». La estimación honesta que queda, medida al ritmo de
+> la noche del 10 al 11, es de **40 a 60 noches como esa** para el «full C++»
+> completo (`NOCHE-2026-09-11.md`). Es una cifra con método, no una promesa.
+
+**Framework nativo ya disponible (remedido el 2026-09-11):**
+- Operadores nativos: **408 ficheros** en `source/blender/editors` definen `wmOperatorType` — decía 275. Mismo namespace `bpy.ops.xxx.yyy` que los Python → migrar uno mantiene idénticos los call-sites.
 - Layout + RNA en C: `source/blender/editors/interface`, `makesrna`.
 - Componentes nativos: `source/gameengine/Flipendo/FL_Component`, ya tickeando (`KX_Scene.cpp:2449`).
-- `WITH_PYTHON=OFF` es config **diseñada** (`CMakeLists.txt:230`, ON por defecto): hoy **compila**.
+- **50 opciones `--fl-*`** en el binario (volcadores, comprobadores y autotests): eran 8 antes de la noche del 10 al 11. Medido con `grep -oh '"--fl-[a-z0-9-]*"' -r source/ | sort -u | wc -l`. Es la red de seguridad que permite retirar Python sin adivinar: sin un volcado que se reproduzca a sí mismo, una migración no se puede dar por buena.
+- `WITH_PYTHON=OFF` ya no es solo «config diseñada»: es la **build de distribución** (`dev/build-nopy`), y produce un Player sin intérprete que ata 5/5 componentes en `T1_LaMancha.blend`. El «bloqueante estructural» que este documento daba por resuelto solo con un target nuevo no existía: la salida fueron **dos configuraciones del mismo árbol** (`PLAYER-SIN-CPYTHON.md §1`).
 
 ---
 
@@ -54,13 +145,13 @@ Operadores con lógica acotada sobre APIs C ya disponibles (BMesh, depsgraph, co
 
 | Grupo | Rutas | Líneas | Notas |
 |---|---|---:|---|
-| **SCA_PythonController** | `source/gameengine/GameLogic/SCA_PythonController.cpp/.hpp` | 620 | Reemplazar por bricks nativos / FL_Component. **Riesgo: fallo silencioso** (`Trigger()` no-op en rama `#else`, línea 503) → auditar `.blend` del proyecto antes de retirar. |
-| **templates_py_components (útiles)** | `scripts/templates_py_components/` (character controllers, vehículos, chaser AI) | ~1.637 | Reescribir como `FL_Component` nativos (patrón: `FL_ArpgComponents.cpp`). `python_component.py`/`bpytypes.py` se descartan al caer KX_PythonComponent. |
-| **wm.py — utilidades sistema** | url/path/doc/owner/tool, `blenderplayer_start` | ~1.300 | `url_open`/`path_open` ya tienen equivalente C. `blenderplayer_start` es Flipendo → versión C++ propia. |
-| **Ops malla/UV/físico** | `mesh.py` (250), ~~`vertexpaint_dirt.py` (198)~~, ~~`constraint.py` (121)~~, `rigidbody.py` (316), `uvcalc_*`, `uvcalc_lightmap.py` (688) | ~2.900 | `exec()` C++ sobre BMesh/constraints/rigidbody-world del editor. **`constraint.py` hecho** (2026-09-11, carril C, `object_constraint.cc`). **`vertexpaint_dirt.py` hecho** (2026-09-11, carril C): `PAINT_OT_vertex_color_dirt` en `editors/mesh/mesh_vertex_dirt.cc`, verificado 13112/13112 elementos de color idénticos con `--fl-check-mesh-ops`; ver `politicas/VERTEX-DIRT-A-CPP.md`. |
-| **bpy_extras (subconjunto mate)** | `view3d_utils.py` (181), `mesh_utils.py` (464), `object_utils.py` (289) | ~934 | Pura mate/geometría → helpers C++ llamables desde operadores nativos. `io_utils`/`node_shader_utils` NO (sirven a addons Python). |
+| **SCA_PythonController** | `source/gameengine/GameLogic/SCA_PythonController.cpp/.hpp` | 620 → **518 (.cpp) medido hoy** | Reemplazar por bricks nativos / FL_Component. **Riesgo: fallo silencioso** (`Trigger()` no-op en rama `#else`) → auditar `.blend` del proyecto antes de retirar. **Sigue pendiente.** |
+| ~~**templates_py_components (útiles)**~~ ✅ **HECHO (2026-09-11)** | ~~`scripts/templates_py_components/`~~ | ~~1.637~~ → **0** | El directorio ya no existe. Junto con `scripts/templates_py` son **40 ficheros y 2.700 líneas** convertidas a componentes nativos `FL_Component`. Efecto colateral que conviene saber: el menú *Plantillas* del editor de texto queda vacío (`REVISION-FINAL-2026-09-11.md §3.E`). |
+| ~~**wm.py — utilidades sistema**~~ ✅ **HECHO (2026-09-11, carril B)** | ~~url/path/doc/owner/tool, `blenderplayer_start`~~ | ~~1.300~~ → **0** | `wm.py` entero (3.015 líneas) fuera. 24 operadores en C++, volcado `cmp=0`. Ver `WM-SISTEMA-A-CPP.md`, `WM-OWNER-A-CPP.md`, `WM-PROPIEDADES-A-CPP.md`, `WM-BATCH-RENAME-A-CPP.md`, `WM-MENUS-A-CPP.md`. |
+| **Ops malla/UV/físico** | ~~`mesh.py` (250)~~, ~~`vertexpaint_dirt.py` (198)~~, ~~`constraint.py` (121)~~, ~~`rigidbody.py` (316)~~, `uvcalc_*`, `uvcalc_lightmap.py` (688) | ~2.900 → **~1.500 pendientes** | **Hechos el 2026-09-11:** `constraint.py` (`object_constraint.cc`); `vertexpaint_dirt.py` → `PAINT_OT_vertex_color_dirt` en `editors/mesh/mesh_vertex_dirt.cc`, 13.112/13.112 elementos de color idénticos (`--fl-check-mesh-ops`, `VERTEX-DIRT-A-CPP.md`); `mesh.py` (250) y `rigidbody.py` (316) retirados, este último con `--fl-check-rigidbody-ops` 63/63. **Pendientes:** los `uvcalc_*`, incluido `uvcalc_lightmap.py` (688, intacto). |
+| **bpy_extras (subconjunto mate)** | `view3d_utils.py` (181), ~~`mesh_utils.py` (464)~~, `object_utils.py` (289) | ~934 → **470 pendientes** | `mesh_utils.py` retirado el 2026-09-11 (prueba **estática**: sin una sola referencia viva; queda anotado en `REVISION-FINAL-2026-09-11.md §3.A` que es de las cuatro retiradas **sin arnés propio**). El resto: pura mate/geometría → helpers C++. `io_utils`/`node_shader_utils` NO (sirven a addons Python). |
 
-**Magnitud honesta:** convertir esta fracción "core" es esfuerzo de **varios trimestres**. Es la última capa con retorno técnico razonable.
+~~**Magnitud honesta:** convertir esta fracción "core" es esfuerzo de **varios trimestres**. Es la última capa con retorno técnico razonable.~~ → **Medido el 2026-09-11:** de este lote quedan unas **2.100 líneas**, no las ~7.400 que sumaba. Lo que se llamó «varios trimestres» ha sido, en su mayor parte, una noche.
 
 ---
 
@@ -68,12 +159,25 @@ Operadores con lógica acotada sobre APIs C ya disponibles (BMesh, depsgraph, co
 
 **Gated por una decisión estratégica: "reescribir el editor entero en C++".** Volumen enorme, complejidad por fichero baja-media (declarativo), valor de juego nulo. No se planifica hasta que exista esa decisión.
 
-- **Toda `bl_ui` (64.452 líneas):** cada `Panel`/`Menu`/`Header` → `PanelType`/`MenuType`/`HeaderType` nativo con callback `draw()` C++ sobre `uiLayout`+RNA. Los mayores: `space_view3d.py` (9.381), pestañas del Properties (~24.000), editores de espacio (~20.300), toolsystem (~5.000 — la pieza más "lógica", registro de herramienta activa).
-- **Piezas Flipendo aisladas dentro de `bl_ui`** (candidatas a piloto si se acomete el editor): `space_logic.py` (145) y `properties_game.py` (899) — dominio propio, pero siguen dependiendo de RNA `ob.game` y operadores `object.game_property_new/remove` nativos.
-- **Operadores pesados:** `presets.py` (1.015, metaprogramación: genera `.py`), `userpref.py` (1.307, gestión de paquetes CPython), `node.py`/`geometry_nodes.py` (~1.590), `wm.py` batch_rename/properties_edit (~1.550, modal + introspección RNA).
-- **bpy_types.py (1.487):** métodos Python sobre tipos RNA; cirugía en el corazón del binding.
+> **Este lote dejó de estar «gated» el 2026-09-10: se está ejecutando.** La decisión
+> estratégica que esperaba existe (`LENGUAJE-CPP.md`, «Decisión del 2026-09-11»), y
+> `bl_ui` ha bajado de 64.452 a **51.741** líneas. La lista de abajo se conserva con
+> las piezas ya cerradas tachadas, porque el orden que propone sigue valiendo.
+>
+> **Y con una regla de método que este lote no tenía y que costó caro descubrir: la
+> interfaz se migra por *editores completos*, nunca panel suelto.** El orden dentro de
+> la región cambia y el volcado marca diferencia aunque no cambie ningún campo.
 
-**No prometemos fecha.** Es plurianual y buena parte podría nunca ejecutarse.
+- **`bl_ui`: 64.452 → 51.741 líneas (67 ficheros).** Cada `Panel`/`Menu`/`Header` → `PanelType`/`MenuType`/`HeaderType` nativo con callback `draw()` C++ sobre `uiLayout`+RNA. Los mayores que quedan: `space_view3d.py` (**9.381 → 6.919**), `space_view3d_toolbar.py` (3.080), `space_userpref.py` (3.040), `space_sequencer.py` (2.943). ~~toolsystem (~5.000 — la pieza más "lógica", registro de herramienta activa)~~ ✅ **HECHO**, y fue efectivamente la más lógica: catálogo 30/30, activación 474/474, keymap 248/248 (`TOOLSYSTEM-A-CPP.md`).
+- ~~**Piezas Flipendo aisladas dentro de `bl_ui`** (candidatas a piloto si se acomete el editor): `space_logic.py` (145) y `properties_game.py` (899)~~ ✅ **HECHO (2026-09-11, carril D).** Ninguno de los dos existe ya; el editor de lógica es nativo (`source/blender/editors/space_logic/`, 7 ficheros) y los paneles de juego están en `fl_game_*.cc`. Verificado con `--fl-check-ui` 2.113/2.113 y el diseño 2.004/2.004.
+- ~~**Editor de nodos**~~ ✅ **HECHO (2026-09-11):** `space_node.py` 1.201 → **84** líneas, 34 clases → 7. Los 27 tipos propios están en `fl_node_ui.cc` (1.912 líneas). Pendiente aparte: los cinco `node_add_menu*.py` (2.133 líneas en total) siguen en Python.
+- **Operadores pesados (todos siguen en pie, remedidos):** `presets.py` (**1.022**, metaprogramación: genera `.py` — ojo, los *datos* de preset ya son C++, el *operador* no), `userpref.py` (1.307 → **1.156**, gestión de paquetes CPython), `node.py` (743) / `geometry_nodes.py` (391), `image_as_planes.py` (1.230), `clip.py` (1.098). ~~`wm.py` batch_rename/properties_edit (~1.550)~~ ✅ **HECHO.**
+- **`bpy_types.py` (1.487 → 1.491):** métodos Python sobre tipos RNA; cirugía en el corazón del binding. **Intacto.**
+
+~~**No prometemos fecha.** Es plurianual y buena parte podría nunca ejecutarse.~~ →
+Sigue sin haber fecha, pero ya no es «podría nunca ejecutarse»: se está ejecutando.
+La estimación con método es la de `NOCHE-2026-09-11.md`: 40-60 noches como aquella
+para el «full C++» completo, del que esto es una parte.
 
 ---
 
@@ -83,17 +187,17 @@ Operadores con lógica acotada sobre APIs C ya disponibles (BMesh, depsgraph, co
 |---|---:|---|
 | **Capa glue `bpy/`** (`__init__`, `ops.py`, `utils`, `bpy_types`) | ~2.247 | **ES** el puente CPython↔C (`from _bpy import ...`). No se traduce: se **borra** el día que el editor no ejecute Python. Intocable mientras haya editor Python. |
 | **KX_PythonInit + KX_PythonInitTypes** | ~3.060 C++ | Corazón del CPython embebido del Player (crea `bge.logic/render/types`). No se "migra": **desaparece** cuando el Player sea python-free. |
-| **`rigify`** | 46.480 | Autoría de rig, genera armaduras en editor. Reescribir a C++ no aporta al runtime. |
-| **`io_scene_gltf2`** | 30.333 | Sin equivalente C++ (verificado: 0 en `source/blender/io/`). El juego usa `.blend`, no glTF en runtime. |
-| **`bge_mixer`** (colaborativo), `bl_pkg` (extensiones) | 21.870 + 19.687 | Infraestructura de editor. El Player no tiene extensiones ni edición en red. |
-| **`io_scene_fbx`** | 11.943 | Import ya cubierto en C++ (`source/blender/io/fbx`, solo importer); export FBX no. Dejar como está. |
-| **`rna_manual_reference.py`** | 4.272 | Tupla autogenerada (RNA-path → URL docs.blender). Ni es código. Candidato a **borrar**. |
-| **`bl_i18n_utils`** | 5.254 | Tooling offline de traducción `.po`. Ni se carga en el editor en ejecución. |
-| **`addon_utils` + `_bpy_internal`** | ~4.800 | Descubrimiento/activación de addons (wheels pip, junctions). CPython por definición mientras los addons sean Python. |
-| **Consola Python** (`console_python`, `bge/interpreter.py`) | ~1.300 | Un REPL de Python "en C++" es una contradicción. Se jubila con el intérprete. |
-| **`rna_info`, `blend_render_info`, `graphviz_export`, `gpu_extras`** | ~1.500 | Tooling de build/docs y atajos de dibujo GPU para addons. Offline o azúcar. |
-| **VFX/import irrelevantes** (`clip.py`, `sequencer.py`, `freestyle.py`, `image_as_planes.py`…) | ~4.750 | Video/VSE/NPR/importadores. Nada que necesite un motor de juego. Dejar o borrar. |
-| **4 dirs `bge_*` vacíos** (bricknodes, easyonline, netlogic, thelightmapper) | 0 | Nada que migrar. **Limpieza:** eliminar directorios. |
+| ~~**`rigify`**~~ | ~~46.480~~ → **0** | **Ya no está en el árbol.** Se retiró en la poda; no llegó a ser una decisión de este backlog. |
+| ~~**`io_scene_gltf2`**~~ | ~~30.333~~ → **0** | **Ya no está.** Nota para quien lo eche de menos: el fork **no importa ni exporta glTF**. Si alguna vez se necesita, hay que escribirlo en C++ (`source/blender/io/` no lo cubre). |
+| ~~**`bge_mixer`**~~, `bl_pkg` (extensiones) | ~~21.870~~ → **0** · bl_pkg 19.687 → **19.677** | `bge_mixer` ya no está. `bl_pkg` **sí sigue**, y su clasificación cambió al medirla: admite **dos** tipos de extensión, y un tema es un `theme.xml` —datos, no Python—, así que instalar y elegir un tema **es capacidad de Flipendo**. Además la mitad de abajo del gestor ya estaba en C++ (`blenkernel/intern/preferences.cc:218-250`). Ver `EXTENSIONES-Y-EL-INTERPRETE.md`. |
+| ~~**`io_scene_fbx`**~~ | ~~11.943~~ → **0** | Ya no está. El **importador** FBX sigue en C++ (`source/blender/io/fbx`); el **exportador** no existe en el fork. |
+| ~~**`rna_manual_reference.py`**~~ | ~~4.272~~ → **0** | Retirado el 2026-09-11 y **sustituido, no borrado**: el mapa RNA-path → URL es ahora un dato con lector C++. Verificado con `--fl-check-manual`: **7.470 rutas idénticas, 0 distintas**. |
+| **`bl_i18n_utils`** | 5.254 → **5.227** | Tooling offline de traducción `.po`. Ni se carga en el editor en ejecución. **Sigue en pie.** |
+| **`addon_utils` + `_bpy_internal`** | ~4.800 → **4.209** | Descubrimiento/activación de addons (wheels pip, junctions). CPython por definición mientras los addons sean Python. **Sigue en pie.** |
+| **Consola Python** (`console_python` 368, `bge/interpreter.py`) | ~1.300 | Un REPL de Python "en C++" es una contradicción. Se jubila con el intérprete. **Sigue en pie.** |
+| **`rna_info`, `blend_render_info`, ~~`graphviz_export`~~, `gpu_extras`** | ~1.500 → ~1.300 | `graphviz_export` (194) retirado el 2026-09-11 con prueba **estática**; es una de las cuatro retiradas sin arnés propio (`REVISION-FINAL-2026-09-11.md §3.A`). El resto sigue. |
+| **VFX/import irrelevantes** (`clip.py` 1.098, `sequencer.py` 423, `freestyle.py` 223, `image_as_planes.py` 1.230…) | ~4.750 | Video/VSE/NPR/importadores. Nada que necesite un motor de juego. Dejar o borrar. **Sin tocar.** |
+| ~~**4 dirs `bge_*` vacíos** (bricknodes, easyonline, netlogic, thelightmapper)~~ | ~~0~~ | ⚠️ **ENTRADA ERRÓNEA, corregida el 2026-09-11.** No son directorios vacíos: son **submódulos de git** (`.gitmodules`, modo `160000`) hacia `UPBGE-logicnodes`, `bricky-nodes`, `EasyOnline` y `The_Lightmapper`, sin inicializar. «Eliminar directorios» habría retirado cuatro addons de UPBGE —uno de ellos el sistema de **nodos lógicos**, capacidad de motor de juego— creyendo que no había nada dentro. Ver §1, punto 3. |
 
 ---
 
@@ -135,18 +239,81 @@ Operadores con lógica acotada sobre APIs C ya disponibles (BMesh, depsgraph, co
 
 ## 4. La meta realista
 
-### Alcanzable a medio plazo: **"Player sin CPython"**
+### ~~Alcanzable a medio plazo:~~ ✅ **CONSEGUIDO el 2026-09-11: "Player sin CPython"**
 
-- El andamiaje **ya existe**: `EXP_PyObjectPlus.hpp:871` colapsa `Py_Header` a `public:` vacío en la rama `#else`; `SCA_PythonController.cpp:503` tiene `Trigger()` no-op; `WITH_PYTHON=OFF` está diseñado (`CMakeLists.txt:230`) y **hoy compila**.
-- Camino: cerrar los 3 huecos que hoy caen en silencio con `WITH_PYTHON=OFF` → (a) bricks Python (`SCA_PythonController`), (b) componentes de usuario (**ya resuelto por FL_Component**), (c) UI `bgui`. Es decir: retirar `KX_PythonComponent` (Lote 1) + portar los `templates_py_components` usados a FL_Component + auditar cero-bricks-Python (Lote 2).
-- **Caveat técnico real:** `WITH_PYTHON` es **global**, no del Player (`CMakeLists.txt`, además fuerza `WITH_CYCLES OFF` en :1374). Un Player sin CPython **con editor Python** exige un **target/flag nuevo Player-only** — trabajo de build system, no de módulo. Es el bloqueante estructural a resolver.
+- El andamiaje **ya existía**: `EXP_PyObjectPlus.hpp` colapsa `Py_Header` a `public:` vacío en la rama `#else`; `SCA_PythonController.cpp` tiene `Trigger()` no-op; `WITH_PYTHON=OFF` está diseñado (`CMakeLists.txt:230`).
+- Los tres huecos están cerrados: (a) bricks Python, (b) componentes de usuario (`FL_Component`), (c) UI `bgui` (4 de 9 widgets nativos y el camino abierto).
+- ~~**Caveat técnico real:** `WITH_PYTHON` es **global**, no del Player […] exige un **target/flag nuevo Player-only** — trabajo de build system […] Es el bloqueante estructural a resolver.~~
 
-### Horizonte / aspiracional: **"editor sin Python"**
+> **Ese bloqueante no existía, y es la corrección más útil de este documento.** No
+> hacía falta ningún target nuevo: la salida son **dos configuraciones de build del
+> mismo árbol** (`PLAYER-SIN-CPYTHON.md §1`). El editor se compila con
+> `WITH_PYTHON=ON` en `dev/build`; el Player de distribución con `WITH_PYTHON=OFF`
+> (+ `WITH_USD=OFF`, obligatorio: el `boost::python` de USD hace
+> `#include <pyconfig.h>` incondicional y revienta el PCH de `bf_io_usd`) en
+> `dev/build-nopy`. El juego se **crea** con el primero y se **envía** con el segundo.
+>
+> **Medido:** 0 símbolos `^_Py` (eran 2.267), `libpython` no enlazada, bundle del
+> Player **772 → 537 MB**, y 5/5 componentes atados tanto en `ArpgNative.blend` como
+> en `game/anima/T1_LaMancha.blend`. Y un aviso de método del mismo informe: hay 89
+> símbolos que *contienen* `_Py` en el binario sin CPython, pero son nombres de clases
+> de Flipendo (`KX_PythonProxy`, `SCA_PythonController`); **la cuenta honesta es
+> `^_Py`**.
 
-- Requiere reescribir ~288.500 líneas de UI/operadores/addons como `PanelType`/`MenuType`/`wmOperatorType` nativos, más purgar la superficie de binding: **511 guardas `#ifdef WITH_PYTHON`**, **88 clases con `Py_Header`**, **200 ficheros con `PyObject`** a lo largo de las 112.039 líneas del gameengine, más los 7.134 de `Expressions`.
-- Es **plurianual**, transversal (no modular), y buena parte **nunca compensa** (se borra al recortar el editor, o se queda en Python indefinidamente).
-- **No se promete.** Se marca como dirección, no como plan con fecha.
+### Horizonte: **"editor sin Python"** — ya no es aspiracional, está en marcha
+
+- Requiere reescribir ~~288.500~~ **~116.700** líneas de UI/operadores/addons como `PanelType`/`MenuType`/`wmOperatorType` nativos, más purgar la superficie de binding. **Remedida hoy, y esto importa: la superficie de binding ha CRECIDO, no bajado.**
+
+  | Superficie | Decía (5 sep) | **Hoy** |
+  |---|---:|---:|
+  | Guardas `#ifdef/#ifndef WITH_PYTHON` | 511 | **554** |
+  | Clases con `Py_Header` en el gameengine | 88 | **94** |
+  | Ficheros con `PyObject` en el gameengine | 200 | **198** |
+  | Líneas del gameengine | 112.039 | **116.385** |
+  | `Expressions` | 7.134 | **7.225** |
+
+  Que las guardas suban mientras el Python baja **no es una contradicción ni un
+  retroceso**: siete de las guardas nuevas de la noche se auditaron una a una y cinco
+  son **comentarios que documentan un hueco ya existente** («con `WITH_PYTHON=OFF` esa
+  tecla no abre nada»). Escribir el hueco es lo contrario de esconderlo. Las otras dos
+  son mejoras: en `numinput.cc` el `#ifdef` envolvía la función entera y ahora solo la
+  llamada a CPython; en `fcurve_driver.cc` la rama `#ifndef WITH_PYTHON` era
+  `UNUSED_VARS(...)`, de modo que un driver con expresión no soportada **se quedaba
+  clavado en 0.0 sin decir una palabra**, y ahora avisa. Ver
+  `REVISION-FINAL-2026-09-11.md §2.4`.
+
+- ~~Es **plurianual**, transversal (no modular), y buena parte **nunca compensa**.~~
+  Transversal sí sigue siendo. Lo de «nunca compensa» lo desmiente el árbol.
+- ~~**No se promete.**~~ Sigue sin prometerse fecha, pero ya no es una dirección: es
+  trabajo en curso con arneses que lo verifican.
 
 ---
 
-**Resumen de una línea:** el retorno real está en las **~4.000 líneas de runtime + la purga de CPython del Player** (medio plazo, empezando por eliminar `KX_PythonComponent` esta semana); las **~288k del editor** son horizonte condicionado a una decisión estratégica que hoy no tiene fecha ni obligación doctrinal.
+~~**Resumen de una línea:** el retorno real está en las **~4.000 líneas de runtime + la purga de CPython del Player** (medio plazo, empezando por eliminar `KX_PythonComponent` esta semana); las **~288k del editor** son horizonte condicionado a una decisión estratégica que hoy no tiene fecha ni obligación doctrinal.~~
+
+**Resumen de una línea, 2026-09-11:** la purga de CPython del Player **está hecha** —el
+Player de distribución no lleva intérprete y ata 5/5 componentes—, y las ~288k del
+editor son hoy **119.105 líneas en `scripts/`** que sí se están migrando, por editores
+completos y con volcado idéntico como prueba; la decisión estratégica que este
+documento esperaba se tomó el 2026-09-11 y está en `LENGUAJE-CPP.md`.
+
+---
+
+## 5. Cómo se mantiene este documento (añadido el 2026-09-11)
+
+Este backlog se equivocó dos veces por el mismo motivo: **copió cifras de otro
+documento en vez de medir el árbol**. La de `scripts/` venía de un `METRICAS.md` que
+ya iba dos días atrasado, y la de `addons_core` describía un directorio podado.
+
+Antes de citar una cifra de aquí, **remídela**:
+
+```sh
+cd ~/Flipendo/dev/upbge
+REV=$(git rev-parse --short HEAD)
+git grep -c '' $REV -- 'scripts/*' | sed "s|^$REV:||" \
+  | grep -E '\.py:[0-9]+$' | awk -F: '{s+=$NF} END{print s}'
+```
+
+Y si el árbol desmiente lo que dice un párrafo, **corrígelo diciendo que estaba mal y
+por qué**, como se ha hecho arriba. Un backlog con cifras viejas es peor que no tener
+backlog: alguien planifica con él.
