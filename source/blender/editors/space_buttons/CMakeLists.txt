@@ -17,6 +17,7 @@ set(SRC
   buttons_context.cc
   fl_properties_data_shaderfx.cc
   fl_properties_data_empty.cc
+  fl_properties_physics_geometry_nodes.cc
   fl_world_buttons.cc
   buttons_ops.cc
   buttons_texture.cc
