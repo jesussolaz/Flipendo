@@ -97,6 +97,45 @@ void FL_UiCanvas::Border(const FL_Rect &r, float thickness, const FL_Color &colo
   Rect(FL_Rect(r.x + r.w - t, r.y + t, t, r.h - 2 * t), color); /* derecha */
 }
 
+void FL_UiCanvas::TexturedRect(const FL_Rect &r,
+                               GPUTexture *texture,
+                               const FL_Color &tint,
+                               const float texco[4][2])
+{
+  if (!texture) {
+    return;
+  }
+  static const float porDefecto[4][2] = {{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
+  const float(*uv)[2] = texco ? texco : porDefecto;
+
+  GPUVertFormat *format = immVertexFormat();
+  uint pos = GPU_vertformat_attr_add(format, "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
+  uint uvattr = GPU_vertformat_attr_add(format, "texCoord", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
+
+  immBindBuiltinProgram(GPU_SHADER_3D_IMAGE_COLOR);
+  immBindTexture("image", texture);
+  immUniformColor4fv(tint.Value());
+
+  const float x0 = r.x;
+  const float x1 = r.x + r.w;
+  const float y0 = FlipY(m_height, r.y);        /* arriba */
+  const float y1 = FlipY(m_height, r.y + r.h);  /* abajo */
+
+  /* uv[0] es la esquina de abajo a la izquierda, como en bgui. */
+  immBegin(GPU_PRIM_TRIS, 6);
+  immAttr2f(uvattr, uv[3][0], uv[3][1]); immVertex2f(pos, x0, y0);
+  immAttr2f(uvattr, uv[2][0], uv[2][1]); immVertex2f(pos, x1, y0);
+  immAttr2f(uvattr, uv[1][0], uv[1][1]); immVertex2f(pos, x1, y1);
+
+  immAttr2f(uvattr, uv[3][0], uv[3][1]); immVertex2f(pos, x0, y0);
+  immAttr2f(uvattr, uv[1][0], uv[1][1]); immVertex2f(pos, x1, y1);
+  immAttr2f(uvattr, uv[0][0], uv[0][1]); immVertex2f(pos, x0, y1);
+  immEnd();
+
+  immUnbindProgram();
+  GPU_texture_unbind(texture);
+}
+
 void FL_UiCanvas::Text(const std::string &text, float x, float y, int ptSize, const FL_Color &color)
 {
   if (m_fontid < 0) {

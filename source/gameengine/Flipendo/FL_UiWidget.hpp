@@ -171,6 +171,37 @@ class FL_UiLabel : public FL_UiWidget {
   void Draw(FL_UiCanvas &canvas) override;
 };
 
+/** Imagen, como `bgui.Image`.
+ *
+ * La fuente puede ser una textura de GPU directa o el **nombre de una imagen del
+ * `.blend`** (sin el prefijo "IM"). Esto último es lo que convierte el widget en
+ * un minimapa o un monitor de vigilancia: si esa imagen es la que `FL_RenderToTexture`
+ * está refrescando, el HUD enseña en vivo lo que ve la cámara secundaria. */
+class FL_UiImage : public FL_UiWidget {
+ public:
+  FL_UiImage(const std::string &name = "image", int options = FL_UI_DEFAULT);
+
+  /// Textura directa. Si es nullptr, se resuelve `imageName` cada frame.
+  ::GPUTexture *texture = nullptr;
+  /// Nombre de una imagen del .blend (sin "IM"). Se resuelve al dibujar.
+  std::string imageName;
+  /// Tinte (blanco = la imagen tal cual).
+  FL_Color color{1.0f, 1.0f, 1.0f, 1.0f};
+  /// Coordenadas de textura de las esquinas, en el orden de bgui.
+  float texco[4][2] = {{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
+
+ protected:
+  void Draw(FL_UiCanvas &canvas) override;
+};
+
+/** Textura de GPU de una imagen del `.blend`, por nombre y sin el prefijo "IM".
+ *
+ * Devuelve la que la imagen YA tenga en su ranura si la hay —que es la que
+ * VideoTexture pudo haber intercambiado por el render de una cámara— y sólo pide
+ * una nueva a Blender cuando la ranura está vacía. Al revés se le quitaría a
+ * `FL_RenderToTexture` la textura que acaba de poner. */
+::GPUTexture *FL_UiTextureFromImage(const std::string &name);
+
 /** Botón de color con texto centrado, como `bgui.FrameButton`.
  *
  * Los colores y el comportamiento son los de bgui: cuatro colores de base (por

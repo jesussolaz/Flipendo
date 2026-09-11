@@ -17,6 +17,13 @@
 #include <string>
 #include <vector>
 
+/* Ojo: esta declaración adelantada va FUERA del namespace a propósito. Escribir
+ * `struct GPUTexture *` dentro de `namespace flipendo` declararía un tipo nuevo,
+ * `flipendo::GPUTexture`, y las funciones de GPU dejarían de encajar. Es la misma
+ * trampa que dejó el árbol sin enlazar esta noche con
+ * `blender::ed::object::VIEW3D_OT_transform_gizmo_set`. */
+struct GPUTexture;
+
 namespace flipendo {
 
 /** Color RGBA en 0..1. Struct simple a propósito: esto se pasa por valor miles
@@ -64,6 +71,14 @@ class FL_UiCanvas {
                     const FL_Color &c3);
   /// Borde de `thickness` píxeles por dentro del rectángulo.
   void Border(const FL_Rect &r, float thickness, const FL_Color &color);
+
+  /** Rectángulo con textura, teñido por `tint` (blanco = sin teñir).
+   * `texco` son las coordenadas de textura de las esquinas, en el orden de bgui
+   * (abajo-izq, abajo-der, arriba-der, arriba-izq); nullptr = 0..1. */
+  void TexturedRect(const FL_Rect &r,
+                    ::GPUTexture *texture,
+                    const FL_Color &tint = FL_Color(),
+                    const float texco[4][2] = nullptr);
 
   /// Texto. `x`,`y` es la esquina superior izquierda de la primera línea.
   void Text(const std::string &text, float x, float y, int ptSize, const FL_Color &color);

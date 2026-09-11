@@ -1,6 +1,13 @@
 /* Implementación del árbol de widgets nativo. Ver FL_UiWidget.hpp. */
 #include "FL_UiWidget.hpp"
 
+#include "BKE_context.hh"
+#include "BKE_image.hh"
+#include "BKE_main.hh"
+#include "BLI_listbase.h"
+#include "DNA_ID.h"
+#include "DNA_image_types.h"
+
 #include "CM_Message.hpp"
 #include "KX_Globals.hpp"
 #include "KX_KetsjiEngine.hpp"
@@ -213,6 +220,42 @@ void FL_UiLabel::Draw(FL_UiCanvas &canvas)
     return;
   }
   canvas.Text(text, m_frame.x, m_frame.y, ptSize, color);
+}
+
+/* ---------------------------------------------------------------- FL_UiImage */
+
+FL_UiImage::FL_UiImage(const std::string &name, int options) : FL_UiWidget(name, options)
+{
+}
+
+::GPUTexture *FL_UiTextureFromImage(const std::string &name)
+{
+  KX_KetsjiEngine *engine = KX_GetActiveEngine();
+  bContext *C = engine ? engine->GetContext() : nullptr;
+  Main *bmain = C ? CTX_data_main(C) : nullptr;
+  if (!bmain) {
+    return nullptr;
+  }
+  Image *ima = (Image *)BLI_findstring(&bmain->images, name.c_str(), offsetof(ID, name) + 2);
+  if (!ima) {
+    return nullptr;
+  }
+  if (ima->gputexture[TEXTARGET_2D][0]) {
+    return ima->gputexture[TEXTARGET_2D][0];
+  }
+  return BKE_image_get_gpu_texture(ima, nullptr);
+}
+
+void FL_UiImage::Draw(FL_UiCanvas &canvas)
+{
+  ::GPUTexture *tex = texture;
+  if (!tex && !imageName.empty()) {
+    tex = FL_UiTextureFromImage(imageName);
+  }
+  if (!tex) {
+    return;
+  }
+  canvas.TexturedRect(m_frame, tex, color, texco);
 }
 
 /* ---------------------------------------------------------- FL_UiFrameButton */
@@ -492,12 +535,21 @@ void FL_UiMaybeAddDemo()
   boton->ptSize = 18;
   boton->border = 1.0f;
   boton->borderColor = FL_Color(0.95f, 0.62f, 0.10f, 1.0f);
+  /* El monitor: un FL_UiImage que ensenna la imagen "CctvTex" del .blend. Como en
+   * esa escena es la que FL_RenderToTexture esta refrescando con la camara de
+   * vigilancia, lo que sale en el HUD es la camara en vivo. Es render a textura y
+   * interfaz nativa funcionando juntos, los dos sin Python. */
+  FL_UiImage *monitor = panel->Add(std::make_unique<FL_UiImage>("monitor", FL_UI_NO_NORMALIZE));
+  monitor->SetPosition(18.0f, 145.0f);
+  monitor->SetSize(60.0f, 34.0f);
+  monitor->imageName = "CctvTex";
+
   SuscribeTodo(boton);
   SuscribeTodo(panel);
 
   sistema->Attach();
   CM_Message("FL_UI_DEMO: arbol de widgets nativo montado y enganchado ("
-             << "panel + 2 etiquetas + barra con relleno normalizado + boton)");
+             << "panel + 2 etiquetas + barra con relleno normalizado + boton + monitor)");
 }
 
 /* ---------------------------------------------------------- la autoprueba */
