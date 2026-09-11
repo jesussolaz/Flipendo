@@ -55,6 +55,8 @@ const char *tracked_idnames[] = {
     "OBJECT_OT_select_camera",
     "OBJECT_OT_select_hierarchy",
     "MESH_OT_faces_mirror_uv",
+    "MESH_OT_select_next_item",
+    "MESH_OT_select_prev_item",
 };
 
 /* `%.9g` sobre el double promovido desde float, igual que `"{:.9g}".format()` en Python. */

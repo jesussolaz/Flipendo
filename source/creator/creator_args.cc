@@ -3131,6 +3131,40 @@ static int arg_handle_fl_check_mirror_uv(int argc, const char **argv, void *data
   return 0;
 }
 
+static const char arg_handle_fl_selftest_find_adjacent_doc[] =
+    "<filepath>\n"
+    "\tConstruye mallas en modo edicion con un historial de seleccion conocido, invoca\n"
+    "\t`mesh.select_next_item` / `mesh.select_prev_item` por su idname y vuelca la\n"
+    "\tseleccion, el historial y la cara activa. Se compara con\n"
+    "\ttests/flipendo/findadjacent/baseline-python.txt (Carril C).";
+static int arg_handle_fl_selftest_find_adjacent(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::mesh_ops_selftest::dump_find_adjacent(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_find_adjacent_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-find-adjacent, pero compara con la linea base indicada. Sale\n"
+    "\tcon codigo 0 solo si no hay ni una diferencia (Carril C).";
+static int arg_handle_fl_check_find_adjacent(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::mesh_ops_selftest::check_find_adjacent(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_optypes_doc[] =
     "<filepath>\n"
     "\tVuelca la superficie de registro (idname, nombre, descripcion y todas las\n"
@@ -3786,6 +3820,10 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-check-mesh-ops", CB(arg_handle_fl_check_mesh_ops), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-mirror-uv", CB(arg_handle_fl_selftest_mirror_uv), C);
   BLI_args_add(ba, nullptr, "--fl-check-mirror-uv", CB(arg_handle_fl_check_mirror_uv), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-selftest-find-adjacent", CB(arg_handle_fl_selftest_find_adjacent), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-check-find-adjacent", CB(arg_handle_fl_check_find_adjacent), C);
   BLI_args_add(
       ba, nullptr, "--fl-selftest-rigidbody-ops", CB(arg_handle_fl_selftest_rigidbody_ops), C);
   BLI_args_add(

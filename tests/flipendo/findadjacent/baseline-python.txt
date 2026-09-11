@@ -1,0 +1,92 @@
+# FL-FIND-ADJACENT-SELFTEST v1
+# ret=['FINISHED']
+case=0 op=mesh.select_next_item prim=grid mode=FACE hist=0+1
+  0 selverts=0,1,2,3,6,7,8,9
+  1 seledges=0,1,2,3,4,5,6,7,8,9
+  2 selfaces=0,1,2
+  3 hist=F0,F1,F2
+  4 actface=2
+# ret=['FINISHED']
+case=1 op=mesh.select_next_item prim=grid mode=FACE hist=0+6
+  0 selverts=0,1,6,7,8,13,14,15,20,21
+  1 seledges=0,1,2,3,6,17,19,20,22,30,32,33
+  2 selfaces=0,6,12
+  3 hist=F0,F6,F12
+  4 actface=12
+# ret=['FINISHED']
+case=2 op=mesh.select_next_item prim=grid mode=FACE hist=5+6
+  0 selverts=6,7,8,9,12,13,14,15
+  1 seledges=3,6,9,16,17,18,19,20,21,22
+  2 selfaces=5,6,7
+  3 hist=F5,F6,F7
+  4 actface=7
+# ret=['FINISHED']
+case=3 op=mesh.select_next_item prim=grid mode=EDGE hist=0+1
+  0 selverts=0,1,6,7
+  1 seledges=0,1,2
+  2 selfaces=
+  3 hist=E0,E1,E2
+  4 actface=-1
+# ret=['FINISHED']
+case=4 op=mesh.select_next_item prim=grid mode=VERT hist=0+1
+  0 selverts=0,1,2
+  1 seledges=1,4
+  2 selfaces=
+  3 hist=V0,V1,V2
+  4 actface=-1
+# ret=['FINISHED']
+case=5 op=mesh.select_next_item prim=grid mode=VERT hist=0+7
+  0 selverts=0,7,14
+  1 seledges=
+  2 selfaces=
+  3 hist=V0,V7,V14
+  4 actface=-1
+# ret=['FINISHED']
+case=6 op=mesh.select_next_item prim=cube mode=FACE hist=0+1
+  0 selverts=0,1,2,3,4,5,6,7
+  1 seledges=0,1,2,3,4,5,6,7,8,9
+  2 selfaces=0,1,2
+  3 hist=F0,F1,F2
+  4 actface=2
+# ret=['FINISHED']
+case=7 op=mesh.select_next_item prim=sphere mode=VERT hist=2+5
+  0 selverts=2,5,16
+  1 seledges=
+  2 selfaces=
+  3 hist=V2,V5,V16
+  4 actface=-1
+# ret=['FINISHED']
+case=8 op=mesh.select_prev_item prim=grid mode=FACE hist=0+1
+  0 selverts=0,1,6,7
+  1 seledges=0,1,2,3
+  2 selfaces=0
+  3 hist=F0
+  4 actface=0
+# ret=['FINISHED']
+case=9 op=mesh.select_prev_item prim=grid mode=VERT hist=0+1
+  0 selverts=0
+  1 seledges=
+  2 selfaces=
+  3 hist=V0
+  4 actface=-1
+# ret=['FINISHED']
+case=10 op=mesh.select_next_item prim=grid mode=FACE hist=vacio
+  0 selverts=
+  1 seledges=
+  2 selfaces=
+  3 hist=
+  4 actface=-1
+# ret=['FINISHED']
+case=11 op=mesh.select_next_item prim=grid mode=FACE hist=3
+  0 selverts=3,4,9,10
+  1 seledges=8,10,11,12
+  2 selfaces=3
+  3 hist=F3
+  4 actface=-1
+# ret=['FINISHED']
+case=12 op=mesh.select_prev_item prim=grid mode=FACE hist=vacio
+  0 selverts=
+  1 seledges=
+  2 selfaces=
+  3 hist=
+  4 actface=-1

@@ -48,3 +48,7 @@ case=12 op=MESH_OT_faces_mirror_uv
   0 name=Copy Mirrored UV Coords desc=Copy mirror UV coordinates on the X axis based on a mirrored mesh translation_context=Operator
   1 prop=direction type=ENUM subtype=NONE array=0 name=Axis Direction desc= enumflag=0 default=POSITIVE items=POSITIVE:Positive::0;NEGATIVE:Negative::1
   2 prop=precision type=INT subtype=NONE array=0 name=Precision desc=Tolerance for finding vertex duplicates default=3 min=1 max=16 softmin=1 softmax=16
+case=13 op=MESH_OT_select_next_item
+  0 name=Select Next Element desc=Select the next element (using selection order) translation_context=Operator
+case=14 op=MESH_OT_select_prev_item
+  0 name=Select Previous Element desc=Select the previous element (using selection order) translation_context=Operator

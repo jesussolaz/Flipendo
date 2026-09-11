@@ -22,7 +22,6 @@ _modules = [
     "grease_pencil",
     "image",
     "image_as_planes",
-    "mesh",
     "node",
     "object",
     "object_quick_effects",

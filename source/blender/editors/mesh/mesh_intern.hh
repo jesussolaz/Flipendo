@@ -119,6 +119,11 @@ void PAINT_OT_vertex_color_dirt(wmOperatorType *ot);
 /* `mesh_faces_mirror_uv.cc` (portado de bl_operators/mesh.py, Flipendo C2) */
 void MESH_OT_faces_mirror_uv(wmOperatorType *ot);
 
+/* `editmesh_find_adjacent.cc` (portado de bl_operators/mesh.py + bmesh/find_adjacent.py,
+ * Flipendo C2) */
+void MESH_OT_select_next_item(wmOperatorType *ot);
+void MESH_OT_select_prev_item(wmOperatorType *ot);
+
 /* `view3d_edit_mesh_extrude.cc` (idnames `view3d.edit_mesh_extrude_*`, portados de
  * bl_operators/view3d.py, Flipendo C2) */
 void VIEW3D_OT_edit_mesh_extrude_individual_move(wmOperatorType *ot);

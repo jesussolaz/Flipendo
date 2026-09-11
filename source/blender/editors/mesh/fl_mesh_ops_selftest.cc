@@ -29,6 +29,7 @@
 #include "BKE_attribute.h"
 #include "BKE_attribute.hh"
 #include "BKE_context.hh"
+#include "BKE_editmesh.hh"
 #include "BKE_customdata.hh"
 #include "BKE_mesh_types.hh"
 #include "BKE_layer.hh"
@@ -36,6 +37,10 @@
 #include "BKE_main.hh"
 #include "BKE_appdir.hh"
 #include "BKE_mesh.hh"
+
+#include "bmesh.hh"
+
+#include "ED_mesh.hh"
 
 #include "DEG_depsgraph.hh"
 #include "DEG_depsgraph_build.hh"
@@ -644,6 +649,229 @@ bool check_mirror_uv(bContext *C, const char *baseline_path)
     return false;
   }
   return flipendo::selftest::compare_to_baseline("fl-check-mirror-uv", actual_path, baseline_path);
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------------- */
+/** \name mesh.select_next_item / mesh.select_prev_item
+ * \{ */
+
+namespace {
+
+void editmesh_purge(bContext *C)
+{
+  Object *ob = CTX_data_active_object(C);
+  if (ob != nullptr && ob->mode == OB_MODE_EDIT) {
+    PointerRNA ptr;
+    WM_operator_properties_create(&ptr, "object.mode_set");
+    RNA_enum_set_identifier(C, &ptr, "mode", "OBJECT");
+    RNA_boolean_set(&ptr, "toggle", false);
+    WM_operator_name_call(C, "object.mode_set", WM_OP_EXEC_DEFAULT, &ptr, nullptr);
+    WM_operator_properties_free(&ptr);
+  }
+  purge(C);
+}
+
+void dump_find_adjacent_case(bContext *C, FILE *f, const int index, const char *label)
+{
+  Object *ob = CTX_data_active_object(C);
+  BMEditMesh *em = BKE_editmesh_from_object(ob);
+  fprintf(f, "case=%d %s\n", index, label);
+  if (em == nullptr) {
+    fprintf(f, "  0 sinedit\n");
+    return;
+  }
+  BMesh *bm = em->bm;
+  BM_mesh_elem_index_ensure(bm, BM_VERT | BM_EDGE | BM_FACE);
+
+  std::string sv, se, sf;
+  BMIter iter;
+  BMVert *v;
+  BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
+    if (BM_elem_flag_test(v, BM_ELEM_SELECT)) {
+      sv += (sv.empty() ? "" : ",") + std::to_string(BM_elem_index_get(v));
+    }
+  }
+  BMEdge *e;
+  BM_ITER_MESH (e, &iter, bm, BM_EDGES_OF_MESH) {
+    if (BM_elem_flag_test(e, BM_ELEM_SELECT)) {
+      se += (se.empty() ? "" : ",") + std::to_string(BM_elem_index_get(e));
+    }
+  }
+  BMFace *face;
+  BM_ITER_MESH (face, &iter, bm, BM_FACES_OF_MESH) {
+    if (BM_elem_flag_test(face, BM_ELEM_SELECT)) {
+      sf += (sf.empty() ? "" : ",") + std::to_string(BM_elem_index_get(face));
+    }
+  }
+
+  std::string hist;
+  LISTBASE_FOREACH (BMEditSelection *, ese, &bm->selected) {
+    const char kind = (ese->htype == BM_VERT) ? 'V' : ((ese->htype == BM_EDGE) ? 'E' : 'F');
+    hist += (hist.empty() ? "" : ",");
+    hist += kind;
+    hist += std::to_string(BM_elem_index_get(ese->ele));
+  }
+
+  fprintf(f, "  0 selverts=%s\n", sv.c_str());
+  fprintf(f, "  1 seledges=%s\n", se.c_str());
+  fprintf(f, "  2 selfaces=%s\n", sf.c_str());
+  fprintf(f, "  3 hist=%s\n", hist.c_str());
+  fprintf(f,
+          "  4 actface=%d\n",
+          (bm->act_face != nullptr) ? BM_elem_index_get(bm->act_face) : -1);
+}
+
+}  // namespace
+
+bool dump_find_adjacent(bContext *C, const char *filepath)
+{
+  FILE *f = fopen(filepath, "w");
+  if (f == nullptr) {
+    fprintf(stderr, "fl-selftest-find-adjacent: no se pudo escribir '%s'\n", filepath);
+    return false;
+  }
+  fprintf(f, "# FL-FIND-ADJACENT-SELFTEST v1\n");
+
+  struct Case {
+    const char *primitive;
+    short selectmode;
+    const char *mode_name;
+    char hist_kind;
+    int hist[2];
+    int hist_num;
+    bool next;
+  };
+  const Case cases[] = {
+      {"grid", SCE_SELECT_FACE, "FACE", 'F', {0, 1}, 2, true},
+      {"grid", SCE_SELECT_FACE, "FACE", 'F', {0, 6}, 2, true},
+      {"grid", SCE_SELECT_FACE, "FACE", 'F', {5, 6}, 2, true},
+      {"grid", SCE_SELECT_EDGE, "EDGE", 'E', {0, 1}, 2, true},
+      {"grid", SCE_SELECT_VERTEX, "VERT", 'V', {0, 1}, 2, true},
+      {"grid", SCE_SELECT_VERTEX, "VERT", 'V', {0, 7}, 2, true},
+      {"cube", SCE_SELECT_FACE, "FACE", 'F', {0, 1}, 2, true},
+      /* El caso "esfera + modo cara" esta RETIRADO a proposito: el original en Python
+       * NO es determinista ahi. Tres ejecuciones seguidas del binario de referencia,
+       * con la misma escena, dan tres resultados distintos, porque `find_next()`
+       * desempata recorriendo un `set` de elementos de BMesh cuyo hash es el puntero.
+       * El resto de los casos si se reproducen byte a byte.
+       * Ver politicas/FIND-ADJACENT-A-CPP.md. */
+      {"sphere", SCE_SELECT_VERTEX, "VERT", 'V', {2, 5}, 2, true},
+      {"grid", SCE_SELECT_FACE, "FACE", 'F', {0, 1}, 2, false},
+      {"grid", SCE_SELECT_VERTEX, "VERT", 'V', {0, 1}, 2, false},
+      {"grid", SCE_SELECT_FACE, "FACE", 'F', {0, 0}, 0, true},
+      {"grid", SCE_SELECT_FACE, "FACE", 'F', {3, 0}, 1, true},
+      {"grid", SCE_SELECT_FACE, "FACE", 'F', {0, 0}, 0, false},
+  };
+
+  int index = 0;
+  for (const Case &c : cases) {
+    editmesh_purge(C);
+    if (STREQ(c.primitive, "grid")) {
+      add_primitive(C, "mesh.primitive_grid_add", [](PointerRNA *ptr) {
+        RNA_int_set(ptr, "x_subdivisions", 5);
+        RNA_int_set(ptr, "y_subdivisions", 5);
+        RNA_float_set(ptr, "size", 2.0f);
+      });
+    }
+    else if (STREQ(c.primitive, "cube")) {
+      add_primitive(C, "mesh.primitive_cube_add", [](PointerRNA *ptr) {
+        RNA_float_set(ptr, "size", 2.0f);
+      });
+    }
+    else {
+      add_primitive(C, "mesh.primitive_uv_sphere_add", [](PointerRNA *ptr) {
+        RNA_int_set(ptr, "segments", 8);
+        RNA_int_set(ptr, "ring_count", 6);
+        RNA_float_set(ptr, "radius", 1.0f);
+      });
+    }
+    Object *ob = CTX_data_active_object(C);
+    CTX_data_scene(C)->toolsettings->selectmode = c.selectmode;
+
+    {
+      PointerRNA ptr;
+      WM_operator_properties_create(&ptr, "object.mode_set");
+      RNA_enum_set_identifier(C, &ptr, "mode", "EDIT");
+      RNA_boolean_set(&ptr, "toggle", false);
+      WM_operator_name_call(C, "object.mode_set", WM_OP_EXEC_DEFAULT, &ptr, nullptr);
+      WM_operator_properties_free(&ptr);
+    }
+    {
+      PointerRNA ptr;
+      WM_operator_properties_create(&ptr, "mesh.select_all");
+      RNA_enum_set_identifier(C, &ptr, "action", "DESELECT");
+      WM_operator_name_call(C, "mesh.select_all", WM_OP_EXEC_DEFAULT, &ptr, nullptr);
+      WM_operator_properties_free(&ptr);
+    }
+
+    BMEditMesh *em = BKE_editmesh_from_object(ob);
+    if (em != nullptr) {
+      BMesh *bm = em->bm;
+      bm->selectmode = c.selectmode;
+      BM_mesh_elem_table_ensure(bm, BM_VERT | BM_EDGE | BM_FACE);
+      BM_select_history_clear(bm);
+      for (int i = 0; i < c.hist_num; i++) {
+        BMElem *ele = nullptr;
+        if (c.hist_kind == 'F') {
+          ele = reinterpret_cast<BMElem *>(BM_face_at_index(bm, c.hist[i]));
+        }
+        else if (c.hist_kind == 'E') {
+          ele = reinterpret_cast<BMElem *>(BM_edge_at_index(bm, c.hist[i]));
+        }
+        else {
+          ele = reinterpret_cast<BMElem *>(BM_vert_at_index(bm, c.hist[i]));
+        }
+        BM_elem_select_set(bm, ele, true);
+        BM_select_history_store(bm, ele);
+      }
+      BM_mesh_select_mode_flush(bm);
+      const EDBMUpdate_Params params = {
+          /*calc_looptris*/ false, /*calc_normals*/ false, /*is_destructive*/ false};
+      EDBM_update(static_cast<Mesh *>(ob->data), &params);
+    }
+
+    const char *idname = c.next ? "mesh.select_next_item" : "mesh.select_prev_item";
+    const wmOperatorStatus status = WM_operator_name_call(
+        C, idname, WM_OP_EXEC_DEFAULT, nullptr, nullptr);
+    fprintf(f, "# ret=['%s']\n", (status & OPERATOR_FINISHED) ? "FINISHED" : "CANCELLED");
+
+    std::string hist_label;
+    for (int i = 0; i < c.hist_num; i++) {
+      hist_label += (i ? "+" : "") + std::to_string(c.hist[i]);
+    }
+    if (hist_label.empty()) {
+      hist_label = "vacio";
+    }
+    char label[256];
+    BLI_snprintf(label,
+                 sizeof(label),
+                 "op=mesh.select_%s_item prim=%s mode=%s hist=%s",
+                 c.next ? "next" : "prev",
+                 c.primitive,
+                 c.mode_name,
+                 hist_label.c_str());
+    dump_find_adjacent_case(C, f, index++, label);
+  }
+
+  fclose(f);
+  fprintf(stderr, "fl-selftest-find-adjacent: volcado en '%s' (%d casos)\n", filepath, index);
+  return true;
+}
+
+bool check_find_adjacent(bContext *C, const char *baseline_path)
+{
+  char actual_path[FILE_MAX];
+  BLI_path_join(actual_path,
+                sizeof(actual_path),
+                BKE_tempdir_session(),
+                "fl-selftest-find-adjacent-actual.txt");
+  if (!dump_find_adjacent(C, actual_path)) {
+    return false;
+  }
+  return flipendo::selftest::compare_to_baseline(
+      "fl-check-find-adjacent", actual_path, baseline_path);
 }
 
 /** \} */

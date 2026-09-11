@@ -39,4 +39,9 @@ bool check(bContext *C, const char *baseline_path);
 bool dump_mirror_uv(bContext *C, const char *filepath);
 bool check_mirror_uv(bContext *C, const char *baseline_path);
 
+/** Lo mismo para `mesh.select_next_item` / `mesh.select_prev_item`. Linea base:
+ * `tests/flipendo/findadjacent/baseline-python.txt`. */
+bool dump_find_adjacent(bContext *C, const char *filepath);
+bool check_find_adjacent(bContext *C, const char *baseline_path);
+
 }  // namespace flipendo::mesh_ops_selftest
