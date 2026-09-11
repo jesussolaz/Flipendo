@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../../makesrna
   ../../modifiers
@@ -17,6 +18,7 @@ set(INC_SYS
 
 set(SRC
   action_buttons.cc
+  fl_action_menus.cc
   action_data.cc
   action_draw.cc
   action_edit.cc
@@ -24,6 +26,7 @@ set(SRC
   action_select.cc
   space_action.cc
 
+  FL_action_menus.hh
   action_intern.hh
 )
 

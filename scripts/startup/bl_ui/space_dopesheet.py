@@ -448,22 +448,6 @@ class DOPESHEET_MT_view(Menu):
         layout.menu("INFO_MT_area")
 
 
-class DOPESHEET_MT_view_pie(Menu):
-    bl_label = "View"
-
-    def draw(self, context):
-        layout = self.layout
-
-        pie = layout.menu_pie()
-        pie.operator("action.view_all")
-        pie.operator("action.view_selected", icon='ZOOM_SELECTED')
-        pie.operator("action.view_frame")
-        if context.scene.use_preview_range:
-            pie.operator("anim.scene_range_frame", text="Frame Preview Range")
-        else:
-            pie.operator("anim.scene_range_frame", text="Frame Scene Range")
-
-
 class DOPESHEET_MT_select(Menu):
     bl_label = "Select"
 
@@ -754,128 +738,6 @@ class DOPESHEET_MT_gpencil_channel(Menu):
         layout.operator("anim.channels_view_selected")
 
 
-class DOPESHEET_MT_delete(Menu):
-    bl_label = "Delete"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("action.delete")
-
-        layout.separator()
-
-        layout.operator("action.clean").channels = False
-        layout.operator("action.clean", text="Clean Channels").channels = True
-
-
-class DOPESHEET_MT_context_menu(Menu):
-    bl_label = "Dope Sheet"
-
-    def draw(self, context):
-        layout = self.layout
-        st = context.space_data
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-
-        layout.operator("action.copy", text="Copy", icon='COPYDOWN')
-        layout.operator("action.paste", text="Paste", icon='PASTEDOWN')
-        layout.operator("action.paste", text="Paste Flipped", icon='PASTEFLIPDOWN').flipped = True
-
-        layout.separator()
-
-        layout.operator_menu_enum("action.keyframe_type", "type", text="Keyframe Type")
-
-        if st.mode != 'GPENCIL':
-            layout.operator_menu_enum("action.handle_type", "type", text="Handle Type")
-            layout.operator_menu_enum("action.interpolation_type", "type", text="Interpolation Mode")
-            layout.operator_menu_enum("action.easing_type", "type", text="Easing Mode")
-
-        layout.separator()
-
-        layout.operator("action.keyframe_insert").type = 'SEL'
-        layout.operator("action.duplicate_move")
-
-        if st.mode == 'GPENCIL':
-            layout.separator()
-            layout.operator("grease_pencil.delete_breakdown")
-
-        layout.operator_context = 'EXEC_REGION_WIN'
-        layout.operator("action.delete")
-
-        layout.separator()
-
-        layout.operator_menu_enum("action.mirror", "type", text="Mirror")
-        layout.operator_menu_enum("action.snap", "type", text="Snap")
-
-
-class DOPESHEET_MT_channel_context_menu(Menu):
-    bl_label = "Channel"
-
-    def draw(self, context):
-        layout = self.layout
-
-        # This menu is used from the graph editor too.
-        is_graph_editor = context.area.type == 'GRAPH_EDITOR'
-
-        layout.operator_context = 'INVOKE_REGION_CHANNELS'
-
-        layout.separator()
-        layout.operator("anim.channels_view_selected")
-
-        layout.operator("anim.channels_setting_enable", text="Mute Channels").type = 'MUTE'
-        layout.operator("anim.channels_setting_disable", text="Unmute Channels").type = 'MUTE'
-        layout.separator()
-        layout.operator("anim.channels_setting_enable", text="Protect Channels").type = 'PROTECT'
-        layout.operator("anim.channels_setting_disable", text="Unprotect Channels").type = 'PROTECT'
-
-        layout.separator()
-        layout.operator("anim.channels_group")
-        layout.operator("anim.channels_ungroup")
-
-        layout.separator()
-        layout.operator("anim.channels_editable_toggle")
-
-        if is_graph_editor:
-            operator = "graph.extrapolation_type"
-        else:
-            operator = "action.extrapolation_type"
-        layout.operator_menu_enum(operator, "type", text="Extrapolation Mode")
-
-        if is_graph_editor:
-            layout.operator_menu_enum("graph.fmodifier_add", "type", text="Add F-Curve Modifier").only_active = False
-            layout.separator()
-            layout.operator("graph.hide", text="Hide Selected Curves").unselected = False
-            layout.operator("graph.hide", text="Hide Unselected Curves").unselected = True
-            layout.operator("graph.reveal")
-
-        layout.separator()
-        layout.operator("anim.channels_expand")
-        layout.operator("anim.channels_collapse")
-
-        layout.separator()
-        layout.operator_menu_enum("anim.channels_move", "direction", text="Move...")
-
-        layout.separator()
-
-        layout.operator("anim.channels_delete")
-
-        if is_graph_editor and context.space_data.mode == 'DRIVERS':
-            layout.operator("graph.driver_delete_invalid")
-
-
-class DOPESHEET_MT_snap_pie(Menu):
-    bl_label = "Snap"
-
-    def draw(self, _context):
-        layout = self.layout
-        pie = layout.menu_pie()
-
-        pie.operator("action.snap", text="Selection to Current Frame").type = 'CFRA'
-        pie.operator("action.snap", text="Selection to Nearest Frame").type = 'NEAREST_FRAME'
-        pie.operator("action.snap", text="Selection to Nearest Second").type = 'NEAREST_SECOND'
-        pie.operator("action.snap", text="Selection to Nearest Marker").type = 'NEAREST_MARKER'
-
-
 class LayersDopeSheetPanel:
     bl_space_type = 'DOPESHEET_EDITOR'
     bl_region_type = 'UI'
@@ -997,11 +859,6 @@ classes = (
     DOPESHEET_MT_key,
     DOPESHEET_MT_key_transform,
     DOPESHEET_MT_gpencil_channel,
-    DOPESHEET_MT_delete,
-    DOPESHEET_MT_context_menu,
-    DOPESHEET_MT_channel_context_menu,
-    DOPESHEET_MT_snap_pie,
-    DOPESHEET_MT_view_pie,
     DOPESHEET_PT_filters,
     DOPESHEET_PT_action,
     DOPESHEET_PT_action_slot,

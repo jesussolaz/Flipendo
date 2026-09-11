@@ -47,6 +47,7 @@
 
 #include "GPU_matrix.hh"
 
+#include "FL_action_menus.hh"
 #include "action_intern.hh" /* own include */
 
 /* -------------------------------------------------------------------- */
@@ -1006,6 +1007,8 @@ void ED_spacetype_action()
 
   art = ED_area_type_hud(st->spaceid);
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::action::action_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }
