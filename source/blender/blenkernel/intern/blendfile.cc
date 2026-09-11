@@ -1504,14 +1504,13 @@ UserDef *BKE_blendfile_userdef_from_defaults()
 
   /* Add-ons. */
   {
+    /* Flipendo: solo los que existen en el arbol. Los seis que habia aqui
+     * (`io_anim_bvh`, `io_curve_svg`, `io_mesh_uv_layout`, `io_scene_fbx`,
+     * `io_scene_gltf2`, `pose_library`) los quito la poda Mac-only del
+     * 2026-09-05 y nombrarlos aqui provoca seis "Add-on not loaded" en cada
+     * arranque de fabrica. Ver `politicas/EXTENSIONES-Y-EL-INTERPRETE.md`. */
     const char *addons[] = {
-        "io_anim_bvh",
-        "io_curve_svg",
-        "io_mesh_uv_layout",
-        "io_scene_fbx",
-        "io_scene_gltf2",
         "cycles",
-        "pose_library",
         "bl_pkg",
     };
     for (int i = 0; i < ARRAY_SIZE(addons); i++) {
