@@ -403,21 +403,21 @@ La metrica objetiva es empirica: **copiar el `.mm` a `.cc` y contar los errores*
 | mtl_shader_log | 110 | 0 | **migrado** |
 | mtl_query | 129 | (piloto) | **migrado** |
 | mtl_uniform_buffer | 202 | 1 | **migrado** |
-| mtl_state | 715 | 2 | traducido; **bloqueado** por mtl_command_buffer |
+| mtl_state | 715 | 2 | traducido; **bloqueado** por mtl_command_buffer (GHOST) |
 | mtl_shader_interface | 752 | 5 | **migrado** (firma neutral `id`) |
-| mtl_shader_generator | 3.413 | 6 | traducido; **bloqueado** por mtl_shader |
-| mtl_immediate | 348 | 8 | pendiente |
-| mtl_index_buffer | 566 | 12 | traducido; **bloqueado** por mtl_memory |
-| mtl_texture_util | 852 | 12 | pendiente |
-| mtl_batch | 930 | 29 | pendiente |
-| mtl_debug | 184 | 29 | pendiente |
-| mtl_memory | 1.121 | 32 | **desbloquea a mtl_index_buffer** |
-| mtl_storage_buffer | 526 | 33 | pendiente |
-| mtl_vertex_buffer | 363 | 33 | pendiente |
-| mtl_shader | 1.602 | 52 | **desbloquea a mtl_shader_generator** |
-| mtl_framebuffer | 2.007 | 136 | pendiente |
-| mtl_texture | 2.685 | 357 | pendiente |
-| mtl_backend | 614 | 35.734 | quitar `<Cocoa/Cocoa.h>` primero |
+| mtl_shader_generator | 3.413 | 6 | **migrado** |
+| mtl_immediate | 348 | 8 | **migrado** |
+| mtl_index_buffer | 566 | 12 | **migrado** |
+| mtl_texture_util | 852 | 12 | **migrado** |
+| mtl_batch | 930 | 29 | **migrado** |
+| mtl_debug | 184 | 29 | **migrado** |
+| mtl_memory | 1.121 | 32 | **migrado** |
+| mtl_storage_buffer | 526 | 33 | traducido; **bloqueado** por GHOST |
+| mtl_vertex_buffer | 363 | 33 | **migrado** |
+| mtl_shader | 1.602 | 52 | **migrado** |
+| mtl_framebuffer | 2.007 | 136 | **migrado** |
+| mtl_texture | 2.685 | 357 | bloqueado por mtl_command_buffer (GHOST) |
+| mtl_backend | 614 | 35.734 -> ~20 | **migrado** (era solo `<Cocoa/Cocoa.h>`) |
 | mtl_command_buffer | 1.089 | 35.851 | GHOST |
 | mtl_context | 2.749 | 36.019 | GHOST — el tapon |
 
@@ -425,16 +425,12 @@ La metrica objetiva es empirica: **copiar el `.mm` a `.cc` y contar los errores*
 mas grande del backend), da **6 errores**. Ya esta traducido y verificado como C++;
 solo espera a que `mtl_shader.mm` (52) lo desbloquee. Los dos juntos son 5.015 lineas.
 
-### Orden recomendado (revisado, con el grafo de llamadas)
+### Ese orden ya se ejecuto
 
-1. `mtl_memory` + `mtl_index_buffer` juntos (definidor + llamador).
-2. `mtl_shader` + `mtl_shader_generator` juntos. 5.015 lineas de una sentada.
-   Ojo: al migrar `mtl_shader` hay que resolver de verdad el `@""` de la trampa 5.
-3. Sueltos sin dependencias cruzadas: `mtl_immediate`, `mtl_texture_util`, `mtl_debug`,
-   `mtl_batch`, `mtl_storage_buffer`, `mtl_vertex_buffer`.
-4. `mtl_backend` tras quitarle `<Cocoa/Cocoa.h>`.
-5. `mtl_framebuffer` (136) y `mtl_texture` (357).
-6. `mtl_command_buffer` y `mtl_context`: **solo despues de la fase de GHOST**.
+Se siguio tal cual y funciono: memoria+indices+vertices, luego el cluster del shader,
+luego los sueltos, luego framebuffer y backend. Lo unico que cambio sobre el plan es que
+`mtl_storage_buffer` resulto estar bloqueado por GHOST (usa `MTLComputeState`) y que
+`mtl_texture` tambien lo esta. Estado final y motivos, en la seccion 16.
 
 ## 14. El convertidor mecanico: lo que automatiza y donde MIENTE
 
@@ -510,6 +506,58 @@ segmento. Se resolvio con `mtl_empty_string()`: un `NS::String` vacio creado una
 vez y retenido para siempre, no nulo y de longitud 0, que reproduce el comportamiento
 observable del original. **Es el ejemplo perfecto de por que aqui hace falta mas
 verificacion: el codigo compilaba igual con `nullptr`.**
+
+## 16. Donde se para esta fase, y por que (estado al cerrar)
+
+**15 de 20 ficheros de `gpu/metal` migrados.** En el arbol entero, el Objective-C++
+baja de **30.536 a 17.362 lineas**. Los 5 que quedan NO son los mas dificiles de
+traducir: son los que dependen de GHOST/Cocoa, directa o indirectamente.
+
+| Fichero | Lineas | Menciones a GHOST | Situacion |
+|---|---:|---:|---|
+| mtl_context.mm | 2.753 | 18 | Hace `dynamic_cast<GHOST_ContextCGL *>`. **El tapon.** |
+| mtl_command_buffer.mm | 1.092 | 4 | Usa `GHOST_ContextCGL::max_command_buffer_count`. |
+| mtl_texture.mm | 2.688 | 1 | Bloqueado por las 3 funciones de `MTLComputeState` que define mtl_command_buffer. |
+| mtl_state.mm | 715 | 0 | **Ya traducido y compilando como C++**; espera a `encode_signal_event`. |
+| mtl_storage_buffer.mm | 528 | 0 | **Ya traducido**; espera a `MTLComputeState` y `encode_signal_event`. |
+
+`mtl_state` y `mtl_storage_buffer` estan traducidos, compilan como C++ con 0 errores y
+**no enlazan**: los revierte a `.mm` una sola dependencia cada uno. No es trabajo
+pendiente de traduccion, es trabajo pendiente de GHOST.
+
+### La decision: no se siguen neutralizando firmas
+
+Para llegar hasta aqui hubo que neutralizar **8 firmas** (a `id` o `uint64_t`) porque
+su definidor esta bloqueado por GHOST. Cada una es un trozo de tipado que se pierde y
+una nota de «revertir cuando migre X». Seguir con `mtl_texture` costaria **tres mas**, y
+las tres sobre la API de enlace de computacion (`bind_pso`, `bind_compute_buffer`,
+`bind_compute_texture`), que es camino caliente y central del backend.
+
+Ahi la cuenta deja de salir: se cambiaria tipado real del nucleo por avanzar un fichero
+que, de todas formas, no se puede terminar de limpiar hasta que caiga GHOST. **Lo
+sensato es que los 5 restantes vayan con la fase de GHOST/Cocoa, no antes.** Cuando
+`intern/ghost` deje de ser Objective-C, los cinco caen casi de golpe y ademas se
+revierten las 8 neutralizaciones, que estan todas anotadas en su sitio con la condicion
+exacta para deshacerlas.
+
+### Las 8 firmas neutralizadas y cuando revertirlas
+
+En `mtl_memory.hh`, `mtl_context.hh`, `mtl_shader.hh` y `mtl_texture.hh`, todas con
+comentario en el sitio:
+
+  MTLBufferPool::init(id)                          <- revertir con mtl_context
+  MTLShaderInterface::insert_argument_encoder(id)  <- revertir con mtl_context
+  MTLRenderPassState::bind_vertex_buffer(id, ...)  <- revertir con mtl_command_buffer
+  MTLShader::bake_current_pipeline_state(uint64_t) <- revertir con mtl_context
+  MTLContext::ensure_render_pipeline_state(uint64_t)  <- revertir con mtl_context
+  MTLContext::ensure_depth_stencil_state(uint64_t)    <- revertir con mtl_context
+  MTLTexture::blit(id, ...)                        <- revertir con mtl_texture
+  mtl_format_supports_blending / get_mtl_format_bytesize /
+  get_mtl_format_num_components (uint64_t)         <- revertir con mtl_texture
+
+La excepcion es `MTLBuffer::set_label(const char *)`, que **no** hay que revertir: ahi
+no se neutralizo un tipo, se quito de la firma un tipo que nunca debio estar. Es el
+patron preferente (§11-bis).
 
 ## 10. Cuando se borra el andamio
 
