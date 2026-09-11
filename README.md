@@ -36,7 +36,7 @@ Lo que empezó como mantener viva una línea abandonada se ha convertido en algo
 
 ### El molino de La Mancha
 
-La pieza que fija el listón de calidad. **67.989 caras**, modelado real y no primitivas: 661 tejas colocadas una a una en 19 hiladas, 120 sillares individuales en el zócalo, aspas con travesaños y lona con panza, y 11 desconchones donde la cal se cayó y asoma la mampostería.
+La pieza que fija el listón de calidad. **67.989 caras** —contadas en el `.blend`, no estimadas—, modelado real y no primitivas: 661 tejas colocadas una a una en 19 hiladas, 120 sillares individuales repartidos en las tres hiladas del zócalo, aspas con travesaños y lona con panza, y 11 desconchones donde la cal se cayó y asoma la mampostería.
 
 | | |
 |---|---|
@@ -56,7 +56,7 @@ La pieza que fija el listón de calidad. **67.989 caras**, modelado real y no pr
 
 ### Terreno 1 — La Mancha
 
-El primer mapa jugable: pueblo, camino, arroyo con puente y la colina de los molinos. 300×300 m.
+El primer mapa jugable: pueblo, camino, arroyo con puente y la colina de los molinos. El terreno mide **300 × 300 m** exactos y la escena tiene 107 mallas y 65.715 caras.
 
 | | |
 |---|---|
@@ -65,7 +65,7 @@ El primer mapa jugable: pueblo, camino, arroyo con puente y la colina de los mol
 | ![El molino desde el camino](docs/img/anima/t1-CamMolino.jpg) | ![El puente](docs/img/anima/t1-CamPuente.jpg) |
 | El camino que sube al molino | El puente sobre el arroyo seco |
 
-> **Honestidad sobre estas imágenes.** El molino es la pieza héroe, con el nivel de detalle al que va todo lo demás. El mapa T1 es de una fase anterior y todavía usa formas simples; el maniquí que se ve en la plaza es un **placeholder** hasta tener el modelo del protagonista, y los enemigos son bultos deliberadamente abstractos porque su diseño está sin decidir. Ninguno de los dos `.blend` contiene una sola línea de Python: el gameplay se ata con componentes nativos en C++.
+> **Honestidad sobre estas imágenes.** El molino es la pieza héroe, con el nivel de detalle al que va todo lo demás. El mapa T1 es de una fase anterior y todavía usa formas simples; el maniquí que se ve en la plaza es un **placeholder** hasta tener el modelo del protagonista, y los enemigos son bultos deliberadamente abstractos porque su diseño está sin decidir. Ninguno de los `.blend` contiene una sola línea de Python — comprobado abriendo los tres (`Molino`, `MolinoInterior`, `T1_LaMancha`): **0 bloques de texto** en los tres. El gameplay se ata con componentes nativos en C++.
 
 ---
 
@@ -119,7 +119,7 @@ Que abra antes, cargue antes y vaya más fluido que las alternativas **en el har
 
 ### 3. Instalador rápido y bien comprimido
 
-Un instalador nativo de macOS, pequeño y que termine rápido. Quitar CPython ya se llevó 235 MB por delante; el objetivo es seguir bajando y que instalar sea cuestión de segundos.
+Un instalador nativo de macOS, pequeño y que termine rápido. Quitar CPython ya se llevó **224 MB** por delante (762 → 538 MB, medido hoy sobre los dos bundles); el objetivo es seguir bajando y que instalar sea cuestión de segundos.
 
 ### 4. Ordenar la casa
 
