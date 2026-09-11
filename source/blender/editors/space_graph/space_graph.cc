@@ -51,6 +51,7 @@
 
 #include "BLO_read_write.hh"
 
+#include "FL_graph_menus.hh"
 #include "graph_intern.hh" /* own include */
 
 /* ******************** default callbacks for ipo space ***************** */
@@ -1002,6 +1003,8 @@ void ED_spacetype_ipo()
 
   art = ED_area_type_hud(st->spaceid);
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::graph::graph_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

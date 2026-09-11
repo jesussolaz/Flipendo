@@ -361,39 +361,6 @@ class GRAPH_MT_key_density(Menu):
         layout.operator("graph.clean").channels = False
 
 
-class GRAPH_MT_key_blending(Menu):
-    bl_label = "Blend"
-    bl_translation_context = i18n_contexts.operator_default
-
-    def draw(self, _context):
-        layout = self.layout
-        layout.operator_context = 'INVOKE_DEFAULT'
-        layout.operator("graph.breakdown", text="Breakdown")
-        layout.operator("graph.blend_to_neighbor", text="Blend to Neighbor")
-        layout.operator("graph.blend_to_default", text="Blend to Default Value")
-        layout.operator("graph.ease", text="Ease")
-        layout.operator("graph.blend_offset", text="Blend Offset")
-        layout.operator("graph.blend_to_ease", text="Blend to Ease")
-        layout.operator("graph.match_slope", text="Match Slope")
-        layout.operator("graph.push_pull", text="Push Pull")
-        layout.operator("graph.shear", text="Shear Keys")
-        layout.operator("graph.scale_average", text="Scale Average")
-        layout.operator("graph.scale_from_neighbor", text="Scale from Neighbor")
-        layout.operator("graph.time_offset", text="Time Offset")
-
-
-class GRAPH_MT_key_smoothing(Menu):
-    bl_label = "Smooth"
-    bl_translation_context = i18n_contexts.operator_default
-
-    def draw(self, _context):
-        layout = self.layout
-        layout.operator_context = 'INVOKE_DEFAULT'
-        layout.operator("graph.gaussian_smooth", text="Smooth (Gaussian)")
-        layout.operator("graph.smooth", text="Smooth (Legacy)")
-        layout.operator("graph.butterworth_smooth")
-
-
 class GRAPH_MT_key(Menu):
     bl_label = "Key"
 
@@ -457,96 +424,6 @@ class GRAPH_MT_key_snap(Menu):
         layout.operator("graph.snap_cursor_value", text="Cursor Value to Selection")
 
 
-class GRAPH_MT_view_pie(Menu):
-    bl_label = "View"
-
-    def draw(self, context):
-        layout = self.layout
-
-        pie = layout.menu_pie()
-        pie.operator("graph.view_all")
-        pie.operator("graph.view_selected", icon='ZOOM_SELECTED')
-        pie.operator("graph.view_frame")
-        if context.scene.use_preview_range:
-            pie.operator("anim.scene_range_frame", text="Frame Preview Range")
-        else:
-            pie.operator("anim.scene_range_frame", text="Frame Scene Range")
-
-
-class GRAPH_MT_delete(Menu):
-    bl_label = "Delete"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("graph.delete")
-
-        layout.separator()
-
-        layout.operator("graph.clean").channels = False
-        layout.operator("graph.clean", text="Clean Channels").channels = True
-
-
-class GRAPH_MT_context_menu(Menu):
-    bl_label = "F-Curve"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-
-        layout.operator("graph.copy", text="Copy", icon='COPYDOWN')
-        layout.operator("graph.paste", text="Paste", icon='PASTEDOWN')
-        layout.operator("graph.paste", text="Paste Flipped", icon='PASTEFLIPDOWN').flipped = True
-
-        layout.separator()
-
-        layout.operator_menu_enum("graph.handle_type", "type", text="Handle Type")
-        layout.operator_menu_enum("graph.interpolation_type", "type", text="Interpolation Mode")
-        layout.operator_menu_enum("graph.easing_type", "type", text="Easing Type")
-
-        layout.separator()
-
-        layout.operator("graph.keyframe_insert").type = 'SEL'
-        layout.operator("graph.duplicate_move")
-        layout.operator_context = 'EXEC_REGION_WIN'
-        layout.operator("graph.delete")
-
-        layout.separator()
-
-        layout.operator_menu_enum("graph.mirror", "type", text="Mirror")
-        layout.operator_menu_enum("graph.snap", "type", text="Snap")
-
-
-class GRAPH_MT_pivot_pie(Menu):
-    bl_label = "Pivot Point"
-
-    def draw(self, context):
-        layout = self.layout
-        pie = layout.menu_pie()
-
-        pie.prop_enum(context.space_data, "pivot_point", value='BOUNDING_BOX_CENTER')
-        pie.prop_enum(context.space_data, "pivot_point", value='CURSOR')
-        pie.prop_enum(context.space_data, "pivot_point", value='INDIVIDUAL_ORIGINS')
-
-
-class GRAPH_MT_snap_pie(Menu):
-    bl_label = "Snap"
-
-    def draw(self, _context):
-        layout = self.layout
-        pie = layout.menu_pie()
-
-        pie.operator("graph.snap", text="Selection to Current Frame").type = 'CFRA'
-        pie.operator("graph.snap", text="Selection to Cursor Value").type = 'VALUE'
-        pie.operator("graph.snap", text="Selection to Nearest Frame").type = 'NEAREST_FRAME'
-        pie.operator("graph.snap", text="Selection to Nearest Second").type = 'NEAREST_SECOND'
-        pie.operator("graph.snap", text="Selection to Nearest Marker").type = 'NEAREST_MARKER'
-        pie.operator("graph.snap", text="Flatten Handles").type = 'HORIZONTAL'
-        pie.operator("graph.frame_jump", text="Cursor to Selection")
-        pie.operator("graph.snap_cursor_value", text="Cursor Value to Selection")
-
-
 classes = (
     GRAPH_HT_header,
     GRAPH_PT_proportional_edit,
@@ -559,13 +436,6 @@ classes = (
     GRAPH_MT_key_density,
     GRAPH_MT_key_transform,
     GRAPH_MT_key_snap,
-    GRAPH_MT_key_smoothing,
-    GRAPH_MT_key_blending,
-    GRAPH_MT_delete,
-    GRAPH_MT_context_menu,
-    GRAPH_MT_pivot_pie,
-    GRAPH_MT_snap_pie,
-    GRAPH_MT_view_pie,
     GRAPH_PT_filters,
     GRAPH_PT_snapping,
     GRAPH_PT_driver_snapping,
