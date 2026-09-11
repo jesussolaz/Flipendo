@@ -75,6 +75,7 @@
 #  include "FL_object_select_selftest.hh"
 #  include "FL_object_ops_selftest.hh"
 #  include "FL_operator_dump.hpp"
+#  include "FL_properties_ui.hpp"
 #  include "FL_optype_surface.hh"
 #  include "FL_rigidbody_ops_selftest.hh"
 #  include "FL_ui_dump.hpp"
@@ -2909,6 +2910,46 @@ static int arg_handle_fl_check_keyconfig_io(int argc, const char **argv, void *d
   return 0;
 }
 
+static const char arg_handle_fl_ui_scene_doc[] =
+    "<spec>\n"
+    "\tMonta en la escena el dato que una pestana de datos necesita para que su poll\n"
+    "\tdiga que si, antes de --fl-dump-ui-layout. Sin esto, la escena de fabrica deja\n"
+    "\ttodas esas pestanas en NO-CUBIERTO motivo=poll y el volcado no prueba su draw().\n"
+    "\tspec: METABALL[:BALL|CAPSULE|PLANE|ELLIPSOID|CUBE], SPEAKER[:MUTED], LATTICE,\n"
+    "\tVOLUME, CURVES.";
+static int arg_handle_fl_ui_scene(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    if (!flipendo::properties_ui::scene_setup(C, argv[1])) {
+      fprintf(stderr, "\nError: --fl-ui-scene no pudo montar '%s'.\n", argv[1]);
+      WM_exit(C, EXIT_FAILURE);
+    }
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la especificacion de escena despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_make_ui_scene_doc[] =
+    "<filepath>\n"
+    "\tConstruye la ESCENA RICA del arnes de interfaz y la guarda en <filepath>.\n"
+    "\tCamara, luz, curva, texto, vacio, esqueleto en pose, sistema de particulas y el\n"
+    "\tcubo en modo edicion con las tres selecciones. Se usa como fichero de partida de\n"
+    "\t--fl-dump-ui-layout para cubrir los draw() que la escena de fabrica deja en\n"
+    "\tNO-CUBIERTO motivo=poll. Vale en --background.";
+static int arg_handle_fl_make_ui_scene(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::ui_dump::make_scene(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_ui_doc[] =
     "<filepath>\n"
     "\tVuelca el REGISTRO de interfaz (paneles, menus y cabeceras) y sale.\n"
@@ -3893,6 +3934,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-check-manual", CB(arg_handle_fl_check_manual), C);
   BLI_args_add(
       ba, nullptr, "--fl-check-keyconfig-io", CB(arg_handle_fl_check_keyconfig_io), C);
+  BLI_args_add(ba, nullptr, "--fl-ui-scene", CB(arg_handle_fl_ui_scene), C);
+  BLI_args_add(ba, nullptr, "--fl-make-ui-scene", CB(arg_handle_fl_make_ui_scene), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);

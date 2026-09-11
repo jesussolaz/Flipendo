@@ -979,3 +979,84 @@ Y los cinco datos que cuesta encontrar:
   `[:]` del Python es una rebanada de cadena, no de conjunto.
 - `sima.image_user` es `&sima->iuser`; `sima.mode != 'UV'` es
   `sima->mode != SI_MODE_UV`.
+
+## T2: la escena rica, y el defecto del arnés que ha destapado
+
+`--fl-make-ui-scene <fichero>` (`source/blender/editors/interface/fl_ui_scene_rich.cc`)
+construye la escena de medición y la guarda. Las opciones `--fl-*` corren en
+`ARG_PASS_FINAL`, o sea **después** de cargar el `.blend` de la línea de órdenes, así
+que no hizo falta tocar el volcador para nada:
+
+```
+Blender --factory-startup -b --fl-make-ui-scene tests/flipendo/ui/escena-rica.blend
+Blender --factory-startup tests/flipendo/ui/escena-rica.blend --fl-dump-ui-layout <salida>
+```
+
+Lleva cámara, luz, curva Bézier, texto, vacío, esqueleto **en modo pose**, un sistema
+de partículas sobre el cubo, y el cubo **en modo edición con las tres selecciones
+encendidas** (vértice, arista y cara) y todo seleccionado. Se construye **por
+operadores**, como `fl_properties_ui_scene.cc`, y si un operador falla se grita y se
+aborta: un andamio que falla en silencio deja el panel en `NO-CUBIERTO` y uno se cree
+que lo ha verificado.
+
+### El salto de cobertura, que es el entregable
+
+| | Escena de fábrica | Escena rica |
+|---|---:|---:|
+| Bloques | 2.004 | 2.004 |
+| **Dibujados** | 1.095 | **1.125** |
+| **No cubiertos** | 909 | **879** |
+
+**30 bloques pasan de `NO-CUBIERTO` a dibujado, y ninguno se pierde**: las 25 pestañas
+de Partículas (`PARTICLE_PT_*`, incluidas las cuatro de campos de fuerza y las cuatro
+de física) y los 5 paneles de superposición de edición de malla
+(`VIEW3D_PT_overlay_edit_mesh*`). Además, sin cambiar la cuenta, **cambia el contenido**
+de los menús de edición de malla: con las tres selecciones encendidas se dibujan las
+columnas de arista y de cara que la escena de fábrica dejaba vacías.
+
+### Determinismo: medido, y sale bien
+
+Tres escenas generadas **independientemente** dan los mismos 2.004/1.125/879 y, una vez
+fuera lo que no es de la escena (ver abajo), **volcados idénticos byte a byte**: 31.781
+líneas, el mismo `sha256` las tres veces. No se compara el `.blend` en sí —un `.blend`
+lleva direcciones dentro y no es idéntico entre guardados—: lo que tiene que
+reproducirse es el volcado, y se reproduce.
+
+### El defecto que esto ha destapado, y por qué NO se congeló la línea base rica
+
+Al comparar los tres volcados aparecieron diferencias, y **no eran de la escena**:
+
+```
+base:  (no hay)
+ahora: BUTTON ... op='bpy.ops.wm.open_mainfile(filepath="…/rica-2.blend", …)'
+       text='rica-2.blend' type=BUT
+```
+
+Es `TOPBAR_MT_file_open_recent`: **el volcado de diseño lleva dentro la lista de
+ficheros recientes del usuario**. Con la escena de fábrica no se notaba porque nadie
+abría un fichero; en cuanto el arnés carga un `.blend`, cada ejecución cambia la lista.
+Y la línea base de fábrica que hay hoy en el repo **ya arrastra ese defecto**: dentro
+tiene rutas de `~/Flipendo/game/anima/*.blend`, que no son del árbol.
+
+Es exactamente el defecto de D6 («la línea base no puede llevar dentro dónde está
+instalado el programa») y de la fecha de compilación del menú «Acerca de»: *lo que no
+es del árbol, no entra en la línea base*.
+
+**Por eso no se congeló `baseline-python-rica.txt`.** Una línea base con la lista de
+recientes dentro no se reproduce en otra máquina ni después de que alguien abra un
+fichero: sería la verificación que no verifica nada, y además daría rojos falsos a
+todos los carriles. La cura es la misma que la de D6, en el volcador: sustituir las
+rutas de `wm.open_mainfile` de los recientes por una marca, o no serializar ese menú y
+decirlo. **Pero eso cambia también las dos líneas base de fábrica**, así que hay que
+hacerlo con el árbol quieto y volviendo a congelar las tres a la vez — no a las 07:30
+con cuatro carriles comparando contra ellas.
+
+Queda, por tanto: **la escena hecha, verificada determinista y con su salto de
+cobertura medido; la línea base rica, pendiente de esa cura de una línea.**
+
+### Lo que la escena no lleva, y por qué
+
+El clip de película y la máscara. Un `MovieClip` necesita un vídeo o una secuencia de
+imágenes en disco y `MASK_OT_new` solo corre desde el editor de clips con un clip
+cargado; meter un vídeo de prueba en el repo es una decisión de assets que no es de
+este carril. Los cinco menús del editor de clips siguen `NO-CUBIERTO`.

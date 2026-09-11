@@ -28,6 +28,7 @@ set(SRC
   interface.cc
   interface_align.cc
   fl_ui_dump.cc
+  fl_ui_scene_rich.cc
   FL_ui_registry.cc
   fl_toolbar_ui.cc
   fl_toolbar_ops.cc

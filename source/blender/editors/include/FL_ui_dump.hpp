@@ -57,6 +57,16 @@ bool dump_registry(const bContext *C, const char *filepath);
 bool dump_layout(bContext *C, const char *filepath);
 
 /**
+ * Construye la ESCENA RICA del arnes y la guarda en `filepath`.
+ *
+ * Ver `fl_ui_scene_rich.cc`: sirve para que el volcado de diseno pueda ejecutar los
+ * `draw()` que la escena de fabrica deja en `NO-CUBIERTO motivo=poll`. La escena se
+ * carga como cualquier `.blend` de la linea de ordenes, porque las opciones `--fl-*`
+ * corren en `ARG_PASS_FINAL`, despues de cargar el fichero.
+ */
+bool make_scene(bContext *C, const char *filepath);
+
+/**
  * Dibuja con el C++ nativo el panel de presets de la familia `node_color` y lo
  * serializa igual que `dump_layout`, para poder compararlo con lo que dibuja el
  * Python sobre la MISMA carpeta llena. Ver `fl_ui_dump.cc`.
