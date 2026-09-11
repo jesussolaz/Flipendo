@@ -5,7 +5,7 @@
 > `tools/flipendo_metrics/flipendo_metrics.cpp`, que es C++ y mide el árbol:
 > ninguna cifra de este documento está copiada de otro documento.
 >
-> **Medido el 2026-09-11 21:34 sobre el commit `49afe55dfb9`** (2026-09-11 21:31 — «Metricas: el informe dice de que binario habla, y si el arbol estaba sucio al medirlo»).
+> **Medido el 2026-09-12 00:07 sobre el commit `fe49217aabe`** (2026-09-12 00:02 — «Interfaz: el volcado y el comprobador daban resultados distintos sobre el mismo binario»).
 >
 > Regenerar:
 > ```sh
@@ -38,8 +38,8 @@ horas cuando hay siete carriles trabajando. La solución no es escribir mejor: e
 - **La batería** se ejecuta: cada verificador del binario, con su línea base, y el
   código de salida es el veredicto.
 
-Ficheros versionados al commit medido: **19.883**. De ellos, **11.616 son de código**:
-9.254 propios y 2.362 vendorizados. El resto (8.267) son datos, assets, textos y
+Ficheros versionados al commit medido: **19.903**. De ellos, **11.624 son de código**:
+9.262 propios y 2.362 vendorizados. El resto (8.279) son datos, assets, textos y
 configuración, que por doctrina no son código.
 
 ---
@@ -48,21 +48,21 @@ configuración, que por doctrina no son código.
 
 | Lenguaje | Ficheros | Líneas | % |
 |---|---:|---:|---:|
-| C++ | 4.338 | 2.569.156 | 75,2 % |
-| .hh | 1.852 | 292.386 | 8,6 % |
-| .hpp | 305 | 36.679 | 1,1 % |
+| C++ | 4.345 | 2.574.866 | 75,3 % |
+| .hh | 1.854 | 292.944 | 8,6 % |
+| .hpp | 306 | 36.846 | 1,1 % |
 | .h heredada | 1.388 | 248.731 | 7,3 % |
-| Python | 613 | 191.224 | 5,6 % |
+| Python | 611 | 189.766 | 5,6 % |
 | GLSL | 745 | 68.391 | 2,0 % |
 | Objective-C++ | 8 | 5.060 | 0,1 % |
 | MSL | 4 | 1.722 | 0,1 % |
 | Metal | 1 | 832 | 0,0 % |
-| **TOTAL propio** | **9.254** | **3.414.181** | 100 % |
+| **TOTAL propio** | **9.262** | **3.419.158** | 100 % |
 
-- Familia C/C++ contando las `.h` heredadas: **3.146.952 → 92,2 %**.
-- C++ en sentido estricto (`.cc`/`.cpp`/`.hh`/`.hpp`): **2.898.221 → 84,9 %**.
+- Familia C/C++ contando las `.h` heredadas: **3.153.387 → 92,2 %**.
+- C++ en sentido estricto (`.cc`/`.cpp`/`.hh`/`.hpp`): **2.904.656 → 85,0 %**.
 - Todo lo que no es C++ (Python + GLSL + ObjC++ + MSL + Metal + C + shell):
-  **267.229 → 7,8 %**.
+  **265.771 → 7,8 %**.
 
 ### Terceros vendorizados — no son de Flipendo
 
@@ -98,21 +98,21 @@ se vacía, desaparece sola de esta tabla.
 
 | Zona | Ficheros | Líneas | % del Python |
 |---|---:|---:|---:|
-| `scripts/startup/bl_ui` | 67 | 51.741 | 27,1 % |
-| `tests/python` | 232 | 37.769 | 19,8 % |
-| `scripts/modules` | 87 | 24.544 | 12,8 % |
-| `scripts/addons_core` | 17 | 22.703 | 11,9 % |
-| `scripts/startup/bl_operators` | 27 | 12.569 | 6,6 % |
+| `scripts/startup/bl_ui` | 65 | 51.087 | 26,9 % |
+| `tests/python` | 232 | 37.769 | 19,9 % |
+| `scripts/modules` | 87 | 24.544 | 12,9 % |
+| `scripts/addons_core` | 17 | 22.703 | 12,0 % |
+| `scripts/startup/bl_operators` | 27 | 11.765 | 6,2 % |
 | `scripts/freestyle` | 46 | 6.541 | 3,4 % |
 | `intern/cycles` | 10 | 6.262 | 3,3 % |
 | `tools/check_source` | 15 | 5.745 | 3,0 % |
 | `tools/utils_maintenance` | 6 | 3.642 | 1,9 % |
 | `tools/utils` | 9 | 2.705 | 1,4 % |
 | `tests/utils` | 4 | 2.146 | 1,1 % |
-| `tests/performance` | 14 | 1.999 | 1,0 % |
+| `tests/performance` | 14 | 1.999 | 1,1 % |
 | `build_files/utils` | 5 | 1.694 | 0,9 % |
 | `tests/flipendo` | 13 | 1.631 | 0,9 % |
-| `tools/modules` | 1 | 1.235 | 0,6 % |
+| `tools/modules` | 1 | 1.235 | 0,7 % |
 | `release/release_notes` | 1 | 1.120 | 0,6 % |
 | `source/blender` | 4 | 940 | 0,5 % |
 | `doc/blender_file_format` | 2 | 892 | 0,5 % |
@@ -136,20 +136,20 @@ se vacía, desaparece sola de esta tabla.
 | `tests/blender_as_python_module` | 1 | 25 | 0,0 % |
 | `scripts/bge` | 1 | 23 | 0,0 % |
 | `scripts/templates_custom_objects` | 1 | 18 | 0,0 % |
-| **TOTAL** | **613** | **191.224** | 100 % |
+| **TOTAL** | **611** | **189.766** | 100 % |
 
 ---
 
 ## 4. Lo que el binario COMPILA y lo que no
 
-Medido sobre `/Users/jesussolaz/Flipendo/dev/build/build.ninja` (5.249 aristas de objeto) y `/Users/jesussolaz/Flipendo/dev/build/CMakeCache.txt`.
+Medido sobre `/Users/jesussolaz/Flipendo/dev/build/build.ninja` (5.252 aristas de objeto) y `/Users/jesussolaz/Flipendo/dev/build/CMakeCache.txt`.
 
 La diferencia importa: **código que no entra en el binario no es trabajo
 pendiente, es código muerto**, y ninguna tabla por extensión la hacía.
 
 | Lenguaje | Ficheros | Líneas | Con objeto en el build | Líneas que compilan |
 |---|---:|---:|---:|---:|
-| C++ | 4.338 | 2.569.156 | 3.542 | **2.335.677** |
+| C++ | 4.345 | 2.574.866 | 3.549 | **2.340.830** |
 | Objective-C++ | 8 | 5.060 | 0 | **0** |
 | Metal | 1 | 832 | (no produce `.o`) | 0 lineas en 0 ficheros citados en el build |
 | MSL | 4 | 1.722 | (no produce `.o`) | 1.722 lineas en 4 ficheros citados en el build |
@@ -198,28 +198,10 @@ que es.
 | `421883e9b37` | 2026-09-08 23:55 | 1.003 | **247.999** | 2.483.802 | 30.536 | 68.391 | 248.745 | 34.280 | 0 |
 | `59a58f78996` | 2026-09-09 23:47 | 1.003 | **247.642** | 2.484.707 | 30.536 | 68.391 | 248.745 | 34.328 | 0 |
 | `4e88d96a431` | 2026-09-10 23:19 | 1.013 | **248.065** | 2.497.382 | 30.536 | 68.391 | 248.745 | 35.019 | 0 |
-| `49afe55dfb9` | 2026-09-11 21:31 | 613 | **191.224** | 2.569.156 | 5.060 | 68.391 | 248.731 | 36.679 | 0 |
+| `e713bc10e22` | 2026-09-11 23:30 | 611 | **189.766** | 2.574.808 | 5.060 | 68.391 | 248.731 | 36.846 | 0 |
+| `fe49217aabe` | 2026-09-12 00:02 | 611 | **189.766** | 2.574.866 | 5.060 | 68.391 | 248.731 | 36.846 | 0 |
 
-De 492.365 a 191.224 líneas de Python propio: **−301.141 líneas, 61,2 %** desde `3da0e2d745d` (2026-09-05 13:24).
-
-### Hora a hora del último día medido (2026-09-11)
-
-| Commit | Hora | Python | C++ | ObjC++ | Total propio |
-|---|---|---:|---:|---:|---:|
-| `77554ad2fdb` | 2026-09-11 00:58 | 246.289 | 2.501.420 | 30.536 | 3.423.160 |
-| `24725db5e41` | 2026-09-11 01:58 | 242.825 | 2.506.901 | 30.536 | 3.425.424 |
-| `840486f911a` | 2026-09-11 02:59 | 230.573 | 2.518.062 | 30.536 | 3.425.269 |
-| `8cf60c5b9d7` | 2026-09-11 03:54 | 202.972 | 2.528.719 | 30.536 | 3.408.608 |
-| `63388babde1` | 2026-09-11 04:57 | 196.690 | 2.533.420 | 30.536 | 3.407.738 |
-| `c8dd61a0b96` | 2026-09-11 05:24 | 196.021 | 2.534.339 | 30.536 | 3.407.988 |
-| `08209805f70` | 2026-09-11 06:56 | 193.971 | 2.539.158 | 30.536 | 3.411.099 |
-| `8c7f40b62eb` | 2026-09-11 07:55 | 193.924 | 2.539.921 | 30.536 | 3.411.858 |
-| `2d6638bfd09` | 2026-09-11 08:51 | 191.224 | 2.540.538 | 30.304 | 3.410.534 |
-| `35380d5f863` | 2026-09-11 15:59 | 191.224 | 2.540.768 | 30.102 | 3.410.579 |
-| `bceb85c72e7` | 2026-09-11 16:42 | 191.224 | 2.553.460 | 17.362 | 3.410.616 |
-| `63a17d396bb` | 2026-09-11 17:47 | 191.224 | 2.554.511 | 16.518 | 3.411.242 |
-| `35309693a44` | 2026-09-11 18:55 | 191.224 | 2.567.209 | 5.060 | 3.412.234 |
-| `49afe55dfb9` | 2026-09-11 21:31 | 191.224 | 2.569.156 | 5.060 | 3.414.181 |
+De 492.365 a 189.766 líneas de Python propio: **−302.599 líneas, 61,5 %** desde `3da0e2d745d` (2026-09-05 13:24).
 
 ---
 
@@ -267,46 +249,31 @@ Los ficheros que más puentes concentran (ahí es donde está el trabajo):
 ## 7. La batería de verificación, ejecutada
 
 Los verificadores se descubren leyendo las banderas `"--fl-..."` registradas en
-`source/creator/creator_args.cc`: **50 banderas `--fl-*` en total**, de las cuales
-**32** son comprobadores (`--fl-check-*` 16 + `--fl-selftest-*` 16), **14**
+`source/creator/creator_args.cc`: **61 banderas `--fl-*` en total**, de las cuales
+**41** son comprobadores (`--fl-check-*` 22 + `--fl-selftest-*` 19), **16**
 son volcadores `--fl-dump-*` (no dan veredicto: escriben estado) y **4** son
-conversores o preparadores de escena. Aquí se ejecutan **33** comprobaciones,
+conversores o preparadores de escena. Aquí se ejecutan **42** comprobaciones,
 porque `--fl-check-ui` admite dos líneas base (registro y dibujo) y son dos
 comprobaciones distintas.
 
 ### Contra qué binario se ha medido
 
 - Binario: `/Users/jesussolaz/Flipendo/dev/build/bin/Blender.app/Contents/MacOS/Blender`
-- Construido del commit `35309693a44c` — **OJO: no es el commit medido (`49afe55dfb9`)**, el 2026-09-11 19:21:46.
-- **El árbol de trabajo tenía 18 ficheros versionados modificados sin
-  commitear cuando se midió.** El binario se compila del árbol de trabajo, no
-  del commit: dentro del binario que aquí se prueba va trabajo a medias de
-  otros carriles. Un rojo puede ser de ellos y no una regresión del proyecto.
-  Para un veredicto limpio hay que medir con el árbol limpio. Estaban
-  tocados:
+- Construido del commit `c64b3c11c6f8` — **OJO: no es el commit medido (`fe49217aabe`)**, el 2026-09-11 21:57:00.
+- **El árbol de trabajo tenía 1 ficheros versionados modificados sin
+  commitear cuando se midió**, de los cuales **0 pueden cambiar el binario**
+  (fuente, cabeceras, scripts instalados o ficheros de compilación) y 1 no.
+  **Ninguno de los que pueden cambiar el binario**: el veredicto de abajo es del
+  commit medido, no de trabajo a medias de nadie.
+  Los otros 1, que no entran en el binario, por directorio: `politicas/ESTADO.md` 1.
 
-  - `M README.md`
-  - `M politicas/METRICAS.md`
-  - `M scripts/startup/bl_operators/presets.py`
-  - `M scripts/startup/bl_ui/__init__.py`
-  - `D scripts/startup/bl_ui/properties_data_lightprobe.py`
-  - `D scripts/startup/bl_ui/properties_data_volume.py`
-  - `M source/blender/editors/include/FL_optype_surface.hh`
-  - `M source/blender/editors/object/fl_optype_surface.cc`
-  - `M source/blender/editors/space_buttons/CMakeLists.txt`
-  - `M source/blender/editors/space_buttons/buttons_intern.hh`
-  - `M source/blender/editors/space_buttons/fl_properties_ui_scene.cc`
-  - `M source/blender/editors/space_buttons/space_buttons.cc`
-  - `M source/blender/windowmanager/CMakeLists.txt`
-  - `M source/blender/windowmanager/intern/wm_operators.cc`
-  - …y 4 más
-
-**Un `--fl-selftest-*` no es una prueba, es un volcador**: escribe un fichero y sale
-con 0 aunque no haya escrito nada (medido: sin argumento imprime «falta el fichero
-de salida» y devuelve 0 igual). Contarlos como «verdes» por su código de salida
-sería un verde falso. Aquí el veredicto de un selftest se saca comparando su
-volcado byte a byte con su línea base, que es lo que hace su `--fl-check-*` hermano
-cuando existe.
+**Un `--fl-selftest-*` no es una prueba, es un volcador**: escribe un fichero y su
+código de salida no es un veredicto. Contarlos como «verdes» por ese código sería un
+verde falso. Aquí el veredicto de un selftest se saca comparando su volcado con su
+línea base —honrando las declaraciones, ver más abajo—, que es lo que hace su
+`--fl-check-*` hermano cuando existe. Y los que en su propia ayuda dicen «Solo
+VUELCA: el veredicto lo da `--fl-check-X`» se marcan **volcador** y no se cuentan ni
+verdes ni rojos: quien firma es el comprobador.
 
 Y un rojo no se firma a la primera: **todo rojo se repite hasta tres veces**, porque
 el REGLAMENTO ya midió que hay resultados no deterministas (el cálculo de normales
@@ -315,42 +282,50 @@ es **INESTABLE**, que no es lo mismo que un fallo ni que un aprobado. Excepción
 declarada: un verificador que tarde más de 60 s no se repite —triplicarlo se comería
 la batería— y su fila dice que va con una sola pasada.
 
-**Resultado: 26 en verde, 5 en rojo, 1 inestables, 1 sin línea base con
-la que comparar.** Tardó 171 segundos en total; el más lento, 110 s.
+**Resultado: 39 en verde, 1 en rojo, 0 inestables, 1 sin línea base con
+la que comparar, 1 que su propia ayuda declara volcadores (no dan veredicto).** Tardó 254 segundos en total; el más lento, 124 s.
 
 ### Grupo 1 — valen en `--background`
 
 | Verificador | Veredicto | Tiempo | Cifras |
 |---|---|---:|---|
-| `--fl-check-dupli-face` | verde | 1.8 s | fl-check-dupli-face: TOTAL 28/28 elementos identicos, 37/37 lineas |
-| `--fl-check-external-editor` | verde | 1.4 s | editor externo: 4326 casos comparados, 4326 identicos, 0 distintos |
-| `--fl-check-find-adjacent` | verde | 1.3 s | fl-check-find-adjacent: TOTAL 65/65 elementos identicos, 92/92 lineas |
-| `--fl-check-keyconfig-io` | verde | 1.4 s | keyconfig: ciclo exportar-importar-exportar: 6680 lineas, 0 distintas |
-| `--fl-check-keymap-menus` | verde | 1.5 s | FL-KEYMAP-MENUS nombres=136 (defecto=127, solo-con-preferencia=9) configuraciones=22 elementos=4569 call_menu=3105 call_menu_pie=981 call_panel=483 re... |
-| `--fl-check-manual` | verde | 1.6 s | manual: por url_lookup() (el camino del operador): 7470 identicas, 0 distintas, 553 a la reserva del buscador |
-| `--fl-check-mesh-ops` | **ROJO** | 2.8 s | fl-check-mesh-ops: TOTAL 13111/13112 elementos identicos, 13145/13146 lineas  [reproducido en las 3 pasadas] |
-| `--fl-check-mirror-uv` | verde | 1.4 s | fl-check-mirror-uv: TOTAL 216/216 elementos identicos, 236/236 lineas |
-| `--fl-check-object-misc` | verde | 1.4 s | fl-check-object-misc: TOTAL 42/42 elementos identicos, 55/55 lineas |
-| `--fl-check-object-select` | verde | 1.4 s | fl-check-object-select: TOTAL 152/152 elementos identicos, 178/178 lineas |
-| `--fl-check-optypes` | verde | 1.4 s | fl-check-optypes: TOTAL 44/44 elementos identicos, 66/66 lineas |
-| `--fl-check-presets` | **ROJO** | 2.8 s | aplicados sin error 156 de 172 (1 con error, 15 sin contexto)  [reproducido en las 3 pasadas] |
-| `--fl-check-rigidbody-ops` | verde | 1.4 s | fl-check-rigidbody-ops: TOTAL 63/63 elementos identicos, 69/69 lineas |
-| `--fl-check-tools` | verde | 1.4 s | Herramientas: 30 secciones comprobadas, 0 diferencias, 0 secciones sin trasladar. |
-| `--fl-check-ui (registro)` | **ROJO** | 2.8 s | Interfaz (registro): 2113 bloques, 2112 identicos, 1 distintos, 0 faltan, 0 sobran.  [reproducido en las 3 pasadas] |
-| `--fl-selftest-dupli-face` | verde | 1.3 s | 37 lineas identicas a tests/flipendo/dupliface/baseline-python.txt |
-| `--fl-selftest-find-adjacent` | verde | 1.4 s | 92 lineas identicas a tests/flipendo/findadjacent/baseline-python.txt |
-| `--fl-selftest-keyconfig` | sin línea base | 1.4 s | informe de 4 lineas; no hay linea base congelada en el arbol |
-| `--fl-selftest-mesh-ops` | **inestable** | 2.7 s | falla 2 de 3 pasadas con el mismo binario y la misma escena. Pasada en rojo: linea 10866: obtenido `  43 0.451384932 0.282115549 0.112846233 1` / linea base `  ... |
-| `--fl-selftest-mirror-uv` | verde | 1.4 s | 236 lineas identicas a tests/flipendo/mirroruv/baseline-python.txt |
-| `--fl-selftest-numinput` | verde | 1.4 s | 150 lineas identicas a tests/flipendo/numinput/baseline-python.txt |
-| `--fl-selftest-object-misc` | verde | 1.4 s | 55 lineas identicas a tests/flipendo/objectmisc/baseline-python.txt |
-| `--fl-selftest-object-ops` | verde | 1.4 s | 31 lineas identicas a tests/flipendo/objectops/run-cpp-verified.txt (NO a la preferente tests/flipendo/objectops/baseline-python.txt: linea 5: obtenido `  C    ... |
-| `--fl-selftest-object-select` | verde | 1.4 s | 178 lineas identicas a tests/flipendo/objectselect/baseline-python.txt |
-| `--fl-selftest-rigidbody-ops` | verde | 1.4 s | 69 lineas identicas a tests/flipendo/rigidbody/baseline-python.txt |
-| `--fl-selftest-wm-batch-rename` | verde | 1.4 s | 1 lineas identicas a tests/flipendo/operators/batch-rename-native.txt |
-| `--fl-selftest-wm-owner-ops` | verde | 1.4 s | 2 lineas identicas a tests/flipendo/operators/owner-python.txt |
-| `--fl-selftest-wm-properties-edit` | verde | 1.4 s | 2 lineas identicas a tests/flipendo/operators/properties-edit-native.txt |
-| `--fl-selftest-wm-system-ops` | verde | 1.3 s | 20 lineas identicas a tests/flipendo/operators/system-python.txt |
+| `--fl-check-dupli-face` | verde | 1.3 s | fl-check-dupli-face: TOTAL 28/28 elementos identicos, 37/37 lineas |
+| `--fl-check-external-editor` | verde | 1.5 s | editor externo: 4326 casos comparados, 4326 identicos, 0 distintos |
+| `--fl-check-find-adjacent` | verde | 1.4 s | fl-check-find-adjacent: TOTAL 65/65 elementos identicos, 92/92 lineas |
+| `--fl-check-keyconfig-io` | verde | 1.9 s | keyconfig: ciclo exportar-importar-exportar: 6680 lineas, 0 distintas |
+| `--fl-check-keymap-menus` | verde | 1.7 s | FL-KEYMAP-MENUS nombres=136 (defecto=127, solo-con-preferencia=9) configuraciones=22 elementos=4569 call_menu=3105 call_menu_pie=981 call_panel=483 re... |
+| `--fl-check-lod-ops` | verde | 1.8 s | fl-check-lod-ops: TOTAL 59/59 elementos identicos, 71/71 lineas |
+| `--fl-check-lod-optypes` | verde | 1.5 s | fl-check-lod-optypes: TOTAL 6/6 elementos identicos, 10/10 lineas |
+| `--fl-check-manual` | verde | 1.7 s | manual: por url_lookup() (el camino del operador): 7470 identicas, 0 distintas, 553 a la reserva del buscador |
+| `--fl-check-mesh-ops` | verde | 4.8 s | fl-check-mesh-ops: 1 linea(s) dentro de la tolerancia declarada 2e-05, no identicas byte a byte |
+| `--fl-check-mirror-uv` | verde | 1.5 s | fl-check-mirror-uv: TOTAL 216/216 elementos identicos, 236/236 lineas |
+| `--fl-check-object-misc` | verde | 1.9 s | fl-check-object-misc: TOTAL 42/42 elementos identicos, 55/55 lineas |
+| `--fl-check-object-select` | verde | 2.0 s | fl-check-object-select: TOTAL 152/152 elementos identicos, 178/178 lineas |
+| `--fl-check-optypes` | verde | 1.9 s | fl-check-optypes: TOTAL 44/44 elementos identicos, 66/66 lineas |
+| `--fl-check-preset-ops` | verde | 1.8 s | fl-check-preset-ops: TOTAL 89/89 elementos identicos, 103/103 lineas |
+| `--fl-check-preset-optypes` | verde | 1.7 s | fl-check-preset-optypes: TOTAL 93/93 elementos identicos, 117/117 lineas |
+| `--fl-check-presets` | **ROJO** | 3.8 s | aplicados sin error 156 de 172 (1 con error, 15 sin contexto)  [reproducido en las 3 pasadas] |
+| `--fl-check-rigidbody-ops` | verde | 2.0 s | fl-check-rigidbody-ops: TOTAL 63/63 elementos identicos, 69/69 lineas |
+| `--fl-check-theme-xml` | verde | 2.1 s | fl-check-theme-xml: TOTAL 6839/6839 elementos identicos, 6844/6844 lineas |
+| `--fl-check-tools` | verde | 2.0 s | Herramientas: 30 secciones comprobadas, 0 diferencias, 0 secciones sin trasladar. |
+| `--fl-check-ui (registro)` | verde | 2.4 s | Interfaz (registro): 2113 bloques, 2113 identicos, 0 distintos, 0 faltan, 0 sobran. |
+| `--fl-selftest-dupli-face` | verde | 9.9 s | 37 lineas identicas a tests/flipendo/dupliface/baseline-python.txt |
+| `--fl-selftest-find-adjacent` | verde | 2.0 s | 92 lineas identicas a tests/flipendo/findadjacent/baseline-python.txt |
+| `--fl-selftest-keyconfig` | sin línea base | 2.3 s | informe de 4 lineas; no hay linea base congelada en el arbol |
+| `--fl-selftest-lod-ops` | verde | 1.9 s | 71 lineas identicas a tests/flipendo/lod/baseline-python.txt |
+| `--fl-selftest-mesh-ops` | verde | 6.6 s | 13146 lineas identicas a tests/flipendo/meshops/baseline-python.txt |
+| `--fl-selftest-mirror-uv` | verde | 2.3 s | 236 lineas identicas a tests/flipendo/mirroruv/baseline-python.txt |
+| `--fl-selftest-numinput` | verde | 2.4 s | 150 lineas identicas a tests/flipendo/numinput/baseline-python.txt |
+| `--fl-selftest-object-misc` | verde | 2.7 s | 55 lineas identicas a tests/flipendo/objectmisc/baseline-python.txt |
+| `--fl-selftest-object-ops` | verde | 2.7 s | 31 lineas identicas a tests/flipendo/objectops/run-cpp-verified.txt (NO a la preferente tests/flipendo/objectops/baseline-python.txt: linea 5: obtenido `  C    ... |
+| `--fl-selftest-object-select` | verde | 3.1 s | 178 lineas identicas a tests/flipendo/objectselect/baseline-python.txt |
+| `--fl-selftest-preset-ops` | verde | 3.4 s | 103 lineas identicas a tests/flipendo/presetops/comportamiento-python.txt |
+| `--fl-selftest-rigidbody-ops` | verde | 3.4 s | 69 lineas identicas a tests/flipendo/rigidbody/baseline-python.txt |
+| `--fl-selftest-theme-xml` | verde | 4.1 s | 6844 lineas identicas a tests/flipendo/themexml/baseline-python.txt |
+| `--fl-selftest-wm-batch-rename` | verde | 3.8 s | 1 lineas identicas a tests/flipendo/operators/batch-rename-native.txt |
+| `--fl-selftest-wm-owner-ops` | verde | 5.3 s | 2 lineas identicas a tests/flipendo/operators/owner-python.txt |
+| `--fl-selftest-wm-properties-edit` | verde | 3.3 s | 2 lineas identicas a tests/flipendo/operators/properties-edit-native.txt |
+| `--fl-selftest-wm-system-ops` | verde | 2.9 s | 20 lineas identicas a tests/flipendo/operators/system-python.txt |
 
 ### Grupo 2 — necesitan modo gráfico
 
@@ -359,42 +334,41 @@ tienen ventana: estos hay que pasarlos con pantalla, y por eso van aparte.
 
 | Verificador | Veredicto | Tiempo | Cifras |
 |---|---|---:|---|
-| `--fl-check-keymap` | verde | 1.8 s | linea base: 248 keymaps  /  quedan por transliterar: 0 |
-| `--fl-check-ui (dibujo)` | **ROJO** | 110.2 s | Interfaz (diseno): 2004 bloques, 2000 identicos, 4 distintos, 0 faltan, 0 sobran.  [una sola pasada: tarda 110 s y no se repite] |
-| `--fl-selftest-context-ops` | **ROJO** | 3.8 s | linea 2: obtenido `context_cycle_array status=4 cursor=[2,3,1]` / linea base `context_cycle_array status=4 cursor=[1,2,3]`  [reproducido en las 3 pasadas] |
-| `--fl-selftest-wm-property-ops` | verde | 2.0 s | 3 lineas identicas a tests/flipendo/operators/properties-python.txt |
+| `--fl-check-context-ops` | verde | 14.6 s | Prueba real de context ops: 7 operadores -> /var/folders/m3/7n9l8vtx109fvnck478f7yxr0000gn/T/blender_JB0lzv/fl-check-context-ops-actual.txt |
+| `--fl-check-keymap` | verde | 4.3 s | linea base: 248 keymaps  /  quedan por transliterar: 0 |
+| `--fl-check-ui (dibujo)` | verde | 123.7 s | Interfaz (diseno): 2004 bloques, 2004 identicos, 0 distintos, 0 faltan, 0 sobran. |
+| `--fl-selftest-wm-property-ops` | verde | 3.4 s | 3 lineas identicas a tests/flipendo/operators/properties-python.txt |
+| `--fl-selftest-context-ops` | volcador | 2.9 s | volcado de 7 lineas; su ayuda dice que el veredicto lo da su comprobador hermano |
 
+- `--fl-check-context-ops` necesita pantalla: lo dice su propia ayuda: necesita modo grafico.
 - `--fl-check-keymap` necesita pantalla: el keymap por defecto no se carga en --background.
 - `--fl-check-ui (dibujo)` necesita pantalla: el volcado de dibujo necesita una ventana real.
-- `--fl-selftest-context-ops` necesita pantalla: en --background no escribe nada: necesita un editor real.
 - `--fl-selftest-wm-property-ops` necesita pantalla: en --background no escribe nada: necesita un editor real.
+- `--fl-selftest-context-ops` necesita pantalla: lo dice su propia ayuda en creator_args.cc.
 
 ### Lo que no está en verde, con su detalle
 
-- **`--fl-check-mesh-ops`** — ROJO (rc=1, modo background), línea base `tests/flipendo/meshops/baseline-python.txt`:
-  fl-check-mesh-ops: TOTAL 13111/13112 elementos identicos, 13145/13146 lineas  [reproducido en las 3 pasadas]
 - **`--fl-check-presets`** — ROJO (rc=1, modo background):
   aplicados sin error 156 de 172 (1 con error, 15 sin contexto)  [reproducido en las 3 pasadas]
-- **`--fl-check-ui (registro)`** — ROJO (rc=1, modo background), línea base `tests/flipendo/ui/baseline-python.txt`:
-  Interfaz (registro): 2113 bloques, 2112 identicos, 1 distintos, 0 faltan, 0 sobran.  [reproducido en las 3 pasadas]
 - **`--fl-selftest-keyconfig`** — SIN LINEA BASE (rc=0, modo background):
   informe de 4 lineas; no hay linea base congelada en el arbol
-- **`--fl-selftest-mesh-ops`** — INESTABLE (rc=0, modo background), línea base `tests/flipendo/meshops/baseline-python.txt`:
-  falla 2 de 3 pasadas con el mismo binario y la misma escena. Pasada en rojo: linea 10866: obtenido `  43 0.451384932 0.282115549 0.112846233 1` / linea base `  43 0.451389611 0.282118499 0.112847403 1`. Pasada en verde: 13146 lineas identicas a tests/flipendo/meshops/baseline-python.txt
-- **`--fl-check-ui (dibujo)`** — ROJO (rc=1, modo grafico), línea base `tests/flipendo/ui/baseline-python-layout.txt`:
-  Interfaz (diseno): 2004 bloques, 2000 identicos, 4 distintos, 0 faltan, 0 sobran.  [una sola pasada: tarda 110 s y no se repite]
-- **`--fl-selftest-context-ops`** — ROJO (rc=0, modo grafico), línea base `tests/flipendo/operators/execution-python.txt`:
-  linea 2: obtenido `context_cycle_array status=4 cursor=[2,3,1]` / linea base `context_cycle_array status=4 cursor=[1,2,3]`  [reproducido en las 3 pasadas]
 
-### Un comprobador y su volcador que no dicen lo mismo
+### Declaraciones honradas
 
-- `--fl-check-mesh-ops` da **ROJO** y `--fl-selftest-mesh-ops` da **INESTABLE** sobre la misma línea base.
+Junto a las líneas base hay **1 tolerancia(s)** y **1 fichero(s) de
+divergencias deliberadas**. Esta batería **los lee y los honra**: un valor
+dentro de la tolerancia declarada no es un rojo, y una divergencia declarada y
+cumplida tampoco. Al revés también: si la divergencia deja de ocurrir, es
+ROJO, porque entonces la declaración sobra.
 
-Miran lo mismo por dos caminos —el comprobador compara mientras ejecuta, el
-volcador escribe el fichero y aquí se compara byte a byte—, así que discrepar es
-una señal: el resultado no es determinista y uno de los dos caminos tuvo suerte.
-Vale la lección del REGLAMENTO: una línea base que no se reproduce a sí misma
-tres veces seguidas no es una línea base.
+| Fichero | Declara | Línea base | ¿Quién la usa? | ¿Hizo falta? |
+|---|---|---|---|---|
+| `tests/flipendo/meshops/baseline-python.txt.tolerancia` | tolerancia relativa 2e-05 | existe | `--fl-check-mesh-ops`, `--fl-selftest-mesh-ops` | **sí**, en 1 de 6 pasadas |
+| `tests/flipendo/operators/execution-python.txt.divergencias` | 1 divergencia(s) deliberada(s), linea 2 | existe | `--fl-check-context-ops` | **sí**, en 3 de 3 pasadas |
+
+- `tests/flipendo/operators/execution-python.txt.divergencias`: El Python de wm.context_cycle_array hacia array[:] y luego append/pop, pero en esta version bpy_prop_array y mathutils.Vector devuelven una TUPLA al cortar: levantaba AttributeError y no rotaba nada, ...
+
+Todas las declaradas hicieron falta en esta pasada: ninguna sobra hoy.
 
 Cómo se pasan todos de una vez:
 
@@ -412,17 +386,17 @@ Sale con 0 si no hay ningún rojo, así que vale de guardián antes de un push.
 ### politicas/METRICAS.md (cabecera)
 
 - **Decía:** medido al commit `87ce606a318`
-- **Mide el árbol:** ese commit va **35 commits por detrás** del medido aquí (`49afe55dfb9`). Entre uno y otro: Python 191.224 → 191.224 (+0), C++ 2.540.538 → 2.569.156 (+28.618), Objective-C++ 30.304 → 5.060 (−25.244), `.hpp` 36.679 → 36.679 (+0)
+- **Mide el árbol:** ese commit va **58 commits por detrás** del medido aquí (`fe49217aabe`). Entre uno y otro: Python 191.224 → 189.766 (−1.458), C++ 2.540.538 → 2.574.866 (+34.328), Objective-C++ 30.304 → 5.060 (−25.244), `.hpp` 36.679 → 36.846 (+167)
 - **Cómo se comprobó:** `git rev-list --count` entre los dos commits y una medición completa de cada uno
 
 ---
 
 ## 9. Qué falta para «cero Python»
 
-Quedan **191.224 líneas de Python propio** en 613 ficheros, **111 llamadas** desde C++ al
+Quedan **189.766 líneas de Python propio** en 611 ficheros, **111 llamadas** desde C++ al
 intérprete y **557 guardas `#if*` con `WITH_PYTHON`**. El documento que ordena el
 trabajo por zonas es [`BACKLOG-EDITOR-PYTHON.md`](BACKLOG-EDITOR-PYTHON.md); la
 doctrina, [`LENGUAJE-CPP.md`](LENGUAJE-CPP.md); la historia de las mediciones,
 [`METRICAS.md`](METRICAS.md).
 
-<!-- generado por tools/flipendo_metrics/flipendo_metrics.cpp a 49afe55dfb92ad9ea30ef292aec30c82fe5490b8 -->
+<!-- generado por tools/flipendo_metrics/flipendo_metrics.cpp a fe49217aabe3c527c5883a8f8b1c1e7ceddfbf43 -->
