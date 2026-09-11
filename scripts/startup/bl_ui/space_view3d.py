@@ -2321,33 +2321,6 @@ class VIEW3D_MT_select_sculpt_curves(Menu):
         layout.template_node_operator_asset_menu_items(catalog_path="Select")
 
 
-class VIEW3D_MT_mesh_add(Menu):
-    bl_idname = "VIEW3D_MT_mesh_add"
-    bl_label = "Mesh"
-    bl_options = {'SEARCH_ON_KEY_PRESS'}
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        layout.operator("mesh.primitive_plane_add", text="Plane", icon='MESH_PLANE')
-        layout.operator("mesh.primitive_cube_add", text="Cube", icon='MESH_CUBE')
-        layout.operator("mesh.primitive_circle_add", text="Circle", icon='MESH_CIRCLE')
-        layout.operator("mesh.primitive_uv_sphere_add", text="UV Sphere", icon='MESH_UVSPHERE')
-        layout.operator("mesh.primitive_ico_sphere_add", text="Ico Sphere", icon='MESH_ICOSPHERE')
-        layout.operator("mesh.primitive_cylinder_add", text="Cylinder", icon='MESH_CYLINDER')
-        layout.operator("mesh.primitive_cone_add", text="Cone", icon='MESH_CONE')
-        layout.operator("mesh.primitive_torus_add", text="Torus", icon='MESH_TORUS')
-
-        layout.separator()
-
-        layout.operator("mesh.primitive_grid_add", text="Grid", icon='MESH_GRID')
-        layout.operator("mesh.primitive_monkey_add", text="Monkey", icon='MESH_MONKEY')
-
-        layout.template_node_operator_asset_menu_items(catalog_path="Add")
-
-
 class VIEW3D_MT_curve_add(Menu):
     bl_idname = "VIEW3D_MT_curve_add"
     bl_label = "Curve"
@@ -2408,25 +2381,6 @@ class VIEW3D_MT_metaball_add(Menu):
 
         layout.operator_context = 'INVOKE_REGION_WIN'
         layout.operator_enum("object.metaball_add", "type")
-
-
-class TOPBAR_MT_edit_curve_add(Menu):
-    bl_idname = "TOPBAR_MT_edit_curve_add"
-    bl_label = "Add"
-    bl_translation_context = i18n_contexts.operator_default
-    bl_options = {'SEARCH_ON_KEY_PRESS'}
-
-    def draw(self, context):
-        layout = self.layout
-
-        is_surf = context.active_object.type == 'SURFACE'
-
-        layout.operator_context = 'EXEC_REGION_WIN'
-
-        if is_surf:
-            VIEW3D_MT_surface_add.draw(self, context)
-        else:
-            VIEW3D_MT_curve_add.draw(self, context)
 
 
 class TOPBAR_MT_edit_armature_add(Menu):
@@ -7872,11 +7826,9 @@ classes = (
     VIEW3D_MT_edit_curves_select_more_less,
     VIEW3D_MT_select_edit_curves,
     VIEW3D_MT_select_sculpt_curves,
-    VIEW3D_MT_mesh_add,
     VIEW3D_MT_curve_add,
     VIEW3D_MT_surface_add,
     VIEW3D_MT_metaball_add,
-    TOPBAR_MT_edit_curve_add,
     TOPBAR_MT_edit_armature_add,
     VIEW3D_MT_armature_add,
     VIEW3D_MT_light_add,

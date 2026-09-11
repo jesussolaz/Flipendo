@@ -44,4 +44,7 @@ void view3d_context_menus_register();
 /** Familia 6: los contextuales grandes de particulas, pose, curva y esqueleto. */
 void view3d_ctxmode_menus_register();
 
+/** Familia 7: los menus de «anadir» (malla y curva en edicion). */
+void view3d_add_menus_register();
+
 }  // namespace blender::ed::view3d
