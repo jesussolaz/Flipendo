@@ -28,6 +28,11 @@ namespace blender::ed::object {
 
 void operatortypes_object()
 {
+  WM_operatortype_append(OBJECT_OT_isolate_type_render);
+  WM_operatortype_append(OBJECT_OT_hide_render_clear_all);
+  WM_operatortype_append(OBJECT_OT_instance_offset_from_cursor);
+  WM_operatortype_append(OBJECT_OT_instance_offset_to_cursor);
+  WM_operatortype_append(OBJECT_OT_instance_offset_from_object);
   WM_operatortype_append(OBJECT_OT_make_dupli_face);
   WM_operatortype_append(OBJECT_OT_select_pattern);
   WM_operatortype_append(OBJECT_OT_select_camera);

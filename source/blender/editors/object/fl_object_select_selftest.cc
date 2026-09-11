@@ -549,4 +549,164 @@ bool check_dupli_face(bContext *C, const char *baseline_path)
 
 /** \} */
 
+/* -------------------------------------------------------------------------- */
+/** \name Operadores pequenos de object.py
+ * \{ */
+
+namespace {
+
+void misc_build(bContext *C)
+{
+  add_at(C, "mesh.primitive_cube_add", 0.0f, [](PointerRNA *p) { RNA_float_set(p, "size", 1.0f); });
+  add_at(C, "mesh.primitive_cube_add", 2.0f, [](PointerRNA *p) { RNA_float_set(p, "size", 1.0f); });
+  add_at(C, "mesh.primitive_uv_sphere_add", 4.0f, [](PointerRNA *p) {
+    RNA_int_set(p, "segments", 8);
+    RNA_int_set(p, "ring_count", 4);
+    RNA_float_set(p, "radius", 1.0f);
+  });
+  add_at(C, "object.camera_add", 6.0f, nullptr);
+  add_at(C, "object.light_add", 8.0f, [&](PointerRNA *p) {
+    RNA_enum_set_identifier(C, p, "type", "POINT");
+  });
+}
+
+void misc_purge(bContext *C)
+{
+  purge(C);
+  Scene *scene = CTX_data_scene(C);
+  zero_v3(scene->cursor.location);
+  zero_v3(scene->master_collection->instance_offset);
+}
+
+void dump_misc_case(bContext *C, FILE *f, const int index, const char *label)
+{
+  Main *bmain = CTX_data_main(C);
+  Scene *scene = CTX_data_scene(C);
+  ViewLayer *view_layer = CTX_data_view_layer(C);
+  BKE_view_layer_synced_ensure(scene, view_layer);
+
+  fprintf(f, "case=%d %s\n", index, label);
+  int n = 0;
+  LISTBASE_FOREACH (Object *, ob, &bmain->objects) {
+    const Base *base = BKE_view_layer_base_find(view_layer, ob);
+    fprintf(f,
+            "  %d obj=%s type=%s sel=%d hide_render=%d\n",
+            n++,
+            ob->id.name + 2,
+            enum_id(rna_enum_object_type_items, ob->type),
+            (base != nullptr && (base->flag & BASE_SELECTED)) ? 1 : 0,
+            (ob->visibility_flag & OB_HIDE_RENDER) ? 1 : 0);
+  }
+  const float *c = scene->cursor.location;
+  const float *o = scene->master_collection->instance_offset;
+  fprintf(f, "  %d cursor=%.9g,%.9g,%.9g\n", n++, double(c[0]), double(c[1]), double(c[2]));
+  fprintf(f, "  %d offset=%.9g,%.9g,%.9g\n", n++, double(o[0]), double(o[1]), double(o[2]));
+}
+
+void misc_run(bContext *C, FILE *f, int *index, const char *idname, const char *label)
+{
+  const wmOperatorStatus status = WM_operator_name_call(
+      C, idname, WM_OP_EXEC_DEFAULT, nullptr, nullptr);
+  fprintf(f, "# ret=['%s']\n", (status & OPERATOR_FINISHED) ? "FINISHED" : "CANCELLED");
+  dump_misc_case(C, f, (*index)++, label);
+}
+
+}  // namespace
+
+bool dump_misc_ops(bContext *C, const char *filepath)
+{
+  FILE *f = fopen(filepath, "w");
+  if (f == nullptr) {
+    fprintf(stderr, "fl-selftest-object-misc: no se pudo escribir '%s'\n", filepath);
+    return false;
+  }
+  fprintf(f, "# FL-OBJECT-MISC-SELFTEST v1\n");
+  Scene *scene = CTX_data_scene(C);
+  int index = 0;
+
+  /* isolate_type_render con el activo de tipo malla. */
+  {
+    misc_purge(C);
+    misc_build(C);
+    deselect_all(C);
+    select_set(C, find(C, "Cube"), true);
+    select_set(C, find(C, "Camera"), true);
+    set_active(C, find(C, "Cube"));
+    misc_run(C, f, &index, "object.isolate_type_render",
+             "op=object.isolate_type_render activo=MESH");
+  }
+
+  /* Y con el activo de tipo camara: las mallas no seleccionadas NO se tocan. */
+  {
+    misc_purge(C);
+    misc_build(C);
+    deselect_all(C);
+    select_set(C, find(C, "Sphere"), true);
+    set_active(C, find(C, "Camera"));
+    misc_run(C, f, &index, "object.isolate_type_render",
+             "op=object.isolate_type_render activo=CAMERA");
+  }
+
+  /* hide_render_clear_all despues de ocultar unos cuantos. */
+  {
+    misc_purge(C);
+    misc_build(C);
+    for (const char *name : {"Cube", "Sphere", "Point"}) {
+      find(C, name)->visibility_flag |= OB_HIDE_RENDER;
+    }
+    misc_run(C, f, &index, "object.hide_render_clear_all",
+             "op=object.hide_render_clear_all");
+  }
+
+  {
+    misc_purge(C);
+    misc_build(C);
+    const float cursor[3] = {1.25f, -2.5f, 3.75f};
+    copy_v3_v3(scene->cursor.location, cursor);
+    misc_run(C, f, &index, "object.instance_offset_from_cursor",
+             "op=object.instance_offset_from_cursor");
+  }
+
+  {
+    misc_purge(C);
+    misc_build(C);
+    const float offset[3] = {-4.5f, 0.25f, 6.0f};
+    copy_v3_v3(scene->master_collection->instance_offset, offset);
+    misc_run(C, f, &index, "object.instance_offset_to_cursor",
+             "op=object.instance_offset_to_cursor");
+  }
+
+  {
+    misc_purge(C);
+    misc_build(C);
+    deselect_all(C);
+    Object *ob = find(C, "Sphere");
+    const float loc[3] = {7.5f, -1.25f, 2.0f};
+    copy_v3_v3(ob->loc, loc);
+    DEG_id_tag_update(&ob->id, ID_RECALC_TRANSFORM);
+    select_set(C, ob, true);
+    set_active(C, ob);
+    BKE_scene_graph_update_tagged(CTX_data_ensure_evaluated_depsgraph(C), CTX_data_main(C));
+    misc_run(C, f, &index, "object.instance_offset_from_object",
+             "op=object.instance_offset_from_object");
+  }
+
+  fclose(f);
+  fprintf(stderr, "fl-selftest-object-misc: volcado en '%s' (%d casos)\n", filepath, index);
+  return true;
+}
+
+bool check_misc_ops(bContext *C, const char *baseline_path)
+{
+  char actual_path[FILE_MAX];
+  BLI_path_join(
+      actual_path, sizeof(actual_path), BKE_tempdir_session(), "fl-selftest-object-misc-actual.txt");
+  if (!dump_misc_ops(C, actual_path)) {
+    return false;
+  }
+  return flipendo::selftest::compare_to_baseline("fl-check-object-misc", actual_path, baseline_path);
+}
+
+/** \} */
+
 }  // namespace flipendo::object_select_selftest

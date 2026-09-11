@@ -77,6 +77,44 @@ el `.txt` y el comprobador, que es C++.
    `FNM_CASEFOLD` es ASCII y `str.upper()` de Python conoce Unicode: coinciden en cualquier
    nombre de objeto normal y difieren solo con nombres no ASCII. Queda dicho.
 
+## Segunda tanda: cinco operadores pequeños más (04:55)
+
+| idname | Líneas de Python retiradas |
+|---|---|
+| `object.isolate_type_render` | 397-421 |
+| `object.hide_render_clear_all` | 423-433 |
+| `object.instance_offset_from_cursor` | 604-616 |
+| `object.instance_offset_to_cursor` | 775-786 |
+| `object.instance_offset_from_object` | 788-804 |
+
+En `source/blender/editors/object/object_misc_ops.cc`. Arnés
+`--fl-selftest-object-misc` / `--fl-check-object-misc`, seis escenas:
+
+```
+TOTAL 42/42 elementos identicos, 55/55 lineas   (6/6 casos, rc=0)
+```
+
+Tres ejecuciones con el mismo resultado. Se vuelca, por caso, todos los objetos con su
+tipo, selección y bandera `hide_render`, más la posición del cursor 3D y el desplazamiento
+de instancia de la colección.
+
+Detalles que importan y se conservan:
+
+- `isolate_type_render` **solo toca los objetos visibles**, y de los no seleccionados solo
+  los del mismo tipo que el activo; los de otro tipo se quedan como estaban. Por eso hay un
+  caso con el activo de tipo cámara: comprueba que las mallas no seleccionadas **no** se
+  ocultan.
+- `hide_render_clear_all` recorre `context.scene.objects`, que son **todos** los de la
+  escena, no solo los de la capa de vista ni solo los visibles.
+- Los tres de desplazamiento son `{'INTERNAL', 'UNDO'}`: **sin `REGISTER`**, así que no
+  salen en el buscador de operadores. Es fácil ponerles `OPTYPE_REGISTER` por inercia y
+  cambiarles el contrato.
+- `instance_offset_from_object` usa el objeto **evaluado** por el grafo de dependencias
+  (`evaluated_get`), no el original: si tiene restricciones o padre animado, la posición
+  buena es esa.
+
+`object.py` queda en 869 líneas.
+
 ## Lo que queda
 
 - El cuarto operador de `object.py` que sale en menús de la vista 3D,

@@ -46,11 +46,21 @@ case=11 op=OBJECT_OT_select_hierarchy
   2 prop=extend type=BOOLEAN subtype=NONE array=0 name=Extend desc=Extend the existing selection default=0
 case=12 op=OBJECT_OT_make_dupli_face
   0 name=Make Instance Face desc=Convert objects into instanced faces translation_context=Operator
-case=13 op=MESH_OT_faces_mirror_uv
+case=13 op=OBJECT_OT_isolate_type_render
+  0 name=Restrict Render Unselected desc=Hide unselected render objects of same type as active by setting the hide render flag translation_context=Operator
+case=14 op=OBJECT_OT_hide_render_clear_all
+  0 name=Clear All Restrict Render desc=Reveal all render objects by setting the hide render flag translation_context=Operator
+case=15 op=OBJECT_OT_instance_offset_from_cursor
+  0 name=Set Offset from Cursor desc=Set offset used for collection instances based on cursor position translation_context=Operator
+case=16 op=OBJECT_OT_instance_offset_to_cursor
+  0 name=Set Cursor to Offset desc=Set cursor position to the offset used for collection instances translation_context=Operator
+case=17 op=OBJECT_OT_instance_offset_from_object
+  0 name=Set Offset from Object desc=Set offset used for collection instances based on the active object position translation_context=Operator
+case=18 op=MESH_OT_faces_mirror_uv
   0 name=Copy Mirrored UV Coords desc=Copy mirror UV coordinates on the X axis based on a mirrored mesh translation_context=Operator
   1 prop=direction type=ENUM subtype=NONE array=0 name=Axis Direction desc= enumflag=0 default=POSITIVE items=POSITIVE:Positive::0;NEGATIVE:Negative::1
   2 prop=precision type=INT subtype=NONE array=0 name=Precision desc=Tolerance for finding vertex duplicates default=3 min=1 max=16 softmin=1 softmax=16
-case=14 op=MESH_OT_select_next_item
+case=19 op=MESH_OT_select_next_item
   0 name=Select Next Element desc=Select the next element (using selection order) translation_context=Operator
-case=15 op=MESH_OT_select_prev_item
+case=20 op=MESH_OT_select_prev_item
   0 name=Select Previous Element desc=Select the previous element (using selection order) translation_context=Operator

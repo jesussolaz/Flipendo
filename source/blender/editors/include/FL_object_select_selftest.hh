@@ -33,4 +33,9 @@ bool check(bContext *C, const char *baseline_path);
 bool dump_dupli_face(bContext *C, const char *filepath);
 bool check_dupli_face(bContext *C, const char *baseline_path);
 
+/** Lo mismo para los cinco operadores pequenos de object.py. Linea base:
+ * `tests/flipendo/objectmisc/baseline-python.txt`. */
+bool dump_misc_ops(bContext *C, const char *filepath);
+bool check_misc_ops(bContext *C, const char *baseline_path);
+
 }  // namespace flipendo::object_select_selftest

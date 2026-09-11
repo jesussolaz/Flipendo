@@ -392,46 +392,11 @@ class JoinUVs(Operator):
         return {'FINISHED'}
 
 
-# `object.make_dupli_face` es C++ nativo desde 2026-09-11 (Flipendo carril C):
-# source/blender/editors/object/object_make_dupli_face.cc
-class IsolateTypeRender(Operator):
-    """Hide unselected render objects of same type as active """ \
-        """by setting the hide render flag"""
-    bl_idname = "object.isolate_type_render"
-    bl_label = "Restrict Render Unselected"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        ob = context.object
-        return (ob is not None)
-
-    def execute(self, context):
-        act_type = context.object.type
-
-        for obj in context.visible_objects:
-
-            if obj.select_get():
-                obj.hide_render = False
-            else:
-                if obj.type == act_type:
-                    obj.hide_render = True
-
-        return {'FINISHED'}
-
-
-class ClearAllRestrictRender(Operator):
-    """Reveal all render objects by setting the hide render flag"""
-    bl_idname = "object.hide_render_clear_all"
-    bl_label = "Clear All Restrict Render"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        for obj in context.scene.objects:
-            obj.hide_render = False
-        return {'FINISHED'}
-
-
+# Migrados a C++ el 2026-09-11 (Flipendo carril C):
+#   object.make_dupli_face        -> editors/object/object_make_dupli_face.cc
+#   object.isolate_type_render    -> editors/object/object_misc_ops.cc
+#   object.hide_render_clear_all  -> editors/object/object_misc_ops.cc
+#   object.instance_offset_from_cursor / _to_cursor / _from_object -> idem
 class TransformsToDeltas(Operator):
     """Convert normal object transforms to delta transforms, """ \
         """any existing delta transforms will be included as well"""
@@ -601,20 +566,6 @@ class TransformsToDeltasAnim(Operator):
         return {'FINISHED'}
 
 
-class DupliOffsetFromCursor(Operator):
-    """Set offset used for collection instances based on cursor position"""
-    bl_idname = "object.instance_offset_from_cursor"
-    bl_label = "Set Offset from Cursor"
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    def execute(self, context):
-        scene = context.scene
-        collection = context.collection
-
-        collection.instance_offset = scene.cursor.location
-
-        return {'FINISHED'}
-
 class LodByName(Operator):
     """Add levels of detail to this object based on object names"""
     bl_idname = "object.lod_by_name"
@@ -772,37 +723,6 @@ class LodGenerate(Operator):
         return {'FINISHED'}
 
 
-class DupliOffsetToCursor(Operator):
-    """Set cursor position to the offset used for collection instances"""
-    bl_idname = "object.instance_offset_to_cursor"
-    bl_label = "Set Cursor to Offset"
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    def execute(self, context):
-        scene = context.scene
-        collection = context.collection
-        scene.cursor.location = collection.instance_offset
-        return {'FINISHED'}
-
-
-class DupliOffsetFromObject(Operator):
-    """Set offset used for collection instances based on the active object position"""
-    bl_idname = "object.instance_offset_from_object"
-    bl_label = "Set Offset from Object"
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        return (context.active_object is not None)
-
-    def execute(self, context):
-        ob_eval = context.active_object.evaluated_get(context.view_layer.depsgraph)
-        world_loc = ob_eval.matrix_world.to_translation()
-        collection = context.collection
-        collection.instance_offset = world_loc
-        return {'FINISHED'}
-
-
 class OBJECT_OT_assign_property_defaults(Operator):
     """Assign the current values of custom properties as their defaults, """ \
         """for use as part of the rest pose state in NLA track mixing"""
@@ -917,11 +837,6 @@ class LodClearAll(Operator):
 
 
 classes = (
-    ClearAllRestrictRender,
-    DupliOffsetFromCursor,
-    DupliOffsetToCursor,
-    DupliOffsetFromObject,
-    IsolateTypeRender,
     JoinUVs,
     LodByName,
     LodClearAll,

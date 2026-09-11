@@ -47,6 +47,7 @@ set(SRC
   object_remesh.cc
   object_select.cc
   object_make_dupli_face.cc
+  object_misc_ops.cc
   object_select_extra.cc
   object_shader_fx.cc
   object_shapekey.cc

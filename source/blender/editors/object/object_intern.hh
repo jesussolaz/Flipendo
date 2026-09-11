@@ -45,6 +45,11 @@ void OBJECT_OT_origin_set(wmOperatorType *ot);
 /* `object_align.cc` (Flipendo, carril C: migracion de bl_operators/object_align.py) */
 
 /* `object_select_extra.cc` (portados de bl_operators/object.py, Flipendo C2) */
+void OBJECT_OT_isolate_type_render(wmOperatorType *ot);
+void OBJECT_OT_hide_render_clear_all(wmOperatorType *ot);
+void OBJECT_OT_instance_offset_from_cursor(wmOperatorType *ot);
+void OBJECT_OT_instance_offset_to_cursor(wmOperatorType *ot);
+void OBJECT_OT_instance_offset_from_object(wmOperatorType *ot);
 void OBJECT_OT_make_dupli_face(wmOperatorType *ot);
 void OBJECT_OT_select_pattern(wmOperatorType *ot);
 void OBJECT_OT_select_camera(wmOperatorType *ot);
