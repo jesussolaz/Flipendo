@@ -313,7 +313,7 @@ MTLTexturePtr gpu::MTLTexture::get_metal_handle_base()
   return nullptr;
 }
 
-void gpu::MTLTexture::blit(id blit_encoder_id,
+void gpu::MTLTexture::blit(MTLBlitCommandEncoderPtr blit_encoder,
                            uint src_x_offset,
                            uint src_y_offset,
                            uint src_z_offset,
@@ -329,10 +329,6 @@ void gpu::MTLTexture::blit(id blit_encoder_id,
                            uint height,
                            uint depth)
 {
-  /* Ver la nota de mtl_texture.hh: llega como `id` para que la firma mangle igual en
-   * `.mm` y en `.cc`. Es el mismo puntero. */
-  MTLBlitCommandEncoderPtr blit_encoder = (MTLBlitCommandEncoderPtr)blit_encoder_id;
-
   BLI_assert(dst);
   BLI_assert(width > 0 && height > 0 && depth > 0);
   MTLSize src_size = MTL::Size::Make(width, height, depth);

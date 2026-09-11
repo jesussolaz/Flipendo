@@ -507,7 +507,7 @@ vez y retenido para siempre, no nulo y de longitud 0, que reproduce el comportam
 observable del original. **Es el ejemplo perfecto de por que aqui hace falta mas
 verificacion: el codigo compilaba igual con `nullptr`.**
 
-## 16. Donde se para esta fase, y por que (estado al cerrar)
+## 16. [SUPERADA por la seccion 17] Donde se paro cuando GHOST aun bloqueaba
 
 **15 de 20 ficheros de `gpu/metal` migrados.** En el arbol entero, el Objective-C++
 baja de **30.536 a 17.362 lineas**. Los 5 que quedan NO son los mas dificiles de
@@ -558,6 +558,69 @@ comentario en el sitio:
 La excepcion es `MTLBuffer::set_label(const char *)`, que **no** hay que revertir: ahi
 no se neutralizo un tipo, se quito de la firma un tipo que nunca debio estar. Es el
 patron preferente (§11-bis).
+
+## 17. CERRADO: `gpu/metal` es C++ puro, y las 8 firmas estan revertidas
+
+El carril de GHOST quito Cocoa de `GHOST_ContextCGL.hh` y con eso cayo el tapon. Los
+cinco ficheros que quedaban pasaron de 35.851 y 36.019 errores a 152 y 305, con **cero
+dentro de cabeceras del SDK**: lo que parecia imposible eran 836 errores normales en
+7.773 lineas.
+
+**`source/blender/gpu/metal`: 21 ficheros, todos `.cc`. Cero `.mm`.**
+
+### Las 8 firmas neutralizadas, revertidas
+
+Era deuda contraida a regañadientes y la condicion para deshacerla —que GHOST dejara de
+arrastrar Cocoa— se cumplio. Como ya no queda ningun `.mm` en `gpu/metal`, la frontera
+interna desaparecio y todas vuelven a su tipo real:
+
+| Firma | Vuelve a |
+|---|---|
+| `MTLBufferPool::init` | `MTLDevicePtr` |
+| `MTLShaderInterface::insert_argument_encoder` | `MTLArgumentEncoderPtr` |
+| `MTLRenderPassState::bind_vertex_buffer` | `MTLBufferPtr` |
+| `MTLShader::bake_current_pipeline_state` | `MTLPrimitiveTopologyClass` |
+| `MTLContext::ensure_render_pipeline_state` | `MTLPrimitiveType` |
+| `MTLContext::ensure_depth_stencil_state` | `MTLPrimitiveType` |
+| `MTLTexture::blit` | `MTLBlitCommandEncoderPtr` |
+| `get_mtl_format_bytesize` / `get_mtl_format_num_components` / `mtl_format_supports_blending` | `MTLPixelFormat` |
+
+Con ellas se van los `reinterpret_cast` que las acompañaban. `MTLBuffer::set_label` NO
+se revierte y es deliberado: ahi no se neutralizo un tipo, se quito de la firma un tipo
+que nunca debio estar (§11-bis). `const char *` es la firma correcta.
+
+### La unica que NO se puede revertir, y por que
+
+`blender::gpu::present(id, id, id, id)`. Es el callback de presentacion que **registra
+GHOST**, asi que su firma la fija `GHOST_ContextCGL::GHOST_MetalPresentCallback`, no
+este backend. Mientras `GHOST_WindowCocoa.mm` siga siendo Objective-C++, esa firma cruza
+modos de verdad, y en un parametro la grafia entra en el simbolo:
+
+    id<MTLTexture>  ->  PU21objcproto10MTLTexture11objc_object
+    MTL::Texture *  ->  PN3MTL7TextureE
+    id              ->  P11objc_object   (en los DOS modos)
+
+Los tipos se recuperan dentro de `present()` con `reinterpret_cast` y una advertencia
+escrita: ahi el compilador no comprueba nada, y si GHOST cambiara el ORDEN de los
+argumentos esto seguiria compilando. Se revierte cuando caiga el ultimo `.mm` de GHOST,
+y le toca al carril de GHOST decidirlo porque el tipo es suyo.
+
+### El andamio `mtl_objc_compat.hh`
+
+Su condicion de borrado («cuando el ultimo `.mm` de gpu/metal pase a `.cc`») **ya se
+cumple**, y nadie fuera de `gpu/metal` lo incluye de verdad (solo se menciona en
+comentarios de GHOST). Se deja de momento a proposito: retirar la rama `__OBJC__` es un
+cambio que no aporta comportamiento y que conviene hacer cuando GHOST termine, para no
+tocar dos veces. Queda como unica tarea de limpieza pendiente del backend.
+
+### El bloque `^`, que era el miedo
+
+`[cmdbuf addCompletedHandler:^(id<MTLCommandBuffer>){...}]` paso a lambda de C++:
+metal-cpp acepta `MTL::HandlerFunction`, que es un `std::function`. **La trampa son las
+capturas**: un bloque de Objective-C captura los locales por valor implicitamente y una
+lambda no captura nada si no se lo dices. Capturar por referencia habria sido un
+uso-despues-de-liberar, porque el manejador corre cuando la GPU termina, con el marco de
+pila ya destruido. Las cuatro variables se capturan explicitamente por valor.
 
 ## 10. Cuando se borra el andamio
 

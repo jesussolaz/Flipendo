@@ -363,11 +363,7 @@ class MTLTexture : public Texture {
   MTLTexturePtr get_metal_handle_base();
   MTLTexturePtr get_non_srgb_handle();
   MTLSamplerState get_sampler_state();
-  /* `id` pelado y no `MTLBlitCommandEncoderPtr`: se define en mtl_texture.mm
-   * (Objective-C++) y la llama mtl_framebuffer.cc (C++ puro). El mangling de C++
-   * incluye los tipos de los parametros. Vuelve al tipo cuando migre mtl_texture.
-   * Ver politicas/OBJC-A-CPP.md seccion 11. */
-  void blit(id blit_encoder,
+  void blit(MTLBlitCommandEncoderPtr blit_encoder,
             uint src_x_offset,
             uint src_y_offset,
             uint src_z_offset,
@@ -506,17 +502,9 @@ class MTLPixelBuffer : public PixelBuffer {
 
 /* Utility */
 MTLPixelFormat gpu_texture_format_to_metal(eGPUTextureFormat tex_format);
-/* Reciben el formato como entero y no como `MTLPixelFormat` por el mismo motivo que
- * `mtl_format_supports_blending` (ver arriba): se definen en mtl_texture_util.cc (C++
- * puro) y las llama mtl_texture.mm, que sigue en Objective-C++. Los enumerados entran
- * en el mangling de C++. Vuelven al enum cuando migre mtl_texture. */
-size_t get_mtl_format_bytesize(uint64_t tex_format);
-int get_mtl_format_num_components(uint64_t tex_format);
-/* Recibe el formato como entero y no como `MTLPixelFormat` porque se define en
- * mtl_texture_util.mm (Objective-C++) y la llama mtl_shader.cc (C++ puro): los
- * enumerados entran en el mangling y con el tipo a pelo no enlazaba. Ver
- * politicas/OBJC-A-CPP.md seccion 11. Vuelve al enum cuando migre mtl_texture_util. */
-bool mtl_format_supports_blending(uint64_t format);
+size_t get_mtl_format_bytesize(MTLPixelFormat tex_format);
+int get_mtl_format_num_components(MTLPixelFormat tex_format);
+bool mtl_format_supports_blending(MTLPixelFormat format);
 
 /* The type used to define the per-component data in the input buffer. */
 inline std::string tex_data_format_to_msl_type_str(eGPUDataFormat type)

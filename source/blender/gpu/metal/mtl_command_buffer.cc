@@ -902,13 +902,10 @@ void MTLComputeState::bind_compute_sampler(MTLSamplerBinding &sampler_binding,
   }
 }
 
-void MTLRenderPassState::bind_vertex_buffer(id buffer_id,
+void MTLRenderPassState::bind_vertex_buffer(MTLBufferPtr buffer,
                                             uint64_t buffer_offset,
                                             uint index)
 {
-  /* Ver la nota de mtl_context.hh: llega como `id` para que la firma mangle igual en
-   * `.mm` y en `.cc`. Es el mismo puntero. */
-  MTLBufferPtr buffer = (MTLBufferPtr)buffer_id;
   BLI_assert(index >= 0 && index < MTL_MAX_BUFFER_BINDINGS);
   BLI_assert(buffer_offset >= 0);
   BLI_assert(buffer != nullptr);

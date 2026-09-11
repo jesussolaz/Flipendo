@@ -923,10 +923,8 @@ void MTLContext::set_scissor_enabled(bool scissor_enabled)
  * All of this setup is required in order to perform a valid draw call.
  * \{ */
 
-bool MTLContext::ensure_render_pipeline_state(uint64_t mtl_prim_type_raw)
+bool MTLContext::ensure_render_pipeline_state(MTLPrimitiveType mtl_prim_type)
 {
-  /* Ver la nota de mtl_context.hh. */
-  const MTLPrimitiveType mtl_prim_type = (MTLPrimitiveType)mtl_prim_type_raw;
   BLI_assert(this->pipeline_state.initialised);
 
   /* Check if an active shader is bound. */
@@ -2037,10 +2035,8 @@ void MTLContext::ensure_texture_bindings(
 }
 
 /* Encode latest depth-stencil state. */
-void MTLContext::ensure_depth_stencil_state(uint64_t prim_type_raw)
+void MTLContext::ensure_depth_stencil_state(MTLPrimitiveType prim_type)
 {
-  /* Ver la nota de mtl_context.hh. */
-  const MTLPrimitiveType prim_type = (MTLPrimitiveType)prim_type_raw;
   /* Check if we need to update state. */
   if (!(this->pipeline_state.dirty_flags & MTL_PIPELINE_STATE_DEPTHSTENCIL_FLAG)) {
     return;

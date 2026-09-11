@@ -425,12 +425,7 @@ class MTLBufferPool {
   MTLSafeFreeList *prev_free_buffer_list_ = nullptr;
 
  public:
-  /* `id` pelado, NO `MTLDevicePtr`, y es deliberado: esta funcion se define ya en un
-   * `.cc` y la llama mtl_context.mm:258, que sigue siendo Objective-C++ porque
-   * depende de GHOST/Cocoa. El mangling de C++ incluye los tipos de los parametros,
-   * asi que con grafias distintas a cada lado salen dos simbolos y no enlaza. `id` es
-   * `objc_object *` en los dos modos. Ver politicas/OBJC-A-CPP.md seccion 11. */
-  void init(id device);
+  void init(MTLDevicePtr device);
   ~MTLBufferPool();
 
   gpu::MTLBuffer *allocate(uint64_t size, bool cpu_visible);

@@ -192,10 +192,8 @@ MTLPixelFormat gpu_texture_format_to_metal(eGPUTextureFormat tex_format)
   return MTLPixelFormatRGBA8Unorm;
 }
 
-size_t get_mtl_format_bytesize(uint64_t tex_format_raw)
+size_t get_mtl_format_bytesize(MTLPixelFormat tex_format)
 {
-  /* Ver la nota de mtl_texture.hh. */
-  const MTLPixelFormat tex_format = MTLPixelFormat(tex_format_raw);
   switch (tex_format) {
     case MTLPixelFormatRGBA8Uint:
     case MTLPixelFormatRGBA8Sint:
@@ -270,10 +268,8 @@ size_t get_mtl_format_bytesize(uint64_t tex_format_raw)
   }
 }
 
-int get_mtl_format_num_components(uint64_t tex_format_raw)
+int get_mtl_format_num_components(MTLPixelFormat tex_format)
 {
-  /* Ver la nota de mtl_texture.hh. */
-  const MTLPixelFormat tex_format = MTLPixelFormat(tex_format_raw);
   switch (tex_format) {
     case MTLPixelFormatRGBA8Uint:
     case MTLPixelFormatRGBA8Sint:
@@ -341,10 +337,8 @@ int get_mtl_format_num_components(uint64_t tex_format_raw)
   }
 }
 
-bool mtl_format_supports_blending(uint64_t format_raw)
+bool mtl_format_supports_blending(MTLPixelFormat format)
 {
-  /* Ver la nota de mtl_texture.hh. */
-  const MTLPixelFormat format = (MTLPixelFormat)format_raw;
   /* Add formats as needed -- Verify platforms. */
   const MTLCapabilities &capabilities = MTLBackend::get_capabilities();
 

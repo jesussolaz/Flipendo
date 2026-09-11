@@ -811,12 +811,9 @@ static void populate_specialization_constant_values(
  * Other rendering parameters such as global point-size, blend state, color mask
  * etc; are also used. See mtl_shader.h for full #MLRenderPipelineStateDescriptor.
  */
-MTLRenderPipelineStateInstance *MTLShader::bake_current_pipeline_state(MTLContext *ctx,
-                                                                       uint64_t prim_type_raw)
+MTLRenderPipelineStateInstance *MTLShader::bake_current_pipeline_state(
+    MTLContext *ctx, MTLPrimitiveTopologyClass prim_type)
 {
-  /* Ver la nota de mtl_shader.hh: llega como entero para que mangle igual en los dos
-   * modos de traduccion. */
-  const MTLPrimitiveTopologyClass prim_type = MTLPrimitiveTopologyClass(prim_type_raw);
   /** Populate global pipeline descriptor and use this to prepare new PSO. */
   /* NOTE(Metal): PSO cache can be accessed from multiple threads, though these operations should
    * be thread-safe due to organization of high-level renderer. If there are any issues, then
@@ -1196,7 +1193,7 @@ MTLRenderPipelineStateInstance *MTLShader::bake_pipeline_state(
 
       col_attachment->setPixelFormat(pixel_format);
       if (pixel_format != MTLPixelFormatInvalid) {
-        bool format_supports_blending = mtl_format_supports_blending(uint64_t(pixel_format));
+        bool format_supports_blending = mtl_format_supports_blending(pixel_format);
 
         col_attachment->setWriteMask(pipeline_descriptor.color_write_mask);
         col_attachment->setBlendingEnabled(pipeline_descriptor.blending_enabled &&

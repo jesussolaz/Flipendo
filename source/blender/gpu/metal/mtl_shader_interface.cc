@@ -614,13 +614,11 @@ MTLArgumentEncoderPtr MTLShaderInterface::find_argument_encoder(int buffer_index
   return encoder;
 }
 
-void MTLShaderInterface::insert_argument_encoder(int buffer_index, id encoder)
+void MTLShaderInterface::insert_argument_encoder(int buffer_index, MTLArgumentEncoderPtr encoder)
 {
   for (const int i : IndexRange(ARGUMENT_ENCODERS_CACHE_SIZE)) {
     if (arg_encoders_[i].encoder == nullptr) {
-      /* `encoder` llega como `id` para que la firma mangle igual en `.mm` y en `.cc`
-       * (ver mtl_shader_interface.hh). Es el mismo puntero. */
-      arg_encoders_[i].encoder = reinterpret_cast<MTLArgumentEncoderPtr>(encoder);
+      arg_encoders_[i].encoder = encoder;
       arg_encoders_[i].buffer_index = buffer_index;
       return;
     }

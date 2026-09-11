@@ -303,15 +303,8 @@ class MTLShader : public Shader {
   void shader_compute_source_from_msl(NSString *input_compute_source);
   void set_interface(MTLShaderInterface *interface);
 
-  /* `uint64_t` y no `MTLPrimitiveTopologyClass`, a proposito: esta funcion se define en
-   * mtl_shader.cc (C++ puro) y la llama mtl_context.mm, que sigue en Objective-C++
-   * porque depende de GHOST/Cocoa. Los ENUMERADOS tambien entran en el mangling de C++
-   * (`MTLPrimitiveTopologyClass` de Objective-C y `MTL::PrimitiveTopologyClass` son
-   * tipos distintos), asi que con el enum a pelo salian dos simbolos y no enlazaba.
-   * `uint64_t` se escribe igual en los dos modos. Se revierte al enum el dia que
-   * mtl_context deje de ser `.mm`. Ver politicas/OBJC-A-CPP.md seccion 11. */
   MTLRenderPipelineStateInstance *bake_current_pipeline_state(MTLContext *ctx,
-                                                              uint64_t prim_type);
+                                                              MTLPrimitiveTopologyClass prim_type);
   MTLRenderPipelineStateInstance *bake_pipeline_state(
       MTLContext *ctx,
       MTLPrimitiveTopologyClass prim_type,

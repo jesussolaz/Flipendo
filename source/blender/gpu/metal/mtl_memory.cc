@@ -32,14 +32,12 @@ namespace blender::gpu {
 /** \name Memory Management - MTLBufferPool and MTLSafeFreeList implementations
  * \{ */
 
-void MTLBufferPool::init(id mtl_device)
+void MTLBufferPool::init(MTLDevicePtr mtl_device)
 {
   if (!initialized_) {
     BLI_assert(mtl_device);
     initialized_ = true;
-    /* Ver la nota de mtl_memory.hh: llega como `id` para que mangle igual en los dos
-     * modos. Es el mismo puntero; el cast no mueve nada ni cambia la propiedad. */
-    device_ = reinterpret_cast<MTLDevicePtr>(mtl_device);
+    device_ = mtl_device;
 
 #if MTL_DEBUG_MEMORY_STATISTICS == 1
     /* Debug statistics. */
