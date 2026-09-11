@@ -69,6 +69,20 @@ RAS_ICanvas::RAS_ICanvas(RAS_Rasterizer *rasty)
 
 RAS_ICanvas::~RAS_ICanvas()
 {
+  /* Flipendo: una captura encolada que se queda sin volcar porque el juego se cierra
+   * era la trampa escrita en politicas/UI-JUEGO-NATIVA.md seccion 11: «pedirla y salir
+   * en el mismo tic la deja sin escribir MIENTRAS EL LOG DICE QUE SE HA CAPTURADO».
+   * Aqui se acaba el silencio: si queda alguna en la cola, se dice cual. */
+  for (const Screenshot &screenshot : m_screenshots) {
+    CM_Error("ARNES: la captura '" << screenshot.path
+                                   << "' se quedo en la cola y el juego se cerro antes de "
+                                      "volcarla: no hay fichero. La captura se vuelca en "
+                                      "EndFrame, asi que hay que dejar correr unos "
+                                      "fotogramas antes de salir.");
+    MEM_freeN(screenshot.format);
+  }
+  m_screenshots.clear();
+
   if (m_taskpool) {
     BLI_task_pool_work_and_wait(m_taskpool);
     BLI_task_pool_free(m_taskpool);
@@ -130,6 +144,13 @@ void RAS_ICanvas::FlushScreenshots()
     }
     screenshot.attempts--;
     if (screenshot.attempts > 0) {
+      /* Se dice en voz alta: sin esto no hay forma de saber si una captura salio a la
+       * primera o se salvo por el reintento, y esa diferencia es justo lo que hay que
+       * medir para saber si el reintento sirve de algo. */
+      CM_Warning("la captura '" << screenshot.path
+                                << "' no leyo ni un pixel; se reintenta en el fotograma "
+                                   "siguiente (quedan "
+                                << screenshot.attempts << " intentos).");
       retry.push_back(screenshot);
       continue;
     }
