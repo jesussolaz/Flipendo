@@ -57,7 +57,6 @@ _modules = [
     "properties_view_layer",
     "properties_scene",
     "properties_texture",
-    "properties_world",
     "properties_collection",
     "generic_ui_list",
 

@@ -3818,8 +3818,9 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
       ba, nullptr, "--fl-selftest-object-ops", CB(arg_handle_fl_selftest_object_ops), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-mesh-ops", CB(arg_handle_fl_selftest_mesh_ops), C);
   BLI_args_add(ba, nullptr, "--fl-check-mesh-ops", CB(arg_handle_fl_check_mesh_ops), C);
-  BLI_args_add(ba, nullptr, "--fl-selftest-mirror-uv", CB(arg_handle_fl_selftest_mirror_uv), C);
-  BLI_args_add(ba, nullptr, "--fl-check-mirror-uv", CB(arg_handle_fl_check_mirror_uv), C);
+  /* TODO(Carril C): Reactivar --fl-selftest-mirror-uv y --fl-check-mirror-uv cuando
+   * FL_mesh_ops_selftest.hh exponga un arnes especifico para faces_mirror_uv. Las funciones
+   * dump()/check() actuales prueban paint.vertex_color_dirt y no son equivalentes. */
   BLI_args_add(
       ba, nullptr, "--fl-selftest-find-adjacent", CB(arg_handle_fl_selftest_find_adjacent), C);
   BLI_args_add(

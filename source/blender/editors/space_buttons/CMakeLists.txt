@@ -16,12 +16,14 @@ set(INC_SYS
 set(SRC
   buttons_context.cc
   fl_properties_data_shaderfx.cc
+  fl_world_buttons.cc
   buttons_ops.cc
   buttons_texture.cc
   fl_game_buttons.cc
   space_buttons.cc
 
   buttons_intern.hh
+  ../include/FL_properties_ui.hpp
 )
 
 set(LIB
