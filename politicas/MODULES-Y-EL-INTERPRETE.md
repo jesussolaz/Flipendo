@@ -23,9 +23,13 @@
 
 Comprobación: 6.961 + 18.932 + 4.272 = 30.165 ✓ · 17 + 79 + 1 = 97 ✓
 
-> Tras la retirada que documenta §4.2 (`bl_app_override/` y
-> `bl_keymap_utils/platform_helpers.py`, 419 líneas demostradas sin llamadores),
-> el directorio queda en **94 ficheros y 29.746 líneas**.
+> Tras las dos retiradas que documenta §4.2 —`bl_app_override/` y
+> `bl_keymap_utils/platform_helpers.py` (419 líneas), y luego
+> `bpy_extras/mesh_utils.py`, `bpy_extras/id_map_utils.py`,
+> `bpy_extras/wm_utils/progress_report.py` y `graphviz_export.py` (873 líneas)—,
+> todas demostradas sin una sola referencia en el árbol, el directorio queda en
+> **90 ficheros y 28.873 líneas**. Son **1.292 líneas retiradas**, ninguna con
+> pérdida de capacidad.
 
 La distinción importa porque las tres tienen **coste y riesgo distintos**, y
 porque la (a) es la única que no hay que planificar: no cuesta horas, cuesta
@@ -179,6 +183,33 @@ y es mentira. `bl_operators/console.py:18` construye el nombre en ejecución
 (`"console_" + sc.language`), así que el módulo se carga por el valor de una
 propiedad. Los módulos que se eligen por nombre construido no aparecen en un
 barrido de importadores: hay que buscarlos aparte.
+
+#### Lo retirado en la segunda tanda, con su prueba
+
+| Fichero | Líneas | Referencias en TODO el árbol | El C++ que ya hace lo mismo |
+|---|---:|---|---|
+| `bpy_extras/mesh_utils.py` | 464 | **una**, y es su propio nombre en el `__all__` de `bpy_extras/__init__.py` | `BLI_polyfill_calc` (teselado de n-gon), `BMW_EDGELOOP` (bucles de aristas), `uvedit_islands.cc` (islas UV) |
+| `bpy_extras/id_map_utils.py` | 53 | **una**, la del `__all__` | `BKE_library_foreach_ID_link` |
+| `bpy_extras/wm_utils/progress_report.py` | 160 | **ninguna**, ni siquiera en el `__all__` | Barra de progreso para importadores Python, que no habrá |
+| `graphviz_export.py` | 194 | **ninguna** | Exportar el grafo de dependencias a graphviz: utillaje de desarrollo |
+
+Barrido hecho sobre `scripts/`, `source/`, `tests/`, `tools/`, `intern/`, `doc/`,
+`build_files/` y `release/`, incluyendo `.txt` y `.cmake` para cazar referencias
+desde el sistema de compilación. Comprobado después: el editor arranca limpio y
+`bpy_extras.__all__` queda consistente con los ficheros que hay.
+
+**Los que NO se van todavía, y por qué**, que es la otra mitad del resultado:
+
+- `bpy_extras/node_shader_utils.py` (847) lo importa `tests/python/modules/io_report.py`.
+- `bpy_extras/view3d_utils.py` (181) lo importa `scripts/templates_py/operator_modal_view3d_raycast.py`.
+- `blend_render_info.py` (147) no lo importa nadie, pero `writefile.cc:986` lo cita
+  como documentación del bloque de rango de fotogramas. Retirarlo deja el
+  comentario colgando y pierde una utilidad de desarrollo sin reponerla; la
+  salida escrita en el inventario es reponerla como `--fl-blend-info`.
+- `bl_i18n_utils/` (5.227) no lo importa nadie en ejecución, pero **es la única
+  forma que hay hoy de extraer y fusionar los `.po`**. Retirarlo antes de que
+  exista el extractor en C++ es perder capacidad sin sustituto, que es
+  exactamente lo que la doctrina prohíbe.
 
 ### 4.2b `bl_text_utils/external_editor.py`: la migración más barata que queda aquí
 
