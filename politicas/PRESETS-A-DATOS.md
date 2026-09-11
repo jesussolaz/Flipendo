@@ -421,8 +421,14 @@ verdad del usuario — que es exactamente lo que pasó la primera vez, por la tr
    `space_view3d_toolbar.py` y `bl_ui/utils.py` (`PresetPanel.draw_menu`). Consecuencia
    concreta: en esos paneles el botón sigue diciendo lo que decía antes de guardar. Se
    cierra solo según migre `bl_ui`; los paneles nativos ya leen el registro.
-2. **Los tres operadores de tema y la rama `.xml` de `script.execute_preset`.** Ver
-   abajo: siguen atados a `rna_xml.py`. Es el bloqueo del paso 3 del plan.
+2. **Los tres operadores de tema y la rama `.xml` de `script.execute_preset`.** Siguen
+   atados a `rna_xml.py` — **pero ya no por falta de herramienta**: desde el commit
+   `6c299d8988d` hay un `rna_xml` nativo, verificado con 6839/6839 elementos idénticos y
+   con el mismo md5 que el volcado de Python. Lo que queda es fontanería de operadores,
+   medida pieza por pieza en [`RNA-XML-A-CPP.md`](RNA-XML-A-CPP.md), incluido el aviso de
+   que quitar `script.execute_preset` de Python se lleva por delante el último recurso
+   `bpy.utils.execfile` (la deuda 2 de este documento), cuyas condiciones de retirada
+   **ya se cumplen**.
 3. **`tests/flipendo/presets/aplicacion-nativa.txt` está desfasado** respecto del árbol:
    dice 166 presets y hoy hay 172, y no incluye el `ILEGIBLE` de
    `keyconfig/Blender.fpreset` (que es un marcador, no un preset de propiedades).
