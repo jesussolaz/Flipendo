@@ -115,6 +115,54 @@ Detalles que importan y se conservan:
 
 `object.py` queda en 869 líneas.
 
+## `object.transforms_to_deltas`: portado, medido, y NO entregado
+
+Lo escribí entero, compiló, y **lo retiré del árbol a las 05:25** porque no llega al
+estándar de este carril. Queda medido para que quien siga no empiece de cero.
+
+El puerto funciona: de los 66 elementos comparados, **58 son idénticos**. Localización y
+escala salen **exactas** en las ocho combinaciones (`mode` × `reset_values`):
+
+```
+case=8  mode=LOC   reset=1   3/3
+case=9  mode=LOC   reset=0   3/3
+case=12 mode=SCALE reset=1   3/3
+case=13 mode=SCALE reset=0   3/3
+case=6/7/10/11 (ALL y ROT)   1/3
+```
+
+Lo que falla es **solo la rama de rotación**, y por muy poco:
+
+```
+base:  drot=0.3776021,  -0.00957347173, 0.517463744
+real:  drot=0.37760216, -0.00957347266, 0.517463744
+```
+
+Unos **1e-8 relativo**: el suelo de precisión de float32 tras encadenar
+euler → matriz 3×3 → producto → euler compatible. El objeto en ángulo-eje coincide
+(la rama es `pass` en el original y no toca nada, cosa que sí reproduje).
+
+**Por qué no lo entrego igualmente.** Todo lo demás de este carril está a tolerancia cero,
+y una diferencia que no sé explicar no es lo mismo que una que sí. Las de C1 en
+`object.align` estaban explicadas (orden de suma de las esquinas del *bounding box*); esta
+no: revisé que `Euler.rotate()` de mathutils hace exactamente
+`eulO_to_mat3(self) → mul_m3_m3m3(other, self) → mat3_normalized_to_compatible_eulO`, que
+es lo que escribí, y no encontré de dónde sale el último bit antes del cierre.
+
+**Dónde seguir buscando** (por orden de sospecha):
+
+1. `mathutils_any_to_rotmat()` con un `Euler` como argumento: comprobar si normaliza la
+   matriz o pasa por otra ruta antes de `eulO_to_mat3`.
+2. La asignación `obj.delta_rotation_euler = obj.rotation_euler`: si pasa por
+   `RNA_property_float_set_array` con recorte de rango, podría redondear distinto que un
+   `copy_v3_v3`.
+3. El cuaternión: `Quaternion.rotate()` normaliza con `normalize_qt_qt` antes de
+   `quat_to_mat3`; confirmé que lo replico, pero merece una comprobación aparte.
+
+El código está en el historial (no commiteado) y el arnés ya tiene las ocho escenas
+descritas arriba: un objeto euler con deltas ya puestos, uno en cuaternión y uno en
+ángulo-eje. Rehacerlo es media hora; encontrar el bit, no lo sé.
+
 ## Lo que queda
 
 - El cuarto operador de `object.py` que sale en menús de la vista 3D,
