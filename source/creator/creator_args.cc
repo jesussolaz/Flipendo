@@ -80,6 +80,7 @@
 #  include "FL_rigidbody_ops_selftest.hh"
 #  include "FL_ui_dump.hpp"
 #  include "preset/FL_preset.hpp"
+#  include "preset/FL_rna_xml.hpp"
 #  include "FL_lod_ops_selftest.hh"
 #  include "toolsystem/FL_toolsystem_dump.hpp"
 
@@ -3400,6 +3401,37 @@ static int arg_handle_fl_check_optypes(int argc, const char **argv, void *data)
   return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
+static const char arg_handle_fl_selftest_theme_xml_doc[] =
+    "<filepath>\n"
+    "\tEscribe el tema como XML, lee los dos temas distribuidos y los reescribe.\n"
+    "\tPrueba el rna_xml nativo. Linea base: tests/flipendo/themexml/baseline-python.txt.";
+static int arg_handle_fl_selftest_theme_xml(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::rna_xml::selftest::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_theme_xml_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-theme-xml, pero compara con la linea base indicada.";
+static int arg_handle_fl_check_theme_xml(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::rna_xml::selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_check_lod_optypes_doc[] =
     "<filepath>\n"
     "\tComo --fl-check-preset-optypes, pero de los tres operadores de niveles de\n"
@@ -4182,6 +4214,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-check-object-misc", CB(arg_handle_fl_check_object_misc), C);
   BLI_args_add(ba, nullptr, "--fl-dump-optypes", CB(arg_handle_fl_dump_optypes), C);
   BLI_args_add(ba, nullptr, "--fl-check-optypes", CB(arg_handle_fl_check_optypes), C);
+  BLI_args_add(ba, nullptr, "--fl-selftest-theme-xml", CB(arg_handle_fl_selftest_theme_xml), C);
+  BLI_args_add(ba, nullptr, "--fl-check-theme-xml", CB(arg_handle_fl_check_theme_xml), C);
   BLI_args_add(ba, nullptr, "--fl-dump-lod-optypes", CB(arg_handle_fl_dump_lod_optypes), C);
   BLI_args_add(ba, nullptr, "--fl-check-lod-optypes", CB(arg_handle_fl_check_lod_optypes), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-lod-ops", CB(arg_handle_fl_selftest_lod_ops), C);

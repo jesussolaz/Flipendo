@@ -26,6 +26,8 @@ set(SRC
   preset/fl_preset_spec.cc
   preset/fl_preset_ops.cc
   preset/fl_preset_add_ops.cc
+  preset/fl_rna_xml.cc
+  preset/fl_rna_xml_selftest.cc
   preset/fl_preset_ops_selftest.cc
   preset/fl_preset_apply.cc
   preset/fl_preset_check.cc
@@ -140,6 +142,7 @@ set(SRC
   FL_operator_dump.hpp
   manual/FL_manual_reference.hpp
   preset/FL_preset.hpp
+  preset/FL_rna_xml.hpp
   preset/FL_preset_ui.hpp
   toolsystem/FL_toolsystem.hpp
   toolsystem/FL_toolsystem_dump.hpp
@@ -313,6 +316,19 @@ if(WITH_XR_OPENXR)
     xr/wm_xr.hh
     xr/intern/wm_xr_intern.hh
   )
+endif()
+
+if(WITH_PUGIXML)
+  # `preset/fl_rna_xml.cc` lee los temas XML con pugixml, que es el analizador que ya
+  # trae el arbol (lo usa la exportacion SVG de lapiz de grasa). Escribirlos no lo
+  # necesita: el formato del original no es XML canonico y se genera a mano.
+  list(APPEND INC_SYS
+    ${PUGIXML_INCLUDE_DIR}
+  )
+  list(APPEND LIB
+    ${PUGIXML_LIBRARIES}
+  )
+  add_definitions(-DWITH_PUGIXML)
 endif()
 
 blender_add_lib_nolist(bf_windowmanager "${SRC}" "${INC}" "${INC_SYS}" "${LIB}")
