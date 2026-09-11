@@ -60,36 +60,16 @@ enlazados estáticamente.
 
 ## 3. Qué se pierde — la parte incómoda
 
-### 3.1 VideoTexture / `bge.texture` desaparece
+### 3.1 VideoTexture / `bge.texture` — RESUELTO (2026-09-11), ver §6
 
-`source/gameengine/CMakeLists.txt:52` mete `VideoTexture` en el build **solo si
-`WITH_PYTHON`**. El módulo entero es API de Python: no hay forma de pedir un
-`ImageRender` desde C++ porque la fachada nativa no existe.
+Esta sección era la deuda más seria de la lista: `source/gameengine/CMakeLists.txt`
+metía `VideoTexture` en el build **solo si `WITH_PYTHON`**, así que el Player de
+distribución se quedaba sin render-a-textura (espejos, minimapas, cámaras de
+vigilancia), que es **uno de los arreglos estrella de Flipendo** frente a UPBGE 0.44.
 
-Esto es serio, porque render-a-textura (espejos, minimapas, cámaras de vigilancia)
-es **uno de los arreglos estrella de Flipendo** frente a UPBGE 0.44 — y el Player de
-distribución, tal cual, no lo tiene.
-
-**Salida:** una fachada C++ de VideoTexture (crear un `ImageRender` sobre el material
-de un objeto y refrescarlo por frame) compilada sin Python, usable desde un
-`FL_Component`. Es el siguiente trabajo real de esta línea, no un detalle.
-
-**El obstáculo concreto, ya localizado:** no basta con quitar los bindings. La
-lógica de `ImageRender`, `ImageViewport`, `ImageBase` y los `Filter*` sí es C++
-normal (los `PyObject` que hay en esos ficheros son la capa de binding), pero el
-plumbing entre `Texture` e imagen pasa por Python: `Texture::SetSource()`
-(`Texture.hpp:71`) recibe un `PyImage *`, y `getMaterialID()` (`Texture.hpp:99`)
-recibe un `PyObject *`. `PyImage` no es más que una cabecera de objeto Python
-envolviendo un `ImageBase *`, así que el camino es:
-
-1. Reescribir el API de `Texture` en términos de `ImageBase *` (nativo), y dejar
-   la versión `PyImage *` como envoltorio delgado bajo `#ifdef WITH_PYTHON`.
-2. Trocear el `SRC` de `VideoTexture/CMakeLists.txt` en núcleo (siempre) y
-   bindings (`PyTypeList.cpp`, `blendVideoTex.cpp` y los bloques `Py_Header`).
-3. Sacar `add_subdirectory(VideoTexture)` de su `if(WITH_PYTHON)` en
-   `source/gameengine/CMakeLists.txt:52`.
-4. Exponerlo como componente/servicio nativo y verificarlo con la escena CCTV que
-   ya se usó para validar el arreglo original.
+Ya no es deuda: es capacidad. El módulo tiene fachada C++, se construye siempre y
+se ha verificado en los dos binarios. Lo que había, cómo se hizo y con qué cifras
+está en **§6**.
 
 ### 3.2 Bricks de controlador Python
 
@@ -150,5 +130,176 @@ jamás, y que por eso llevaban tiempo podridas:
 
 ### Deuda pendiente
 
-Para que este Player sea el que se envíe de verdad: **fachada C++ de VideoTexture**
-(§3.1) y **UI nativa de juego** (§3.3).
+Para que este Player sea el que se envíe de verdad quedaban dos cosas: la **fachada
+C++ de VideoTexture** (§3.1) y la **UI nativa de juego** (§3.3). La primera está
+hecha y verificada desde el 2026-09-11: ver **§6**. La segunda sigue abierta.
+
+> Las cifras de esta tabla son del 2026-09-08. Con VideoTexture ya dentro del
+> build, medido el 2026-09-11: bundle del Player **537 MB** sin CPython contra
+> **772 MB** con Python, y **0 símbolos que empiecen por `_Py`** contra 2.267
+> (la cuenta de 1.089 de arriba se hizo con un patrón más laxo).
+
+---
+
+## 6. VideoTexture con fachada C++ — CONSEGUIDO (2026-09-11)
+
+**Render a textura existe en el Player sin CPython.** Una cámara secundaria
+renderiza sobre el material de un objeto, frame a frame, sin una línea de Python.
+
+### 6.1 Qué había y por qué no bastaba con quitar los bindings
+
+La lógica de `ImageRender`, `ImageViewport`, `ImageBase` y los `Filter*` siempre
+fue C++ normal. Lo que ataba el módulo al intérprete era el **plumbing**:
+`Texture::SetSource()` recibía un `PyImage *`, `getMaterialID()` un `PyObject *`,
+`ImageBase::setFilter()` un `PyFilter *`, `ImageSource::setSource()` otro
+`PyImage *` y `FilterBase::setPrevious()` otro `PyFilter *`. Y `PyImage`/`PyFilter`
+no son más que una cabecera de objeto de Python envolviendo un puntero nativo.
+
+### 6.2 Qué se hizo
+
+1. **El API pasa a ser nativo.** `Texture::SetSource(ImageBase *, bool own)`,
+   `getMaterialID(KX_GameObject *, const char *)`, `ImageBase::getSource/setSource`
+   y `getFilter/setFilter` sobre `ImageBase *`/`FilterBase *`,
+   `FilterBase::setPrevious(FilterBase *)`. Las versiones con `PyImage *` /
+   `PyFilter *` / `PyObject *` quedan como envoltorios delgados bajo
+   `#ifdef WITH_PYTHON`.
+2. **El contador de referencias, sin saber de Python.** Cada `ImageBase` y cada
+   `FilterBase` guarda un puntero a su envoltorio (`getWrapper()`/`setWrapper()`),
+   y `VT_WrapperIncRef/DecRef` (FilterBase.hpp) suben y bajan ese contador con
+   Python y no hacen nada sin él. Sin intérprete, el dueño es quien creó el objeto.
+3. **Nada de comparar tipos de Python.** `Texture::refresh()` decidía si avisar al
+   depsgraph con `PyObject_TypeCheck` contra VideoFFmpegType / ImageFFmpegType /
+   ImageMixType / ImageViewportType. Ahora lo responde cada clase con
+   `ImageBase::needsDepsgraphNotifier()`, con el reparto **exacto** de aquella
+   lista: sí en ImageViewport, ImageMix y VideoFFmpeg; **no** en ImageRender, que
+   heredaba de ImageViewport en C++ pero no era subtipo suyo en Python
+   (`tp_base = 0`) y por eso nunca pasaba el `PyObject_TypeCheck`.
+4. **El `SRC` partido en dos** (`VideoTexture/CMakeLists.txt`): núcleo siempre,
+   enlaces de Python dentro de `if(WITH_PYTHON)`.
+5. `add_subdirectory(VideoTexture)` fuera de su `if(WITH_PYTHON)`; Ketsji y
+   Launcher vuelven a enlazar `ge_videotexture` sin condición; y
+   `Texture::FreeAllTextures` deja de estar bajo `#ifdef WITH_PYTHON` en
+   `LA_Launcher` y `BL_Converter` — sin eso las texturas nativas no se soltarían.
+
+### 6.3 Cómo se usa desde un juego
+
+Fachada: `source/gameengine/Flipendo/FL_RenderToTexture.hpp`.
+
+| `bge.texture` (Python) | `FL_RenderToTexture` (C++) |
+|---|---|
+| `tex = texture.Texture(ob, matID)` | `FL_RenderToTexture::Create(ob, material, cam, w, h)` |
+| `tex.source = texture.ImageRender(sc, cam)` | (lo hace `Create`) |
+| `tex.refresh(True)` cada frame | `rtt->Refresh()` cada frame |
+
+Y el componente integrado **`CctvMonitor`**, que se ata con la propiedad de juego
+`fl_component` y lee `fl_rtt_camera`, `fl_rtt_material`, `fl_rtt_slot`,
+`fl_rtt_width`, `fl_rtt_height` y `fl_rtt_samples`. Un juego no necesita escribir
+C++ para tener una cámara de vigilancia: le basta con poner las propiedades.
+
+### 6.4 Verificación con evidencia
+
+Sonda `FL_RttProbeTick` (estilo `--fl-dump-*`; el Player no tiene analizador de
+opciones largas, así que va por entorno: `FL_RTT_PROBE`, `FL_RTT_DUMP`,
+`FL_RTT_DUMP_FRAME`, `FL_RTT_EXIT`). Vuelca a PNG **y a RGBA8 crudo** la textura
+de GPU que el material está enseñando en ese instante, sin preguntar quién la
+puso ahí; la conversión de coma flotante a sRGB de 8 bits es la misma en los dos
+binarios, que es lo que los hace comparables.
+
+Escena: un plano `Pantalla` con material de imagen (magenta plano, 256×256), una
+cámara secundaria `CamVigilancia` apuntando a un cartel naranja y al suelo, y la
+cámara de juego mirando a la pantalla.
+
+| Medida | Resultado |
+|---|---|
+| Textura del material antes del refresco | 256×256 `SRGB8_A8` (la imagen original) |
+| Textura del material tras el refresco | **513×513 `RGBA16F`** (el render de la cámara) |
+| Píxeles magenta (la imagen original) que quedan | **0 de 263.169** |
+| Píxeles naranjas (el cartel que ve la cámara) | **189.161 de 263.169** |
+| Componentes nativos atados | **1/1** en los dos binarios |
+
+Comparación pixel a pixel de la textura resultante, 513×513 = 263.169 píxeles:
+
+| Comparación | Píxeles distintos | Delta medio | Delta máximo |
+|---|---:|---:|---:|
+| Player **con Python**, dos ejecuciones | 0 (0,00 %) — idénticas byte a byte | 0,00 | 0 |
+| Player **sin CPython**, ejecuciones 1 y 2 | 3.408 (1,29 %) | 5,57 | 120 |
+| Player **sin CPython**, ejecuciones 1 y 3 | 4.109 (1,56 %) | 5,76 | 103 |
+| **Sin CPython (1) contra con Python** | 3.730 (1,42 %) | 5,70 | 123 |
+| **Sin CPython (2) contra con Python** | 3.736 (1,42 %) | 2,63 | 117 |
+| **Sin CPython (3) contra con Python** | 4.617 (1,75 %) | 3,70 | 108 |
+
+**Por qué difieren esos píxeles:** no por el camino, sino por el frame. La
+diferencia entre los dos binarios (1,42–1,75 %) es del mismo tamaño que la
+diferencia del Player sin CPython **consigo mismo** entre dos ejecuciones
+(1,29–1,56 %): es la acumulación temporal de EEVEE y el frame concreto que
+atrapa la sonda al tic 120, que depende del reloj. El 98,5 % de los píxeles es
+idéntico byte a byte y el 85–91 % de los bytes que cambian lo hacen en 8 niveles
+o menos, concentrados en los bordes. El Player con Python salió determinista en
+sus dos ejecuciones; el de distribución, que va más rápido, no.
+
+Y lo que no cambia: el Player sin CPython **sigue sin un solo símbolo de CPython**
+y sigue atando todos los componentes de las dos escenas reales.
+
+| Medida | Player con Python | Player sin CPython |
+|---|---:|---:|
+| Símbolos que empiezan por `_Py` (`nm`) | 2.267 | **0** |
+| `libpython` enlazada (`otool -L`) | — (estático) | **no** |
+| Bundle del Player | 772 MB | **537 MB** |
+| Componentes en `game/template/ArpgNative.blend` | 5/5 | **5/5** |
+| Componentes en `game/anima/T1_LaMancha.blend` | 5/5 | **5/5** |
+
+(Los 89 símbolos que *contienen* `_Py` en el binario sin CPython son nombres de
+clases de Flipendo —`KX_PythonProxy`, `SCA_PythonController`, `EXP_PyObjectPlus`—,
+no símbolos del intérprete. Por eso se cuenta con `^_Py`, no con `_Py`.)
+
+### 6.5 Trampas pagadas
+
+- **La textura de destino no existe en el primer frame.** Blender sube la textura
+  de GPU de una imagen de forma perezosa, en el primer dibujado.
+  `ImageViewport::calcViewport` marcaba `m_texInit = true` aunque el intercambio
+  no hubiera ocurrido, y entonces no se reintentaba nunca: la pantalla se quedaba
+  con la imagen original para siempre. Ahora solo se da por inicializada cuando
+  el intercambio ocurrió de verdad.
+- **El `.blend` manda más de lo que parece.** El Player dibuja a través del
+  `View3D` guardado en el fichero: si su vista no está en modo cámara
+  (`region_3d.view_perspective = 'CAMERA'`), ni el render principal ni el
+  `ImageRender` usan la cámara, y lo que sale en la textura es el punto de vista
+  del usuario que quedó grabado. Pasamos un buen rato creyendo que el
+  `ImageRender` ignoraba la cámara: no la ignoraba, la ignoraba el `.blend`.
+  Cualquier escena que use render a textura tiene que guardarse con la vista en
+  modo cámara.
+- `ImageRender` tiene dos constructores y el del **espejo** no inicializaba
+  `m_preDrawCallbacks` ni `m_postDrawCallbacks`, que el destructor hace
+  `Py_CLEAR`. Basura de pila desde antes. Corregido.
+- `Texture::m_useMatTexture` tampoco se inicializaba. Corregido.
+- `Exception::report()` llamaba a `PyErr_SetString` sin guarda; sin intérprete no
+  hay `PyErr` donde dejar el aviso, así que ahora sale por consola con `CM_Error`.
+- `registerAllExceptions()` registra descriptores que viven en `VideoBase.cpp`;
+  al quedarse ese fichero del lado de Python, el enlace del Player se rompía.
+- `MEM_freeN`/`MEM_mallocN` llegaban a `ImageBase.cpp` por el include de
+  `mathutils` que solo existe con Python.
+- Poner `override` en un método hace que clang avise de sus hermanos sin marcar:
+  se marcaron los seis que faltaban en ImageMix, ImageViewport e ImageRender.
+
+### 6.6 Lo que queda de VideoTexture
+
+- **Vídeo sobre textura sigue siendo de Python.** `VideoBase.cpp`,
+  `VideoFFmpeg.cpp`, `DeckLink.cpp` y `VideoDeckLink.cpp` siguen dentro del
+  `if(WITH_PYTHON)` del `CMakeLists`: su lógica está trenzada con la capa de
+  enlace (parsers de argumentos, getsets y estado mezclados en los mismos
+  métodos) y no se cierra en una noche. Un juego sin intérprete puede hoy poner
+  una cámara en una textura, pero **no un vídeo**. Es la siguiente pieza de esta
+  línea.
+- **`ImageMirror` (espejos) no se ha probado en ejecución.** Se compila en las dos
+  configuraciones y su constructor nativo existe, pero la fachada
+  `FL_RenderToTexture` solo expone hoy el caso cámara. Falta exponerlo y probarlo.
+- **No se pudo comparar contra el camino de Python en ejecución.** Montar una
+  escena con controlador Python que llamara a `bge.texture` exigía
+  `bpy.ops.logic.sensor_add`, que **revienta en `--background`**: la pila es
+  `sensor_add_exec + 397` → `ED_undo_push_old(C, "sensor_add_exec")` sin pila de
+  deshacer. La comparación se hizo entonces entre los dos binarios por el camino
+  nativo, que es la pregunta que de verdad importa. Queda dicho lo que no se
+  comparó.
+- **`Error: totblock: 10`** al salir del Player. Aparece también en
+  `ArpgNative.blend`, que no usa VideoTexture, así que no es de esta migración;
+  queda anotado para quien persiga las fugas del cierre del motor.
