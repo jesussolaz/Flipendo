@@ -18,7 +18,7 @@
 |---|---:|---:|---|
 | **(a) Pegamento CPython** | 19 | **7.366** | *No se traduce.* Desaparece el día que no haya intérprete |
 | **(b) Capacidad de verdad** | 77 | **18.527** | Se migra a C++ (47 fich., 8.199) o se retira con motivo escrito (30 fich., 10.328) |
-| **(c) Datos disfrazados de código** | 1 | **4.272** | Se convierte en datos. **Hecho esta noche** |
+| **(c) Datos disfrazados de código** | 1 | **4.272** | Convertido en datos y **el `.py` retirado** |
 | **Total** | **97** | **30.165** | |
 
 Comprobación: 7.366 + 18.527 + 4.272 = 30.165 ✓ · 19 + 77 + 1 = 97 ✓
@@ -28,9 +28,11 @@ Comprobación: 7.366 + 18.527 + 4.272 = 30.165 ✓ · 19 + 77 + 1 = 97 ✓
 > `bpy_extras/mesh_utils.py`, `bpy_extras/id_map_utils.py`,
 > `bpy_extras/wm_utils/progress_report.py` y `graphviz_export.py` (873 líneas)—,
 > todas demostradas sin una sola referencia en el árbol, el directorio queda en
-> **88 ficheros y 28.819 líneas**, contando ya la migración de
-> `bl_text_utils/` a C++ (§4.2b). Son **1.346 líneas retiradas**, ninguna con
-> pérdida de capacidad.
+> **87 ficheros y 24.544 líneas**: la migración de `bl_text_utils/` a C++
+> (§4.2b), 1.292 líneas sin un solo llamador, y las **4.272** de
+> `rna_manual_reference.py`, que se va porque su sustituto nativo está
+> registrado y verificado (§3). Son **5.621 líneas menos, ninguna con pérdida de
+> capacidad**: un 19 % del directorio en una noche.
 
 La distinción importa porque las tres tienen **coste y riesgo distintos**, y
 porque la (a) es la única que no hay que planificar: no cuesta horas, cuesta
@@ -158,6 +160,21 @@ enum, `DEFAULT` incluido, con caída a `$LANG`—. Con un idioma elegido pero la
 traducción desactivada, las dos cosas no coinciden y el prefijo del manual sale
 distinto. El prefijo que verifica `--fl-check-manual` es el nuestro, que sí
 reproduce el del Python.
+
+**El `.py` ya no está.** `scripts/modules/rna_manual_reference.py` (4.272) se
+retiró en cuanto se cumplieron las tres condiciones de la doctrina: el sustituto
+existe (`datafiles/manual/rna_manual_reference.txt` + el lector), está
+**registrado** (`provider_register_builtin_table()` desde `WM_init()`) y está
+**verificado idéntico** (7.470/7.470 por el camino del operador). Con él se fue
+`tests/python/bl_rna_manual_reference.py` (187), que era su test y no podía
+sobrevivirle. Y en `bpy/utils/__init__.py` desapareció `_blender_default_map()`:
+`_manual_map` arranca ahora vacío y queda solo como enganche para lo que aún se
+escriba en Python. El editor arranca limpio y `bpy.utils.manual_map()` devuelve
+una lista vacía, que es lo correcto: la tabla integrada ya no vive en Python.
+
+Para reimportar la tabla de upstream el camino es el mismo de siempre más un
+paso: `tools/utils_doc/rna_manual_reference_updater.py` escribe un `.py` (fuera
+del árbol) y `--fl-convert-manual-reference` lo convierte en el fichero de datos.
 
 **Cobertura de pruebas que hay que reponer:** `tests/python/bl_rna_manual_reference.py`
 (187 líneas) validaba la tabla desde dentro: que el dato tiene la forma correcta,

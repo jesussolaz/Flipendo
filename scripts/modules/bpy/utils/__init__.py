@@ -1029,17 +1029,14 @@ def register_submodule_factory(module_name, submodule_names):
 # Manual lookups, each function has to return a basepath and a sequence
 # of...
 
-# we start with the built-in default mapping
-def _blender_default_map():
-    # NOTE(@ideasman42): Avoid importing this as there is no need to keep the lookup table in memory.
-    # As this runs when the user accesses the "Online Manual", the overhead loading the file is acceptable.
-    # In my tests it's under 1/100th of a second loading from a `pyc`.
-    ref_mod = execfile(_os.path.join(_script_base_dir, "modules", "rna_manual_reference.py"))
-    return (ref_mod.url_manual_prefix, ref_mod.url_manual_mapping)
-
-
-# hooks for doc lookups
-_manual_map = [_blender_default_map]
+# La tabla integrada ya NO esta aqui. Eran las 4.253 entradas de
+# `modules/rna_manual_reference.py`, que este envoltorio cargaba con `execfile()`
+# entera y de nuevo en cada consulta. Hoy son datos
+# (`datafiles/manual/rna_manual_reference.txt`) y las lee el proveedor nativo que
+# registra `WM_init()`; ver `source/blender/windowmanager/manual/`.
+# Esta lista queda solo como enganche para lo que aun se escriba en Python, y se
+# va con el interprete.
+_manual_map = []
 
 
 def register_manual_map(manual_hook):
