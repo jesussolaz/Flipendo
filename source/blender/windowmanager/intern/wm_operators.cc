@@ -4199,6 +4199,7 @@ void WM_OT_properties_remove(wmOperatorType *ot);
 void WM_OT_owner_enable(wmOperatorType *ot);
 void WM_OT_owner_disable(wmOperatorType *ot);
 void PREFERENCES_OT_keyconfig_activate(wmOperatorType *ot);
+void WM_OT_drop_blend_file(wmOperatorType *ot);
 
 void wm_operatortypes_register()
 {
@@ -4236,6 +4237,7 @@ void wm_operatortypes_register()
   WM_operatortype_append(WM_OT_owner_enable);
   WM_operatortype_append(WM_OT_owner_disable);
   WM_operatortype_append(PREFERENCES_OT_keyconfig_activate);
+  WM_operatortype_append(WM_OT_drop_blend_file);
   WM_operatortype_append(WM_OT_window_close);
   WM_operatortype_append(WM_OT_window_new);
   WM_operatortype_append(WM_OT_window_new_main);

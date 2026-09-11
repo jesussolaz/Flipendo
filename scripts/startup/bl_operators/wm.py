@@ -2266,40 +2266,9 @@ class WM_MT_region_toggle_pie(Menu):
         self._draw_pie_regions_from_alignment(context, pie)
 
 
-class WM_OT_drop_blend_file(Operator):
-    bl_idname = "wm.drop_blend_file"
-    bl_label = "Handle dropped .blend file"
-    bl_options = {'INTERNAL'}
-
-    filepath: StringProperty(
-        subtype='FILE_PATH',
-        options={'SKIP_SAVE'},
-    )
-
-    def invoke(self, context, _event):
-        context.window_manager.popup_menu(self.draw_menu, title=bpy.path.basename(self.filepath), icon='QUESTION')
-        return {'FINISHED'}
-
-    def draw_menu(self, menu, _context):
-        layout = menu.layout
-
-        col = layout.column()
-        col.operator_context = 'INVOKE_DEFAULT'
-        props = col.operator("wm.open_mainfile", text="Open", icon='FILE_FOLDER')
-        props.filepath = self.filepath
-        props.display_file_selector = False
-
-        layout.separator()
-        col = layout.column()
-        col.operator_context = 'INVOKE_DEFAULT'
-        col.operator("wm.link", text="Link...", icon='LINK_BLEND').filepath = self.filepath
-        col.operator("wm.append", text="Append...", icon='APPEND_BLEND').filepath = self.filepath
-
-
 classes = (
     WM_OT_blenderplayer_start,
     WM_OT_doc_view_manual,
-    WM_OT_drop_blend_file,
     WM_OT_operator_cheat_sheet,
     WM_OT_properties_edit,
     WM_OT_properties_edit_value,
