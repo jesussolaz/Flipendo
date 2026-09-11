@@ -156,7 +156,8 @@ if(WITH_HEADLESS)
 elseif(APPLE AND NOT WITH_GHOST_X11)
   list(APPEND SRC
     intern/GHOST_SystemCocoa.mm
-    intern/GHOST_WindowCocoa.mm
+    intern/GHOST_WindowCocoa.cc
+    intern/GHOST_WindowViewCocoa.cc
 
     intern/GHOST_SystemCocoa.hh
     intern/GHOST_WindowCocoa.hh

@@ -57,6 +57,9 @@
 #include <objc/runtime.h>
 
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <type_traits>
 
 /* Las dos funciones del runtime que implementan `@autoreleasepool`. Son C puro y las
@@ -247,6 +250,229 @@ inline void release(id obj)
 inline id autorelease(id obj)
 {
   return obj ? msg<id>(obj, GHOST_SEL(autorelease)) : nullptr;
+}
+
+/* -------------------------------------------------------------------------
+ * Fabricar clases de Objective-C en tiempo de ejecucion.
+ *
+ * Hace falta donde GHOST deja de MANDAR mensajes y pasa a RECIBIRLOS: los delegados de
+ * ventana y de aplicacion, y las subclases de NSView y NSWindow.
+ *
+ * EL PROBLEMA QUE RESUELVE, Y QUE NO ES EL OBVIO
+ *
+ * `class_addMethod` necesita una CODIFICACION DE TIPO: una cadena que describe el tipo
+ * de retorno y los de todos los parametros, empezando por los dos ocultos `self` (@) y
+ * `_cmd` (:). Escribirlas a mano para las 89 de `intern/ghost` seria la parte mas
+ * peligrosa de toda la migracion: una mal puesta NO da error de compilacion ni de
+ * registro, da comportamiento indefinido dentro del manejador de eventos.
+ *
+ * LA SALIDA: NO ESCRIBIRLAS. EL RUNTIME YA LAS SABE.
+ *
+ *   - Si el metodo SOBREESCRIBE uno de la superclase (`drawRect:`, `keyDown:`,
+ *     `canBecomeKeyWindow`...), la codificacion oficial esta en
+ *     `class_getInstanceMethod(superclase, sel)` -> `method_getTypeEncoding`.
+ *   - Si el metodo es de un PROTOCOLO (`NSTextInputClient`, `NSWindowDelegate`,
+ *     `NSDraggingDestination`, `NSApplicationDelegate`), esta en
+ *     `protocol_getMethodDescription`.
+ *
+ * Comprobado contra el SDK 26.5: el runtime devuelve, por ejemplo,
+ *
+ *     drawRect:                                v48@0:8{CGRect={CGPoint=dd}{CGSize=dd}}16
+ *     firstRectForCharacterRange:actualRange:  {CGRect=...}40@0:8{_NSRange=QQ}16^{_NSRange=QQ}32
+ *     draggingEntered:                         Q24@0:8@16
+ *
+ * Asi que `method()` las pide y **aborta con un mensaje claro si nadie las conoce**.
+ * Eso convierte un selector MAL ESCRITO —el fallo silencioso mas probable de esta
+ * migracion— en un fallo ruidoso y temprano, en el registro de la clase, antes de que
+ * se dibuje un solo pixel. Es la razon de que esta clase exista.
+ *
+ * Solo se escribe una codificacion a mano en los metodos PROPIOS, que el runtime no
+ * puede conocer porque no existen en ningun sitio mas (`initWithSystemCocoa:...`), y
+ * esos son pocos y de firma trivial.
+ */
+class ClassBuilder {
+ public:
+  ClassBuilder(const char *name, const char *superclass_name) : name_(name)
+  {
+    Class super = objc_getClass(superclass_name);
+    if (!super) {
+      fail("no existe la superclase", superclass_name);
+    }
+    cls_ = objc_allocateClassPair(super, name, 0);
+    if (!cls_) {
+      /* Ya registrada: pasa si se construye dos veces. Es un error de uso. */
+      fail("objc_allocateClassPair fallo (¿nombre repetido?)", name);
+    }
+    super_ = super;
+  }
+
+  /** Declara conformidad con un protocolo. LLAMAR ANTES que a `method()`: de ahi se
+   *  sacan las codificaciones de los metodos del protocolo. */
+  ClassBuilder &protocol(const char *protocol_name)
+  {
+    Protocol *p = objc_getProtocol(protocol_name);
+    if (!p) {
+      fail("no existe el protocolo", protocol_name);
+    }
+    class_addProtocol(cls_, p);
+    if (n_protocols_ >= kMaxProtocols) {
+      fail("demasiados protocolos", protocol_name);
+    }
+    protocols_[n_protocols_++] = p;
+    return *this;
+  }
+
+  /** Variable de instancia. Llamar antes de `finish()`. */
+  ClassBuilder &ivar(const char *ivar_name, size_t size, uint8_t alignment, const char *types)
+  {
+    if (!class_addIvar(cls_, ivar_name, size, alignment, types)) {
+      fail("class_addIvar fallo", ivar_name);
+    }
+    return *this;
+  }
+
+  /** Metodo con la codificacion PEDIDA AL RUNTIME. Aborta si no se encuentra. */
+  ClassBuilder &method(const char *selector_name, IMP imp)
+  {
+    const char *types = lookup_types(selector_name);
+    if (!types) {
+      fail(
+          "el runtime no conoce este selector: ni la superclase ni los protocolos "
+          "declarados lo tienen. Suele ser una errata en el nombre, o falta declarar "
+          "el protocolo ANTES de anadir el metodo",
+          selector_name);
+    }
+    add(selector_name, imp, types);
+    return *this;
+  }
+
+  /** Metodo PROPIO: el runtime no puede conocerlo, la codificacion va a mano. */
+  ClassBuilder &method(const char *selector_name, IMP imp, const char *types)
+  {
+    /* Si ademas resulta que el runtime SI lo conoce, se comprueba que coincidan: asi
+     * una codificacion escrita a mano que no cuadre tampoco pasa desapercibida. */
+    if (const char *known = lookup_types(selector_name)) {
+      if (!same_encoding(known, types)) {
+        fail_two("la codificacion escrita a mano no coincide con la del runtime",
+                 selector_name,
+                 types,
+                 known);
+      }
+    }
+    add(selector_name, imp, types);
+    return *this;
+  }
+
+  Class finish()
+  {
+    objc_registerClassPair(cls_);
+    return cls_;
+  }
+
+  Class get() const
+  {
+    return cls_;
+  }
+
+ private:
+  static constexpr int kMaxProtocols = 8;
+
+  const char *lookup_types(const char *selector_name) const
+  {
+    const SEL s = sel_registerName(selector_name);
+    /* 1. La superclase (metodo sobreescrito). */
+    if (Method m = class_getInstanceMethod(super_, s)) {
+      if (const char *t = method_getTypeEncoding(m)) {
+        return t;
+      }
+    }
+    /* 2. Los protocolos declarados, en sus cuatro combinaciones de
+     *    (requerido, opcional) x (de instancia, de clase). */
+    for (int i = 0; i < n_protocols_; i++) {
+      for (int req = 1; req >= 0; req--) {
+        struct objc_method_description d = protocol_getMethodDescription(
+            protocols_[i], s, req != 0, true);
+        if (d.types) {
+          return d.types;
+        }
+      }
+    }
+    return nullptr;
+  }
+
+  void add(const char *selector_name, IMP imp, const char *types)
+  {
+    if (!class_addMethod(cls_, sel_registerName(selector_name), imp, types)) {
+      fail("class_addMethod fallo", selector_name);
+    }
+  }
+
+  /** Compara dos codificaciones ignorando los numeros de desplazamiento, que el
+   *  runtime anade (`v24@0:8@16`) y que a mano no se suelen escribir (`v@:@`). */
+  static bool same_encoding(const char *a, const char *b)
+  {
+    while (*a || *b) {
+      while (*a >= '0' && *a <= '9') {
+        a++;
+      }
+      while (*b >= '0' && *b <= '9') {
+        b++;
+      }
+      if (*a != *b) {
+        return false;
+      }
+      if (*a) {
+        a++;
+        b++;
+      }
+    }
+    return true;
+  }
+
+  [[noreturn]] void fail(const char *what, const char *detail) const
+  {
+    fprintf(stderr, "GHOST: al fabricar la clase '%s': %s -> '%s'\n", name_, what, detail);
+    abort();
+  }
+
+  [[noreturn]] void fail_two(
+      const char *what, const char *detail, const char *mine, const char *theirs) const
+  {
+    fprintf(stderr,
+            "GHOST: al fabricar la clase '%s': %s -> '%s'\n  escrita:  %s\n  runtime:  %s\n",
+            name_,
+            what,
+            detail,
+            mine,
+            theirs);
+    abort();
+  }
+
+  const char *name_;
+  Class cls_ = nullptr;
+  Class super_ = nullptr;
+  Protocol *protocols_[kMaxProtocols] = {};
+  int n_protocols_ = 0;
+};
+
+/** Lee una variable de instancia por nombre. */
+template<typename T> inline T ivar_get(id obj, const char *name)
+{
+  T value{};
+  Ivar iv = class_getInstanceVariable(object_getClass(obj), name);
+  if (iv) {
+    memcpy(&value, (const char *)obj + ivar_getOffset(iv), sizeof(T));
+  }
+  return value;
+}
+
+/** Escribe una variable de instancia por nombre. */
+template<typename T> inline void ivar_set(id obj, const char *name, T value)
+{
+  Ivar iv = class_getInstanceVariable(object_getClass(obj), name);
+  if (iv) {
+    memcpy((char *)obj + ivar_getOffset(iv), &value, sizeof(T));
+  }
 }
 
 /** `[[Clase alloc] init]`. */
