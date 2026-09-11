@@ -225,6 +225,22 @@ class RAS_Rasterizer {
   virtual ~RAS_Rasterizer();
 
   /**
+   * Flipendo: byte centinela con el que se rellena el destino de MakeScreenshot ANTES
+   * de pedirle los pixeles a la GPU.
+   *
+   * Por que hace falta: `GPU_framebuffer_read_color()` sobre el buffer trasero de la
+   * ventana puede volver SIN ESCRIBIR NADA (en Metal, `MTLTexture::read_internal()`
+   * hace `return` en silencio si la textura no esta "baked"), y el bloque recien
+   * pedido con `malloc()` de medio mega llega del sistema con paginas a cero. El
+   * resultado era una captura PNG perfectamente valida, toda a cero, escrita sin una
+   * sola linea de aviso: un verde falso de los que prohibe politicas/ARNES-A-PRUEBA.md.
+   *
+   * Con el centinela, "no se leyo nada" y "la escena es negra" dejan de confundirse:
+   * un negro de verdad trae alfa 255, el centinela trae 0xCD en los cuatro canales.
+   */
+  static constexpr unsigned char SCREENSHOT_UNREAD_BYTE = 0xCD;
+
+  /**
    * Takes a screenshot
    */
   unsigned int *MakeScreenshot(int x, int y, int width, int height);

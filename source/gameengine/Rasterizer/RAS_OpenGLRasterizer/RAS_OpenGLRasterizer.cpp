@@ -33,6 +33,9 @@
 
 #include <epoxy/gl.h>
 
+#include <cstdlib>
+#include <cstring>
+
 #include "GPU_context.hh"
 #include "GPU_framebuffer.hh"
 
@@ -67,7 +70,26 @@ unsigned int *RAS_OpenGLRasterizer::MakeScreenshot(int x, int y, int width, int 
   unsigned int *pixeldata = nullptr;
 
   if (width && height) {
-    pixeldata = (unsigned int *)malloc(sizeof(unsigned int) * width * height);
+    const size_t bytes = sizeof(unsigned int) * size_t(width) * size_t(height);
+    pixeldata = (unsigned int *)malloc(bytes);
+    if (pixeldata == nullptr) {
+      return nullptr;
+    }
+    /* Flipendo: centinela ANTES de leer. Un `malloc()` de este tamano llega del
+     * sistema con paginas a cero, asi que una lectura que no escribe nada era
+     * indistinguible de una pantalla negra de verdad. El motivo completo, en
+     * RAS_Rasterizer::SCREENSHOT_UNREAD_BYTE. */
+    memset(pixeldata, RAS_Rasterizer::SCREENSHOT_UNREAD_BYTE, bytes);
+
+    /* Gancho para probar el arnes AL REVES (politicas/ARNES-A-PRUEBA.md §3): con
+     * FL_SHOT_FORCE_EMPTY=1 se salta la lectura y el buffer se queda entero con el
+     * centinela, que es exactamente lo que pasa cuando la ventana no tiene un buffer
+     * trasero legible. Sirve para demostrar que la guarda salta. */
+    static const char *forceEmpty = std::getenv("FL_SHOT_FORCE_EMPTY");
+    if (forceEmpty && forceEmpty[0] && forceEmpty[0] != '0') {
+      return pixeldata;
+    }
+
     GPUFrameBuffer *read_fb = GPU_framebuffer_back_get();
     GPU_framebuffer_read_color(read_fb,
                                x,

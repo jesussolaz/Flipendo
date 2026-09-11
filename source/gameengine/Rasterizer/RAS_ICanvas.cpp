@@ -24,6 +24,10 @@
 
 #include "RAS_ICanvas.hpp"
 
+#include <cstdlib>
+#include <utility>
+#include <vector>
+
 #include "BKE_image.hh"
 #include "BKE_image_format.hh"
 #include "BLI_path_utils.hh"
@@ -54,8 +58,12 @@ struct ScreenshotTaskData {
  */
 void save_screenshot_thread_func(TaskPool *__restrict pool, void *taskdata, int threadid);
 
-RAS_ICanvas::RAS_ICanvas(RAS_Rasterizer *rasty) : m_rasterizer(rasty), m_samples(0)
+RAS_ICanvas::RAS_ICanvas(RAS_Rasterizer *rasty)
+    : m_rasterizer(rasty), m_samples(0), m_mousestate(MOUSE_NORMAL), m_frame(0)
 {
+  /* Flipendo: `m_frame` se usaba sin inicializar en SaveScreeshot (lo lee
+   * `BLI_path_frame()` para resolver los `#` de la ruta). Era comportamiento
+   * indefinido, y con una ruta con `#` la captura acababa con un numero de basura. */
   m_taskpool = BLI_task_pool_create(nullptr, TASK_PRIORITY_LOW);
 }
 
@@ -110,11 +118,31 @@ const RAS_Rect &RAS_ICanvas::GetViewportArea() const
 
 void RAS_ICanvas::FlushScreenshots()
 {
-  for (const Screenshot &screenshot : m_screenshots) {
-    SaveScreeshot(screenshot);
+  /* Flipendo: una captura cuya lectura de la GPU no escribio nada NO se escribe a
+   * disco: se vuelve a encolar para el fotograma siguiente, y cuando se acaban los
+   * intentos se declara el fallo en voz alta. Antes se guardaba el buffer intacto como
+   * un PNG valido y el motor decia que habia capturado. */
+  std::vector<Screenshot> retry;
+
+  for (Screenshot &screenshot : m_screenshots) {
+    if (SaveScreeshot(screenshot)) {
+      continue;
+    }
+    screenshot.attempts--;
+    if (screenshot.attempts > 0) {
+      retry.push_back(screenshot);
+      continue;
+    }
+    CM_Error("ARNES: la captura '"
+             << screenshot.path << "' se descarta tras " << SCREENSHOT_ATTEMPTS
+             << " intentos: la lectura del buffer trasero no devolvio ni un pixel. "
+                "Causa conocida en macOS/Metal: hay OTRO Blenderplayer abierto a la vez. "
+                "Captura de uno en uno; no se escribe ningun fichero.");
+    /* El formato era del llamante mientras quedaban intentos; aqui ya no lo es. */
+    MEM_freeN(screenshot.format);
   }
 
-  m_screenshots.clear();
+  m_screenshots = std::move(retry);
 }
 
 void RAS_ICanvas::AddScreenshot(
@@ -127,6 +155,7 @@ void RAS_ICanvas::AddScreenshot(
   screenshot.width = width;
   screenshot.height = height;
   screenshot.format = format;
+  screenshot.attempts = SCREENSHOT_ATTEMPTS;
 
   m_screenshots.push_back(screenshot);
 }
@@ -151,13 +180,37 @@ void save_screenshot_thread_func(TaskPool *__restrict (pool),
   MEM_freeN(task->im_format);
 }
 
-void RAS_ICanvas::SaveScreeshot(const Screenshot &screenshot)
+bool RAS_ICanvas::SaveScreeshot(const Screenshot &screenshot)
 {
   unsigned int *pixels = m_rasterizer->MakeScreenshot(
       screenshot.x, screenshot.y, screenshot.width, screenshot.height);
   if (!pixels) {
     CM_Error("cannot allocate pixels array");
-    return;
+    return true; /* No hay nada que reintentar: fallo de memoria, no de lectura. */
+  }
+
+  /* Flipendo: cuantos bytes siguen siendo el centinela, es decir, cuantos NO escribio
+   * la GPU. Todos => la lectura no hizo nada y esto no es una captura; algunos => la
+   * lectura se quedo a medias y hay que verlo, pero el fichero se escribe igual para
+   * poder mirarlo. */
+  const size_t bytes = sizeof(unsigned int) * size_t(screenshot.width) *
+                       size_t(screenshot.height);
+  const unsigned char *raw = reinterpret_cast<const unsigned char *>(pixels);
+  size_t unread = 0;
+  for (size_t i = 0; i < bytes; i++) {
+    unread += (raw[i] == RAS_Rasterizer::SCREENSHOT_UNREAD_BYTE) ? 1 : 0;
+  }
+  if (unread == bytes) {
+    free(pixels);
+    return false;
+  }
+  /* El umbral no es cosmetico: una captura de verdad trae por azar ~1 de cada 256
+   * bytes con el valor 0xCD (unos 1.900 de 480.000 en 400x300), asi que avisar con
+   * `unread > 0` seria un aviso en CADA captura. Por encima de la mitad del buffer no
+   * puede ser azar. */
+  if (unread * 2 > bytes) {
+    CM_Warning("la captura '" << screenshot.path << "' se leyo a medias: " << unread << " de "
+                              << bytes << " bytes se quedaron sin escribir por la GPU.");
   }
 
   /* Save the actual file in a different thread, so that the
@@ -179,4 +232,5 @@ void RAS_ICanvas::SaveScreeshot(const Screenshot &screenshot)
                      task,
                      true,  // free task data
                      NULL);
+  return true;
 }

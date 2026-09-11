@@ -135,7 +135,22 @@ class RAS_ICanvas {
     int width;
     int height;
     ImageFormatData *format;
+    /** Flipendo: intentos que le quedan a esta captura. \see SCREENSHOT_ATTEMPTS. */
+    int attempts;
   };
+
+  /**
+   * Flipendo: cuantos fotogramas seguidos se reintenta una captura cuya lectura de la
+   * GPU no escribio nada.
+   *
+   * Medido el 2026-09-12: con DOS Blenderplayer a la vez, la lectura del buffer
+   * trasero de uno de los dos vuelve vacia y NO se recupera; el reintento existe para
+   * los transitorios (un cambio de tamano, un fotograma sin componer) y para que el
+   * fallo definitivo se declare con un numero, no a la primera. La sonda FL_UI_SHOT
+   * espera 15 fotogramas antes de salir, asi que el presupuesto tiene que ser menor
+   * que 15 o el proceso se iria antes de gastarlo.
+   */
+  static constexpr int SCREENSHOT_ATTEMPTS = 8;
 
   std::vector<Screenshot> m_screenshots;
 
@@ -159,6 +174,11 @@ class RAS_ICanvas {
   /**
    * Saves screenshot data to a file. The actual compression and disk I/O is performed in
    * a separate thread.
+   *
+   * Flipendo: devuelve false cuando la lectura de la GPU no escribio NADA (el buffer
+   * sigue entero con RAS_Rasterizer::SCREENSHOT_UNREAD_BYTE). En ese caso no se escribe
+   * ningun fichero y no se toca `screenshot.format`, que sigue siendo del llamante para
+   * poder reintentar. \see FlushScreenshots.
    */
-  void SaveScreeshot(const Screenshot &screenshot);
+  bool SaveScreeshot(const Screenshot &screenshot);
 };
