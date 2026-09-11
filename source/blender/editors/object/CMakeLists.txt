@@ -21,6 +21,7 @@ set(INC_SYS
 set(SRC
   add_modifier_assets.cc
   fl_object_ops_selftest.cc
+  fl_object_select_selftest.cc
   fl_optype_surface.cc
   object_add.cc
   object_align.cc
@@ -45,6 +46,7 @@ set(SRC
   object_relations.cc
   object_remesh.cc
   object_select.cc
+  object_select_extra.cc
   object_shader_fx.cc
   object_shapekey.cc
   object_transform.cc

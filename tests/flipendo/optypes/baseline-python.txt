@@ -32,3 +32,15 @@ case=8 op=VIEW3D_OT_transform_gizmo_set
   0 name=Transform Gizmo Set desc=Set the current transform gizmo translation_context=Operator
   1 prop=extend type=BOOLEAN subtype=NONE array=0 name=Extend desc= default=0
   2 prop=type type=ENUM subtype=NONE array=0 name=Type desc= enumflag=1 default= items=TRANSLATE:Move::1;ROTATE:Rotate::2;SCALE:Scale::4
+case=9 op=OBJECT_OT_select_pattern
+  0 name=Select Pattern desc=Select objects matching a naming pattern translation_context=Operator
+  1 prop=pattern type=STRING subtype=NONE array=0 name=Pattern desc=Name filter using '*', '?' and '[abc]' unix style wildcards default=* maxlen=65
+  2 prop=case_sensitive type=BOOLEAN subtype=NONE array=0 name=Case Sensitive desc=Do a case sensitive compare default=0
+  3 prop=extend type=BOOLEAN subtype=NONE array=0 name=Extend desc=Extend the existing selection default=1
+case=10 op=OBJECT_OT_select_camera
+  0 name=Select Camera desc=Select the active camera translation_context=Operator
+  1 prop=extend type=BOOLEAN subtype=NONE array=0 name=Extend desc=Extend the selection default=0
+case=11 op=OBJECT_OT_select_hierarchy
+  0 name=Select Hierarchy desc=Select object relative to the active object's position in the hierarchy translation_context=Operator
+  1 prop=direction type=ENUM subtype=NONE array=0 name=Direction desc=Direction to select in the hierarchy enumflag=0 default=PARENT items=PARENT:Parent::0;CHILD:Child::1
+  2 prop=extend type=BOOLEAN subtype=NONE array=0 name=Extend desc=Extend the existing selection default=0

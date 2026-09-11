@@ -64,11 +64,13 @@
 
 #  include "WM_api.hh"
 
+#  include "FL_external_editor.hh"
 #  include "FL_game_runtime.hh"
 #  include "FL_keymap_dump.hpp"
 #  include "manual/FL_manual_reference.hpp"
 #  include "FL_mesh_ops_selftest.hh"
 #  include "FL_numinput_native.hh"
+#  include "FL_object_select_selftest.hh"
 #  include "FL_object_ops_selftest.hh"
 #  include "FL_operator_dump.hpp"
 #  include "FL_optype_surface.hh"
@@ -2804,6 +2806,39 @@ static int arg_handle_fl_check_manual(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_dump_external_editor_doc[] =
+    "<casos> <salida>\n"
+    "\tPara cada caso (argumentos<TAB>ruta<TAB>linea<TAB>columna) vuelca el argv que\n"
+    "\tsale de shlex_split + template_substitute, sin lanzar ningun proceso.\n"
+    "\tVale en --background.";
+static int arg_handle_fl_dump_external_editor(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 2) {
+    const bool ok = flipendo::text::external_editor_dump(argv[1], argv[2]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 2;
+  }
+  fprintf(stderr, "\nError: hacen falta <casos> y <salida> despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_external_editor_doc[] =
+    "<linea-base>\n"
+    "\tCompara el argv del editor externo contra una linea base congelada con\n"
+    "\tshlex y string.Template de Python. Vale en --background.";
+static int arg_handle_fl_check_external_editor(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::text::external_editor_check(argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_ui_doc[] =
     "<filepath>\n"
     "\tVuelca el REGISTRO de interfaz (paneles, menus y cabeceras) y sale.\n"
@@ -2952,6 +2987,40 @@ static int arg_handle_fl_check_rigidbody_ops(int argc, const char **argv, void *
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::rigidbody_ops_selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_object_select_doc[] =
+    "<filepath>\n"
+    "\tConstruye escenas deterministas, invoca `object.select_pattern`,\n"
+    "\t`object.select_camera` y `object.select_hierarchy` por su idname y vuelca la\n"
+    "\tseleccion resultante. Se compara con\n"
+    "\ttests/flipendo/objectselect/baseline-python.txt (Carril C).";
+static int arg_handle_fl_selftest_object_select(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::object_select_selftest::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_object_select_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-object-select, pero compara con la linea base indicada. Sale\n"
+    "\tcon codigo 0 solo si no hay ni una diferencia (Carril C).";
+static int arg_handle_fl_check_object_select(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::object_select_selftest::check(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
@@ -3586,6 +3655,10 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
                CB(arg_handle_fl_convert_manual_reference),
                C);
   BLI_args_add(ba, nullptr, "--fl-dump-manual", CB(arg_handle_fl_dump_manual), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-dump-external-editor", CB(arg_handle_fl_dump_external_editor), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-check-external-editor", CB(arg_handle_fl_check_external_editor), C);
   BLI_args_add(ba, nullptr, "--fl-check-manual", CB(arg_handle_fl_check_manual), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
@@ -3598,6 +3671,10 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
       ba, nullptr, "--fl-selftest-rigidbody-ops", CB(arg_handle_fl_selftest_rigidbody_ops), C);
   BLI_args_add(
       ba, nullptr, "--fl-check-rigidbody-ops", CB(arg_handle_fl_check_rigidbody_ops), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-selftest-object-select", CB(arg_handle_fl_selftest_object_select), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-check-object-select", CB(arg_handle_fl_check_object_select), C);
   BLI_args_add(ba, nullptr, "--fl-dump-optypes", CB(arg_handle_fl_dump_optypes), C);
   BLI_args_add(ba, nullptr, "--fl-check-optypes", CB(arg_handle_fl_check_optypes), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);

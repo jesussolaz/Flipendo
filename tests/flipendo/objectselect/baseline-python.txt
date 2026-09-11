@@ -1,0 +1,178 @@
+# FL-OBJECT-SELECT-SELFTEST v1
+case=0 op=object.select_pattern pattern=Cube* cs=0 ext=0
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=1 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=1 op=object.select_pattern pattern=Cube* cs=0 ext=1
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=1 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=1 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=2 op=object.select_pattern pattern=*phere cs=0 ext=0
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=0 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=1 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=1 act=0 hide=0 parent=-
+case=3 op=object.select_pattern pattern=?lane cs=0 ext=0
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=0 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=4 op=object.select_pattern pattern=[CP]* cs=0 ext=0
+  0 obj=Camera sel=1 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=1 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=1 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=5 op=object.select_pattern pattern=cube* cs=1 ext=0
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=0 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=6 op=object.select_pattern pattern=cube* cs=0 ext=0
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=1 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=7 op=object.select_pattern pattern=*.001 cs=0 ext=0
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=0 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=1 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=8 op=object.select_pattern pattern=Camera cs=0 ext=0
+  0 obj=Camera sel=1 act=0 hide=0 parent=-
+  1 obj=Cube sel=0 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=9 op=object.select_pattern pattern=* cs=0 ext=0
+  0 obj=Camera sel=1 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=1 act=0 hide=0 parent=-
+  3 obj=Empty sel=1 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=1 act=1 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=1 parent=-
+  6 obj=Point sel=1 act=0 hide=0 parent=-
+  7 obj=Sphere sel=1 act=0 hide=0 parent=-
+case=10 op=object.select_camera scene_cam=1 ext=0
+  0 obj=Camera sel=1 act=1 hide=0 parent=-
+  1 obj=Cube sel=0 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=11 op=object.select_camera scene_cam=1 ext=1
+  0 obj=Camera sel=1 act=1 hide=0 parent=-
+  1 obj=Cube sel=1 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+case=12 op=object.select_camera scene_cam=0 ext=0
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=1 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=-
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=-
+  5 obj=Plane sel=0 act=0 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=-
+# select_hierarchy ret=['FINISHED']
+case=13 op=object.select_hierarchy dir=PARENT ext=0 start=Sphere
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=1 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=Cube
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=Cube.001
+  5 obj=Plane sel=0 act=0 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=Cube
+# select_hierarchy ret=['FINISHED']
+case=14 op=object.select_hierarchy dir=PARENT ext=1 start=Sphere
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=1 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=Cube
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=Cube.001
+  5 obj=Plane sel=0 act=0 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=1 act=0 hide=0 parent=Cube
+# select_hierarchy ret=['FINISHED']
+case=15 op=object.select_hierarchy dir=CHILD ext=0 start=Cube
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=0 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=1 act=1 hide=0 parent=Cube
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=Cube.001
+  5 obj=Plane sel=0 act=0 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=1 act=0 hide=0 parent=Cube
+# select_hierarchy ret=['FINISHED']
+case=16 op=object.select_hierarchy dir=CHILD ext=1 start=Cube
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=1 act=1 hide=0 parent=Cube
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=Cube.001
+  5 obj=Plane sel=0 act=0 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=1 act=0 hide=0 parent=Cube
+# select_hierarchy ret=['CANCELLED']
+case=17 op=object.select_hierarchy dir=PARENT ext=0 start=Cube
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=1 act=1 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=Cube
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=Cube.001
+  5 obj=Plane sel=0 act=0 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=Cube
+# select_hierarchy ret=['CANCELLED']
+case=18 op=object.select_hierarchy dir=CHILD ext=0 start=Plane
+  0 obj=Camera sel=0 act=0 hide=0 parent=-
+  1 obj=Cube sel=0 act=0 hide=0 parent=-
+  2 obj=Cube.001 sel=0 act=0 hide=0 parent=Cube
+  3 obj=Empty sel=0 act=0 hide=0 parent=-
+  4 obj=Icosphere sel=0 act=0 hide=0 parent=Cube.001
+  5 obj=Plane sel=1 act=1 hide=0 parent=-
+  6 obj=Point sel=0 act=0 hide=0 parent=-
+  7 obj=Sphere sel=0 act=0 hide=0 parent=Cube

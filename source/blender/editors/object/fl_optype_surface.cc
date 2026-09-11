@@ -51,6 +51,9 @@ const char *tracked_idnames[] = {
     "VIEW3D_OT_edit_mesh_extrude_move_shrink_fatten",
     "VIEW3D_OT_edit_mesh_extrude_manifold_normal",
     "VIEW3D_OT_transform_gizmo_set",
+    "OBJECT_OT_select_pattern",
+    "OBJECT_OT_select_camera",
+    "OBJECT_OT_select_hierarchy",
 };
 
 /* `%.9g` sobre el double promovido desde float, igual que `"{:.9g}".format()` en Python. */
