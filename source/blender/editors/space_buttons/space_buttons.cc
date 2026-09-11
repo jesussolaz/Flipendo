@@ -1119,6 +1119,8 @@ void ED_spacetype_buttons()
   fl_properties_data_speaker_register(art);
   /* La pestana de datos del Volumen, antes `properties_data_volume.py`. */
   fl_properties_data_volume_register(art);
+  /* La pestana de datos de la Sonda de Luz, antes `properties_data_lightprobe.py`. */
+  fl_properties_data_lightprobe_register(art);
   fl_world_buttons_register(art);
   BLI_addhead(&st->regiontypes, art);
 

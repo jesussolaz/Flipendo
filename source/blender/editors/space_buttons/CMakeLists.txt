@@ -5,6 +5,10 @@
 set(INC
   ../include
   ../../makesrna
+  # `RE_engine.h`: `DATA_PT_lightprobe*` mira `context.engine`, que es
+  # `CTX_data_engine_type(C)->idname` y necesita la definicion del struct.
+  # Solo la cabecera: no se llama a ninguna funcion de bf_render.
+  ../../render
 
   # RNA_prototypes.hh
   ${CMAKE_BINARY_DIR}/source/blender/makesrna
@@ -23,6 +27,7 @@ set(SRC
   fl_properties_data_metaball.cc
   fl_properties_data_speaker.cc
   fl_properties_data_volume.cc
+  fl_properties_data_lightprobe.cc
   fl_properties_data_empty.cc
   fl_properties_physics_geometry_nodes.cc
   fl_world_buttons.cc
