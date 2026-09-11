@@ -246,6 +246,29 @@ layout->op("WM_OT_save_as_runtime", IFACE_("Save as game runtime"), ICON_NONE);
 Ninguno de los 51 menús migrados hasta ahora es de Archivo ni de Exportar, así
 que no hay nada que reponer hacia atrás.
 
+#### Medido el 2026-09-11 a las 06:45: la fila sigue sin estar, y la línea base la
+#### tiene congelada como ausente
+
+`TOPBAR_MT_file_export` dibuja hoy **ocho** botones en la línea base
+(`alembic_export`, `usd_export`, los dos de lápiz de cera, `obj_export`, `ply_export`,
+`stl_export`, `collada_export`) y **ninguno** es «Save as game runtime». O sea que la
+línea base se congeló **después** de perder la fila, y por tanto no sirve para
+detectarla: quien migre este menú y lo transcriba fielmente reproducirá la ausencia y
+el volcado dirá «idéntico».
+
+Lo que sí se ha comprobado es que la capacidad **no está perdida del todo**: el
+operador nativo `wm.save_as_runtime` sigue siendo alcanzable desde
+**Propiedades › Render › `RENDER_PT_publish`** (sale en la línea base de dibujo, línea
+20.974). Lo que falta es el punto de entrada histórico, el de Archivo › Exportar.
+
+Así que al migrar `TOPBAR_MT_file_export` hay que hacer **dos** cosas, no una:
+
+1. añadir la fila `WM_OT_save_as_runtime` al final del `draw()`, y
+2. **decir en el parte que ese bloque difiere de la línea base a propósito**, con esta
+   nota como justificación, y pedir al carril D que vuelva a congelarlo. Es el mismo
+   caso que `OUTLINER_MT_context_menu` pero al revés: allí la línea base tenía de más
+   un fallo del Python, aquí tiene de menos una fila que el programa debería tener.
+
 ### Cuarta a séptima tanda: 32 menús más, y salida de la vista 3D (2026-09-11)
 
 | Familia | Fichero C++ | Menús |
