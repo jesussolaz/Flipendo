@@ -56,9 +56,11 @@ if(WIN32)
 elseif(APPLE)
   # -----------------------------------------------------------------------------
   # Build `blender-thumbnailer.appex` app extension.
+  # `thumbnail_provider.h` desaparecio con la migracion a C++: solo existia para
+  # declarar `@interface ThumbnailProvider`, y ahora la clase se fabrica en tiempo de
+  # ejecucion, asi que no hay nada que declarar.
   set(SRC_APPEX
-    src/thumbnail_provider.h
-    src/thumbnail_provider.mm
+    src/thumbnail_provider.cc
   )
 
   add_executable(blender-thumbnailer MACOSX_BUNDLE ${SRC} ${SRC_APPEX})
