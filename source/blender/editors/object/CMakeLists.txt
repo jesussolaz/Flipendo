@@ -21,6 +21,7 @@ set(INC_SYS
 set(SRC
   add_modifier_assets.cc
   fl_object_ops_selftest.cc
+  fl_optype_surface.cc
   object_add.cc
   object_align.cc
   object_bake.cc
@@ -52,6 +53,7 @@ set(SRC
   object_visual_geometry_to_objects.cc
   object_volume.cc
   object_warp.cc
+  view3d_transform_gizmo_set.cc
 
   object_intern.hh
 )

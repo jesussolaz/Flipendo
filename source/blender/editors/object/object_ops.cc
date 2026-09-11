@@ -28,6 +28,7 @@ namespace blender::ed::object {
 
 void operatortypes_object()
 {
+  WM_operatortype_append(VIEW3D_OT_transform_gizmo_set);
   WM_operatortype_append(OBJECT_OT_location_clear);
   WM_operatortype_append(OBJECT_OT_rotation_clear);
   WM_operatortype_append(OBJECT_OT_scale_clear);

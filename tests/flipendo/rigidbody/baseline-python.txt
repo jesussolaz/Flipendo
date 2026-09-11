@@ -1,0 +1,69 @@
+# FL-RIGIDBODY-OPS-SELFTEST v1
+case=0 op=rigidbody.object_settings_copy mixto
+  0 obj=Cube type=MESH sel=1 act=1 loc=0,0,0 empty=-
+  1 rb=Cube type=ACTIVE kinematic=1 mass=7.25 collision_shape=CAPSULE use_margin=1 collision_margin=0.123000003 friction=0.32100001 restitution=0.653999984 use_deactivation=0 use_start_deactivated=1 deactivate_linear_velocity=0.550000012 deactivate_angular_velocity=0.660000026 linear_damping=0.125 angular_damping=0.456 collision_collections=10010010010010010010 mesh_source=FINAL use_deform=1 enabled=0
+  2 obj=Cube.001 type=MESH sel=1 act=0 loc=3,0,0 empty=-
+  3 rb=Cube.001 type=ACTIVE kinematic=1 mass=7.25 collision_shape=CAPSULE use_margin=1 collision_margin=0.123000003 friction=0.32100001 restitution=0.653999984 use_deactivation=0 use_start_deactivated=1 deactivate_linear_velocity=0.550000012 deactivate_angular_velocity=0.660000026 linear_damping=0.125 angular_damping=0.456 collision_collections=10010010010010010010 mesh_source=FINAL use_deform=1 enabled=0
+  4 obj=Cube.002 type=MESH sel=1 act=0 loc=6,0,0 empty=-
+  5 rb=Cube.002 type=ACTIVE kinematic=1 mass=7.25 collision_shape=CAPSULE use_margin=1 collision_margin=0.123000003 friction=0.32100001 restitution=0.653999984 use_deactivation=0 use_start_deactivated=1 deactivate_linear_velocity=0.550000012 deactivate_angular_velocity=0.660000026 linear_damping=0.125 angular_damping=0.456 collision_collections=10010010010010010010 mesh_source=FINAL use_deform=1 enabled=0
+  6 obj=Empty type=EMPTY sel=0 act=0 loc=9,0,0 empty=PLAIN_AXES
+case=1 op=rigidbody.connect selected_to_active center POINT
+  0 obj=Constraint type=EMPTY sel=0 act=0 loc=1,0,0 empty=ARROWS
+  1 rbc=Constraint type=POINT ob1=Cube ob2=Cube.001
+  2 obj=Constraint.001 type=EMPTY sel=0 act=0 loc=0,1.5,0 empty=ARROWS
+  3 rbc=Constraint.001 type=POINT ob1=Cube ob2=Cube.002
+  4 obj=Constraint.002 type=EMPTY sel=0 act=0 loc=2.5,2.5,0 empty=ARROWS
+  5 rbc=Constraint.002 type=POINT ob1=Cube ob2=Cube.003
+  6 obj=Cube type=MESH sel=1 act=1 loc=0,0,0 empty=-
+  7 rb=Cube type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  8 obj=Cube.001 type=MESH sel=1 act=0 loc=2,0,0 empty=-
+  9 rb=Cube.001 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  10 obj=Cube.002 type=MESH sel=1 act=0 loc=0,3,0 empty=-
+  11 rb=Cube.002 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  12 obj=Cube.003 type=MESH sel=1 act=0 loc=5,5,0 empty=-
+  13 rb=Cube.003 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+case=2 op=rigidbody.connect selected_to_active active HINGE
+  0 obj=Constraint type=EMPTY sel=0 act=0 loc=0,0,0 empty=ARROWS
+  1 rbc=Constraint type=HINGE ob1=Cube ob2=Cube.001
+  2 obj=Constraint.001 type=EMPTY sel=0 act=0 loc=0,0,0 empty=ARROWS
+  3 rbc=Constraint.001 type=HINGE ob1=Cube ob2=Cube.002
+  4 obj=Constraint.002 type=EMPTY sel=0 act=0 loc=0,0,0 empty=ARROWS
+  5 rbc=Constraint.002 type=HINGE ob1=Cube ob2=Cube.003
+  6 obj=Cube type=MESH sel=1 act=1 loc=0,0,0 empty=-
+  7 rb=Cube type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  8 obj=Cube.001 type=MESH sel=1 act=0 loc=2,0,0 empty=-
+  9 rb=Cube.001 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  10 obj=Cube.002 type=MESH sel=1 act=0 loc=0,3,0 empty=-
+  11 rb=Cube.002 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  12 obj=Cube.003 type=MESH sel=1 act=0 loc=5,5,0 empty=-
+  13 rb=Cube.003 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+case=3 op=rigidbody.connect chain_distance selected SLIDER
+  0 obj=Constraint type=EMPTY sel=0 act=0 loc=2,0,0 empty=ARROWS
+  1 rbc=Constraint type=SLIDER ob1=Cube ob2=Cube.001
+  2 obj=Constraint.001 type=EMPTY sel=0 act=0 loc=0,3,0 empty=ARROWS
+  3 rbc=Constraint.001 type=SLIDER ob1=Cube.001 ob2=Cube.002
+  4 obj=Constraint.002 type=EMPTY sel=0 act=0 loc=5,5,0 empty=ARROWS
+  5 rbc=Constraint.002 type=SLIDER ob1=Cube.002 ob2=Cube.003
+  6 obj=Cube type=MESH sel=1 act=1 loc=0,0,0 empty=-
+  7 rb=Cube type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  8 obj=Cube.001 type=MESH sel=1 act=0 loc=2,0,0 empty=-
+  9 rb=Cube.001 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  10 obj=Cube.002 type=MESH sel=1 act=0 loc=0,3,0 empty=-
+  11 rb=Cube.002 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  12 obj=Cube.003 type=MESH sel=1 act=0 loc=5,5,0 empty=-
+  13 rb=Cube.003 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+case=4 op=rigidbody.connect chain_distance center GENERIC_SPRING
+  0 obj=Constraint type=EMPTY sel=0 act=0 loc=1,0,0 empty=ARROWS
+  1 rbc=Constraint type=GENERIC_SPRING ob1=Cube ob2=Cube.001
+  2 obj=Constraint.001 type=EMPTY sel=0 act=0 loc=1,1.5,0 empty=ARROWS
+  3 rbc=Constraint.001 type=GENERIC_SPRING ob1=Cube.001 ob2=Cube.002
+  4 obj=Constraint.002 type=EMPTY sel=0 act=0 loc=2.5,4,0 empty=ARROWS
+  5 rbc=Constraint.002 type=GENERIC_SPRING ob1=Cube.002 ob2=Cube.003
+  6 obj=Cube type=MESH sel=1 act=1 loc=0,0,0 empty=-
+  7 rb=Cube type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  8 obj=Cube.001 type=MESH sel=1 act=0 loc=2,0,0 empty=-
+  9 rb=Cube.001 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  10 obj=Cube.002 type=MESH sel=1 act=0 loc=0,3,0 empty=-
+  11 rb=Cube.002 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1
+  12 obj=Cube.003 type=MESH sel=1 act=0 loc=5,5,0 empty=-
+  13 rb=Cube.003 type=ACTIVE kinematic=0 mass=1 collision_shape=CONVEX_HULL use_margin=0 collision_margin=0.0399999991 friction=0.5 restitution=0 use_deactivation=0 use_start_deactivated=0 deactivate_linear_velocity=0.400000006 deactivate_angular_velocity=0.5 linear_damping=0.0399999991 angular_damping=0.100000001 collision_collections=10000000000000000000 mesh_source=DEFORM use_deform=0 enabled=1

@@ -116,6 +116,13 @@ void MESH_OT_primitive_torus_add(wmOperatorType *ot);
  * bl_operators/vertexpaint_dirt.py, Flipendo C2) */
 void PAINT_OT_vertex_color_dirt(wmOperatorType *ot);
 
+/* `view3d_edit_mesh_extrude.cc` (idnames `view3d.edit_mesh_extrude_*`, portados de
+ * bl_operators/view3d.py, Flipendo C2) */
+void VIEW3D_OT_edit_mesh_extrude_individual_move(wmOperatorType *ot);
+void VIEW3D_OT_edit_mesh_extrude_move_normal(wmOperatorType *ot);
+void VIEW3D_OT_edit_mesh_extrude_move_shrink_fatten(wmOperatorType *ot);
+void VIEW3D_OT_edit_mesh_extrude_manifold_normal(wmOperatorType *ot);
+
 /* *** `editmesh_add_gizmo.cc` *** */
 
 void MESH_OT_primitive_cube_add_gizmo(wmOperatorType *ot);

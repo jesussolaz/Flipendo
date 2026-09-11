@@ -27,7 +27,6 @@ _modules = [
     "object",
     "object_quick_effects",
     "presets",
-    "rigidbody",
     "screen_play_rendered_anim",
     "sequencer",
     "spreadsheet",

@@ -1,0 +1,33 @@
+/* SPDX-FileCopyrightText: 2026 Flipendo
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+/** \file
+ * \ingroup editors
+ *
+ * Volcado de la "superficie de registro" de los operadores que el carril C migra de
+ * Python a C++: idname, nombre visible, descripcion, contexto de traduccion y, por cada
+ * propiedad, identificador, tipo, subtipo, longitud de array, nombre y descripcion
+ * visibles, valor por defecto, rangos duros y blandos, y los items de los enums.
+ *
+ * Es la comprobacion que exige la doctrina ("mismos identificadores ... mismas
+ * propiedades (nombre, tipo, subtipo, defecto, rangos, enums, flags)") y, a diferencia
+ * de ejecutar el operador, se puede hacer en `--background` para TODOS ellos, incluidos
+ * los que solo tienen sentido con una region de vista 3D debajo (los
+ * `view3d.edit_mesh_extrude_*`, que arrancan un transform modal).
+ *
+ * Uso: Blender -b --fl-dump-optypes <fichero>
+ *      Blender -b --fl-check-optypes <linea-base>
+ * Linea base: tests/flipendo/optypes/baseline-python.txt
+ */
+
+#pragma once
+
+struct bContext;
+
+namespace flipendo::optype_surface {
+
+bool dump(bContext *C, const char *filepath);
+bool check(bContext *C, const char *baseline_path);
+
+}  // namespace flipendo::optype_surface

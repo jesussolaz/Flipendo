@@ -391,6 +391,10 @@ void PAINT_OT_vertex_color_dirt(wmOperatorType *ot)
               0,
               40);
 
+  /* Ojo con el subtipo: el Python declaraba `unit='ROTATION'`, NO `subtype='ANGLE'`, y no
+   * son lo mismo. `subtype` y `unit` comparten el mismo campo de bits: `PROP_ANGLE` es
+   * `16 | PROP_UNIT_ROTATION`, mientras que `unit='ROTATION'` a secas deja el indice de
+   * subtipo en 0 y solo enciende los bits de unidad. Lo cazo `--fl-check-optypes`. */
   PropertyRNA *prop;
   prop = RNA_def_float(ot->srna,
                        "clean_angle",
@@ -401,7 +405,7 @@ void PAINT_OT_vertex_color_dirt(wmOperatorType *ot)
                        "Less than 90 limits the angle used in the tonal range",
                        0.0f,
                        float(M_PI));
-  RNA_def_property_subtype(prop, PROP_ANGLE);
+  RNA_def_property_subtype(prop, PropertySubType(PROP_UNIT_ROTATION));
 
   prop = RNA_def_float(ot->srna,
                        "dirt_angle",
@@ -412,7 +416,7 @@ void PAINT_OT_vertex_color_dirt(wmOperatorType *ot)
                        "Less than 90 limits the angle used in the tonal range",
                        0.0f,
                        float(M_PI));
-  RNA_def_property_subtype(prop, PROP_ANGLE);
+  RNA_def_property_subtype(prop, PropertySubType(PROP_UNIT_ROTATION));
 
   RNA_def_boolean(
       ot->srna, "dirt_only", false, "Dirt Only", "Don't calculate cleans for convex areas");

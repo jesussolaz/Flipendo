@@ -44,6 +44,9 @@ void OBJECT_OT_origin_set(wmOperatorType *ot);
 
 /* `object_align.cc` (Flipendo, carril C: migracion de bl_operators/object_align.py) */
 
+/* `view3d_transform_gizmo_set.cc` (portado de bl_operators/view3d.py, Flipendo C2) */
+void VIEW3D_OT_transform_gizmo_set(wmOperatorType *ot);
+
 void OBJECT_OT_align(wmOperatorType *ot);
 
 /* `object_randomize_transform.cc` (Flipendo, carril C: migracion de

@@ -1,0 +1,34 @@
+# FL-OPTYPE-SURFACE v1
+case=0 op=PAINT_OT_vertex_color_dirt
+  0 name=Dirty Vertex Colors desc=Generate a dirt map gradient based on cavity translation_context=Operator
+  1 prop=blur_strength type=FLOAT subtype=NONE array=0 name=Blur Strength desc=Blur strength per iteration default=1 min=0.00999999978 max=1 softmin=0.00999999978 softmax=1
+  2 prop=blur_iterations type=INT subtype=NONE array=0 name=Blur Iterations desc=Number of times to blur the colors (higher blurs more) default=1 min=0 max=40 softmin=0 softmax=40
+  3 prop=clean_angle type=FLOAT subtype= array=0 name=Highlight Angle desc=Less than 90 limits the angle used in the tonal range default=3.14159274 min=0 max=3.14159274 softmin=0 softmax=3.14159274
+  4 prop=dirt_angle type=FLOAT subtype= array=0 name=Dirt Angle desc=Less than 90 limits the angle used in the tonal range default=0 min=0 max=3.14159274 softmin=0 softmax=3.14159274
+  5 prop=dirt_only type=BOOLEAN subtype=NONE array=0 name=Dirt Only desc=Don't calculate cleans for convex areas default=0
+  6 prop=normalize type=BOOLEAN subtype=NONE array=0 name=Normalize desc=Normalize the colors, increasing the contrast default=1
+case=1 op=RIGIDBODY_OT_object_settings_copy
+  0 name=Copy Rigid Body Settings desc=Copy Rigid Body settings from active object to selected translation_context=Operator
+case=2 op=RIGIDBODY_OT_bake_to_keyframes
+  0 name=Bake to Keyframes desc=Bake rigid body transformations of selected objects to keyframes translation_context=Operator
+  1 prop=frame_start type=INT subtype=NONE array=0 name=Start Frame desc=Start frame for baking default=1 min=0 max=300000 softmin=0 softmax=300000
+  2 prop=frame_end type=INT subtype=NONE array=0 name=End Frame desc=End frame for baking default=250 min=1 max=300000 softmin=1 softmax=300000
+  3 prop=step type=INT subtype=NONE array=0 name=Frame Step desc=Frame Step default=1 min=1 max=120 softmin=1 softmax=120
+case=3 op=RIGIDBODY_OT_connect
+  0 name=Connect Rigid Bodies desc=Create rigid body constraints between selected rigid bodies translation_context=Operator
+  1 prop=con_type type=ENUM subtype=NONE array=0 name=Type desc=Type of generated constraint enumflag=0 default=FIXED items=FIXED:Fixed:Glue rigid bodies together:8;POINT:Point:Constrain rigid bodies to move around common pivot point:0;HINGE:Hinge:Restrict rigid body rotation to one axis:1;SLIDER:Slider:Restrict rigid body translation to one axis:3;PISTON:Piston:Restrict rigid body translation and rotation to one axis:9;GENERIC:Generic:Restrict translation and rotation to specified axes:5;GENERIC_SPRING:Generic Spring:Restrict translation and rotation to specified axes with springs:6;MOTOR:Motor:Drive rigid body around or along an axis:11
+  2 prop=pivot_type type=ENUM subtype=NONE array=0 name=Location desc=Constraint pivot location enumflag=0 default=CENTER items=CENTER:Center:Pivot location is between the constrained rigid bodies:0;ACTIVE:Active:Pivot location is at the active object position:1;SELECTED:Selected:Pivot location is at the selected object position:2
+  3 prop=connection_pattern type=ENUM subtype=NONE array=0 name=Connection Pattern desc=Pattern used to connect objects enumflag=0 default=SELECTED_TO_ACTIVE items=SELECTED_TO_ACTIVE:Selected to Active:Connect selected objects to the active object:0;CHAIN_DISTANCE:Chain by Distance:Connect objects as a chain based on distance, starting at the active object:1
+case=4 op=VIEW3D_OT_edit_mesh_extrude_individual_move
+  0 name=Extrude Individual and Move desc=Extrude each individual face separately along local normals translation_context=Operator
+case=5 op=VIEW3D_OT_edit_mesh_extrude_move_normal
+  0 name=Extrude and Move on Normals desc=Extrude region together along the average normal translation_context=Operator
+  1 prop=dissolve_and_intersect type=BOOLEAN subtype=NONE array=0 name=dissolve_and_intersect desc=Dissolves adjacent faces and intersects new geometry default=0
+case=6 op=VIEW3D_OT_edit_mesh_extrude_move_shrink_fatten
+  0 name=Extrude and Move on Individual Normals desc=Extrude region together along local normals translation_context=Operator
+case=7 op=VIEW3D_OT_edit_mesh_extrude_manifold_normal
+  0 name=Extrude Manifold Along Normals desc=Extrude manifold region along normals translation_context=Operator
+case=8 op=VIEW3D_OT_transform_gizmo_set
+  0 name=Transform Gizmo Set desc=Set the current transform gizmo translation_context=Operator
+  1 prop=extend type=BOOLEAN subtype=NONE array=0 name=Extend desc= default=0
+  2 prop=type type=ENUM subtype=NONE array=0 name=Type desc= enumflag=1 default= items=TRANSLATE:Move::1;ROTATE:Rotate::2;SCALE:Scale::4

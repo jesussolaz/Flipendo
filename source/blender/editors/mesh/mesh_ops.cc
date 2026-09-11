@@ -55,6 +55,11 @@ void ED_operatortypes_mesh()
   WM_operatortype_append(MESH_OT_primitive_torus_add);
   WM_operatortype_append(PAINT_OT_vertex_color_dirt);
 
+  WM_operatortype_append(VIEW3D_OT_edit_mesh_extrude_individual_move);
+  WM_operatortype_append(VIEW3D_OT_edit_mesh_extrude_move_normal);
+  WM_operatortype_append(VIEW3D_OT_edit_mesh_extrude_move_shrink_fatten);
+  WM_operatortype_append(VIEW3D_OT_edit_mesh_extrude_manifold_normal);
+
   WM_operatortype_append(MESH_OT_primitive_cube_add_gizmo);
 
   WM_operatortype_append(MESH_OT_attribute_set);

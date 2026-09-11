@@ -136,6 +136,11 @@ void PTCACHE_OT_remove(wmOperatorType *ot);
 
 /* `rigidbody_object.cc` */
 
+/* `rigidbody_tools.cc` (portados de bl_operators/rigidbody.py, Flipendo C2) */
+void RIGIDBODY_OT_object_settings_copy(wmOperatorType *ot);
+void RIGIDBODY_OT_bake_to_keyframes(wmOperatorType *ot);
+void RIGIDBODY_OT_connect(wmOperatorType *ot);
+
 void RIGIDBODY_OT_object_add(wmOperatorType *ot);
 void RIGIDBODY_OT_object_remove(wmOperatorType *ot);
 

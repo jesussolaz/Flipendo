@@ -49,6 +49,7 @@ set(SRC
   mesh_ops.cc
   mesh_vertex_dirt.cc
   meshtools.cc
+  view3d_edit_mesh_extrude.cc
 
   mesh_intern.hh
 )

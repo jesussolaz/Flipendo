@@ -15,6 +15,7 @@ set(INC_SYS
 
 set(SRC
   dynamicpaint_ops.cc
+  fl_rigidbody_ops_selftest.cc
   particle_boids.cc
   particle_edit.cc
   particle_edit_undo.cc
@@ -23,6 +24,7 @@ set(SRC
   physics_ops.cc
   physics_pointcache.cc
   rigidbody_constraint.cc
+  rigidbody_tools.cc
   rigidbody_object.cc
   rigidbody_world.cc
 
@@ -31,6 +33,7 @@ set(SRC
 )
 
 set(LIB
+  PRIVATE bf::animrig
   PRIVATE bf::blenkernel
   PRIVATE bf::blenlib
   PRIVATE bf::blentranslation
