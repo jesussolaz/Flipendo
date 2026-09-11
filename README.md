@@ -10,7 +10,8 @@
   <img alt="macOS Intel con Metal" src="https://img.shields.io/badge/plataforma-macOS%20Intel%20%C2%B7%20Metal-111111">
   <img alt="C++17" src="https://img.shields.io/badge/C%2B%2B-17-00599C">
   <img alt="Cero Python en el juego exportado" src="https://img.shields.io/badge/Python%20en%20el%20juego-0%20ficheros-2ea44f">
-  <img alt="46 verificadores integrados en el binario" src="https://img.shields.io/badge/verificadores-46-orange">
+  <img alt="32 comprobadores integrados en el binario" src="https://img.shields.io/badge/comprobadores-32-orange">
+  <img alt="14 volcadores de estado integrados en el binario" src="https://img.shields.io/badge/volcadores-14-orange">
 </p>
 
 <p align="center">
@@ -18,7 +19,8 @@
   <a href="#ánima--el-juego-que-se-hace-con-él">El juego</a> ·
   <a href="#metas-cercanas">Metas</a> ·
   <a href="#comparativa-flipendo-upbge-unreal-y-unity">Comparativa</a> ·
-  <a href="politicas/">Doctrina y estado</a>
+  <a href="politicas/ESTADO.md">Estado medido</a> ·
+  <a href="politicas/">Doctrina</a>
 </p>
 
 ![El molino de La Mancha, la pieza que fija el listón de calidad del proyecto](docs/img/anima/molino-CamHeroe.jpg)
@@ -112,6 +114,13 @@ Lo que queda es el editor: paneles, operadores y el puente CPython. La infraestr
 > altas**: el contador del proyecto sumaba una línea de más por fichero. Ya está
 > corregido; el método, y qué decía cada cifra antes, están en
 > [`politicas/METRICAS.md`](politicas/METRICAS.md).
+>
+> **Y las de aquí envejecen.** El dato vivo —composición, Python por zonas, qué compila
+> el binario y qué no, la evolución commit a commit y los comprobadores en verde— está
+> en [`politicas/ESTADO.md`](politicas/ESTADO.md), que **no se escribe: se genera** desde
+> el árbol con una herramienta de C++ (`tools/flipendo_metrics/`) y lleva en la cabecera
+> la fecha y el commit de la medición. Un documento a mano miente en cuanto alguien
+> commitea; este se rehace con un comando.
 
 ### 2. Velocidad, y ganarle a la competencia en Mac
 
@@ -188,7 +197,8 @@ Cómo se usa y de dónde sale: [`examples/kingdom_hearts_look/`](examples/kingdo
 
 - Árbol base: snapshot de UPBGE en el commit upstream `3c7b891a` (Blender 4.5.0 alpha).
 - Cada mejora es un commit encima, con la explicación técnica en el mensaje.
-- Doctrina y estado de la migración: [`politicas/`](politicas/) — 37 documentos que explican qué se migró, cómo se verificó y qué trampas aparecieron.
+- **Estado medido, generado desde el árbol: [`politicas/ESTADO.md`](politicas/ESTADO.md)** — composición, Python por zonas, qué compila el binario, la evolución sacada del historial de git y la batería de comprobadores ejecutada. No se edita a mano; lo regenera `flipendo-metrics --estado` (C++, en [`tools/flipendo_metrics/`](tools/flipendo_metrics/)).
+- Doctrina y estado de la migración: [`politicas/`](politicas/) — 38 documentos que explican qué se migró, cómo se verificó y qué trampas aparecieron.
 - Ejemplos de uso del motor: [`examples/`](examples/).
 - Registro de versiones: [`CHANGELOG-FLIPENDO.md`](CHANGELOG-FLIPENDO.md).
 

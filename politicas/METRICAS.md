@@ -1,8 +1,24 @@
 # Métricas de composición del árbol de Flipendo
 
-> **Última medición: 2026-09-11, commit `87ce606a318`.** La anterior era del 8 de
-> septiembre y llevaba tres días dando cifras que el árbol ya desmentía: qué decía,
+> ## ⚠️ El dato vivo ya no está aquí: está en [`ESTADO.md`](ESTADO.md)
+>
+> **Las tablas de este documento son historia**, congeladas al commit que dice cada
+> una. Sirven para saber qué se midió, cuándo, y qué se creyó por error; **no** para
+> saber cómo va el proyecto ahora. Para eso está [`ESTADO.md`](ESTADO.md), que no se
+> escribe a mano: **se genera** desde el árbol con `flipendo-metrics --estado`
+> (C++, en [`../tools/flipendo_metrics/`](../tools/flipendo_metrics/)) y lleva en la
+> cabecera la fecha y el commit de su medición.
+>
+> El motivo está escrito abajo con nombres y cifras: este documento publicó el 8 de
+> septiembre una cifra medida el 5 y se perdió por el camino una caída de 109.442
+> líneas ([§6.1](#61-la-cifra-de-python-llevaba-dos-días-caducada)). Con siete carriles
+> commiteando a la vez, **un documento a mano envejece en horas**. La solución no es
+> escribir mejor; es generar.
+
+> **Última medición a mano: 2026-09-11, commit `87ce606a318`.** La anterior era del 8
+> de septiembre y llevaba tres días dando cifras que el árbol ya desmentía: qué decía,
 > qué era falso y por qué, en el [§6](#6-qué-decía-la-versión-anterior-y-por-qué-estaba-mal).
+> Lo que se midió después está en el [§7](#7-lo-que-se-midió-el-11-por-la-noche-y-no-cuadraba).
 
 ---
 
@@ -235,10 +251,17 @@ c++ -std=c++17 -O2 -o ~/Flipendo/bin/flipendo-metrics \
 flipendo-metrics ~/Flipendo/dev/upbge
 ```
 
-**Aun así, el contador no es la fuente de este documento.** Recorre el disco, así que
-ve ficheros sin versionar y no ve lo que otro carril acaba de borrar. Las tablas de
-arriba salen de `git`, a un commit. El contador sirve para una comprobación rápida;
-el `git` es el que se cita.
+**Aun así, el contador no era la fuente de este documento.** Recorría el disco, así
+que veía ficheros sin versionar y no veía lo que otro carril acababa de borrar. Las
+tablas de arriba salen de `git`, a un commit; el contador servía para una
+comprobación rápida.
+
+**Eso cambió la noche del 11.** El contador ya no recorre el disco: mide con `git` a
+un commit nombrado —`git ls-tree -r` y un solo `git cat-file --batch`, sin pasar por
+el shell— que es exactamente el método del §1 de este documento, y además genera
+[`ESTADO.md`](ESTADO.md) entero. O sea: el método que este documento describía a mano
+**es ahora código**, y lo que antes había que copiar a una tabla se regenera con un
+comando. El modo viejo sigue disponible con `--disco`, con su aviso.
 
 ### 6.3 El objetivo «C → 0» seguía descrito como pendiente en la cabecera
 
@@ -252,3 +275,98 @@ página.
 
 La única parte que ha aguantado: C++ 773 ficheros, C 24 ficheros / 58.211 líneas
 (58.188 con `wc -l`), Python 18-19 ficheros. Ni se ha tocado ni se va a tocar.
+
+---
+
+## 7. Lo que se midió el 11 por la noche y no cuadraba
+
+Al escribir el generador hubo que medir de verdad cosas que hasta ahora se afirmaban
+de palabra. Tres no cuadraban. Se dejan aquí con el mismo formato que el §6: qué
+decía, qué mide el árbol, cómo se comprobó.
+
+### 7.1 «46 verificadores» eran 32 comprobadores y 14 volcadores
+
+**Decía** el `README.md`, en una insignia: `verificadores-46`.
+
+**Mide el árbol:** en `source/creator/creator_args.cc` hay **50 banderas `--fl-*`**
+registradas con `BLI_args_add`. De ellas, **32** dan veredicto
+(16 `--fl-check-*` + 16 `--fl-selftest-*`), **14** son volcadores `--fl-dump-*` y
+**4** son conversores o preparadores de escena (`--fl-convert-presets`,
+`--fl-convert-manual-reference`, `--fl-make-ui-scene`, `--fl-ui-scene`). El 46 salía
+de sumar los comprobadores y los volcadores.
+
+**Por qué importa y no es una pedantería:** un volcador **no se puede poner en
+verde**. Escribe estado y sale con 0 haga lo que haga. Decir «46 verificadores» y
+preguntar «¿cuántos están en verde?» son dos frases que no se pueden juntar sin
+contar 14 verdes que nadie ha comprobado.
+
+**Cómo se comprobó:** contando las cadenas `"--fl-..."` del fichero al commit medido.
+Lo hace el generador en cada pasada y lo vuelve a decir si vuelve a descuadrar. La
+insignia del `README.md` ya está corregida a `comprobadores-32` + `volcadores-14`.
+
+### 7.2 Un `--fl-selftest-*` no es una prueba: es un volcador que siempre sale con 0
+
+**Se venían contando** los 16 `--fl-selftest-*` junto a los `--fl-check-*` como si
+fueran pruebas.
+
+**Mide el árbol —ejecutándolos—:** los dieciséis piden un fichero de salida y, si no
+se lo das, imprimen `Error: falta el fichero de salida después de '--fl-selftest-X'`
+y **salen con 0**. Un arnés que mire el código de salida los da todos por verdes sin
+haber comprobado nada. Y dos de ellos (`--fl-selftest-context-ops` y
+`--fl-selftest-wm-property-ops`) **no escriben nada en `--background`**: necesitan un
+editor real, así que en modo consola el fichero se queda vacío y el verde es doblemente
+falso.
+
+**Cómo se comprobó:** ejecutando los 16 con y sin argumento, en `--background` y en
+modo gráfico, y comparando cada volcado byte a byte contra todos los `.txt` de
+`tests/flipendo/`. Así se identificó además con qué línea base va cada uno (por
+ejemplo `--fl-selftest-wm-system-ops` →
+`tests/flipendo/operators/system-python.txt`). El generador hace justo eso: el
+veredicto de un selftest sale de comparar su volcado, no de su código de salida.
+
+### 7.3 «`intern/cycles` tiene 0 referencias en `build.ninja`» es falso; lo cierto es «0 objetos»
+
+**Decía** `OBJC-A-CPP.md:1076`: las 5.060 líneas de `.mm` de `intern/cycles` tienen
+«**0 referencias en `build.ninja`**».
+
+**Mide el árbol:** `grep -c 'intern/cycles' dev/build/build.ninja` da **202**. Son
+rutas `-I` dentro de las líneas `INCLUDES` de otros objetivos (todas a
+`intern/cycles/blender`), no compilaciones. Lo que sí es cero, y es lo que importa,
+son los **objetos**: ninguna arista `build ... .o:` de las 5.247 del fichero tiene
+como entrada un fuente de `intern/cycles`, y `WITH_CYCLES:BOOL=OFF` en
+`CMakeCache.txt`. La conclusión del documento —esas 5.060 líneas no entran en el
+binario— **es correcta**; la prueba que daba, no. El grep estrecho que sí da 0 es el
+que usa `REGISTRO-LEGACY.md`: `grep -c 'cycles/device/metal' dev/build/build.ninja`.
+
+**Cómo se comprobó:** el generador parsea `build.ninja`, separa «citado en cualquier
+sitio» de «es entrada de una arista de objeto», y publica las dos columnas. La
+diferencia entre las dos es literalmente la diferencia entre «queda trabajo» y «queda
+código muerto».
+
+**No se ha corregido `OBJC-A-CPP.md` en el sitio**: es de otro carril y tocarlo con el
+índice compartido arriesga arrastrar su trabajo a medias (la lección de las 01:05 y la
+de las 04:50). La corrección queda aquí y en [`ESTADO.md`](ESTADO.md) §4, que lo mide
+en cada pasada.
+
+### 7.4 Y el método del §1 de este documento tampoco es exacto del todo
+
+El §1 manda contar con `git grep -c ''` y a la vez dice «una línea es un `\n`, como
+`wc -l`». **No son lo mismo**: en un fichero cuya última línea no acaba en `\n`,
+`git grep -c ''` cuenta esa línea y `wc -l` no. El generador implementa la semántica
+declarada (`wc -l`, contar `\n`), no la del comando de ejemplo.
+
+**Comprobado midiendo el mismo commit `87ce606a318` de la cabecera con la herramienta
+nueva**, y el resultado deja el alcance exacto del desliz:
+
+| | §2 (a mano, `git grep -c ''`) | generador (`wc -l`) | diferencia |
+|---|---:|---:|---:|
+| Código **propio**, las diez filas | 3.410.534 | **3.410.534** | **0** |
+| Vendorizado, total | 919.268 | 919.197 | 71 |
+
+En el código propio **no hay ni una línea de diferencia**: las diez filas del §2
+—C++ 2.540.538, `.hh` 292.099, `.h` 248.745, `.hpp` 36.679, Python 191.224, GLSL
+68.391, ObjC++ 30.304, MSL 1.722, Metal 832, C 0— salen idénticas. O sea que **ningún
+fichero propio se queda sin salto de línea final**, y las dos mediciones, la de la
+mano y la de la máquina, se confirman la una a la otra. Las 71 líneas de diferencia
+están todas en `extern/` y `lib/` (26 en las `.h`, 35 en el C++, 4 en `.hpp`, 5 en
+Python, 1 en C), que es código ajeno y no se toca.
