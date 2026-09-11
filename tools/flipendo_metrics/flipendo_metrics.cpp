@@ -981,6 +981,7 @@ struct Verifier {
   Declarations decl;
   long long tol_passes_used = 0;   /* pasadas en las que la tolerancia hizo falta */
   long long div_honoured = 0;
+  long long div_passes_used = 0;   /* pasadas en las que hizo falta alguna divergencia */
   double worst_tolerated = 0.0;
 };
 
@@ -1185,7 +1186,8 @@ static bool is_report_line(const std::string &t)
 {
   return contains(t, "fl-check") || contains(t, "fl-selftest") || contains(t, "FL-") ||
          contains(t, "identic") || contains(t, "distint") || contains(t, "comparad") ||
-         contains(t, "aplicados") || contains(t, "linea base") || contains(t, "TOTAL");
+         contains(t, "aplicados") || contains(t, "linea base") || contains(t, "TOTAL") ||
+         contains(t, "divergencia") || contains(t, "tolerancia");
 }
 
 static std::string meaningful_tail(const std::string &out)
@@ -1410,12 +1412,14 @@ static Battery run_battery(const std::string &root,
        * ESCUCHA lo que dice por su salida de error, que es la fuente. */
       v.baseline_used = v.baselines.empty() ? "" : v.baselines[0];
       if (contains(r.out, "TOLERADA")) v.tol_passes_used++;
+      long long this_pass_div = 0;
       for (const std::string &ln : split_lines(r.out)) {
-        if (contains(ln, "DIVERGENCIA DELIBERADA cumplida")) v.div_honoured++;
+        if (contains(ln, "DIVERGENCIA DELIBERADA cumplida")) { v.div_honoured++; this_pass_div++; }
         double w = 0.0;
         if (sscanf(ln.c_str(), "%*[^(](desviacion relativa %lf", &w) == 1)
           v.worst_tolerated = std::fmax(v.worst_tolerated, w);
       }
+      if (this_pass_div > 0) v.div_passes_used++;
       v.verdict = r.rc == 0 ? "VERDE" : "ROJO";
       return;
     }
@@ -1485,6 +1489,7 @@ static Battery run_battery(const std::string &root,
         }
         if (cr.div_honoured) {
           v.div_honoured = cr.div_honoured;
+          v.div_passes_used++;
           v.detail += sfmt(", %lld divergencia(s) deliberada(s) cumplida(s)", cr.div_honoured);
         }
         if (i > 0)
@@ -2270,18 +2275,57 @@ int main(int argc, char **argv)
                 bat.bin_built.c_str());
     }
     if (!bat.dirty.empty()) {
-      r += sfmt("- **El árbol de trabajo tenía %zu ficheros versionados modificados sin\n"
-                "  commitear cuando se midió.** El binario se compila del árbol de trabajo, no\n"
-                "  del commit: dentro del binario que aquí se prueba va trabajo a medias de\n"
-                "  otros carriles. Un rojo puede ser de ellos y no una regresión del proyecto.\n"
-                "  Para un veredicto limpio hay que medir con el árbol limpio. Estaban\n"
-                "  tocados:\n\n", bat.dirty.size());
-      size_t shown = 0;
+      /* No todo lo sucio puede haber entrado en el binario. Una textura de test
+       * modificada no cambia una línea de código, y meterla en la misma lista que
+       * un `.cc` a medias convierte el aviso en ruido: se separan, y se listan
+       * una a una solo las que sí pueden cambiar lo que se está probando. */
+      std::vector<std::string> code, other;
       for (const std::string &d : bat.dirty) {
-        if (shown++ >= 14) { r += sfmt("  - …y %zu más\n", bat.dirty.size() - 14); break; }
-        r += sfmt("  - `%s`\n", d.c_str());
+        const size_t sp = d.find_last_of(' ');
+        const std::string path = sp == std::string::npos ? d : d.substr(sp + 1);
+        const bool is_code = (starts_with(path, "source/") || starts_with(path, "intern/") ||
+                              starts_with(path, "scripts/") || starts_with(path, "extern/") ||
+                              starts_with(path, "lib/") || starts_with(path, "build_files/") ||
+                              ends_with(path, "CMakeLists.txt") || ends_with(path, ".cmake")) &&
+                             !starts_with(path, "tests/");
+        (is_code ? code : other).push_back(d);
       }
-      r += "\n";
+      r += sfmt("- **El árbol de trabajo tenía %zu ficheros versionados modificados sin\n"
+                "  commitear cuando se midió**, de los cuales **%zu pueden cambiar el binario**\n"
+                "  (fuente, cabeceras, scripts instalados o ficheros de compilación) y %zu no.\n",
+                bat.dirty.size(), code.size(), other.size());
+      if (!code.empty()) {
+        r += "  El binario se compila del árbol de trabajo, no del commit: un rojo puede ser\n"
+             "  trabajo a medias de otro carril y no una regresión del proyecto. Estaban\n"
+             "  tocados:\n\n";
+        size_t shown = 0;
+        for (const std::string &d : code) {
+          if (shown++ >= 14) { r += sfmt("  - …y %zu más\n", code.size() - 14); break; }
+          r += sfmt("  - `%s`\n", d.c_str());
+        }
+        r += "\n";
+      }
+      else {
+        r += "  **Ninguno de los que pueden cambiar el binario**: el veredicto de abajo es del\n"
+             "  commit medido, no de trabajo a medias de nadie.\n";
+      }
+      if (!other.empty()) {
+        std::map<std::string, long long> by_dir;
+        for (const std::string &d : other) {
+          const size_t sp = d.find_last_of(' ');
+          std::string path = sp == std::string::npos ? d : d.substr(sp + 1);
+          size_t s1 = path.find('/');
+          size_t s2 = s1 == std::string::npos ? std::string::npos : path.find('/', s1 + 1);
+          by_dir[path.substr(0, s2)]++;
+        }
+        r += sfmt("  Los otros %zu, que no entran en el binario, por directorio:", other.size());
+        bool first = true;
+        for (const auto &kv : by_dir) {
+          r += sfmt("%s `%s` %s", first ? "" : " ·", kv.first.c_str(), mil(kv.second).c_str());
+          first = false;
+        }
+        r += ".\n\n";
+      }
     }
     else {
       r += "- El árbol de trabajo estaba limpio: el binario corresponde al commit medido.\n\n";
@@ -2380,7 +2424,7 @@ int main(int argc, char **argv)
           d.used_by += "`" + v.label + "`";
           d.passes_total += v.passes;
           if (d.kind == "tolerancia") d.passes_needed += v.tol_passes_used;
-          else if (v.div_honoured > 0) d.passes_needed += 1;
+          else d.passes_needed += v.div_passes_used;
         }
         d.needed = d.passes_needed > 0;
       }
