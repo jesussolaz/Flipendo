@@ -1026,3 +1026,55 @@ habria forma de verificarlo, que es justo lo que dijo el carril de Metal en la p
 sigue siendo cierto. Se migra cuando (y si) se encienda Cycles. `blendthumb` si es
 cerrable y es pequeno: 186 lineas, sin delegados, y con toda la infraestructura de este
 documento ya escrita.
+
+## 33. Coda: la extension del Finder, y el caso de la clase que instancia EL SISTEMA
+
+`blendthumb/thumbnail_provider.mm` era el ultimo Objective-C++ que el arbol compilaba.
+Tiene una dificultad que no tenia ningun otro fichero y que conviene conocer, porque
+volvera a aparecer en cualquier plugin o extension:
+
+**La clase no la instancia nuestro codigo, la instancia macOS.** El `Info.plist` del
+bundle dice `NSExtensionPrincipalClass = ThumbnailProvider` y el sistema la busca **por
+nombre antes de que corra una sola linea nuestra**. Una clase fabricada dentro de una
+funcion llegaria tarde: el bundle cargaria y no encontraria su clase principal.
+
+La salida es registrarla en un **constructor de carga**:
+
+    __attribute__((constructor)) void register_thumbnail_provider_class() { ... }
+
+que dyld ejecuta al inicializar la imagen, antes del punto de entrada del bundle
+(aqui `-e _NSExtensionMain`). Regla general: **si quien instancia la clase es el sistema,
+el registro no puede ser perezoso**.
+
+Los otros dos detalles de este fichero:
+
+- Un bloque que CREAMOS (`currentContextDrawingBlock:`) y otro que RECIBIMOS (el
+  manejador de finalizacion) y hay que LLAMAR. Llamar un bloque desde C++ es trivial: se
+  invoca su puntero `invoke` pasandole el propio bloque como primer argumento.
+- El bloque que creamos se ejecuta DESPUES de que termine la funcion que lo creo, asi que
+  su captura no puede apuntar a la pila: va a una struct del monticulo que el propio
+  bloque libera al final.
+
+### La verificacion, que aqui si se puede hacer de verdad
+
+`qlmanage -t -x fichero.blend` dispara la extension igual que el Finder, y produce un PNG
+comparable. Antes de migrar hubo que descartar un falso negativo que habria hecho creer
+que la extension estaba rota: con `ArpgNative.blend` decia «No thumbnail created», pero
+**el motivo era que ese fichero no lleva miniatura embebida** (sin bloque `TEST` en la
+cabecera), no que la extension fallara. Buscando entre 235 ficheros aparecieron tres que
+si la llevan.
+
+Linea base congelada con el binario anterior y comprobada contra si misma tres veces.
+Resultado tras migrar: **0 pixeles distintos de 16.384**, tres veces seguidas, y otros dos
+`.blend` generan su miniatura. Eso prueba la cadena entera: el sistema encontro la clase
+fabricada en la carga, llamo al metodo, QuickLook ejecuto el bloque de dibujo y el
+manejador de finalizacion se invoco bien.
+
+### Estado, ahora si, final
+
+**CERO Objective-C++ compilado en Flipendo.** Lo unico que queda en el arbol son las
+5.060 lineas de `intern/cycles`, que tienen **0 referencias en `build.ninja`** porque
+Cycles esta apagado. Migrarlas hoy no quitaria ni una linea del binario y, peor, no
+habria forma de verificarlas: no se puede comprobar lo que no se compila. Se migran
+cuando (y si) se encienda Cycles, y para entonces todo lo que hace falta esta escrito en
+este documento.
