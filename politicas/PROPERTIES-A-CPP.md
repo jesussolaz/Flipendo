@@ -101,19 +101,30 @@ se llaman. **Ésa era la señal de salida**; a partir de aquí las demás salen 
 | `properties_animviz.py` | 123 | 0 (solo mixins de dibujo) | ninguna — es una **biblioteca**, no una pestaña; cae con sus usuarios |
 | ~~`properties_data_metaball.py`~~ | 137 | 6 | **hecha** (sexta unidad) |
 | ~~`properties_data_speaker.py`~~ | 156 | 6 | **hecha** (séptima unidad) |
-| `properties_data_pointcloud.py` | 175 | 3 | `PropertyPanel`, `UIList` |
-| `properties_workspace.py` | 193 | 3 | `PropertyPanel`, `UIList` |
-| `properties_data_curves.py` | 219 | 5 | `PropertyPanel`, `PropertiesAnimationMixin`, `UIList` |
-| `properties_data_volume.py` | 239 | 8 | `PropertyPanel`, `PropertiesAnimationMixin`, `UIList` |
-| `properties_view_layer.py` | 300 | 10 | `PropertyPanel`, `UIList` |
+| `properties_data_pointcloud.py` | 175 | 3 | **BLOQUEADA**: `UIList` con `filter_items()` propio |
+| `properties_workspace.py` | 193 | 3 | **BLOQUEADA**: `UIList` con `filter_items()` propio |
+| `properties_data_curves.py` | 219 | 5 | **BLOQUEADA**: `UIList` con `filter_items()` propio |
+| ~~`properties_data_volume.py`~~ | 239 | 8 | **hecha** (octava unidad) |
+| `properties_view_layer.py` | 300 | 10 | **la siguiente**: `PropertyPanel`, 1 menú, 1 `UIList` **sin** `filter_items` |
+| ~~`properties_data_lightprobe.py`~~ | 413 | 13 | **hecha** (novena unidad) |
 
-Quedan **24.706 líneas** en `scripts/startup/bl_ui/properties_*.py` (eran 25.412 y eran 43
-ficheros; ahora **37**). La siguiente de la tabla, `properties_data_pointcloud.py`, trae un
-`UIList` con `filter_items()` propio, y el volcado de diseño **no ejecuta el `draw_item()` de
-una lista** (deuda del propio volcador, `UI-A-CPP.md` §D4.2): esa parte se migraría sin
-evidencia mientras la deuda siga en pie. Con `--fl-ui-scene` hay salida —dibujar la lista
-con los datos que la escena ya tenga, en vez de inventarse un elemento—, pero hay que
-hacerla antes. Las gordas —`properties_particle` 2.312, `properties_paint_common` 1.965,
+Quedan **24.038 líneas** en `scripts/startup/bl_ui/properties_*.py` (eran 25.412 y 43
+ficheros; ahora **35**).
+
+**La regla de las listas, dicha de una vez.** Una pestaña con un `UIList` que trae
+`filter_items()` propio **no se coge**: el volcado de diseño no ejecuta ni el `draw_item()`
+ni el `filter_items()` de una lista (deuda del propio volcador, `UI-A-CPP.md` §D4.2), así
+que esa parte se migraría sin evidencia. Una lista que **solo** tiene `draw_item` sí se
+puede coger, acotando por escrito lo que no queda medido —es lo que se hizo con
+`VOLUME_UL_grids`—, porque lo que sí prueba el volcado de registro es que la lista existe
+con sus callbacks exactos.
+
+El desbloqueo de las tres marcadas es **una sola pieza, y es del volcador**: ejecutar el
+`draw_item` de una lista con los datos que la escena ya tenga, en vez de inventarse un
+elemento. Con `--fl-ui-scene` ya hay escenas con datos de verdad; lo que falta es que
+`fl_ui_dump.cc` los recorra.
+
+Las gordas —`properties_particle` 2.312, `properties_paint_common` 1.965,
 `properties_constraint` 1.900, `properties_physics_fluid` 1.629, `properties_freestyle` 1.348—
 no son candidatas a una sola sesión, y `properties_freestyle` además cae entera con Freestyle
 (`INVENTARIO-PYTHON.md §2.9`).
@@ -523,3 +534,194 @@ la misma que se aplicó a las rutas de presets: que el volcado **sustituya la li
 recientes por una marca**, o que estos dos menús se declaren dependientes del entorno y se
 excluyan diciéndolo. El fichero del volcador (`interface/fl_ui_dump.cc`) es de otro carril,
 así que aquí queda el diagnóstico con su prueba, no el parche.
+
+## Octava unidad: el Volumen, y las variantes que hacen medible cada `if`
+
+`scripts/startup/bl_ui/properties_data_volume.py` (239 líneas, 8 paneles y la lista
+`VOLUME_UL_grids`) pasa entera a `space_buttons/fl_properties_data_volume.cc`.
+
+| Panel | Etiqueta | Banderas | `order` |
+|---|---|---|---:|
+| `DATA_PT_context_volume` | (vacía) | `NO_HEADER` | 0 |
+| `DATA_PT_volume_grids` | `Grids` | — | 0 |
+| `DATA_PT_volume_file` | `OpenVDB File` | — | 0 |
+| `DATA_PT_volume_viewport_display` | `Viewport Display` | — | 0 |
+| `DATA_PT_volume_viewport_display_slicing` | (vacía), hija de la anterior | — | 0 |
+| `DATA_PT_volume_render` | `Render` | — | 0 |
+| `DATA_PT_volume_animation` | `Animation` | `DEFAULT_CLOSED` | 999 |
+| `DATA_PT_custom_props_volume` | `Custom Properties` | `DEFAULT_CLOSED` | 1000 |
+
+Como Altavoz, lleva `COMPAT_ENGINES` en los ocho paneles, así que basta un `poll`. **Ojo
+a la diferencia con la Sonda de Luz**: aquí el Python mira `context.scene.render.engine`
+**crudo**; allí mira `context.engine`, que no es lo mismo (ver la novena unidad).
+
+### Las trampas
+
+1. **`VolumeGrids` usa el propio `Volume` como dato** (`RNA_def_struct_sdna(srna,
+   "Volume")`), igual que `SpaceUVEditor` con `SpaceImage`. El `volume.grids` del
+   `template_list` es `RNA_pointer_create_discrete(&volume->id, &RNA_VolumeGrids, volume)`.
+2. **`use_slice` es una prueba de bit, no una comparación.** Su
+   `RNA_def_property_boolean_sdna` lo saca de `axis_slice_method` con la máscara
+   `VOLUME_AXIS_SLICE_SINGLE`.
+3. **La separación de propiedad se enciende DENTRO del `if volume.filepath`.**
+   Encenderla siempre cambia el `prop_sep` del `LAYOUT_ROOT` y el bloque entero sale
+   distinto — justo en el caso normal, que es el volumen vacío.
+4. **Los defectos de `template_list` hay que ir a buscarlos a `rna_ui_api.cc`**:
+   `rows=3` pero `maxrows=5` y `columns=9`. Poner `columns=0` cambia el árbol.
+5. **`layout.active` y `sub.active` caen en niveles distintos**: en el panel de corte va
+   en la **raíz**; en la malla de alambre va en la **fila**, no en la columna (en la
+   columna apagaría también el `wireframe_type` de arriba).
+
+### Verificado
+
+| Volcado | Resultado |
+|---|---|
+| Registro (`baseline-python.txt`) | **2.113 bloques, 2.112 idénticos, 1 distinto, 0 faltan, 0 sobran** |
+| Diseño (`baseline-python-layout.txt`) | **2.004 bloques, 2.001 idénticos, 3 distintos, 0 faltan, 0 sobran** |
+| Diseño con un volumen delante, 4 escenas | **4 de 4 idénticas**, byte a byte |
+
+Las cuatro escenas (`VOLUME`, `:SLICE`, `:WIRE_NONE`, `:SEQUENCE`) hacían falta: sin las
+dos primeras quedaban sin probar los dos `active`, y sin `:SEQUENCE` las tres ramas del
+panel de fichero. **`VOLUME:SEQUENCE` es la que más paga**: con una ruta fija que no
+existe, `BKE_volume_load` deja un mensaje de error, así que un solo volcado cubre ruta
+vacía, secuencia y error sin meter ningún `.vdb` en el repositorio.
+
+### Lo que NO queda verificado, y se dice
+
+`VOLUME_UL_grids.draw_item` no lo ejecuta ningún volcado, y además un volumen sin `.vdb`
+no tiene ni una rejilla que dibujar. Lo que sí queda probado es el bloque
+`UILIST VOLUME_UL_grids` del registro con sus callbacks (`draw_item=si`, `draw_filter=no`,
+`filter_items=no`, `listener=no`), exactamente los del Python. Y la rama de Cycles de
+`DATA_PT_volume_render`, que sin el addon no pisa nadie: se copia tal cual en vez de
+borrarla.
+
+## Novena unidad: la Sonda de Luz, y `layout.prop()` no es `uiLayout::prop()`
+
+`scripts/startup/bl_ui/properties_data_lightprobe.py` (413 líneas, 13 paneles, **cero**
+listas y **cero** menús) pasa entera a `space_buttons/fl_properties_data_lightprobe.cc`.
+Es la pestaña completa más grande sin lista ni menú que quedaba, y su única dependencia
+compartida —`PropertiesAnimationMixin`— ya estaba extraída.
+
+### La trampa gorda, que es general y le va a tocar a más pestañas
+
+**`layout.prop()` del Python y `uiLayout::prop()` del C++ NO hacen lo mismo cuando la
+propiedad no existe en el struct:**
+
+- el Python (`rna_uiItemR`) avisa por consola y **no dibuja nada**;
+- el C++ (`uiLayout::prop`) dibuja una **etiqueta deshabilitada con el identificador
+  crudo** (`ui_item_disabled`).
+
+Y aquí pasa de verdad. `LightProbe` tiene `RNA_def_struct_refine_func`, así que el puntero
+se refina a `LightProbeSphere`, `LightProbePlane` o `LightProbeVolume` — y los cuatro
+subpaneles de horneado piden propiedades que **solo existen en el de volumen**
+(`capture_distance`, `resolution_x`, `clamp_direct`, `surface_bias`…) mientras su `poll`
+**no mira el tipo**. Con una esfera delante, el Python dibuja las columnas y ni un botón;
+el primer C++ metía **13 etiquetas deshabilitadas de más** en cada escena de esfera y de
+plano.
+
+La cura es un `prop_py()` local de tres líneas que comprueba `RNA_struct_find_property` y
+calla si no está — o sea, la semántica del Python. Las 65 llamadas del fichero pasan por
+él.
+
+**Quien migre cualquier pestaña con `RNA_def_struct_refine_func` detrás se va a encontrar
+esto** (materiales, luces, curvas…), y **sin el volcado de diseño sobre una escena que
+tenga el dato no lo vería**: con la escena de fábrica los cuatro paneles salen
+`NO-CUBIERTO` y las 13 etiquetas de más no aparecen en ninguna cifra.
+
+### Las otras trampas
+
+1. **`context.engine` no es `scene.render.engine`.** Es
+   `CTX_data_engine_type(C)->idname`, o sea `RE_engines_find(scene->r.engine)`, que **cae a
+   EEVEE** si el nombre guardado no corresponde a ningún motor registrado. Son dos `poll`
+   distintos y cada fichero usa el suyo. (`bf_editor_space_buttons` gana `../../render` en
+   su `INC` solo por la cabecera `RE_engine.h`; no gana dependencia de enlace.)
+2. **`RNA_pointer_create_discrete()` ya refina.** El volcado escribe
+   `rna='LightProbeSphere.influence_type[0]'`, no `LightProbe.…`, y sale solo. Conviene
+   saberlo antes de perseguirlo.
+3. **`subset = 'ACTIVE'` vale 2, no 0** (`ALL`=0, `SELECTED`=1). Se pone por identificador
+   con `RNA_enum_set_identifier`, que además no necesita contexto porque el enum es
+   estático. Escribir el número a ojo deja ahí un `subset='ALL'` que hornea la escena entera.
+4. **El último `sub = col.column(align=True)` de `DATA_PT_lightprobe` está FUERA del `if`**
+   y cuelga de la columna que haya creado la rama tomada. Meterlo en las ramas cambia el
+   árbol.
+5. **El orden del array de `PanelDecl` es el de la tupla `classes`**, no el del fichero: en
+   la sonda, `_bake_clamping` va **antes** que `_bake_offset` en `classes` y al revés en el
+   texto. Ese orden es el que desempata dentro de la región.
+
+### Tres paneles que no dibuja nadie, y se migran igual
+
+`DATA_PT_lightprobe`, `DATA_PT_lightprobe_visibility` y `DATA_PT_lightprobe_display`
+declaran `COMPAT_ENGINES = {'BLENDER_RENDER'}`, y **`BLENDER_RENDER` no existe** como
+motor en 4.5: los únicos registrados son `BLENDER_EEVEE_NEXT` y `BLENDER_WORKBENCH`. Su
+`poll` dice que no en cualquier escena, con Python y con C++. Se migran línea a línea y con
+el mismo `COMPAT_ENGINES` —la doctrina es migrar, no decidir por el original que su código
+sobra—, pero **su `draw()` no lo cubre ningún volcado y eso queda escrito** en vez de dado
+por bueno. Lo que sí queda probado de ellos es el registro.
+
+### Verificado
+
+| Volcado | Resultado |
+|---|---|
+| Registro (`baseline-python.txt`) | **2.113 bloques, 2.112 idénticos, 1 distinto, 0 faltan, 0 sobran** |
+| Diseño (`baseline-python-layout.txt`) | **2.004 bloques, 2.001 idénticos, 3 distintos, 0 faltan, 0 sobran** |
+| Diseño con una sonda delante, 6 escenas | **6 de 6 idénticas**, byte a byte (10 de 13 paneles dibujados) |
+
+El único distinto del registro es `REGION PROPERTIES WINDOW`, y **se comprobó que es solo
+orden antes de absorberlo**: las dos listas tienen 748 entradas y son el mismo conjunto.
+Los 3 distintos del diseño se probaron ajenos midiendo el **mismo fichero base con el
+bundle anterior, con el Python todavía vivo**: salen los mismos.
+
+## Dos avisos para quien mida después
+
+### La carpeta de presets del usuario también se cuela en la línea base
+
+Tercer trozo de estado del usuario que aparece dentro del volcado de diseño, después de la
+ruta de instalación y de los ficheros recientes: `RENDER_PT_format_presets` enumera
+**también** `~/Library/Application Support/UPBGE/4.5/scripts/presets/`, y
+`--factory-startup` no la reinicia. Con los `.fpreset` de prueba de otro carril dentro, ese
+bloque sale rojo; cuando se quitaron, volvió a salir limpio. **No está en el árbol**: el
+`presets/render/` del repositorio y el del bundle tienen los mismos 14 ficheros.
+
+### `STATUSBAR_HT_header` NO se reproduce a sí mismo
+
+Tres pasadas seguidas del mismo verificador, con el **mismo binario** y la **misma
+escena**:
+
+| Pasada | Resultado |
+|---|---|
+| 1 | 2.004 bloques, **3 distintos** |
+| 2 | 2.004 bloques, **4 distintos** — aparece `STATUSBAR_HT_header` |
+| 3 | 2.004 bloques, **3 distintos** |
+
+La barra de estado dibuja la memoria usada, que cambia entre ejecuciones. Por la regla del
+REGLAMENTO —«si un volcado no se reproduce a sí mismo tres veces seguidas, no es una línea
+base»—, **ese bloque no es línea base**: es ruido, y quien mida se va a encontrar un rojo
+aleatorio que no ha causado.
+
+**No se ha regenerado nada.** La cura es la misma que ya se aplicó a las rutas de
+instalación y a los recientes: que el volcador elida el valor y conserve la forma. El
+fichero del volcador (`interface/fl_ui_dump.cc`) es de otro carril, así que aquí queda el
+diagnóstico con su prueba, no el parche.
+
+## La siguiente candidata, para quien retome esto
+
+**`properties_view_layer.py`** — 300 líneas, 10 paneles, 1 menú (`VIEWLAYER_MT_lightgroup_sync`)
+y 1 lista (`VIEWLAYER_UL_aov`) **sin `filter_items()` propio**, o sea del tipo que sí se
+puede coger acotando por escrito lo que no queda medido.
+
+Lo que le hace falta, y no lo tiene todavía:
+
+- **No necesita andamio nuevo**: sus paneles pollan sobre `context.view_layer`, que la
+  escena de fábrica ya tiene, así que el volcado de diseño **ya los cubre**. Compruébalo
+  antes de nada extrayendo sus bloques de `tests/flipendo/ui/baseline-python-layout.txt`:
+  si salen `DRAW` y no `NO-CUBIERTO`, la línea base congelada ya es la evidencia y no hay
+  que montar nada.
+- Sus tres ayudantes (`ViewLayerAOVPanelHelper`, `ViewLayerCryptomattePanelHelper`,
+  `ViewLayerLightgroupsPanelHelper`) son **locales al fichero**, no mixins compartidos: no
+  hay nada que extraer antes.
+- `VIEWLAYER_PT_layer_custom_props` hereda `PropertyPanel` a secas (sin
+  `ViewLayerButtonsPanel`), así que su `poll` es el del mixin y su `_context_path` es
+  `"view_layer"`. Cuidado al copiar el `poll` de los otros nueve.
+- Ojo con `COMPAT_ENGINES`: los paneles `_eevee_next_` y `_workbench_` declaran motores
+  distintos, y aquí el Python mira `context.engine` (como la sonda), no
+  `scene.render.engine` (como el volumen).
