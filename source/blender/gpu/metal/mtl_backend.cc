@@ -28,15 +28,15 @@
 #include "gpu_capabilities_private.hh"
 #include "gpu_platform_private.hh"
 
-#include <Cocoa/Cocoa.h>
-#include <Metal/Metal.h>
-#include <QuartzCore/QuartzCore.h>
+/* Tipos de Metal y Foundation: SDK en un `.mm`, metal-cpp en un `.cc`.
+ * Ver mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
 #include <sys/sysctl.h>
 
 namespace blender::gpu {
 
 /* Global per-thread AutoReleasePool. */
-thread_local NSAutoreleasePool *g_autoreleasepool = nil;
+thread_local NSAutoreleasePool *g_autoreleasepool = nullptr;
 thread_local int g_autoreleasepool_depth = 0;
 
 /* -------------------------------------------------------------------- */
@@ -124,8 +124,8 @@ void MTLBackend::render_begin()
    * autoreleasepool from all rendering path. */
   BLI_assert(g_autoreleasepool_depth >= 0);
 
-  if (g_autoreleasepool == nil) {
-    g_autoreleasepool = [[NSAutoreleasePool alloc] init];
+  if (g_autoreleasepool == nullptr) {
+    g_autoreleasepool = NS::AutoreleasePool::alloc()->init();
   }
   g_autoreleasepool_depth++;
   BLI_assert(g_autoreleasepool_depth > 0);
@@ -135,13 +135,13 @@ void MTLBackend::render_end()
 {
   /* If call-count reaches zero, drain auto release pool.
    * Ensures temporary objects are freed within a frame's lifetime. */
-  BLI_assert(g_autoreleasepool != nil);
+  BLI_assert(g_autoreleasepool != nullptr);
   g_autoreleasepool_depth--;
   BLI_assert(g_autoreleasepool_depth >= 0);
 
   if (g_autoreleasepool_depth == 0) {
-    [g_autoreleasepool drain];
-    g_autoreleasepool = nil;
+    g_autoreleasepool->drain();
+    g_autoreleasepool = nullptr;
   }
 }
 
@@ -165,14 +165,14 @@ void MTLBackend::render_step(bool force_resource_release)
   }
 
   if (force_resource_release && g_autoreleasepool) {
-    [g_autoreleasepool drain];
-    g_autoreleasepool = [[NSAutoreleasePool alloc] init];
+    g_autoreleasepool->drain();
+    g_autoreleasepool = NS::AutoreleasePool::alloc()->init();
   }
 }
 
 bool MTLBackend::is_inside_render_boundary()
 {
-  return (g_autoreleasepool != nil);
+  return (g_autoreleasepool != nullptr);
 }
 
 /** \} */
@@ -194,11 +194,11 @@ void MTLBackend::platform_init(MTLContext *ctx)
   eGPUSupportLevel support_level = GPU_SUPPORT_LEVEL_SUPPORTED;
 
   BLI_assert(ctx);
-  id<MTLDevice> mtl_device = ctx->device;
+  MTLDevicePtr mtl_device = ctx->device;
   BLI_assert(device);
 
-  NSString *gpu_name = [mtl_device name];
-  const char *vendor = [gpu_name UTF8String];
+  NSString *gpu_name = mtl_device->name();
+  const char *vendor = gpu_name->utf8String();
   const char *renderer = "Metal API";
   const char *version = "1.2";
   if (G.debug & G_DEBUG_GPU) {
@@ -243,7 +243,7 @@ void MTLBackend::platform_init(MTLContext *ctx)
     printf("Renderer: %s\n", renderer);
   }
 
-  GPUArchitectureType architecture_type = (mtl_device.hasUnifiedMemory &&
+  GPUArchitectureType architecture_type = (mtl_device->hasUnifiedMemory() &&
                                            device == GPU_DEVICE_APPLE) ?
                                               GPU_ARCHITECTURE_TBDR :
                                               GPU_ARCHITECTURE_IMR;
@@ -262,7 +262,7 @@ void MTLBackend::platform_init(MTLContext *ctx)
   GPG.device_uuid.reinitialize(0);
 
   /* LUID is registryID on Metal, or at least this is what libraries like OIDN expects. */
-  const uint64_t luid = mtl_device.registryID;
+  const uint64_t luid = mtl_device->registryID();
   GPG.device_luid.reinitialize(sizeof(luid));
   std::memcpy(GPG.device_luid.data(), &luid, sizeof(luid));
 
@@ -288,14 +288,14 @@ static const char *mtl_extensions_get_null(int /*i*/)
   return nullptr;
 }
 
-bool supports_barycentric_whitelist(id<MTLDevice> device)
+bool supports_barycentric_whitelist(MTLDevicePtr device)
 {
-  NSString *gpu_name = [device name];
-  BLI_assert([gpu_name length]);
-  const char *vendor = [gpu_name UTF8String];
+  NSString *gpu_name = device->name();
+  BLI_assert(gpu_name->length());
+  const char *vendor = gpu_name->utf8String();
 
   /* Verify GPU support. */
-  bool supported_gpu = [device supportsFamily:MTLGPUFamilyMac2];
+  bool supported_gpu = device->supportsFamily(MTLGPUFamilyMac2);
   bool should_support_barycentrics = false;
 
   /* Known good configs. */
@@ -310,18 +310,18 @@ bool supports_barycentric_whitelist(id<MTLDevice> device)
   return supported_gpu && should_support_barycentrics;
 }
 
-bool is_apple_sillicon(id<MTLDevice> device)
+bool is_apple_sillicon(MTLDevicePtr device)
 {
-  NSString *gpu_name = [device name];
-  BLI_assert([gpu_name length]);
+  NSString *gpu_name = device->name();
+  BLI_assert(gpu_name->length());
 
-  const char *vendor = [gpu_name UTF8String];
+  const char *vendor = gpu_name->utf8String();
 
   /* Known good configs. */
   return (strstr(vendor, "Apple") || strstr(vendor, "APPLE"));
 }
 
-static int get_num_performance_cpu_cores(id<MTLDevice> device)
+static int get_num_performance_cpu_cores(MTLDevicePtr device)
 {
   const int SYSCTL_BUF_LENGTH = 16;
   int num_performance_cores = -1;
@@ -346,7 +346,7 @@ static int get_num_performance_cpu_cores(id<MTLDevice> device)
   return num_performance_cores;
 }
 
-static int get_num_efficiency_cpu_cores(id<MTLDevice> device)
+static int get_num_efficiency_cpu_cores(MTLDevicePtr device)
 {
   if (is_apple_sillicon(device)) {
     /* On Apple Silicon query the number of efficiency cores */
@@ -371,7 +371,7 @@ bool MTLBackend::metal_is_supported()
   /* Device compatibility information using Metal Feature-set tables.
    * See: https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf */
 
-  NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
+  NS::OperatingSystemVersion version = NS::ProcessInfo::processInfo()->operatingSystemVersion();
 
   /* Metal Viewport requires macOS Version 10.15 onward. */
   bool supported_os_version = version.majorVersion >= 11 ||
@@ -385,16 +385,19 @@ bool MTLBackend::metal_is_supported()
     return false;
   }
 
-  id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+  MTLDevicePtr device = MTL::CreateSystemDefaultDevice();
 
   /* Debug: Enable low power GPU with Environment Var: METAL_FORCE_INTEL. */
   static const char *forceIntelStr = getenv("METAL_FORCE_INTEL");
   bool forceIntel = forceIntelStr ? (atoi(forceIntelStr) != 0) : false;
 
   if (forceIntel) {
-    NSArray<id<MTLDevice>> *allDevices = MTLCopyAllDevices();
-    for (id<MTLDevice> _device in allDevices) {
-      if (_device.lowPower) {
+    /* `for (x in array)` es enumeracion rapida de Objective-C y no existe en C++.
+     * NS::Array no es una plantilla, asi que el elemento se recupera con static_cast. */
+    NS::Array *allDevices = MTL::CopyAllDevices();
+    for (NS::UInteger i = 0; i < allDevices->count(); i++) {
+      MTLDevicePtr _device = static_cast<MTLDevicePtr>(allDevices->object(i));
+      if (_device->lowPower()) {
         device = _device;
       }
     }
@@ -402,11 +405,11 @@ bool MTLBackend::metal_is_supported()
 
   /* Metal Viewport requires argument buffer tier-2 support and Barycentric Coordinates.
    * These are available on most hardware configurations supporting Metal 2.2. */
-  bool supports_argument_buffers_tier2 = ([device argumentBuffersSupport] ==
+  bool supports_argument_buffers_tier2 = (device->argumentBuffersSupport() ==
                                           MTLArgumentBuffersTier2);
-  bool supports_barycentrics = [device supportsShaderBarycentricCoordinates] ||
+  bool supports_barycentrics = device->supportsShaderBarycentricCoordinates() ||
                                supports_barycentric_whitelist(device);
-  bool supported_metal_version = [device supportsFamily:MTLGPUFamilyMac2];
+  bool supported_metal_version = device->supportsFamily(MTLGPUFamilyMac2);
 
   bool result = supports_argument_buffers_tier2 && supports_barycentrics && supported_os_version &&
                 supported_metal_version;
@@ -424,7 +427,7 @@ bool MTLBackend::metal_is_supported()
 
     if (result) {
       printf("Device with name %s supports metal minimum requirements\n",
-             [[device name] UTF8String]);
+             device->name()->utf8String());
     }
   }
 
@@ -434,24 +437,22 @@ bool MTLBackend::metal_is_supported()
 void MTLBackend::capabilities_init(MTLContext *ctx)
 {
   BLI_assert(ctx);
-  id<MTLDevice> device = ctx->device;
+  MTLDevicePtr device = ctx->device;
   BLI_assert(device);
 
   /* Initialize Capabilities. */
-  MTLBackend::capabilities.supports_argument_buffers_tier2 = ([device argumentBuffersSupport] ==
+  MTLBackend::capabilities.supports_argument_buffers_tier2 = (device->argumentBuffersSupport() ==
                                                               MTLArgumentBuffersTier2);
-  MTLBackend::capabilities.supports_family_mac1 = [device supportsFamily:MTLGPUFamilyMac1];
-  MTLBackend::capabilities.supports_family_mac2 = [device supportsFamily:MTLGPUFamilyMac2];
-  MTLBackend::capabilities.supports_family_mac_catalyst1 = [device
-      supportsFamily:MTLGPUFamilyMacCatalyst1];
-  MTLBackend::capabilities.supports_family_mac_catalyst2 = [device
-      supportsFamily:MTLGPUFamilyMacCatalyst2];
+  MTLBackend::capabilities.supports_family_mac1 = device->supportsFamily(MTLGPUFamilyMac1);
+  MTLBackend::capabilities.supports_family_mac2 = device->supportsFamily(MTLGPUFamilyMac2);
+  MTLBackend::capabilities.supports_family_mac_catalyst1 = device->supportsFamily(MTLGPUFamilyMacCatalyst1);
+  MTLBackend::capabilities.supports_family_mac_catalyst2 = device->supportsFamily(MTLGPUFamilyMacCatalyst2);
   /* NOTE(Metal): Texture gather is supported on AMD, but results are non consistent
    * with Apple Silicon GPUs. Disabling for now to avoid erroneous rendering. */
-  MTLBackend::capabilities.supports_texture_gather = [device hasUnifiedMemory];
+  MTLBackend::capabilities.supports_texture_gather = device->hasUnifiedMemory();
 
   /* GPU Type. */
-  const char *gpu_name = [device.name UTF8String];
+  const char *gpu_name = device->name()->utf8String();
   if (strstr(gpu_name, "M1")) {
     MTLBackend::capabilities.gpu = APPLE_GPU_M1;
   }
@@ -468,7 +469,7 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
   /* Texture atomics supported in Metal 3.1. */
   MTLBackend::capabilities.supports_texture_atomics = false;
 #if defined(MAC_OS_VERSION_14_0)
-  if (@available(macOS 14.0, *)) {
+  if (__builtin_available(macOS 14.0, *)) {
     MTLBackend::capabilities.supports_texture_atomics = true;
   }
 #endif
@@ -488,7 +489,7 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
   MTLBackend::capabilities.num_efficiency_cores = get_num_efficiency_cpu_cores(ctx->device);
 
   /* Common Global Capabilities. */
-  GCaps.max_texture_size = ([device supportsFamily:MTLGPUFamilyApple3] ||
+  GCaps.max_texture_size = (device->supportsFamily(MTLGPUFamilyApple3) ||
                             MTLBackend::capabilities.supports_family_mac1) ?
                                16384 :
                                8192;
@@ -496,7 +497,7 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
   GCaps.max_texture_layers = 2048;
   GCaps.max_textures = (MTLBackend::capabilities.supports_family_mac1) ?
                            128 :
-                           (([device supportsFamily:MTLGPUFamilyApple4]) ? 96 : 31);
+                           ((device->supportsFamily(MTLGPUFamilyApple4)) ? 96 : 31);
   if (GCaps.max_textures <= 32) {
     BLI_assert(false);
   }
@@ -534,7 +535,7 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
    * Can use argument buffers if a higher limit is required. */
   GCaps.max_shader_storage_buffer_bindings = 14;
   GCaps.max_compute_shader_storage_blocks = 14;
-  GCaps.max_storage_buffer_size = size_t(ctx->device.maxBufferLength);
+  GCaps.max_storage_buffer_size = size_t(ctx->device->maxBufferLength());
   GCaps.storage_buffer_alignment = 256; /* TODO(fclem): But also unused. */
 
   GCaps.max_work_group_count[0] = 65535;
@@ -542,7 +543,7 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
   GCaps.max_work_group_count[2] = 65535;
   /* In Metal, total_thread_count is 512 or 1024, such that
    * threadgroup `width*height*depth <= total_thread_count` */
-  uint max_threads_per_threadgroup_per_dim = ([device supportsFamily:MTLGPUFamilyApple4] ||
+  uint max_threads_per_threadgroup_per_dim = (device->supportsFamily(MTLGPUFamilyApple4) ||
                                               MTLBackend::capabilities.supports_family_mac1) ?
                                                  1024 :
                                                  512;

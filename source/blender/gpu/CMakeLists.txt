@@ -340,7 +340,7 @@ set(VULKAN_SRC
 )
 
 set(METAL_SRC
-  metal/mtl_backend.mm
+  metal/mtl_backend.cc
   metal/mtl_batch.cc
   metal/mtl_command_buffer.mm
   metal/mtl_cpp_impl.cc
