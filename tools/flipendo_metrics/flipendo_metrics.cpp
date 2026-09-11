@@ -994,7 +994,29 @@ struct Battery {
   double secs = 0;
   bool ran_gui = false;
   std::string binary;
+  /* De qué binario hablamos exactamente: el banner de arranque dice con qué
+   * commit se construyó. La batería mide ESE binario, no el commit medido. */
+  std::string bin_hash, bin_built;
+  /* Y el binario sale del ÁRBOL DE TRABAJO, no del commit: si otro carril tiene
+   * trabajo a medias sin commitear, está dentro del binario que se prueba. */
+  std::vector<std::string> dirty;
 };
+
+/* Del banner «Blender 4.5.0 Alpha (hash 35309693a44c built 2026-09-11 18:47:11)». */
+static void parse_banner(const std::string &out, std::string &hash, std::string &built)
+{
+  if (!hash.empty()) return;
+  size_t p = out.find("(hash ");
+  if (p == std::string::npos) return;
+  size_t a = p + 6, e = out.find(' ', a);
+  if (e == std::string::npos) return;
+  hash = out.substr(a, e - a);
+  size_t b = out.find("built ", e);
+  if (b == std::string::npos) return;
+  size_t f = out.find(')', b);
+  if (f == std::string::npos) return;
+  built = out.substr(b + 6, f - b - 6);
+}
 
 static Battery run_battery(const std::string &root,
                            const std::string &binary,
@@ -1112,6 +1134,7 @@ static Battery run_battery(const std::string &root,
     for (const std::string &a : v.args) argv.push_back(a);
 
     ProcResult r = run_process(argv, root, "", 900);
+    parse_banner(r.out, bat.bin_hash, bat.bin_built);
     v.ran = true;
     v.rc = r.rc;
     v.timed_out = r.timed_out;
@@ -1391,8 +1414,19 @@ int main(int argc, char **argv)
   std::string creator_src = git.show(snap.rev, "source/creator/creator_args.cc");
   const bool have_binary = fs::exists(op.binary);
   Battery bat;
-  if ((op.run_bateria || op.bateria_only) && have_binary && !creator_src.empty())
+  if ((op.run_bateria || op.bateria_only) && have_binary && !creator_src.empty()) {
+    /* El estado sucio se lee ANTES de la batería: es el árbol del que salió el
+     * binario que se va a probar. */
+    ProcResult st = git.run({"status", "--porcelain"}, "", false);
+    for (const std::string &ln : split_lines(st.out)) {
+      std::string t = trim(ln);
+      if (t.empty() || starts_with(t, "??")) continue;
+      bat.dirty.push_back(t);
+    }
+    std::vector<std::string> dirty = bat.dirty;
     bat = run_battery(root, op.binary, creator_src, op.run_gui);
+    bat.dirty = dirty;
+  }
 
   if (op.bateria_only) {
     std::printf("\n=== bateria de verificadores (%s) ===\n", snap.shortrev.c_str());
@@ -1823,6 +1857,34 @@ int main(int argc, char **argv)
               "comprobaciones distintas.\n\n",
               mil(bat.fl_args_total).c_str(), bat.distinct_flags, nchecks, nselfs, bat.dumpers,
               bat.converters, bat.v.size());
+    /* La cifra más importante de esta sección es de qué binario hablamos. Sin
+     * esto, un rojo de otro carril parece una regresión del proyecto. */
+    r += "### Contra qué binario se ha medido\n\n";
+    r += sfmt("- Binario: `%s`\n", bat.binary.c_str());
+    if (!bat.bin_hash.empty()) {
+      const bool same = starts_with(snap.rev, bat.bin_hash) || starts_with(bat.bin_hash, snap.shortrev);
+      r += sfmt("- Construido del commit `%s`%s, el %s.\n", bat.bin_hash.c_str(),
+                same ? " — **el mismo que se mide arriba**" :
+                       sfmt(" — **OJO: no es el commit medido (`%s`)**", snap.shortrev.c_str()).c_str(),
+                bat.bin_built.c_str());
+    }
+    if (!bat.dirty.empty()) {
+      r += sfmt("- **El árbol de trabajo tenía %zu ficheros versionados modificados sin\n"
+                "  commitear cuando se midió.** El binario se compila del árbol de trabajo, no\n"
+                "  del commit: dentro del binario que aquí se prueba va trabajo a medias de\n"
+                "  otros carriles. Un rojo puede ser de ellos y no una regresión del proyecto.\n"
+                "  Para un veredicto limpio hay que medir con el árbol limpio. Estaban\n"
+                "  tocados:\n\n", bat.dirty.size());
+      size_t shown = 0;
+      for (const std::string &d : bat.dirty) {
+        if (shown++ >= 14) { r += sfmt("  - …y %zu más\n", bat.dirty.size() - 14); break; }
+        r += sfmt("  - `%s`\n", d.c_str());
+      }
+      r += "\n";
+    }
+    else {
+      r += "- El árbol de trabajo estaba limpio: el binario corresponde al commit medido.\n\n";
+    }
     r += "**Un `--fl-selftest-*` no es una prueba, es un volcador**: escribe un fichero y sale\n";
     r += "con 0 aunque no haya escrito nada (medido: sin argumento imprime «falta el fichero\n";
     r += "de salida» y devuelve 0 igual). Contarlos como «verdes» por su código de salida\n";
