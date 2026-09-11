@@ -53,6 +53,7 @@ void ED_operatortypes_mesh()
   WM_operatortype_append(MESH_OT_primitive_uv_sphere_add);
   WM_operatortype_append(MESH_OT_primitive_ico_sphere_add);
   WM_operatortype_append(MESH_OT_primitive_torus_add);
+  WM_operatortype_append(PAINT_OT_vertex_color_dirt);
 
   WM_operatortype_append(MESH_OT_primitive_cube_add_gizmo);
 

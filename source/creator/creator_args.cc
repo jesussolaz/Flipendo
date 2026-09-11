@@ -66,6 +66,7 @@
 
 #  include "FL_game_runtime.hh"
 #  include "FL_keymap_dump.hpp"
+#  include "FL_mesh_ops_selftest.hh"
 #  include "FL_numinput_native.hh"
 #  include "FL_object_ops_selftest.hh"
 #  include "FL_ui_dump.hpp"
@@ -2739,6 +2740,41 @@ static int arg_handle_fl_selftest_object_ops(int argc, const char **argv, void *
   return 0;
 }
 
+static const char arg_handle_fl_selftest_mesh_ops_doc[] =
+    "<filepath>\n"
+    "\tConstruye escenas deterministas (Suzanne, icoesfera, esferas UV con atributo de\n"
+    "\tcolor, cubo con vertices sueltos, rejilla con mascara de pintura), invoca\n"
+    "\t`paint.vertex_color_dirt` por su idname y vuelca el atributo de color elemento a\n"
+    "\telemento. Se compara con tests/flipendo/meshops/baseline-python.txt (Carril C).";
+static int arg_handle_fl_selftest_mesh_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::mesh_ops_selftest::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_mesh_ops_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-mesh-ops, pero compara el volcado con la linea base indicada\n"
+    "\ty dice cuantos elementos de color coinciden por caso. Sale con codigo 0 solo si\n"
+    "\tno hay ni una diferencia (Carril C).";
+static int arg_handle_fl_check_mesh_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::mesh_ops_selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_selftest_numinput_doc[] =
     "<filepath>\n"
     "\tEvalua una bateria de expresiones de campo numerico (aritmetica, funciones,\n"
@@ -3311,6 +3347,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);
   BLI_args_add(
       ba, nullptr, "--fl-selftest-object-ops", CB(arg_handle_fl_selftest_object_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-selftest-mesh-ops", CB(arg_handle_fl_selftest_mesh_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-check-mesh-ops", CB(arg_handle_fl_check_mesh_ops), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

@@ -112,6 +112,10 @@ void MESH_OT_primitive_uv_sphere_add(wmOperatorType *ot);
 void MESH_OT_primitive_ico_sphere_add(wmOperatorType *ot);
 void MESH_OT_primitive_torus_add(wmOperatorType *ot);
 
+/* `mesh_vertex_dirt.cc` (idname is `paint.vertex_color_dirt`, ported from
+ * bl_operators/vertexpaint_dirt.py, Flipendo C2) */
+void PAINT_OT_vertex_color_dirt(wmOperatorType *ot);
+
 /* *** `editmesh_add_gizmo.cc` *** */
 
 void MESH_OT_primitive_cube_add_gizmo(wmOperatorType *ot);
