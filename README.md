@@ -62,7 +62,7 @@ Estado real, medido y verificable en el propio binario:
 | C mantenido (fuera de `extern/`) | **0 ficheros** |
 | Componentes de gameplay | **100% C++** (`FL_Component`; el sistema Python fue eliminado) |
 | Mapa de teclado por defecto | **248/248 keymaps en C++**, idénticos a los que generaba Python |
-| Sistema de herramientas | **en C++ y sin puentes a Python**: catálogo, activación, consultas, barra, ajustes, cabecera, reserva y keymap del popup. Verificado contra el Python real (416 + 474 + 416 + 912 casos) y la barra píxel a píxel; la cabecera, en verificación visual |
+| Sistema de herramientas | **100% C++, sin una sola línea de Python**: catálogo, activación, consultas, operadores, barra, ajustes, cabecera, reserva y keymap del popup. Verificado contra el Python real (416 + 474 + 416 + 912 casos), la barra y la cabecera píxel a píxel. Retiradas 5.606 líneas de Python |
 | El build necesita Python | **no** (el último generador pasó a C++) |
 | Player sin CPython | **compila y juega** — 0 símbolos `_Py`, 536 MB frente a 771 MB |
 | Python restante | ~248.000 líneas, todas del editor |
@@ -122,7 +122,7 @@ La fila que más cambia el cálculo es la de add-ons: quitar Python **cuesta** e
 | Cierre del player con `ImageRender` activo | ❌ segfault | ✅ (use-after-free corregido) |
 | Componentes de gameplay | Python | ✅ C++ nativo |
 | Mapa de teclado | script de 8.669 líneas | ✅ C++, verificado atajo a atajo |
-| Catálogo de herramientas | script de 3.752 líneas | ✅ C++, verificado herramienta a herramienta |
+| Catálogo de herramientas | script de 3.752 líneas | ✅ C++, verificado herramienta a herramienta (el script ya no existe) |
 
 Todo verificado con capturas y tests en Metal — ver los mensajes de commit, que documentan cada verificación.
 
