@@ -482,6 +482,12 @@ if(WITH_PYTHON)
     PATTERN "site" EXCLUDE
     PATTERN "${FREESTYLE_EXCLUDE_CONDITIONAL}" EXCLUDE
 
+    # Los presets NO son Python: los instala el bloque de datos de abajo, que
+    # corre siempre. `scripts/presets` es el unico directorio con ese nombre en
+    # todo el arbol de scripts, asi que el patron no se lleva nada mas por
+    # delante (comprobado con `find scripts -type d -name presets`).
+    PATTERN "presets" EXCLUDE
+
     # Exclude extensions development files.
     PATTERN "addons_core/bl_pkg/Makefile" EXCLUDE
     PATTERN "addons_core/bl_pkg/tests" EXCLUDE
@@ -511,6 +517,39 @@ if(WITH_PYTHON)
   endif()
 
 endif()
+
+# -----------------------------------------------------------------------------
+# DATOS, no codigo: se instalan SIEMPRE, con o sin interprete
+#
+# Regla dura, y esta escrita porque ya casi costo un agujero silencioso: el arbol
+# `scripts/` entero se instala DENTRO de `if(WITH_PYTHON)` (mas arriba). Todo lo
+# que dejo de ser codigo y paso a ser dato -- los presets `.fpreset`, los temas
+# `.xml`, los `.blend` de las plantillas de aplicacion -- vive ahi por historia,
+# no por naturaleza. Si se queda dentro de ese `if`, un editor compilado con
+# `WITH_PYTHON=OFF` arranca sin presets y sin plantillas, y **nadie se entera
+# hasta usarlo**: no hay error, simplemente los menus salen vacios.
+#
+# Por eso los datos se instalan aqui, fuera de cualquier condicion de Python. Lo
+# nuevo que salga del Python y sea dato va a esta lista, no a `scripts/`.
+# Ver politicas/DATOS-SIN-INTERPRETE.md.
+
+# Presets: 167 `.fpreset` (datos), 2 temas `.xml` y los `.py` que aun no tienen
+# sustituto nativo (los cinco de FFmpeg con su condicional NTSC/PAL). Los `.py`
+# se instalan tambien a proposito: sin interprete el lector nativo los rechaza
+# con un error visible, que es mejor que un preset que desaparece del menu.
+install(
+  DIRECTORY ${CMAKE_SOURCE_DIR}/scripts/presets
+  DESTINATION ${TARGETDIR_VER}/scripts
+  PATTERN "__pycache__" EXCLUDE
+)
+
+# Las plantillas de aplicacion: su `.blend` es el dato (la plantilla en si). El
+# `__init__.py` que lo acompana es codigo y viaja con `scripts/`, o no viaja.
+install(
+  DIRECTORY ${CMAKE_SOURCE_DIR}/scripts/startup/bl_app_templates_system
+  DESTINATION ${TARGETDIR_VER}/scripts/startup
+  FILES_MATCHING PATTERN "*.blend"
+)
 
 # fonts
 install(
