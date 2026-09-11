@@ -100,15 +100,20 @@ se llaman. **Ésa era la señal de salida**; a partir de aquí las demás salen 
 |---|---:|---:|---|
 | `properties_animviz.py` | 123 | 0 (solo mixins de dibujo) | ninguna — es una **biblioteca**, no una pestaña; cae con sus usuarios |
 | ~~`properties_data_metaball.py`~~ | 137 | 6 | **hecha** (sexta unidad) |
-| `properties_data_speaker.py` | 156 | 6 | `PropertyPanel`, `PropertiesAnimationMixin` |
+| ~~`properties_data_speaker.py`~~ | 156 | 6 | **hecha** (séptima unidad) |
 | `properties_data_pointcloud.py` | 175 | 3 | `PropertyPanel`, `UIList` |
 | `properties_workspace.py` | 193 | 3 | `PropertyPanel`, `UIList` |
 | `properties_data_curves.py` | 219 | 5 | `PropertyPanel`, `PropertiesAnimationMixin`, `UIList` |
 | `properties_data_volume.py` | 239 | 8 | `PropertyPanel`, `PropertiesAnimationMixin`, `UIList` |
 | `properties_view_layer.py` | 300 | 10 | `PropertyPanel`, `UIList` |
 
-Quedan **24.862 líneas** en `scripts/startup/bl_ui/properties_*.py` (eran 25.412 y eran 43
-ficheros; ahora **38**). Las gordas —`properties_particle` 2.312, `properties_paint_common` 1.965,
+Quedan **24.706 líneas** en `scripts/startup/bl_ui/properties_*.py` (eran 25.412 y eran 43
+ficheros; ahora **37**). La siguiente de la tabla, `properties_data_pointcloud.py`, trae un
+`UIList` con `filter_items()` propio, y el volcado de diseño **no ejecuta el `draw_item()` de
+una lista** (deuda del propio volcador, `UI-A-CPP.md` §D4.2): esa parte se migraría sin
+evidencia mientras la deuda siga en pie. Con `--fl-ui-scene` hay salida —dibujar la lista
+con los datos que la escena ya tenga, en vez de inventarse un elemento—, pero hay que
+hacerla antes. Las gordas —`properties_particle` 2.312, `properties_paint_common` 1.965,
 `properties_constraint` 1.900, `properties_physics_fluid` 1.629, `properties_freestyle` 1.348—
 no son candidatas a una sola sesión, y `properties_freestyle` además cae entera con Freestyle
 (`INVENTARIO-PYTHON.md §2.9`).
