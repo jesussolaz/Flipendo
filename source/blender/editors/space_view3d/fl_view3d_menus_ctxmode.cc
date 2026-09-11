@@ -310,6 +310,132 @@ static void armature_context_menu_draw(const bContext *C, Menu *menu)
 /** \name Registro
  * \{ */
 
+
+/* -------------------------------------------------------------------- */
+/** \name VIEW3D_MT_greasepencil_edit_context_menu
+ *
+ * Dos menus en uno: el de trazos y el de puntos, segun
+ * `tool_settings.gpencil_selectmode_edit`. Los dos van dentro de una fila con
+ * una columna alineada, no directamente sobre el layout, y eso tambien es parte
+ * del contrato: el volcado serializa la jerarquia.
+ * \{ */
+
+static void greasepencil_edit_context_menu_draw(const bContext *C, Menu *menu)
+{
+  uiLayout *layout = menu->layout;
+
+  const ToolSettings *ts = CTX_data_tool_settings(C);
+  if (ts == nullptr) {
+    return;
+  }
+  const bool is_stroke_mode = ts->gpencil_selectmode_edit == GP_SELECTMODE_STROKE;
+
+  uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+  uiLayout *row = &layout->row(false);
+  uiLayout *col = &row->column(true);
+
+  if (is_stroke_mode) {
+    col->label(IFACE_("Stroke"), ICON_GP_SELECT_STROKES);
+
+    col->separator();
+
+    /* Trazos. */
+    col->op("GREASE_PENCIL_OT_stroke_subdivide", IFACE_("Subdivide"), ICON_NONE);
+    col->op("GREASE_PENCIL_OT_stroke_subdivide_smooth", IFACE_("Subdivide and Smooth"), ICON_NONE);
+    col->op("GREASE_PENCIL_OT_stroke_simplify", IFACE_("Simplify"), ICON_NONE);
+    col->op("GREASE_PENCIL_OT_outline", IFACE_("Outline"), ICON_NONE);
+
+    col->separator();
+
+    /* Deformar. */
+    col->op("GREASE_PENCIL_OT_stroke_smooth", IFACE_("Smooth"), ICON_NONE);
+    op_enum_item(col, "TRANSFORM_OT_transform", N_("Shrink/Fatten"), "mode", "CURVE_SHRINKFATTEN");
+
+    col->separator();
+
+    col->menu("GREASE_PENCIL_MT_move_to_layer", std::nullopt, ICON_NONE);
+    col->menu("VIEW3D_MT_grease_pencil_assign_material", std::nullopt, ICON_NONE);
+    col->op("GREASE_PENCIL_OT_set_active_material", IFACE_("Set as Active Material"), ICON_NONE);
+    uiItemMenuEnumO(col, C, "GREASE_PENCIL_OT_reorder", "direction", IFACE_("Arrange"), ICON_NONE);
+
+    col->separator();
+
+    col->menu("VIEW3D_MT_mirror", std::nullopt, ICON_NONE);
+
+    col->separator();
+
+    /* Copiar y pegar. */
+    col->op("GREASE_PENCIL_OT_duplicate_move", IFACE_("Duplicate"), ICON_NONE);
+    col->op("GREASE_PENCIL_OT_copy", IFACE_("Copy"), ICON_COPYDOWN);
+    PointerRNA props = col->op("GREASE_PENCIL_OT_paste", IFACE_("Paste"), ICON_PASTEDOWN);
+    if (props.data) {
+      RNA_enum_set_identifier(nullptr, &props, "type", "ACTIVE");
+    }
+    props = col->op("GREASE_PENCIL_OT_paste", IFACE_("Paste by Layer"), ICON_NONE);
+    if (props.data) {
+      RNA_enum_set_identifier(nullptr, &props, "type", "LAYER");
+    }
+
+    col->separator();
+
+    col->op("GREASE_PENCIL_OT_extrude_move", IFACE_("Extrude"), ICON_NONE);
+
+    col->separator();
+
+    op_enum_item(col, "GREASE_PENCIL_OT_separate", N_("Separate"), "mode", "SELECTED");
+  }
+  else {
+    col->label(IFACE_("Point"), ICON_GP_SELECT_POINTS);
+
+    col->separator();
+
+    /* Trazos. */
+    col->op("GREASE_PENCIL_OT_stroke_subdivide", IFACE_("Subdivide"), ICON_NONE);
+    col->op("GREASE_PENCIL_OT_stroke_subdivide_smooth", IFACE_("Subdivide and Smooth"), ICON_NONE);
+    col->op("GREASE_PENCIL_OT_stroke_simplify", IFACE_("Simplify"), ICON_NONE);
+    col->op("GREASE_PENCIL_OT_outline", IFACE_("Outline"), ICON_NONE);
+
+    col->separator();
+
+    /* Deformar. */
+    col->op("TRANSFORM_OT_tosphere", IFACE_("To Sphere"), ICON_NONE);
+    col->op("TRANSFORM_OT_shear", IFACE_("Shear"), ICON_NONE);
+    col->op("TRANSFORM_OT_bend", IFACE_("Bend"), ICON_NONE);
+    col->op("TRANSFORM_OT_push_pull", IFACE_("Push/Pull"), ICON_NONE);
+    op_enum_item(col, "TRANSFORM_OT_transform", N_("Shrink/Fatten"), "mode", "CURVE_SHRINKFATTEN");
+    col->op("GREASE_PENCIL_OT_stroke_smooth", IFACE_("Smooth Points"), ICON_NONE);
+    col->op("GREASE_PENCIL_OT_set_start_point", IFACE_("Set Start Point"), ICON_NONE);
+
+    col->separator();
+
+    col->menu("VIEW3D_MT_mirror", IFACE_("Mirror"), ICON_NONE);
+
+    col->separator();
+
+    /* Copiar y pegar. */
+    col->op("GREASE_PENCIL_OT_copy", IFACE_("Copy"), ICON_COPYDOWN);
+    col->op("GREASE_PENCIL_OT_paste", IFACE_("Paste"), ICON_PASTEDOWN);
+    col->op("GREASE_PENCIL_OT_duplicate_move", IFACE_("Duplicate"), ICON_NONE);
+
+    col->separator();
+
+    col->op("GREASE_PENCIL_OT_extrude_move", IFACE_("Extrude"), ICON_NONE);
+
+    col->separator();
+
+    col->op("GREASE_PENCIL_OT_stroke_split", IFACE_("Split"), ICON_NONE);
+    op_enum_item(col, "GREASE_PENCIL_OT_separate", N_("Separate"), "mode", "SELECTED");
+
+    /* Quitar. */
+    col->separator();
+
+    uiItemsEnumO(col, "GREASE_PENCIL_OT_dissolve", "type");
+  }
+}
+
+/** \} */
+
 static const flipendo::MenuDecl view3d_ctxmode_menus[] = {
     {
         /*idname*/ "VIEW3D_MT_particle_context_menu",
@@ -317,6 +443,13 @@ static const flipendo::MenuDecl view3d_ctxmode_menus[] = {
         /*description*/ nullptr,
         /*translation_context*/ nullptr,
         /*draw*/ particle_context_menu_draw,
+    },
+    {
+        /*idname*/ "VIEW3D_MT_greasepencil_edit_context_menu",
+        /*label*/ "",
+        /*description*/ nullptr,
+        /*translation_context*/ nullptr,
+        /*draw*/ greasepencil_edit_context_menu_draw,
     },
     {
         /*idname*/ "VIEW3D_MT_pose_context_menu",

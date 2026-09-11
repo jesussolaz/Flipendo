@@ -6862,112 +6862,6 @@ class VIEW3D_MT_grease_pencil_assign_material(Menu):
                 ).material = mat.name
 
 
-class VIEW3D_MT_greasepencil_edit_context_menu(Menu):
-    bl_label = ""
-
-    def draw(self, context):
-        layout = self.layout
-        tool_settings = context.tool_settings
-
-        is_stroke_mode = tool_settings.gpencil_selectmode_edit == 'STROKE'
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        row = layout.row()
-
-        if is_stroke_mode:
-            col = row.column(align=True)
-            col.label(text="Stroke", icon='GP_SELECT_STROKES')
-
-            col.separator()
-
-            # Main Strokes Operators
-            col.operator("grease_pencil.stroke_subdivide", text="Subdivide")
-            col.operator("grease_pencil.stroke_subdivide_smooth", text="Subdivide and Smooth")
-            col.operator("grease_pencil.stroke_simplify", text="Simplify")
-            col.operator("grease_pencil.outline", text="Outline")
-
-            col.separator()
-
-            # Deform Operators
-            col.operator("grease_pencil.stroke_smooth", text="Smooth")
-            col.operator("transform.transform", text="Shrink/Fatten").mode = 'CURVE_SHRINKFATTEN'
-
-            col.separator()
-
-            col.menu("GREASE_PENCIL_MT_move_to_layer")
-            col.menu("VIEW3D_MT_grease_pencil_assign_material")
-            col.operator("grease_pencil.set_active_material", text="Set as Active Material")
-            col.operator_menu_enum("grease_pencil.reorder", text="Arrange", property="direction")
-
-            col.separator()
-
-            col.menu("VIEW3D_MT_mirror")
-
-            col.separator()
-
-            # Copy/paste
-            col.operator("grease_pencil.duplicate_move", text="Duplicate")
-            col.operator("grease_pencil.copy", text="Copy", icon='COPYDOWN')
-            col.operator("grease_pencil.paste", text="Paste", icon='PASTEDOWN').type = 'ACTIVE'
-            col.operator("grease_pencil.paste", text="Paste by Layer").type = 'LAYER'
-
-            col.separator()
-
-            col.operator("grease_pencil.extrude_move", text="Extrude")
-
-            col.separator()
-
-            col.operator("grease_pencil.separate", text="Separate").mode = 'SELECTED'
-        else:
-            col = row.column(align=True)
-            col.label(text="Point", icon='GP_SELECT_POINTS')
-
-            col.separator()
-
-            # Main Strokes Operators
-            col.operator("grease_pencil.stroke_subdivide", text="Subdivide")
-            col.operator("grease_pencil.stroke_subdivide_smooth", text="Subdivide and Smooth")
-            col.operator("grease_pencil.stroke_simplify", text="Simplify")
-            col.operator("grease_pencil.outline", text="Outline")
-
-            col.separator()
-
-            # Deform Operators
-            col.operator("transform.tosphere", text="To Sphere")
-            col.operator("transform.shear", text="Shear")
-            col.operator("transform.bend", text="Bend")
-            col.operator("transform.push_pull", text="Push/Pull")
-            col.operator("transform.transform", text="Shrink/Fatten").mode = 'CURVE_SHRINKFATTEN'
-            col.operator("grease_pencil.stroke_smooth", text="Smooth Points")
-            col.operator("grease_pencil.set_start_point", text="Set Start Point")
-
-            col.separator()
-
-            col.menu("VIEW3D_MT_mirror", text="Mirror")
-
-            col.separator()
-
-            # Copy/paste
-            col.operator("grease_pencil.copy", text="Copy", icon='COPYDOWN')
-            col.operator("grease_pencil.paste", text="Paste", icon='PASTEDOWN')
-            col.operator("grease_pencil.duplicate_move", text="Duplicate")
-
-            col.separator()
-
-            col.operator("grease_pencil.extrude_move", text="Extrude")
-
-            col.separator()
-
-            col.operator("grease_pencil.stroke_split", text="Split")
-            col.operator("grease_pencil.separate", text="Separate").mode = 'SELECTED'
-
-            # Removal Operators
-            col.separator()
-
-            col.operator_enum("grease_pencil.dissolve", "type")
-
-
 class GREASE_PENCIL_MT_Layers(Menu):
     bl_label = "Layers"
 
@@ -7761,7 +7655,6 @@ classes = (
     VIEW3D_MT_edit_greasepencil_showhide,
     VIEW3D_MT_edit_greasepencil_cleanup,
     VIEW3D_MT_weight_grease_pencil,
-    VIEW3D_MT_greasepencil_edit_context_menu,
     VIEW3D_MT_grease_pencil_assign_material,
     VIEW3D_MT_edit_greasepencil,
     VIEW3D_MT_edit_greasepencil_stroke,
