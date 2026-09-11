@@ -372,8 +372,20 @@ std::map<std::string, std::string> parse_dump(std::istream &in)
        * Cuando el sistema de herramientas se migre, esta normalizacion se retira. */
       const size_t flag_pos = line.find(" flag=");
       if (flag_pos != std::string::npos) {
-        const int flag = std::atoi(line.c_str() + flag_pos + 6);
-        line = line.substr(0, flag_pos) + " flag=" + std::to_string(flag & ~(1 << 7));
+        /* Se normaliza SOLO el numero del flag y se conserva lo que venga detras. Antes
+         * esto reconstruia la linea cortando en `flag_pos`, con lo que TODO lo que
+         * hubiera despues del flag se tiraba en silencio, en la linea base y en el
+         * volcado nativo a la vez: un campo nuevo al final de la cabecera KEYMAP no se
+         * habria comparado nunca y nadie se habria enterado. Medido con un sufijo a mano
+         * en la cabecera: antes rc=0 («248/248 identicos»), ahora rc=1. */
+        const size_t num_start = flag_pos + 6;
+        size_t num_end = num_start;
+        while (num_end < line.size() && line[num_end] >= '0' && line[num_end] <= '9') {
+          num_end++;
+        }
+        const int flag = std::atoi(line.c_str() + num_start);
+        line = line.substr(0, flag_pos) + " flag=" + std::to_string(flag & ~(1 << 7)) +
+               line.substr(num_end);
       }
 
       out[current] = line + "\n";
@@ -449,6 +461,17 @@ bool FL_keyconfig_check_native(wmWindowManager *wm, const char *baseline_filepat
               baseline.size() > native.size() ? baseline.size() - native.size() : 0);
 
   WM_keyconfig_remove(wm, kc);
+  if (ok == 0) {
+    /* Con cero keymaps comparados, `bad` vale 0 y esto salia VERDE sin haber mirado ni
+     * un atajo. No comprobar no es aprobar. */
+    std::fprintf(stderr,
+                 "FL_keyconfig_check_native: FALLO: 0 keymaps comparados contra '%s'\n"
+                 "  (linea base %zu, nativos %zu). Sin keymaps no hay verificacion.\n",
+                 baseline_filepath,
+                 baseline.size(),
+                 native.size());
+    return false;
+  }
   return bad == 0;
 }
 

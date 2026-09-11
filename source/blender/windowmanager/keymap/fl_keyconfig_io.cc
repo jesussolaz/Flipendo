@@ -1549,6 +1549,13 @@ bool check_roundtrip(bContext *C, const char *report_path, const char *legacy_py
   WM_keyconfig_remove(wm, kc_probe);
 
   printf("keyconfig: ciclo exportar-importar-exportar: %d lineas, %d distintas\n", n, diff);
+  if (n == 0) {
+    /* Un ciclo de cero lineas daba `diff == 0` y por tanto VERDE sin haber comparado
+     * nada. No comprobar no es aprobar. */
+    fprintf(stderr,
+            "keyconfig: FALLO: el ciclo comparo 0 lineas. Sin lineas no hay verificacion.\n");
+    return false;
+  }
   return (diff == 0) && (legacy_diff == 0);
 }
 

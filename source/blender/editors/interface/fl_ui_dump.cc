@@ -1842,7 +1842,13 @@ bool check(bContext *C, const char *baseline_filepath)
          faltan,
          sobran);
 
-  const bool ok = (distintos == 0) && (faltan == 0) && (sobran == 0);
+  bool ok = (distintos == 0) && (faltan == 0) && (sobran == 0);
+  if (identicos == 0 && distintos == 0) {
+    /* Ni un bloque comparado tambien daba VERDE. No comprobar no es aprobar. */
+    printf("\nFALLO: 0 bloques comparados contra '%s'. Sin bloques no hay verificacion.\n",
+           baseline_filepath);
+    ok = false;
+  }
   if (barrera_fallos != 0) {
     /* Igual que en el volcado: tras un SIGSEGV el cierre ordenado no es de fiar, y
      * el parte ya esta impreso. */

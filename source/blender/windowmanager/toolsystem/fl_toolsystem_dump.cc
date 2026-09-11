@@ -676,6 +676,15 @@ bool check_native(const bContext *C, const char *baseline_filepath)
     }
   }
 
+  if (checked.is_empty()) {
+    /* Cero secciones comprobadas daba `differences == 0` y por tanto VERDE: el verde mas
+     * peligroso, porque parece que se comprobo el catalogo entero. No comprobar no es
+     * aprobar. */
+    printf(
+        "\nFALLO: 0 secciones comprobadas contra '%s'. Sin secciones no hay verificacion.\n",
+        baseline_filepath);
+    return false;
+  }
   return differences == 0;
 }
 

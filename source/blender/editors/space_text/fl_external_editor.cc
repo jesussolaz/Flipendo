@@ -499,6 +499,15 @@ bool external_editor_check(const char *baseline_path)
     }
   }
   printf("editor externo: %d casos comparados, %d identicos, %d distintos\n", n, same, diff);
+  if (n == 0) {
+    /* Una linea base sin ni un caso parseable daba `diff == 0` y por tanto VERDE sin
+     * haber comprobado nada. No comprobar no es aprobar. */
+    fprintf(stderr,
+            "editor externo: FALLO: 0 casos comparados en '%s'. Sin casos no hay\n"
+            "  verificacion: revisa que la linea base tenga el formato esperado.\n",
+            baseline_path);
+    return false;
+  }
   return diff == 0;
 }
 

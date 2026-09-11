@@ -676,6 +676,14 @@ bool check_urls(bContext *C, const char *baseline_path)
          lookup_same,
          lookup_diff,
          lookup_fallback);
+  if (n == 0) {
+    /* Sin ni una ruta parseable, `diff` y `lookup_diff` valen 0 y esto salia VERDE sin
+     * haber comparado nada. No comprobar no es aprobar. */
+    fprintf(stderr,
+            "manual: FALLO: 0 rutas comparadas en '%s'. Sin rutas no hay verificacion.\n",
+            baseline_path);
+    return false;
+  }
   return (diff == 0) && (lookup_diff == 0);
 }
 
