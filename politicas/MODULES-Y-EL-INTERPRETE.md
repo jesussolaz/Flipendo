@@ -16,12 +16,12 @@
 
 | Categoría | Ficheros | Líneas | Qué se hace con ella |
 |---|---:|---:|---|
-| **(a) Pegamento CPython** | 17 | **6.961** | *No se traduce.* Desaparece el día que no haya intérprete |
-| **(b) Capacidad de verdad** | 79 | **18.932** | Se migra a C++ (49 fich., 8.604) o se retira con motivo escrito (30 fich., 10.328) |
+| **(a) Pegamento CPython** | 19 | **7.366** | *No se traduce.* Desaparece el día que no haya intérprete |
+| **(b) Capacidad de verdad** | 77 | **18.527** | Se migra a C++ (47 fich., 8.199) o se retira con motivo escrito (30 fich., 10.328) |
 | **(c) Datos disfrazados de código** | 1 | **4.272** | Se convierte en datos. **Hecho esta noche** |
 | **Total** | **97** | **30.165** | |
 
-Comprobación: 6.961 + 18.932 + 4.272 = 30.165 ✓ · 17 + 79 + 1 = 97 ✓
+Comprobación: 7.366 + 18.527 + 4.272 = 30.165 ✓ · 19 + 77 + 1 = 97 ✓
 
 > Tras las dos retiradas que documenta §4.2 —`bl_app_override/` y
 > `bl_keymap_utils/platform_helpers.py` (419 líneas), y luego
@@ -72,7 +72,7 @@ puente vivo.
 
 ---
 
-## 2. (a) El pegamento CPython — 17 ficheros, 6.961 líneas. **NO SE TOCA**
+## 2. (a) El pegamento CPython — 19 ficheros, 7.366 líneas. **NO SE TOCA**
 
 Esto **es** el puente CPython↔C: `from _bpy import …`. No implementa capacidad,
 la expone. Traducirlo a C++ no significa nada: sería escribir en C++ un envoltorio
@@ -87,6 +87,7 @@ de C++ para que lo llame un intérprete que no va a existir.
 | `bpy/path.py` | 459 | Rutas al estilo `bpy` (`abspath`, `basename`, `display_name`) |
 | `bpy/ops.py` | 184 | El objeto `bpy.ops` |
 | `bpy/utils/previews.py` | 136 | Envoltorio de `bpy_utils_previews.cc`. **La dirección es Python → C++** |
+| `_bpy_internal/grease_pencil/` (2) | 405 | Rebanadas de trazo (`drawing.strokes[n].points[i]`). **Es azúcar del API de Python sobre `attributes`, no capacidad**: su propio docstring dice que no se use para nada que importe el rendimiento y que se use `GreasePencilDrawing.attributes`, que ya es C++ |
 | `bpy/__init__.py` | 75 | El paquete |
 | `bpy_restrict_state.py` | 50 | Bloquea `bpy.context` mientras se registran las clases |
 | `_bpy_internal/addons/` (2), `_bpy_internal/__init__.py` | 48 | CLI de `--addons` |
@@ -96,7 +97,7 @@ este código presta es *«que exista un API de Python»*. Esa capacidad se retir
 propósito y está justificada por escrito en `INVENTARIO-PYTHON.md §6`: sin
 intérprete no hay addons de terceros, y ése es el precio declarado del fork.
 Todo lo demás que estos ficheros hacen —cargar el registro, activar addons,
-resolver rutas— ya tiene o tendrá su equivalente nativo, y entonces estas 6.961
+resolver rutas— ya tiene o tendrá su equivalente nativo, y entonces estas 7.366
 líneas se van de golpe, el último día, sin escribir ni una línea de C++ a cambio.
 
 **Es el último bloque en caer.** Retirar cualquiera de estos ficheros antes de
@@ -154,9 +155,10 @@ trampa que afecta también a los `.fpreset`: hoy están en `scripts/presets/` y 
 
 ## 4. (b) Capacidad de verdad — 79 ficheros, 18.932 líneas
 
-### 4.1 Lo que se migra a C++ — 47 ficheros, 8.550 líneas
+### 4.1 Lo que se migra a C++ — 45 ficheros, 8.145 líneas
 
-(Eran 49 y 8.604: `bl_text_utils/` ya está migrado, §4.2b.)
+(Eran 49 y 8.604: `bl_text_utils/` ya está migrado —§4.2b— y
+`_bpy_internal/grease_pencil/` resultó ser pegamento, no capacidad —§2.)
 
 | Bloque | Fich | Líneas | Por qué es capacidad | Quién la usa hoy |
 |---|---:|---:|---|---|
@@ -164,7 +166,7 @@ trampa que afecta también a los `.fpreset`: hoy están en `scripts/presets/` y 
 | `bpy_extras/` (los 9 con llamador vivo) | 9 | 2.211 | `anim_utils` 757, `io_utils` 616, `object_utils` 289, `image_utils` 194, `keyconfig_utils` 141, `node_utils` 88, `bmesh_utils` 56, `asset_utils` 50, `__init__` 20 | `bl_operators` y `bl_ui` (§4.3) |
 | `bl_keymap_utils/` | 5 | 826 | Importar/exportar keyconfigs y la jerarquía del editor de teclas | §4.4 |
 | `rna_keymap_ui`, `rna_prop_ui`, `bl_rna_utils/`, `bl_ui_utils/` | 6 | 870 | Dibujo del editor de keymaps (504), de las propiedades personalizadas (269, **31 importadores**), rutas de datos (76) y el `operator_context` de layout (21, 4 importadores) | `bl_ui`, `bl_operators` |
-| `_bpy_internal/grease_pencil/` + `system_info/` | 5 | 828 | Operaciones de trazo; el informe de `wm.sysinfo` | `bpy_types.py`, `bl_operators/wm.py` |
+| `_bpy_internal/system_info/` | 3 | 423 | El informe de sistema de `wm.sysinfo` | `bl_operators/wm.py` |
 | `bl_previews_utils/` | 1 | 536 | Generación de previsualizaciones en lote | `bl_operators/file.py` |
 | `keyingsets_utils.py` | 1 | 296 | Sondeo y generación de los keying sets de fábrica | `keyingsets_builtins.py`, `bl_operators/anim.py` |
 | `bl_app_template_utils.py` | 1 | 177 | Activar/desactivar la plantilla de aplicación | **Puente C++ vivo** (`wm_files.cc:752`) |
@@ -241,6 +243,14 @@ Sustituto: `source/blender/editors/space_text/fl_external_editor.cc` +
    código de salida convertido en mensaje. El ayudante que ya existía en
    `fileops_c.cc:1245` **no valía**: está dentro del camino de papelera de Linux
    (`kioclient5`/`gio`), no es un API general.
+
+**Nota de historia, porque el commit no lo cuenta:** el registro de las dos
+opciones en `source/creator/creator_args.cc` **no entró en el commit de esta
+migración**. Ese fichero lo tocan todos los carriles a la vez y el índice de git
+es compartido: las dos entradas acabaron dentro de `c82746c6cbf` («Selección de
+objetos: los tres operadores que bloqueaban los menús, en C++»), que es de otro
+carril. El árbol quedó consistente y las dos opciones funcionan, pero si alguien
+busca de dónde salieron, están ahí.
 
 **Verificado:** `--fl-dump-external-editor` y `--fl-check-external-editor`
 vuelcan y comparan el `argv` resultante sin lanzar ningún proceso, contra una
@@ -362,7 +372,10 @@ más fino y mandan sobre él:
    que no hacen falta.
 3. **`bl_app_override/` (364) tiene cero llamadores**, no «solo lo usan las
    plantillas de aplicación».
-4. **`bl_keymap_utils` no está muerto** pese al keymap nativo: solo lo está
+4. **`_bpy_internal/grease_pencil/` (405) es pegamento, no capacidad**: es el
+   azúcar que hace funcionar `drawing.strokes[n].points[i]` desde Python sobre
+   el API de `attributes`, que ya es C++. Cae con el intérprete, no se migra.
+5. **`bl_keymap_utils` no está muerto** pese al keymap nativo: solo lo está
    `platform_helpers.py` (55 de 826), y por una razón que no es el keymap sino
    la retirada del preset `Blender.py`.
 
