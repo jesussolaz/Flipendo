@@ -34,5 +34,8 @@ bool FL_wm_property_operators_selftest_schedule(bContext *C, const char *filepat
 /** Exercise type conversion and the closed native expression evaluator. */
 bool FL_wm_properties_edit_selftest(bContext *C, const char *filepath);
 
+/** Exercise the native batch action pipeline on the factory objects. */
+bool FL_wm_batch_rename_selftest(bContext *C, const char *filepath);
+
 /** Exercise workspace owner tag insertion and removal through their operator idnames. */
 bool FL_wm_owner_operators_selftest(bContext *C, const char *filepath);

@@ -27,6 +27,7 @@ set(SRC
   preset/fl_preset_apply.cc
   preset/fl_preset_check.cc
   intern/wm_tool_ops.cc
+  intern/wm_batch_rename.cc
   intern/wm_context_ops.cc
   intern/wm_property_ops.cc
   intern/wm_system_ops.cc

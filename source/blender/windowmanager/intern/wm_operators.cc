@@ -4206,6 +4206,7 @@ void WM_OT_operator_cheat_sheet(wmOperatorType *ot);
 void WM_OT_doc_view_manual(wmOperatorType *ot);
 void WM_OT_properties_edit(wmOperatorType *ot);
 void WM_OT_properties_edit_value(wmOperatorType *ot);
+void WM_OT_batch_rename(wmOperatorType *ot);
 
 void wm_operatortypes_register()
 {
@@ -4250,6 +4251,7 @@ void wm_operatortypes_register()
   WM_operatortype_append(WM_OT_doc_view_manual);
   WM_operatortype_append(WM_OT_properties_edit);
   WM_operatortype_append(WM_OT_properties_edit_value);
+  WM_operatortype_append(WM_OT_batch_rename);
   WM_operatortype_append(WM_OT_window_close);
   WM_operatortype_append(WM_OT_window_new);
   WM_operatortype_append(WM_OT_window_new_main);
