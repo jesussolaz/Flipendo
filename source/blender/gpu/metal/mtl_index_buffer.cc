@@ -70,10 +70,10 @@ void MTLIndexBuf::read(uint32_t *data) const
     BLI_assert(ctx);
 
     /* Ensure data is flushed for host caches. */
-    id<MTLBuffer> source_buffer = ibo_->get_metal_buffer();
-    if (source_buffer.storageMode == MTLStorageModeManaged) {
-      id<MTLBlitCommandEncoder> enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
-      [enc synchronizeResource:source_buffer];
+    MTLBufferPtr source_buffer = ibo_->get_metal_buffer();
+    if (source_buffer->storageMode() == MTLStorageModeManaged) {
+      MTLBlitCommandEncoderPtr enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
+      enc->synchronizeResource(source_buffer);
     }
 
     /* Ensure GPU has finished operating on commands which may modify data. */
@@ -135,7 +135,7 @@ void MTLIndexBuf::upload_data()
         ibo_ = MTLContext::get_global_memory_manager()->allocate(alloc_size_, true);
       }
       BLI_assert(ibo_);
-      ibo_->set_label(@"Index Buffer");
+      ibo_->set_label("Index Buffer");
     }
 
     /* No need to keep copy of data_ in system memory. */
@@ -183,20 +183,17 @@ void MTLIndexBuf::update_sub(uint32_t start, uint32_t len, const void *data)
 
   /* Copy updated contents into primary buffer.
    * These changes need to be uploaded via blit to ensure the data copies happen in-order. */
-  id<MTLBuffer> dest_buffer = ibo_->get_metal_buffer();
-  BLI_assert(dest_buffer != nil);
+  MTLBufferPtr dest_buffer = ibo_->get_metal_buffer();
+  BLI_assert(dest_buffer != nullptr);
 
-  id<MTLBlitCommandEncoder> enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
-  [enc copyFromBuffer:range.metal_buffer
-           sourceOffset:(uint32_t)range.buffer_offset
-               toBuffer:dest_buffer
-      destinationOffset:start
-                   size:len];
+  MTLBlitCommandEncoderPtr enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
+  enc->copyFromBuffer(
+      range.metal_buffer, uint32_t(range.buffer_offset), dest_buffer, start, len);
 
   /* Synchronize changes back to host to ensure CPU-side data is up-to-date for non
    * Shared buffers. */
-  if (dest_buffer.storageMode == MTLStorageModeManaged) {
-    [enc synchronizeResource:dest_buffer];
+  if (dest_buffer->storageMode() == MTLStorageModeManaged) {
+    enc->synchronizeResource(dest_buffer);
   }
 
   /* Invalidate patched/optimized buffers. */
@@ -340,7 +337,7 @@ static uint32_t populate_emulated_tri_fan_buf(Span<T> original_data,
   return current_output_ind;
 }
 
-id<MTLBuffer> MTLIndexBuf::get_index_buffer(GPUPrimType &in_out_primitive_type,
+MTLBufferPtr MTLIndexBuf::get_index_buffer(GPUPrimType &in_out_primitive_type,
                                             uint32_t &in_out_v_count)
 {
   /* Determine whether to return the original index buffer, or whether we
@@ -362,7 +359,7 @@ id<MTLBuffer> MTLIndexBuf::get_index_buffer(GPUPrimType &in_out_primitive_type,
   this->upload_data();
   if (!ibo_ && optimized_ibo_ == nullptr) {
     /* Cannot optimize buffer if no source IBO exists. */
-    return nil;
+    return nullptr;
   }
 
   /* Verify whether existing index buffer is valid. */
@@ -370,7 +367,7 @@ id<MTLBuffer> MTLIndexBuf::get_index_buffer(GPUPrimType &in_out_primitive_type,
     BLI_assert_msg(false,
                    "Cannot change the optimized primitive format after generation, as source "
                    "index buffer data is discarded.");
-    return nil;
+    return nullptr;
   }
 
   /* Generate optimized index buffer. */
@@ -477,7 +474,7 @@ id<MTLBuffer> MTLIndexBuf::get_index_buffer(GPUPrimType &in_out_primitive_type,
       case GPU_PRIM_POINTS: {
         /* Should not get here - TRIS/LINES/POINTS do not require emulation or optimization. */
         BLI_assert_unreachable();
-        return nil;
+        return nullptr;
       }
 
       default:
@@ -501,7 +498,7 @@ id<MTLBuffer> MTLIndexBuf::get_index_buffer(GPUPrimType &in_out_primitive_type,
     in_out_primitive_type = GPU_PRIM_TRIS;
     return optimized_ibo_->get_metal_buffer();
   }
-  return nil;
+  return nullptr;
 }
 
 void MTLIndexBuf::strip_restart_indices()

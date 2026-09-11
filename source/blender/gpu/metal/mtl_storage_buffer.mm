@@ -136,7 +136,9 @@ void MTLStorageBuf::init()
       size_in_bytes_, (usage_ == GPU_USAGE_DEVICE_ONLY) ? false : true);
 
 #ifndef NDEBUG
-  metal_buffer_->set_label([NSString stringWithFormat:@"Storage Buffer %s", name_]);
+  char label[128];
+  SNPRINTF(label, "Storage Buffer %s", name_);
+  metal_buffer_->set_label(label);
 #endif
   BLI_assert(metal_buffer_ != nullptr);
   BLI_assert(metal_buffer_->get_metal_buffer() != nil);

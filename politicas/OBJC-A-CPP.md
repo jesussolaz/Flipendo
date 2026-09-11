@@ -306,6 +306,46 @@ de un fichero caro que sigue en `.mm`. Hay que mirar las dos cosas.
 Lo que **no** vale es cambiar la firma a `XxxPtr` y confiar: eso es justo lo que
 produjo los 9 simbolos indefinidos.
 
+### 11-bis. La salida buena: quitar el tipo Metal de la firma
+
+Las dos salidas de arriba (migrar al definidor, o usar `id` pelado) son parches. Hay
+una tercera que es mejor que las dos y que conviene preferir siempre que la funcion lo
+permita: **que la firma no tenga ningun tipo de Metal**.
+
+Caso real de esta tanda. `gpu::MTLBuffer::set_label()` recibia `NSString *` y la
+llaman ficheros de los dos lados. Con `NSString *` cada lado generaba un simbolo
+distinto (`...set_labelEP8NSString` frente a `...set_labelEPN2NS6StringE`) y no
+enlazaba. La solucion no fue castear: fue cambiar la firma a
+
+    void set_label(const char *str);
+
+Un tipo del lenguaje base se escribe igual en los dos modos, asi que la frontera
+**deja de existir** para esa funcion: ya da igual si quien la llama es `.mm` o `.cc`,
+ahora y despues. Y de paso es mejor API, porque la etiqueta es texto de depuracion y
+nunca tuvo que ser un objeto de Metal. La conversion a `NSString` se hace dentro, una
+sola vez, donde toca.
+
+Orden de preferencia al encontrarse un simbolo indefinido:
+
+1. **Quitar el tipo Metal de la firma** (`const char *`, `int`, un enum propio...).
+   Resuelve el problema para siempre y suele dejar mejor API.
+2. **Migrar tambien al definidor**, si se puede y el grafo no explota.
+3. **`id` pelado**, solo cuando al definidor no se le puede tocar (bloqueado por
+   GHOST). Se paga con perdida de tipado y un `reinterpret_cast` en el `.cc`.
+
+### 11-ter. Comprobar el grafo ANTES de compilar, y en TODAS las cabeceras
+
+Error propio que costo una build entera: comprobe las firmas con tipos Metal de
+`mtl_memory.hh` (el fichero que migraba) y di el cluster por cerrado. Pero
+`mtl_storage_buffer` no fallaba por `mtl_memory`: fallaba por `MTLComputeState::bind_pso`
+y `MTLCommandBufferManager::encode_signal_event`, que estan en **`mtl_context.hh`** y
+los define codigo bloqueado por GHOST.
+
+La comprobacion util no es «que funciones con tipo Metal declara MI cabecera» sino
+**«a que funciones con tipo Metal llama el fichero que quiero migrar, esten donde
+esten, y quien las define»**. Se hace en segundos con grep y ahorra una build de
+varios minutos.
+
 ## 12. Los tres ficheros que GHOST bloquea
 
 Medido compilando cada `.mm` como C++ (metrica objetiva, seccion 13): tres ficheros

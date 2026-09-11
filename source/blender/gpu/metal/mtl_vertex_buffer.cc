@@ -112,9 +112,9 @@ void MTLVertBuf::bind()
   if (vbo_ == nullptr) {
     vbo_ = MTLContext::get_global_memory_manager()->allocate(
         required_size, (this->get_usage_type() != GPU_USAGE_DEVICE_ONLY));
-    vbo_->set_label(@"Vertex Buffer");
+    vbo_->set_label("Vertex Buffer");
     BLI_assert(vbo_ != nullptr);
-    BLI_assert(vbo_->get_metal_buffer() != nil);
+    BLI_assert(vbo_->get_metal_buffer() != nullptr);
 
     is_wrapper_ = false;
     alloc_size_ = required_size;
@@ -158,23 +158,19 @@ void MTLVertBuf::bind()
       MTLContext *ctx = MTLContext::get();
       BLI_assert(ctx);
 
-      id<MTLBuffer> copy_prev_buffer = prev_vbo->get_metal_buffer();
-      id<MTLBuffer> copy_new_buffer = vbo_->get_metal_buffer();
-      BLI_assert(copy_prev_buffer != nil);
-      BLI_assert(copy_new_buffer != nil);
+      MTLBufferPtr copy_prev_buffer = prev_vbo->get_metal_buffer();
+      MTLBufferPtr copy_new_buffer = vbo_->get_metal_buffer();
+      BLI_assert(copy_prev_buffer != nullptr);
+      BLI_assert(copy_new_buffer != nullptr);
 
       /* Ensure a blit command encoder is active for buffer copy operation. */
-      id<MTLBlitCommandEncoder> enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
-      [enc copyFromBuffer:copy_prev_buffer
-               sourceOffset:0
-                   toBuffer:copy_new_buffer
-          destinationOffset:0
-                       size:min_ulul([copy_new_buffer length], [copy_prev_buffer length])];
+      MTLBlitCommandEncoderPtr enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
+      enc->copyFromBuffer(copy_prev_buffer, 0, copy_new_buffer, 0, min_ulul(copy_new_buffer->length(), copy_prev_buffer->length()));
 
       /* Flush newly copied data back to host-side buffer, if one exists.
        * Ensures data and cache coherency for managed MTLBuffers. */
-      if (copy_new_buffer.storageMode == MTLStorageModeManaged) {
-        [enc synchronizeResource:copy_new_buffer];
+      if (copy_new_buffer->storageMode() == MTLStorageModeManaged) {
+        enc->synchronizeResource(copy_new_buffer);
       }
 
       /* For VBOs flagged as static, release host data as it will no longer be needed. */
@@ -215,28 +211,23 @@ void MTLVertBuf::update_sub(uint start, uint len, const void *data)
   MTLTemporaryBuffer scratch_allocation =
       ctx->get_scratchbuffer_manager().scratch_buffer_allocate_range_aligned(len, 256);
   memcpy(scratch_allocation.data, data, len);
-  [scratch_allocation.metal_buffer
-      didModifyRange:NSMakeRange(scratch_allocation.buffer_offset, len)];
-  id<MTLBuffer> data_buffer = scratch_allocation.metal_buffer;
+  scratch_allocation.metal_buffer->didModifyRange(NS::Range::Make(scratch_allocation.buffer_offset, len));
+  MTLBufferPtr data_buffer = scratch_allocation.metal_buffer;
   uint64_t data_buffer_offset = scratch_allocation.buffer_offset;
 
   BLI_assert(vbo_ != nullptr && data != nullptr);
   BLI_assert((start + len) <= vbo_->get_size());
 
   /* Fetch destination buffer. */
-  id<MTLBuffer> dst_buffer = vbo_->get_metal_buffer();
+  MTLBufferPtr dst_buffer = vbo_->get_metal_buffer();
 
   /* Ensure blit command encoder for copying data. */
-  id<MTLBlitCommandEncoder> enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
-  [enc copyFromBuffer:data_buffer
-           sourceOffset:data_buffer_offset
-               toBuffer:dst_buffer
-      destinationOffset:start
-                   size:len];
+  MTLBlitCommandEncoderPtr enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
+  enc->copyFromBuffer(data_buffer, data_buffer_offset, dst_buffer, start, len);
 
   /* Flush modified buffer back to host buffer, if one exists. */
-  if (dst_buffer.storageMode == MTLStorageModeManaged) {
-    [enc synchronizeResource:dst_buffer];
+  if (dst_buffer->storageMode() == MTLStorageModeManaged) {
+    enc->synchronizeResource(dst_buffer);
   }
 }
 
@@ -261,11 +252,11 @@ void MTLVertBuf::bind_as_texture(uint binding)
   BLI_assert(vbo_ != nullptr);
 
   /* If vertex buffer updated, release existing texture and re-create. */
-  id<MTLBuffer> buf = this->get_metal_buffer();
+  MTLBufferPtr buf = this->get_metal_buffer();
   if (buffer_texture_ != nullptr) {
     gpu::MTLTexture *mtl_buffer_tex = static_cast<gpu::MTLTexture *>(
         unwrap(this->buffer_texture_));
-    id<MTLBuffer> tex_buf = mtl_buffer_tex->get_vertex_buffer();
+    MTLBufferPtr tex_buf = mtl_buffer_tex->get_vertex_buffer();
     if (tex_buf != buf) {
       GPU_TEXTURE_FREE_SAFE(buffer_texture_);
       buffer_texture_ = nullptr;
@@ -293,10 +284,10 @@ void MTLVertBuf::read(void *data) const
   if (usage_ != GPU_USAGE_DEVICE_ONLY) {
 
     /* Ensure data is flushed for host caches. */
-    id<MTLBuffer> source_buffer = vbo_->get_metal_buffer();
-    if (source_buffer.storageMode == MTLStorageModeManaged) {
-      id<MTLBlitCommandEncoder> enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
-      [enc synchronizeResource:source_buffer];
+    MTLBufferPtr source_buffer = vbo_->get_metal_buffer();
+    if (source_buffer->storageMode() == MTLStorageModeManaged) {
+      MTLBlitCommandEncoderPtr enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
+      enc->synchronizeResource(source_buffer);
     }
 
     /* Ensure GPU has finished operating on commands which may modify data. */
@@ -311,23 +302,19 @@ void MTLVertBuf::read(void *data) const
     gpu::MTLBuffer *dst_tmp_vbo_ = MTLContext::get_global_memory_manager()->allocate(alloc_size_,
                                                                                      true);
 
-    id<MTLBuffer> source_buffer = vbo_->get_metal_buffer();
-    id<MTLBuffer> dest_buffer = dst_tmp_vbo_->get_metal_buffer();
-    BLI_assert(source_buffer != nil);
-    BLI_assert(dest_buffer != nil);
+    MTLBufferPtr source_buffer = vbo_->get_metal_buffer();
+    MTLBufferPtr dest_buffer = dst_tmp_vbo_->get_metal_buffer();
+    BLI_assert(source_buffer != nullptr);
+    BLI_assert(dest_buffer != nullptr);
 
     /* Ensure a blit command encoder is active for buffer copy operation. */
-    id<MTLBlitCommandEncoder> enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
-    [enc copyFromBuffer:source_buffer
-             sourceOffset:0
-                 toBuffer:dest_buffer
-        destinationOffset:0
-                     size:min_ulul([dest_buffer length], [dest_buffer length])];
+    MTLBlitCommandEncoderPtr enc = ctx->main_command_buffer.ensure_begin_blit_encoder();
+    enc->copyFromBuffer(source_buffer, 0, dest_buffer, 0, min_ulul(dest_buffer->length(), dest_buffer->length()));
 
     /* Flush newly copied data back to host-side buffer, if one exists.
      * Ensures data and cache coherency for managed MTLBuffers. */
-    if (dest_buffer.storageMode == MTLStorageModeManaged) {
-      [enc synchronizeResource:dest_buffer];
+    if (dest_buffer->storageMode() == MTLStorageModeManaged) {
+      enc->synchronizeResource(dest_buffer);
     }
 
     /* wait for GPU. */
@@ -346,7 +333,7 @@ void MTLVertBuf::wrap_handle(uint64_t handle)
 
   /* Attempt to cast to Metal buffer handle. */
   BLI_assert(handle != 0);
-  id<MTLBuffer> buffer = reinterpret_cast<id<MTLBuffer>>((void *)handle);
+  MTLBufferPtr buffer = reinterpret_cast<MTLBufferPtr>((void *)handle);
 
   is_wrapper_ = true;
   vbo_ = new gpu::MTLBuffer(buffer);

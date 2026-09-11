@@ -348,8 +348,8 @@ set(METAL_SRC
   metal/mtl_debug.mm
   metal/mtl_framebuffer.mm
   metal/mtl_immediate.mm
-  metal/mtl_index_buffer.mm
-  metal/mtl_memory.mm
+  metal/mtl_index_buffer.cc
+  metal/mtl_memory.cc
   metal/mtl_query.cc
   metal/mtl_shader.mm
   metal/mtl_shader_generator.mm
@@ -360,7 +360,7 @@ set(METAL_SRC
   metal/mtl_texture.mm
   metal/mtl_texture_util.mm
   metal/mtl_uniform_buffer.cc
-  metal/mtl_vertex_buffer.mm
+  metal/mtl_vertex_buffer.cc
 
   metal/mtl_backend.hh
   metal/mtl_batch.hh

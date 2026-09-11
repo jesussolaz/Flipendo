@@ -32,12 +32,14 @@ namespace blender::gpu {
 /** \name Memory Management - MTLBufferPool and MTLSafeFreeList implementations
  * \{ */
 
-void MTLBufferPool::init(id<MTLDevice> mtl_device)
+void MTLBufferPool::init(id mtl_device)
 {
   if (!initialized_) {
     BLI_assert(mtl_device);
     initialized_ = true;
-    device_ = mtl_device;
+    /* Ver la nota de mtl_memory.hh: llega como `id` para que mangle igual en los dos
+     * modos. Es el mismo puntero; el cast no mueve nada ni cambia la propiedad. */
+    device_ = reinterpret_cast<MTLDevicePtr>(mtl_device);
 
 #if MTL_DEBUG_MEMORY_STATISTICS == 1
     /* Debug statistics. */
@@ -130,7 +132,7 @@ gpu::MTLBuffer *MTLBufferPool::allocate_aligned(uint64_t size,
   /* Allocate new MTL Buffer */
   MTLResourceOptions options;
   if (cpu_visible) {
-    options = ([device_ hasUnifiedMemory]) ? MTLResourceStorageModeShared :
+    options = (device_->hasUnifiedMemory()) ? MTLResourceStorageModeShared :
                                              MTLResourceStorageModeManaged;
   }
   else {
@@ -228,7 +230,7 @@ gpu::MTLBuffer *MTLBufferPool::allocate_aligned_with_data(uint64_t size,
   BLI_assert(data != nullptr);
   BLI_assert(!(buf->get_resource_options() & MTLResourceStorageModePrivate));
   BLI_assert(size <= buf->get_size());
-  BLI_assert(size <= [buf->get_metal_buffer() length]);
+  BLI_assert(size <= buf->get_metal_buffer()->length());
   memcpy(buf->get_host_ptr(), data, size);
   buf->flush_range(0, size);
   return buf;
@@ -479,7 +481,7 @@ void MTLBufferPool::insert_buffer_into_pool(MTLResourceOptions options, gpu::MTL
    * can reset this state.
    *  TODO(Metal): Purgeability state does not update instantly, so this requires a deferral. */
   BLI_assert(buffer->get_metal_buffer());
-  // buffer->metal_buffer); [buffer->metal_buffer setPurgeableState:MTLPurgeableStateVolatile];
+  // buffer->metal_buffer); buffer->metal_buffer->setPurgeableState(MTLPurgeableStateVolatile);
 
   std::multiset<MTLBufferHandle, CompareMTLBuffer> *pool = buffer_pools_.lookup(options);
   pool->insert(MTLBufferHandle(buffer));
@@ -650,7 +652,7 @@ bool MTLSafeFreeList::should_flush()
 /** \name MTLBuffer wrapper class implementation.
  * \{ */
 
-MTLBuffer::MTLBuffer(id<MTLDevice> mtl_device,
+MTLBuffer::MTLBuffer(MTLDevicePtr mtl_device,
                      uint64_t size,
                      MTLResourceOptions options,
                      uint alignment)
@@ -666,13 +668,13 @@ MTLBuffer::MTLBuffer(id<MTLDevice> mtl_device,
   options_ = options;
   this->flag_in_use(false);
 
-  metal_buffer_ = [device_ newBufferWithLength:aligned_alloc_size options:options];
+  metal_buffer_ = device_->newBuffer(aligned_alloc_size, options);
   BLI_assert(metal_buffer_);
 
   size_ = aligned_alloc_size;
   this->set_usage_size(size_);
   if (!(options_ & MTLResourceStorageModePrivate)) {
-    data_ = [metal_buffer_ contents];
+    data_ = metal_buffer_->contents();
   }
   else {
     data_ = nullptr;
@@ -682,22 +684,22 @@ MTLBuffer::MTLBuffer(id<MTLDevice> mtl_device,
   next = prev = nullptr;
 }
 
-MTLBuffer::MTLBuffer(id<MTLBuffer> external_buffer)
+MTLBuffer::MTLBuffer(MTLBufferPtr external_buffer)
 {
-  BLI_assert(external_buffer != nil);
+  BLI_assert(external_buffer != nullptr);
 
   /* Ensure external_buffer remains referenced while in-use. */
   metal_buffer_ = external_buffer;
-  [metal_buffer_ retain];
+  metal_buffer_->retain();
 
   /* Extract properties. */
   is_external_ = true;
-  device_ = nil;
+  device_ = nullptr;
   alignment_ = 1;
-  options_ = [metal_buffer_ resourceOptions];
-  size_ = [metal_buffer_ allocatedSize];
+  options_ = metal_buffer_->resourceOptions();
+  size_ = metal_buffer_->allocatedSize();
   this->set_usage_size(size_);
-  data_ = [metal_buffer_ contents];
+  data_ = metal_buffer_->contents();
   in_use_ = true;
 
   /* Linked resources. */
@@ -706,9 +708,9 @@ MTLBuffer::MTLBuffer(id<MTLBuffer> external_buffer)
 
 gpu::MTLBuffer::~MTLBuffer()
 {
-  if (metal_buffer_ != nil) {
-    [metal_buffer_ release];
-    metal_buffer_ = nil;
+  if (metal_buffer_ != nullptr) {
+    mtl_release(metal_buffer_);
+    metal_buffer_ = nullptr;
   }
 }
 
@@ -718,14 +720,14 @@ void gpu::MTLBuffer::free()
     MTLContext::get_global_memory_manager()->free_buffer(this);
   }
   else {
-    if (metal_buffer_ != nil) {
-      [metal_buffer_ release];
-      metal_buffer_ = nil;
+    if (metal_buffer_ != nullptr) {
+      mtl_release(metal_buffer_);
+      metal_buffer_ = nullptr;
     }
   }
 }
 
-id<MTLBuffer> gpu::MTLBuffer::get_metal_buffer() const
+MTLBufferPtr gpu::MTLBuffer::get_metal_buffer() const
 {
   return metal_buffer_;
 }
@@ -753,9 +755,9 @@ bool gpu::MTLBuffer::requires_flush()
   return options_ & MTLResourceStorageModeManaged;
 }
 
-void gpu::MTLBuffer::set_label(NSString *str)
+void gpu::MTLBuffer::set_label(const char *str)
 {
-  metal_buffer_.label = str;
+  metal_buffer_->setLabel(mtl_string(str));
 }
 
 void gpu::MTLBuffer::debug_ensure_used()
@@ -771,7 +773,7 @@ void gpu::MTLBuffer::flush()
 {
   this->debug_ensure_used();
   if (this->requires_flush()) {
-    [metal_buffer_ didModifyRange:NSMakeRange(0, size_)];
+    metal_buffer_->didModifyRange(NS::Range::Make(0, size_));
   }
 }
 
@@ -780,7 +782,7 @@ void gpu::MTLBuffer::flush_range(uint64_t offset, uint64_t length)
   this->debug_ensure_used();
   if (this->requires_flush()) {
     BLI_assert((offset + length) <= size_);
-    [metal_buffer_ didModifyRange:NSMakeRange(offset, length)];
+    metal_buffer_->didModifyRange(NS::Range::Make(offset, length));
   }
 }
 
@@ -820,10 +822,10 @@ void MTLBufferRange::flush()
 {
   if (this->requires_flush()) {
     BLI_assert(this->metal_buffer);
-    BLI_assert((this->buffer_offset + this->size) <= [this->metal_buffer length]);
+    BLI_assert((this->buffer_offset + this->size) <= this->metal_buffer->length());
     BLI_assert(this->buffer_offset >= 0);
-    [this->metal_buffer
-        didModifyRange:NSMakeRange(this->buffer_offset, this->size - this->buffer_offset)];
+    this->metal_buffer->didModifyRange(
+        NS::Range::Make(this->buffer_offset, this->size - this->buffer_offset));
   }
 }
 
@@ -885,7 +887,7 @@ MTLTemporaryBuffer MTLScratchBufferManager::scratch_buffer_allocate_range_aligne
   MTLTemporaryBuffer allocated_range = current_scratch_buff->allocate_range_aligned(alloc_size,
                                                                                     alignment);
   BLI_assert(allocated_range.size >= alloc_size && allocated_range.size <= alloc_size + alignment);
-  BLI_assert(allocated_range.metal_buffer != nil);
+  BLI_assert(allocated_range.metal_buffer != nullptr);
   return allocated_range;
 }
 
@@ -951,7 +953,7 @@ MTLCircularBuffer::MTLCircularBuffer(MTLContext &ctx, uint64_t initial_size, boo
 
   /* Debug label. */
   if (G.debug & G_DEBUG_GPU) {
-    cbuffer_->set_label(@"Circular Scratch Buffer");
+    cbuffer_->set_label("Circular Scratch Buffer");
   }
 }
 
@@ -1021,7 +1023,7 @@ MTLTemporaryBuffer MTLCircularBuffer::allocate_range_aligned(uint64_t alloc_size
 
         /* Cannot allocate */
         MTLTemporaryBuffer alloc_range;
-        alloc_range.metal_buffer = nil;
+        alloc_range.metal_buffer = nullptr;
         alloc_range.data = nullptr;
         alloc_range.buffer_offset = 0;
         alloc_range.size = 0;
@@ -1038,7 +1040,7 @@ MTLTemporaryBuffer MTLCircularBuffer::allocate_range_aligned(uint64_t alloc_size
 
       /* Cannot allocate. */
       MTLTemporaryBuffer alloc_range;
-      alloc_range.metal_buffer = nil;
+      alloc_range.metal_buffer = nullptr;
       alloc_range.data = nullptr;
       alloc_range.buffer_offset = 0;
       alloc_range.size = 0;
@@ -1059,7 +1061,7 @@ MTLTemporaryBuffer MTLCircularBuffer::allocate_range_aligned(uint64_t alloc_size
 
     /* Debug label. */
     if (G.debug & G_DEBUG_GPU) {
-      cbuffer_->set_label(@"Circular Scratch Buffer");
+      cbuffer_->set_label("Circular Scratch Buffer");
     }
     MTL_LOG_INFO("Resized Metal circular buffer to %llu bytes", new_size);
 
@@ -1071,7 +1073,7 @@ MTLTemporaryBuffer MTLCircularBuffer::allocate_range_aligned(uint64_t alloc_size
   /* Allocate chunk. */
   MTLTemporaryBuffer alloc_range;
   alloc_range.metal_buffer = cbuffer_->get_metal_buffer();
-  alloc_range.data = (void *)((uint8_t *)([alloc_range.metal_buffer contents]) +
+  alloc_range.data = (void *)((uint8_t *)(alloc_range.metal_buffer->contents()) +
                               aligned_current_offset);
   alloc_range.buffer_offset = aligned_current_offset;
   alloc_range.size = aligned_alloc_size;
