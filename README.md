@@ -10,8 +10,8 @@
   <img alt="macOS Intel con Metal" src="https://img.shields.io/badge/plataforma-macOS%20Intel%20%C2%B7%20Metal-111111">
   <img alt="C++17" src="https://img.shields.io/badge/C%2B%2B-17-00599C">
   <img alt="Cero Python en el juego exportado" src="https://img.shields.io/badge/Python%20en%20el%20juego-0%20ficheros-2ea44f">
-  <img alt="32 comprobadores integrados en el binario" src="https://img.shields.io/badge/comprobadores-32-orange">
-  <img alt="14 volcadores de estado integrados en el binario" src="https://img.shields.io/badge/volcadores-14-orange">
+  <img alt="41 comprobadores integrados en el binario" src="https://img.shields.io/badge/comprobadores-41-orange">
+  <img alt="16 volcadores de estado integrados en el binario" src="https://img.shields.io/badge/volcadores-16-orange">
 </p>
 
 <p align="center">

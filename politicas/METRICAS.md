@@ -288,12 +288,19 @@ decía, qué mide el árbol, cómo se comprobó.
 
 **Decía** el `README.md`, en una insignia: `verificadores-46`.
 
-**Mide el árbol:** en `source/creator/creator_args.cc` hay **50 banderas `--fl-*`**
-registradas con `BLI_args_add`. De ellas, **32** dan veredicto
-(16 `--fl-check-*` + 16 `--fl-selftest-*`), **14** son volcadores `--fl-dump-*` y
-**4** son conversores o preparadores de escena (`--fl-convert-presets`,
-`--fl-convert-manual-reference`, `--fl-make-ui-scene`, `--fl-ui-scene`). El 46 salía
-de sumar los comprobadores y los volcadores.
+**Mide el árbol:** cuando se midió (commit `35309693a44`), en
+`source/creator/creator_args.cc` había **50 banderas `--fl-*`** registradas con
+`BLI_args_add`. De ellas, **32** daban veredicto (16 `--fl-check-*` +
+16 `--fl-selftest-*`), **14** eran volcadores `--fl-dump-*` y **4** conversores o
+preparadores de escena (`--fl-convert-presets`, `--fl-convert-manual-reference`,
+`--fl-make-ui-scene`, `--fl-ui-scene`). El 46 salía de sumar los comprobadores y los
+volcadores.
+
+**Y ya no son esas cifras**, que es justo el problema de escribirlas a mano: al cerrar
+la noche son 61 banderas, 41 comprobadores y 16 volcadores. Por eso la insignia del
+`README.md` se corrige cuando cambia, pero **el recuento vivo está en
+[`ESTADO.md`](ESTADO.md)**, que lo cuenta solo en cada pasada y avisa si la insignia
+se ha quedado atrás.
 
 **Por qué importa y no es una pedantería:** un volcador **no se puede poner en
 verde**. Escribe estado y sale con 0 haga lo que haga. Decir «46 verificadores» y
@@ -323,6 +330,36 @@ modo gráfico, y comparando cada volcado byte a byte contra todos los `.txt` de
 ejemplo `--fl-selftest-wm-system-ops` →
 `tests/flipendo/operators/system-python.txt`). El generador hace justo eso: el
 veredicto de un selftest sale de comparar su volcado, no de su código de salida.
+
+> **ARREGLADO la misma noche, y no por este carril.** El carril ARNES tiró del hilo y
+> midió que el agujero era mucho mayor: **58 de las 59 opciones `--fl-*` salían con 0
+> sin haber comprobado nada**. Están cerradas (commits `8cc31792ac6`, `ab66896ec20`,
+> `2dd540193dc`), con sus reglas escritas en
+> [`ARNES-A-PRUEBA.md`](ARNES-A-PRUEBA.md): un comprobador tiene que fallar cuando
+> debe, y comparar cero líneas dejó de ser un aprobado. Este apartado se queda como
+> registro de por dónde salió, no como estado actual: **el estado actual está en
+> [`ESTADO.md`](ESTADO.md)**, que ejecuta la batería entera y publica el recuento.
+
+### 7.2.bis Las declaraciones: tolerancia y divergencias deliberadas
+
+De arreglar el arnés salieron dos ficheros que acompañan a una línea base y que
+**cualquier arnés que mida tiene que honrar** o publicará rojos falsos:
+
+- `<linea-base>.tolerancia` — hoy solo
+  `tests/flipendo/meshops/baseline-python.txt.tolerancia` (2e-5 relativa). Es la
+  respuesta medida a la inestabilidad que este carril había localizado en la línea
+  10866 (`0.451384932` contra `0.451389611`): no se cuantizó porque a 5 decimales los
+  valores siguen difiriendo y a 4 se tirarían cifras válidas de los 13.111 estables.
+- `<linea-base>.divergencias` — hoy solo
+  `tests/flipendo/operators/execution-python.txt.divergencias`, donde se declara que
+  `wm.context_cycle_array` da `[2,3,1]` **a propósito**, porque el C++ corrige un
+  fallo del Python al rotar tuplas. La línea base del Python no se toca: es la prueba.
+
+`flipendo-metrics` los lee y los honra desde el commit `35a7605177c`, y publica en
+`ESTADO.md` cuántas hay, en qué fichero, quién las usa y **en cuántas pasadas de
+cuántas hizo falta cada una**. Una declaración escondida es una excusa; una declarada
+y contada es una decisión de ingeniería — y una que deja de hacer falta sale en el
+informe, porque significa que algo cambió por debajo.
 
 ### 7.3 «`intern/cycles` tiene 0 referencias en `build.ninja`» es falso; lo cierto es «0 objetos»
 
