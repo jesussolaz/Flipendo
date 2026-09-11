@@ -229,7 +229,15 @@ Trampa ya conocida y pagada en VideoTexture, que aquí también aplica: **el
     **autoprueba de eventos sintéticos idéntica en los dos binarios (9 líneas, 0
     diferencias)** y **170 píxeles distintos de 81.900 (0,21 %, delta máximo 1)**
     en la zona de la interfaz, contra 1,99 % en el resto de la pantalla.
-  - De los otros seis widgets no hay todavía ni una línea.
+  - **Paso 4**, el **quad con textura** del lienzo (`TexturedRect` sobre
+    `GPU_SHADER_3D_IMAGE_COLOR`) y **`FL_UiImage`**, el segundo widget. Si la
+    imagen que enseña es la que `FL_RenderToTexture` refresca, **el HUD enseña en
+    vivo lo que ve la cámara secundaria**: minimapa y monitor de vigilancia, que
+    es una de las cosas que el Player sin CPython no podía hacer. Verificado: el
+    recuadro del monitor difiere entre los dos binarios en **21 píxeles de 2.040
+    (1,03 %, máximo 3 niveles)** mientras el 3D de detrás difiere en el 2,98 % y
+    hasta en 88.
+  - De los otros cinco widgets no hay todavía ni una línea.
 - Las cifras de tamaño son estimaciones, no medidas.
 - `doc/python_api/rst/bgui/` (la documentación de la API) tendrá que reescribirse
   o retirarse con la librería; no se ha contado en las 2.391 líneas.
@@ -321,18 +329,18 @@ Lo mismo vale para `doc/python_api/rst/bgui/`: se retira con la librería, no an
 
 ## 13. Orden recomendado para lo que queda
 
-1. **Quad con textura en el lienzo** (`GPU_SHADER_3D_IMAGE`). Va primero porque lo
-   necesitan dos widgets (`Image`, `ImageButton`) y porque ya sabemos sacar el
-   `GPUTexture` de una `Image` de Blender por el trabajo de VideoTexture.
-2. **`Image`** y **`ImageButton`**: con el quad hecho son cortos, y `ImageButton`
-   reutiliza la máquina de estados que ya tiene `FL_UiFrameButton`.
-3. **`ProgressBar`**: es dos `FL_UiFrame` anidados, lo que la demo ya hace a mano.
+~~1. Quad con textura en el lienzo~~ · ~~2. `Image`~~ — **hechos**.
+
+1. **`ImageButton`**: con el quad hecho es corto. Reutiliza la máquina de estados
+   de `FL_UiFrameButton` (los `Handle*` y el `PostDraw`) y cambia el color por una
+   de cuatro texturas: normal, alternativa, *hover* y pulsada.
+2. **`ProgressBar`**: son dos `FL_UiFrame` anidados, lo que la demo ya hace a mano.
    Envolverlo en su clase y darle la propiedad `percent`.
-4. **`TextBlock`**: el ajuste de línea necesita medir con `TextWidth`, que ya está.
-5. **`ListBox`**: el primero que necesita `PushClip`/`PopClip` de verdad.
-6. **`TextInput`**: el último y el más largo (518 líneas en Python). Cursor,
+3. **`TextBlock`**: el ajuste de línea necesita medir con `TextWidth`, que ya está.
+4. **`ListBox`**: el primero que necesita `PushClip`/`PopClip` de verdad.
+5. **`TextInput`**: el último y el más largo (518 líneas en Python). Cursor,
    selección, doble clic y colores por estado.
-7. **Tema en INI**: se puede dejar para el final porque ninguna de las piezas
+6. **Tema en INI**: se puede dejar para el final porque ninguna de las piezas
    anteriores lo necesita para funcionar, sólo para no llevar los colores en el
    código.
-8. **Sólo entonces**, retirar `scripts/modules/bgui` y su documentación.
+7. **Sólo entonces**, retirar `scripts/modules/bgui` y su documentación.
