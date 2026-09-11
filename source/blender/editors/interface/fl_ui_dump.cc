@@ -1609,6 +1609,22 @@ bool dump_layout(bContext *C, const char *filepath)
     return false;
   }
 
+  /* La barra de estado dibuja las pistas contextuales del raton -- "Resize",
+   * "Options" y sus iconos de boton -- que dependen de donde este el puntero en
+   * el instante del volcado. Medido: tres pasadas dieron 30.572, 30.572 y 30.579
+   * lineas, y las 9 de diferencia estaban todas en STATUSBAR_HT_header. Un volcado
+   * que cambia segun donde dejaste el raton no es una linea base.
+   *
+   * Se normaliza la ENTRADA en vez de elidir la salida, que es mejor: se limpia el
+   * estado contextual de cada ventana antes de dibujar, asi que el bloque se
+   * captura siempre en el mismo estado y un cambio real en el si se veria. */
+  LISTBASE_FOREACH (wmWindow *, win, &CTX_wm_manager(C)->windows) {
+    wmWindow *win_previa = CTX_wm_window(C);
+    CTX_wm_window_set(C, win);
+    ED_workspace_status_text(C, nullptr);
+    CTX_wm_window_set(C, win_previa);
+  }
+
   int cubiertos = 0, no_cubiertos = 0;
   const blender::Vector<Bloque> bloques = diseno_bloques(C, &cubiertos, &no_cubiertos);
   if (!bloques_escribir(bloques, MARCA_DISENO, filepath)) {
