@@ -8,6 +8,8 @@
 
 #include "BKE_global.hh"
 
+#include "mtl_debug.hh"
+
 #include "DNA_userdef_types.h"
 
 #include "GPU_batch.hh"
@@ -190,8 +192,10 @@ MTLPixelFormat gpu_texture_format_to_metal(eGPUTextureFormat tex_format)
   return MTLPixelFormatRGBA8Unorm;
 }
 
-size_t get_mtl_format_bytesize(MTLPixelFormat tex_format)
+size_t get_mtl_format_bytesize(uint64_t tex_format_raw)
 {
+  /* Ver la nota de mtl_texture.hh. */
+  const MTLPixelFormat tex_format = MTLPixelFormat(tex_format_raw);
   switch (tex_format) {
     case MTLPixelFormatRGBA8Uint:
     case MTLPixelFormatRGBA8Sint:
@@ -266,8 +270,10 @@ size_t get_mtl_format_bytesize(MTLPixelFormat tex_format)
   }
 }
 
-int get_mtl_format_num_components(MTLPixelFormat tex_format)
+int get_mtl_format_num_components(uint64_t tex_format_raw)
 {
+  /* Ver la nota de mtl_texture.hh. */
+  const MTLPixelFormat tex_format = MTLPixelFormat(tex_format_raw);
   switch (tex_format) {
     case MTLPixelFormatRGBA8Uint:
     case MTLPixelFormatRGBA8Sint:
@@ -398,74 +404,78 @@ bool mtl_format_supports_blending(uint64_t format_raw)
 /** \name Texture data upload routines
  * \{ */
 
-id<MTLComputePipelineState> gpu::MTLTexture::mtl_texture_update_impl(
+MTLComputePipelineStatePtr gpu::MTLTexture::mtl_texture_update_impl(
     TextureUpdateRoutineSpecialisation specialization_params,
-    blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+    blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
         &specialization_cache,
     eGPUTextureType texture_type)
 {
   /* Check whether the Kernel exists. */
-  id<MTLComputePipelineState> *result = specialization_cache.lookup_ptr(specialization_params);
+  MTLComputePipelineStatePtr *result = specialization_cache.lookup_ptr(specialization_params);
   if (result != nullptr) {
     return *result;
   }
 
-  id<MTLComputePipelineState> return_pso = nil;
-  @autoreleasepool {
+  MTLComputePipelineStatePtr return_pso = nullptr;
+  {
+    /* Equivalente de @autoreleasepool: el pool se drena al salir del ambito. */
+    MTLAutoreleasePoolScope pool_scope;
 
     /* Fetch active context. */
     MTLContext *ctx = MTLContext::get();
     BLI_assert(ctx);
 
     /** SOURCE. **/
-    NSString *tex_update_kernel_src = [NSString
-        stringWithUTF8String:datatoc_compute_texture_update_msl];
+    NSString *tex_update_kernel_src = mtl_string(datatoc_compute_texture_update_msl);
 
     /* Prepare options and specializations. */
-    MTLCompileOptions *options = [[[MTLCompileOptions alloc] init] autorelease];
-    options.languageVersion = MTLLanguageVersion2_2;
-    options.preprocessorMacros = @{
-      @"INPUT_DATA_TYPE" :
-          [NSString stringWithUTF8String:specialization_params.input_data_type.c_str()],
-      @"OUTPUT_DATA_TYPE" :
-          [NSString stringWithUTF8String:specialization_params.output_data_type.c_str()],
-      @"COMPONENT_COUNT_INPUT" :
-          [NSNumber numberWithInt:specialization_params.component_count_input],
-      @"COMPONENT_COUNT_OUTPUT" :
-          [NSNumber numberWithInt:specialization_params.component_count_output],
-      @"TEX_TYPE" : [NSNumber numberWithInt:((int)(texture_type))],
-      @"IS_TEXTURE_CLEAR" :
-          [NSNumber numberWithInt:((int)(specialization_params.is_clear ? 1 : 0))]
+    MTLCompileOptions *options = MTL::CompileOptions::alloc()->init()->autorelease();
+    options->setLanguageVersion(MTLLanguageVersion2_2);
+    /* El literal `@{...}` de Objective-C no existe en C++: NS::Dictionary se construye
+     * con dos arrays paralelos (valores y claves) y su tama&#241;o. El orden de los pares se
+     * conserva igual que en el original. */
+    const NS::Object *macro_keys[] = {
+        mtl_string("INPUT_DATA_TYPE"),
+        mtl_string("OUTPUT_DATA_TYPE"),
+        mtl_string("COMPONENT_COUNT_INPUT"),
+        mtl_string("COMPONENT_COUNT_OUTPUT"),
+        mtl_string("TEX_TYPE"),
+        mtl_string("IS_TEXTURE_CLEAR"),
     };
+    const NS::Object *macro_values[] = {
+        mtl_string(specialization_params.input_data_type.c_str()),
+        mtl_string(specialization_params.output_data_type.c_str()),
+        NS::Number::number(specialization_params.component_count_input),
+        NS::Number::number(specialization_params.component_count_output),
+        NS::Number::number(int(texture_type)),
+        NS::Number::number(int(specialization_params.is_clear ? 1 : 0)),
+    };
+    options->setPreprocessorMacros(
+        NS::Dictionary::dictionary(macro_values, macro_keys, ARRAY_SIZE(macro_keys)));
 
     /* Prepare shader library for conversion routine. */
     NSError *error = nullptr;
-    id<MTLLibrary> temp_lib = [[ctx->device newLibraryWithSource:tex_update_kernel_src
-                                                         options:options
-                                                           error:&error] autorelease];
+    MTLLibraryPtr temp_lib = ctx->device->newLibrary(tex_update_kernel_src, options, &error)->autorelease();
     if (error) {
       /* Only exit out if genuine error and not warning. */
-      if ([[error localizedDescription] rangeOfString:@"Compilation succeeded"].location ==
-          NSNotFound)
+      if (error->localizedDescription()->rangeOfString(mtl_string("Compilation succeeded"), NS::StringCompareOptions(0)).location ==
+          NS::NotFound)
       {
-        NSLog(@"Compile Error - Metal Shader Library error %@ ", error);
+        MTL_LOG_ERROR("Compile Error - Metal Shader Library error %s ", error->localizedDescription()->utf8String());
         BLI_assert(false);
-        return nil;
+        return nullptr;
       }
     }
 
     /* Fetch compute function. */
-    BLI_assert(temp_lib != nil);
-    id<MTLFunction> temp_compute_function = [[temp_lib
-        newFunctionWithName:@"compute_texture_update"] autorelease];
+    BLI_assert(temp_lib != nullptr);
+    MTLFunctionPtr temp_compute_function = temp_lib->newFunction(mtl_string("compute_texture_update"))->autorelease();
     BLI_assert(temp_compute_function);
 
     /* Otherwise, bake new Kernel. */
-    id<MTLComputePipelineState> compute_pso = [ctx->device
-        newComputePipelineStateWithFunction:temp_compute_function
-                                      error:&error];
-    if (error || compute_pso == nil) {
-      NSLog(@"Failed to prepare texture_update MTLComputePipelineState %@", error);
+    MTLComputePipelineStatePtr compute_pso = ctx->device->newComputePipelineState(temp_compute_function, &error);
+    if (error || compute_pso == nullptr) {
+      MTL_LOG_ERROR("Failed to prepare texture_update MTLComputePipelineState %s", error->localizedDescription()->utf8String());
       BLI_assert(false);
     }
 
@@ -474,11 +484,11 @@ id<MTLComputePipelineState> gpu::MTLTexture::mtl_texture_update_impl(
     return_pso = compute_pso;
   }
 
-  BLI_assert(return_pso != nil);
+  BLI_assert(return_pso != nullptr);
   return return_pso;
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_update_1d_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_update_1d_get_kernel(
     TextureUpdateRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -488,7 +498,7 @@ id<MTLComputePipelineState> gpu::MTLTexture::texture_update_1d_get_kernel(
                                  GPU_TEXTURE_1D);
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_update_1d_array_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_update_1d_array_get_kernel(
     TextureUpdateRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -499,7 +509,7 @@ id<MTLComputePipelineState> gpu::MTLTexture::texture_update_1d_array_get_kernel(
       GPU_TEXTURE_1D_ARRAY);
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_update_2d_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_update_2d_get_kernel(
     TextureUpdateRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -509,7 +519,7 @@ id<MTLComputePipelineState> gpu::MTLTexture::texture_update_2d_get_kernel(
                                  GPU_TEXTURE_2D);
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_update_2d_array_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_update_2d_array_get_kernel(
     TextureUpdateRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -520,7 +530,7 @@ id<MTLComputePipelineState> gpu::MTLTexture::texture_update_2d_array_get_kernel(
       GPU_TEXTURE_2D_ARRAY);
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_update_3d_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_update_3d_get_kernel(
     TextureUpdateRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -688,28 +698,29 @@ void gpu::MTLTexture::update_sub_depth_2d(
 /** \name Texture data read routines
  * \{ */
 
-id<MTLComputePipelineState> gpu::MTLTexture::mtl_texture_read_impl(
+MTLComputePipelineStatePtr gpu::MTLTexture::mtl_texture_read_impl(
     TextureReadRoutineSpecialisation specialization_params,
-    blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+    blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
         &specialization_cache,
     eGPUTextureType texture_type)
 {
   /* Check whether the Kernel exists. */
-  id<MTLComputePipelineState> *result = specialization_cache.lookup_ptr(specialization_params);
+  MTLComputePipelineStatePtr *result = specialization_cache.lookup_ptr(specialization_params);
   if (result != nullptr) {
     return *result;
   }
 
-  id<MTLComputePipelineState> return_pso = nil;
-  @autoreleasepool {
+  MTLComputePipelineStatePtr return_pso = nullptr;
+  {
+    /* Equivalente de @autoreleasepool: el pool se drena al salir del ambito. */
+    MTLAutoreleasePoolScope pool_scope;
 
     /* Fetch active context. */
     MTLContext *ctx = MTLContext::get();
     BLI_assert(ctx);
 
     /** SOURCE. **/
-    NSString *tex_update_kernel_src = [NSString
-        stringWithUTF8String:datatoc_compute_texture_read_msl];
+    NSString *tex_update_kernel_src = mtl_string(datatoc_compute_texture_read_msl);
 
     /* Defensive Debug Checks. */
     int64_t depth_scale_factor = 1;
@@ -736,58 +747,61 @@ id<MTLComputePipelineState> gpu::MTLTexture::mtl_texture_read_impl(
     }
 
     /* Prepare options and specializations. */
-    MTLCompileOptions *options = [[[MTLCompileOptions alloc] init] autorelease];
-    options.languageVersion = MTLLanguageVersion2_2;
-    options.preprocessorMacros = @{
-      @"INPUT_DATA_TYPE" :
-          [NSString stringWithUTF8String:specialization_params.input_data_type.c_str()],
-      @"OUTPUT_DATA_TYPE" :
-          [NSString stringWithUTF8String:specialization_params.output_data_type.c_str()],
-      @"COMPONENT_COUNT_INPUT" :
-          [NSNumber numberWithInt:specialization_params.component_count_input],
-      @"COMPONENT_COUNT_OUTPUT" :
-          [NSNumber numberWithInt:specialization_params.component_count_output],
-      @"WRITE_COMPONENT_COUNT" :
-          [NSNumber numberWithInt:min_ii(specialization_params.component_count_input,
-                                         specialization_params.component_count_output)],
-      @"IS_DEPTH_FORMAT" :
-          [NSNumber numberWithInt:((specialization_params.depth_format_mode > 0) ? 1 : 0)],
-      @"DEPTH_SCALE_FACTOR" : [NSNumber numberWithLongLong:depth_scale_factor],
-      @"TEX_TYPE" : [NSNumber numberWithInt:((int)(texture_type))],
-      @"IS_DEPTHSTENCIL_24_8" :
-          [NSNumber numberWithInt:(specialization_params.depth_format_mode == 2) ? 1 : 0]
+    MTLCompileOptions *options = MTL::CompileOptions::alloc()->init()->autorelease();
+    options->setLanguageVersion(MTLLanguageVersion2_2);
+    /* Ver la nota del diccionario en la ruta de escritura: `@{...}` no existe en C++ y
+     * NS::Dictionary se construye con valores y claves en arrays paralelos. */
+    const NS::Object *macro_keys[] = {
+        mtl_string("INPUT_DATA_TYPE"),
+        mtl_string("OUTPUT_DATA_TYPE"),
+        mtl_string("COMPONENT_COUNT_INPUT"),
+        mtl_string("COMPONENT_COUNT_OUTPUT"),
+        mtl_string("WRITE_COMPONENT_COUNT"),
+        mtl_string("IS_DEPTH_FORMAT"),
+        mtl_string("DEPTH_SCALE_FACTOR"),
+        mtl_string("TEX_TYPE"),
+        mtl_string("IS_DEPTHSTENCIL_24_8"),
     };
+    const NS::Object *macro_values[] = {
+        mtl_string(specialization_params.input_data_type.c_str()),
+        mtl_string(specialization_params.output_data_type.c_str()),
+        NS::Number::number(specialization_params.component_count_input),
+        NS::Number::number(specialization_params.component_count_output),
+        NS::Number::number(min_ii(specialization_params.component_count_input,
+                                  specialization_params.component_count_output)),
+        NS::Number::number((specialization_params.depth_format_mode > 0) ? 1 : 0),
+        NS::Number::number((long long)depth_scale_factor),
+        NS::Number::number(int(texture_type)),
+        NS::Number::number((specialization_params.depth_format_mode == 2) ? 1 : 0),
+    };
+    options->setPreprocessorMacros(
+        NS::Dictionary::dictionary(macro_values, macro_keys, ARRAY_SIZE(macro_keys)));
 
     /* Prepare shader library for conversion routine. */
     NSError *error = nullptr;
-    id<MTLLibrary> temp_lib = [[ctx->device newLibraryWithSource:tex_update_kernel_src
-                                                         options:options
-                                                           error:&error] autorelease];
+    MTLLibraryPtr temp_lib = ctx->device->newLibrary(tex_update_kernel_src, options, &error)->autorelease();
     if (error) {
       /* Only exit out if genuine error and not warning. */
-      if ([[error localizedDescription] rangeOfString:@"Compilation succeeded"].location ==
-          NSNotFound)
+      if (error->localizedDescription()->rangeOfString(mtl_string("Compilation succeeded"), NS::StringCompareOptions(0)).location ==
+          NS::NotFound)
       {
-        NSLog(@"Compile Error - Metal Shader Library error %@ ", error);
+        MTL_LOG_ERROR("Compile Error - Metal Shader Library error %s ", error->localizedDescription()->utf8String());
         BLI_assert(false);
-        return nil;
+        return nullptr;
       }
     }
 
     /* Fetch compute function. */
-    BLI_assert(temp_lib != nil);
-    id<MTLFunction> temp_compute_function = [[temp_lib newFunctionWithName:@"compute_texture_read"]
-        autorelease];
+    BLI_assert(temp_lib != nullptr);
+    MTLFunctionPtr temp_compute_function = temp_lib->newFunction(mtl_string("compute_texture_read"))->autorelease();
     BLI_assert(temp_compute_function);
 
     /* Otherwise, bake new Kernel. */
-    id<MTLComputePipelineState> compute_pso = [ctx->device
-        newComputePipelineStateWithFunction:temp_compute_function
-                                      error:&error];
-    if (error || compute_pso == nil) {
-      NSLog(@"Failed to prepare texture_read MTLComputePipelineState %@", error);
+    MTLComputePipelineStatePtr compute_pso = ctx->device->newComputePipelineState(temp_compute_function, &error);
+    if (error || compute_pso == nullptr) {
+      MTL_LOG_ERROR("Failed to prepare texture_read MTLComputePipelineState %s", error->localizedDescription()->utf8String());
       BLI_assert(false);
-      return nil;
+      return nullptr;
     }
 
     /* Store PSO. */
@@ -795,11 +809,11 @@ id<MTLComputePipelineState> gpu::MTLTexture::mtl_texture_read_impl(
     return_pso = compute_pso;
   }
 
-  BLI_assert(return_pso != nil);
+  BLI_assert(return_pso != nullptr);
   return return_pso;
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_read_2d_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_read_2d_get_kernel(
     TextureReadRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -809,7 +823,7 @@ id<MTLComputePipelineState> gpu::MTLTexture::texture_read_2d_get_kernel(
                                GPU_TEXTURE_2D);
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_read_2d_array_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_read_2d_array_get_kernel(
     TextureReadRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -819,7 +833,7 @@ id<MTLComputePipelineState> gpu::MTLTexture::texture_read_2d_array_get_kernel(
                                GPU_TEXTURE_2D_ARRAY);
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_read_1d_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_read_1d_get_kernel(
     TextureReadRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -829,7 +843,7 @@ id<MTLComputePipelineState> gpu::MTLTexture::texture_read_1d_get_kernel(
                                GPU_TEXTURE_1D);
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_read_1d_array_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_read_1d_array_get_kernel(
     TextureReadRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();
@@ -839,7 +853,7 @@ id<MTLComputePipelineState> gpu::MTLTexture::texture_read_1d_array_get_kernel(
                                GPU_TEXTURE_1D_ARRAY);
 }
 
-id<MTLComputePipelineState> gpu::MTLTexture::texture_read_3d_get_kernel(
+MTLComputePipelineStatePtr gpu::MTLTexture::texture_read_3d_get_kernel(
     TextureReadRoutineSpecialisation specialization)
 {
   MTLContext *mtl_context = MTLContext::get();

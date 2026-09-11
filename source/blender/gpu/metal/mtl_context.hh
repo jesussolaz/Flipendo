@@ -145,7 +145,15 @@ class MTLRenderPassState {
                              uint slot);
 
   /* Buffer binding (RenderCommandEncoder). */
-  void bind_vertex_buffer(MTLBufferPtr buffer, uint64_t buffer_offset, uint index);
+  /* `id` pelado y no `MTLBufferPtr`: se define en mtl_command_buffer.mm
+   * (Objective-C++, bloqueado por GHOST) y la llaman mtl_batch.cc y mtl_immediate.cc
+   * (C++ puro). El mangling de C++ incluye los tipos de los parametros, asi que con
+   * grafias distintas a cada lado salen dos simbolos y no enlaza; `id` es
+   * `objc_object *` en los dos modos. Es la unica de las siete funciones de enlace de
+   * MTLRenderPassState/MTLComputeState que cruza hoy la frontera: las demas se dejan
+   * con su tipo. Vuelve a `MTLBufferPtr` cuando migre mtl_command_buffer.
+   * Ver politicas/OBJC-A-CPP.md seccion 11. */
+  void bind_vertex_buffer(id buffer, uint64_t buffer_offset, uint index);
   void bind_fragment_buffer(MTLBufferPtr buffer, uint64_t buffer_offset, uint index);
   void bind_vertex_bytes(const void *bytes, uint64_t length, uint index);
   void bind_fragment_bytes(const void *bytes, uint64_t length, uint index);
@@ -883,7 +891,12 @@ class MTLContext : public Context {
    *
    * `ensure_render_pipeline_state` will return false if the state is
    * invalid and cannot be applied. This should cancel a draw call. */
-  bool ensure_render_pipeline_state(MTLPrimitiveType prim_type);
+  /* `uint64_t` y no `MTLPrimitiveType`: se definen en mtl_context.mm (Objective-C++,
+   * bloqueado por GHOST) y las llaman mtl_batch.cc y mtl_immediate.cc (C++ puro). Los
+   * enumerados entran en el mangling de C++, asi que con el enum a pelo salen dos
+   * simbolos y no enlaza. Vuelven al enum cuando mtl_context deje de ser `.mm`.
+   * Ver politicas/OBJC-A-CPP.md seccion 11. */
+  bool ensure_render_pipeline_state(uint64_t prim_type);
   bool ensure_buffer_bindings(MTLRenderCommandEncoderPtr rec,
                               const MTLShaderInterface *shader_interface,
                               const MTLRenderPipelineStateInstance *pipeline_state_instance);
@@ -896,7 +909,8 @@ class MTLContext : public Context {
   void ensure_texture_bindings(MTLComputeCommandEncoderPtr rec,
                                MTLShaderInterface *shader_interface,
                                const MTLComputePipelineStateInstance *pipeline_state_instance);
-  void ensure_depth_stencil_state(MTLPrimitiveType prim_type);
+  /* Ver la nota de ensure_render_pipeline_state. */
+  void ensure_depth_stencil_state(uint64_t prim_type);
 
   MTLBufferPtr get_null_buffer();
   MTLBufferPtr get_null_attribute_buffer();

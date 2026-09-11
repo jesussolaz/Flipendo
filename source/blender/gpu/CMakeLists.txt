@@ -341,13 +341,13 @@ set(VULKAN_SRC
 
 set(METAL_SRC
   metal/mtl_backend.mm
-  metal/mtl_batch.mm
+  metal/mtl_batch.cc
   metal/mtl_command_buffer.mm
   metal/mtl_cpp_impl.cc
   metal/mtl_context.mm
-  metal/mtl_debug.mm
+  metal/mtl_debug.cc
   metal/mtl_framebuffer.mm
-  metal/mtl_immediate.mm
+  metal/mtl_immediate.cc
   metal/mtl_index_buffer.cc
   metal/mtl_memory.cc
   metal/mtl_query.cc
@@ -358,7 +358,7 @@ set(METAL_SRC
   metal/mtl_state.mm
   metal/mtl_storage_buffer.mm
   metal/mtl_texture.mm
-  metal/mtl_texture_util.mm
+  metal/mtl_texture_util.cc
   metal/mtl_uniform_buffer.cc
   metal/mtl_vertex_buffer.cc
 

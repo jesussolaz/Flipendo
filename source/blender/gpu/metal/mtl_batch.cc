@@ -8,6 +8,7 @@
  * Metal implementation of gpu::Batch.
  */
 
+#include "BLI_string.h"
 #include "BLI_assert.h"
 #include "BLI_span.hh"
 
@@ -337,7 +338,7 @@ int MTLBatch::prepare_vertex_binding(MTLVertBuf *verts,
   return -1;
 }
 
-id<MTLRenderCommandEncoder> MTLBatch::bind()
+MTLRenderCommandEncoderPtr MTLBatch::bind()
 {
   /* Setup draw call and render pipeline state here. Called by every draw, but setup here so that
    * MTLDrawList only needs to perform setup a single time. */
@@ -347,7 +348,7 @@ id<MTLRenderCommandEncoder> MTLBatch::bind()
   MTLContext *ctx = MTLContext::get();
   if (!ctx) {
     BLI_assert_msg(false, "No context available for rendering.");
-    return nil;
+    return nullptr;
   }
 
   /* Fetch bound shader from context. */
@@ -358,7 +359,7 @@ id<MTLRenderCommandEncoder> MTLBatch::bind()
      * This will occur if the path through which the shader is prepared
      * is invalid (e.g. Python without create-info), or, the source shader uses a geometry pass. */
     BLI_assert_msg(false, "No valid Metal shader!");
-    return nil;
+    return nullptr;
   }
 
   /* Prepare Vertex Descriptor and extract VertexBuffers to bind. */
@@ -395,7 +396,7 @@ id<MTLRenderCommandEncoder> MTLBatch::bind()
   }
 
   /* Ensure render pass is active and fetch active RenderCommandEncoder. */
-  id<MTLRenderCommandEncoder> rec = ctx->ensure_begin_render_pass();
+  MTLRenderCommandEncoderPtr rec = ctx->ensure_begin_render_pass();
 
   /* Fetch RenderPassState to enable resource binding for active pass. */
   MTLRenderPassState &rps = ctx->main_command_buffer.get_render_pass_state();
@@ -405,13 +406,13 @@ id<MTLRenderCommandEncoder> MTLBatch::bind()
 
   /* GPU debug markers. */
   if (G.debug & G_DEBUG_GPU) {
-    [rec pushDebugGroup:[NSString stringWithFormat:@"Draw Commands%@ (GPUShader: %s)",
-                                                   this->elem ? @"(indexed)" : @"",
-                                                   active_shader_->get_interface()->get_name()]];
-    [rec insertDebugSignpost:[NSString
-                                 stringWithFormat:@"Draw Commands %@ (GPUShader: %s)",
-                                                  this->elem ? @"(indexed)" : @"",
-                                                  active_shader_->get_interface()->get_name()]];
+    char dbg_label[256];
+    SNPRINTF(dbg_label,
+             "Draw Commands%s (GPUShader: %s)",
+             this->elem ? "(indexed)" : "",
+             active_shader_->get_interface()->get_name());
+    rec->pushDebugGroup(mtl_string(dbg_label));
+    rec->insertDebugSignpost(mtl_string(dbg_label));
   }
 
   /*** Bind Vertex Buffers and Index Buffers **/
@@ -422,7 +423,7 @@ id<MTLRenderCommandEncoder> MTLBatch::bind()
   if (!ctx->ensure_render_pipeline_state(mtl_prim_type)) {
     MTL_LOG_ERROR("Failed to prepare and apply render pipeline state.");
     BLI_assert(false);
-    return nil;
+    return nullptr;
   }
 
   /* Bind Vertex Buffers. */
@@ -439,9 +440,9 @@ id<MTLRenderCommandEncoder> MTLBatch::bind()
     mtlvbo->flag_used();
 
     /* Fetch buffer from MTLVertexBuffer and bind. */
-    id<MTLBuffer> mtl_buffer = mtlvbo->get_metal_buffer();
+    MTLBufferPtr mtl_buffer = mtlvbo->get_metal_buffer();
 
-    BLI_assert(mtl_buffer != nil);
+    BLI_assert(mtl_buffer != nullptr);
     rps.bind_vertex_buffer(mtl_buffer, 0, i);
   }
 
@@ -449,11 +450,11 @@ id<MTLRenderCommandEncoder> MTLBatch::bind()
   return rec;
 }
 
-void MTLBatch::unbind(id<MTLRenderCommandEncoder> rec)
+void MTLBatch::unbind(MTLRenderCommandEncoderPtr rec)
 {
   /* Pop bind debug group. */
   if (G.debug & G_DEBUG_GPU) {
-    [rec popDebugGroup];
+    rec->popDebugGroup();
   }
 }
 
@@ -582,7 +583,7 @@ void MTLBatch::prepare_vertex_descriptor_and_bindings(MTLVertBuf **buffers, int 
             i);
 
         /* If an attribute is not included, then format in vertex descriptor should be invalid due
-         * to nil assignment. */
+         * to nullptr assignment. */
         BLI_assert(desc.vertex_descriptor.attributes[attr.location].format ==
                    MTLVertexFormatInvalid);
       }
@@ -597,8 +598,8 @@ void MTLBatch::draw_advanced(int v_first, int v_count, int i_first, int i_count)
 
   /* Setup RenderPipelineState for batch. */
   MTLContext *ctx = MTLContext::get();
-  id<MTLRenderCommandEncoder> rec = this->bind();
-  if (rec == nil) {
+  MTLRenderCommandEncoderPtr rec = this->bind();
+  if (rec == nullptr) {
     /* End of draw. */
     this->unbind(rec);
     return;
@@ -615,17 +616,17 @@ void MTLBatch::draw_advanced(int v_first, int v_count, int i_first, int i_count)
       /* Generate index buffer for primitive types requiring emulation. */
       GPUPrimType emulated_prim_type = this->prim_type;
       uint32_t emulated_v_count = v_count;
-      id<MTLBuffer> generated_index_buffer = this->get_emulated_toplogy_buffer(emulated_prim_type,
+      MTLBufferPtr generated_index_buffer = this->get_emulated_toplogy_buffer(emulated_prim_type,
                                                                                emulated_v_count);
-      BLI_assert(generated_index_buffer != nil);
+      BLI_assert(generated_index_buffer != nullptr);
 
       MTLPrimitiveType emulated_mtl_prim_type = gpu_prim_type_to_metal(emulated_prim_type);
 
       /* Temp: Disable culling for emulated primitive types.
        * TODO(Metal): Support face winding in topology buffer. */
-      [rec setCullMode:MTLCullModeNone];
+      rec->setCullMode(MTLCullModeNone);
 
-      if (generated_index_buffer != nil) {
+      if (generated_index_buffer != nullptr) {
         BLI_assert(emulated_mtl_prim_type == MTLPrimitiveTypeTriangle ||
                    emulated_mtl_prim_type == MTLPrimitiveTypeLine);
         if (emulated_mtl_prim_type == MTLPrimitiveTypeTriangle) {
@@ -638,14 +639,7 @@ void MTLBatch::draw_advanced(int v_first, int v_count, int i_first, int i_count)
         /* Set depth stencil state (requires knowledge of primitive type). */
         ctx->ensure_depth_stencil_state(emulated_mtl_prim_type);
 
-        [rec drawIndexedPrimitives:emulated_mtl_prim_type
-                        indexCount:emulated_v_count
-                         indexType:MTLIndexTypeUInt32
-                       indexBuffer:generated_index_buffer
-                 indexBufferOffset:0
-                     instanceCount:i_count
-                        baseVertex:v_first
-                      baseInstance:i_first];
+        rec->drawIndexedPrimitives(emulated_mtl_prim_type, emulated_v_count, MTLIndexTypeUInt32, generated_index_buffer, 0, i_count, v_first, i_first);
       }
       else {
         printf("[Note] Cannot draw batch -- Emulated Topology mode: %u not yet supported\n",
@@ -657,11 +651,7 @@ void MTLBatch::draw_advanced(int v_first, int v_count, int i_first, int i_count)
       ctx->ensure_depth_stencil_state(mtl_prim_type);
 
       /* Issue draw call. */
-      [rec drawPrimitives:mtl_prim_type
-              vertexStart:v_first
-              vertexCount:v_count
-            instanceCount:i_count
-             baseInstance:i_first];
+      rec->drawPrimitives(mtl_prim_type, v_first, v_count, i_count, i_first);
     }
     ctx->main_command_buffer.register_draw_counters(v_count * i_count);
   }
@@ -681,24 +671,17 @@ void MTLBatch::draw_advanced(int v_first, int v_count, int i_first, int i_count)
     GPUPrimType final_prim_type = this->prim_type;
     uint index_count = v_count;
 
-    id<MTLBuffer> index_buffer = mtl_elem->get_index_buffer(final_prim_type, index_count);
+    MTLBufferPtr index_buffer = mtl_elem->get_index_buffer(final_prim_type, index_count);
     mtl_prim_type = gpu_prim_type_to_metal(final_prim_type);
-    BLI_assert(index_buffer != nil);
+    BLI_assert(index_buffer != nullptr);
 
-    if (index_buffer != nil) {
+    if (index_buffer != nullptr) {
 
       /* Set depth stencil state (requires knowledge of primitive type). */
       ctx->ensure_depth_stencil_state(mtl_prim_type);
 
       /* Issue draw call. */
-      [rec drawIndexedPrimitives:mtl_prim_type
-                      indexCount:index_count
-                       indexType:index_type
-                     indexBuffer:index_buffer
-               indexBufferOffset:v_first_ofs
-                   instanceCount:i_count
-                      baseVertex:base_index
-                    baseInstance:i_first];
+      rec->drawIndexedPrimitives(mtl_prim_type, index_count, index_type, index_buffer, v_first_ofs, i_count, base_index, i_first);
       ctx->main_command_buffer.register_draw_counters(index_count * i_count);
     }
     else {
@@ -714,8 +697,8 @@ void MTLBatch::draw_advanced_indirect(GPUStorageBuf *indirect_buf, intptr_t offs
 {
   /* Setup RenderPipelineState for batch. */
   MTLContext *ctx = MTLContext::get();
-  id<MTLRenderCommandEncoder> rec = this->bind();
-  if (rec == nil) {
+  MTLRenderCommandEncoderPtr rec = this->bind();
+  if (rec == nullptr) {
     printf("Failed to open Render Command encoder for DRAW INDIRECT\n");
 
     /* End of draw. */
@@ -725,10 +708,10 @@ void MTLBatch::draw_advanced_indirect(GPUStorageBuf *indirect_buf, intptr_t offs
 
   /* Fetch indirect buffer Metal handle. */
   MTLStorageBuf *mtlssbo = static_cast<MTLStorageBuf *>(unwrap(indirect_buf));
-  id<MTLBuffer> mtl_indirect_buf = mtlssbo->get_metal_buffer();
-  BLI_assert(mtl_indirect_buf != nil);
-  if (mtl_indirect_buf == nil) {
-    MTL_LOG_WARNING("Metal Indirect Draw Storage Buffer is nil.");
+  MTLBufferPtr mtl_indirect_buf = mtlssbo->get_metal_buffer();
+  BLI_assert(mtl_indirect_buf != nullptr);
+  if (mtl_indirect_buf == nullptr) {
+    MTL_LOG_WARNING("Metal Indirect Draw Storage Buffer is nullptr.");
 
     /* End of draw. */
     this->unbind(rec);
@@ -756,7 +739,7 @@ void MTLBatch::draw_advanced_indirect(GPUStorageBuf *indirect_buf, intptr_t offs
     ctx->ensure_depth_stencil_state(mtl_prim_type);
 
     /* Issue draw call. */
-    [rec drawPrimitives:mtl_prim_type indirectBuffer:mtl_indirect_buf indirectBufferOffset:offset];
+    rec->drawPrimitives(mtl_prim_type, mtl_indirect_buf, offset);
     ctx->main_command_buffer.register_draw_counters(1);
   }
   else {
@@ -770,22 +753,17 @@ void MTLBatch::draw_advanced_indirect(GPUStorageBuf *indirect_buf, intptr_t offs
     /* Disable index optimization for indirect draws. */
     mtl_elem->flag_can_optimize(false);
 
-    id<MTLBuffer> index_buffer = mtl_elem->get_index_buffer(final_prim_type, index_count);
+    MTLBufferPtr index_buffer = mtl_elem->get_index_buffer(final_prim_type, index_count);
     mtl_prim_type = gpu_prim_type_to_metal(final_prim_type);
-    BLI_assert(index_buffer != nil);
+    BLI_assert(index_buffer != nullptr);
 
-    if (index_buffer != nil) {
+    if (index_buffer != nullptr) {
 
       /* Set depth stencil state (requires knowledge of primitive type). */
       ctx->ensure_depth_stencil_state(mtl_prim_type);
 
       /* Issue draw call. */
-      [rec drawIndexedPrimitives:mtl_prim_type
-                       indexType:index_type
-                     indexBuffer:index_buffer
-               indexBufferOffset:0
-                  indirectBuffer:mtl_indirect_buf
-            indirectBufferOffset:offset];
+      rec->drawIndexedPrimitives(mtl_prim_type, index_type, index_buffer, 0, mtl_indirect_buf, offset);
       ctx->main_command_buffer.register_draw_counters(1);
     }
     else {
@@ -803,7 +781,7 @@ void MTLBatch::draw_advanced_indirect(GPUStorageBuf *indirect_buf, intptr_t offs
 /** \name Topology emulation and optimization
  * \{ */
 
-id<MTLBuffer> MTLBatch::get_emulated_toplogy_buffer(GPUPrimType &in_out_prim_type,
+MTLBufferPtr MTLBatch::get_emulated_toplogy_buffer(GPUPrimType &in_out_prim_type,
                                                     uint32_t &in_out_v_count)
 {
 
@@ -817,12 +795,12 @@ id<MTLBuffer> MTLBatch::get_emulated_toplogy_buffer(GPUPrimType &in_out_prim_typ
     case GPU_PRIM_LINES:
     case GPU_PRIM_TRIS:
       BLI_assert_msg(false, "Optimal primitive types should not reach here.");
-      return nil;
+      return nullptr;
       break;
     case GPU_PRIM_LINES_ADJ:
     case GPU_PRIM_TRIS_ADJ:
       BLI_assert_msg(false, "Adjacency primitive types should not reach here.");
-      return nil;
+      return nullptr;
       break;
     case GPU_PRIM_LINE_STRIP:
     case GPU_PRIM_LINE_LOOP:
@@ -835,7 +813,7 @@ id<MTLBuffer> MTLBatch::get_emulated_toplogy_buffer(GPUPrimType &in_out_prim_typ
       break;
     default:
       BLI_assert_msg(false, "Invalid primitive type.");
-      return nil;
+      return nullptr;
   }
 
   /* Check if topology buffer exists and is valid. */
@@ -908,7 +886,7 @@ id<MTLBuffer> MTLBatch::get_emulated_toplogy_buffer(GPUPrimType &in_out_prim_typ
 
       default:
         BLI_assert_msg(false, "Other primitive types do not require emulation.");
-        return nil;
+        return nullptr;
     }
 
     /* Flush. */
@@ -922,7 +900,7 @@ id<MTLBuffer> MTLBatch::get_emulated_toplogy_buffer(GPUPrimType &in_out_prim_typ
   /* Return. */
   in_out_v_count = topology_buffer_output_v_count_;
   in_out_prim_type = output_prim_type;
-  return (emulated_topology_buffer_) ? emulated_topology_buffer_->get_metal_buffer() : nil;
+  return (emulated_topology_buffer_) ? emulated_topology_buffer_->get_metal_buffer() : nullptr;
 }
 
 /** \} */

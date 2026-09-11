@@ -8,6 +8,7 @@
  * Mimics old style opengl immediate mode drawing.
  */
 
+#include "BLI_string.h"
 #include "BKE_global.hh"
 
 #include "GPU_vertex_format.hh"
@@ -49,7 +50,7 @@ uchar *MTLImmediate::begin()
   const size_t bytes_needed = vertex_buffer_size(&vertex_format, vertex_alloc_length);
   current_allocation_ = context_->get_scratchbuffer_manager()
                             .scratch_buffer_allocate_range_aligned(bytes_needed, 256);
-  [current_allocation_.metal_buffer retain];
+  current_allocation_.metal_buffer->retain();
   return reinterpret_cast<uchar *>(current_allocation_.data);
 }
 
@@ -79,8 +80,8 @@ void MTLImmediate::end()
     }
 
     /* Ensure we are inside a render pass and fetch active RenderCommandEncoder. */
-    id<MTLRenderCommandEncoder> rec = context_->ensure_begin_render_pass();
-    BLI_assert(rec != nil);
+    MTLRenderCommandEncoderPtr rec = context_->ensure_begin_render_pass();
+    BLI_assert(rec != nullptr);
 
     /* Fetch active render pipeline state. */
     MTLRenderPassState &rps = context_->main_command_buffer.get_render_pass_state();
@@ -90,14 +91,13 @@ void MTLImmediate::end()
 
     /* Debug markers for frame-capture and detailed error messages. */
     if (G.debug & G_DEBUG_GPU) {
-      [rec pushDebugGroup:[NSString
-                              stringWithFormat:@"immEnd(verts: %d, shader: %s)",
-                                               this->vertex_idx,
-                                               active_mtl_shader->get_interface()->get_name()]];
-      [rec insertDebugSignpost:[NSString stringWithFormat:@"immEnd(verts: %d, shader: %s)",
-                                                          this->vertex_idx,
-                                                          active_mtl_shader->get_interface()
-                                                              ->get_name()]];
+      char dbg_label[256];
+      SNPRINTF(dbg_label,
+               "immEnd(verts: %d, shader: %s)",
+               this->vertex_idx,
+               active_mtl_shader->get_interface()->get_name());
+      rec->pushDebugGroup(mtl_string(dbg_label));
+      rec->insertDebugSignpost(mtl_string(dbg_label));
     }
 
     /* Populate pipeline state vertex descriptor. */
@@ -264,9 +264,11 @@ void MTLImmediate::end()
               index_buffer[a++] = i + 2;
             }
 
-            @autoreleasepool {
+            {
+    /* Equivalente de @autoreleasepool: el pool se drena al salir del ambito. */
+    MTLAutoreleasePoolScope pool_scope;
 
-              id<MTLBuffer> index_buffer_mtl = nil;
+              MTLBufferPtr index_buffer_mtl = nullptr;
               uint64_t index_buffer_offset = 0;
 
               /* Region of scratch buffer used for topology emulation element data.
@@ -283,11 +285,7 @@ void MTLImmediate::end()
                   current_allocation_.metal_buffer, current_allocation_.buffer_offset, 0);
 
               /* Draw. */
-              [rec drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-                              indexCount:fan_index_count
-                               indexType:MTLIndexTypeUInt32
-                             indexBuffer:index_buffer_mtl
-                       indexBufferOffset:index_buffer_offset];
+              rec->drawIndexedPrimitives(MTLPrimitiveTypeTriangle, fan_index_count, MTLIndexTypeUInt32, index_buffer_mtl, index_buffer_offset);
               context_->main_command_buffer.register_draw_counters(fan_index_count);
             }
             rendered = true;
@@ -316,21 +314,21 @@ void MTLImmediate::end()
         }
         else {
           /* Regular draw. */
-          [rec drawPrimitives:primitive_type vertexStart:0 vertexCount:vertex_count];
+          rec->drawPrimitives(primitive_type, NS::UInteger(0), NS::UInteger(vertex_count));
           context_->main_command_buffer.register_draw_counters(vertex_count);
         }
       }
     }
     if (G.debug & G_DEBUG_GPU) {
-      [rec popDebugGroup];
+      rec->popDebugGroup();
     }
 
     if (unwrap(this->shader)->is_polyline) {
       context_->get_scratchbuffer_manager().unbind_as_ssbo();
 
-      context_->pipeline_state.ssbo_bindings[GPU_SSBO_POLYLINE_POS_BUF_SLOT].ssbo = nil;
-      context_->pipeline_state.ssbo_bindings[GPU_SSBO_POLYLINE_COL_BUF_SLOT].ssbo = nil;
-      context_->pipeline_state.ssbo_bindings[GPU_SSBO_INDEX_BUF_SLOT].ssbo = nil;
+      context_->pipeline_state.ssbo_bindings[GPU_SSBO_POLYLINE_POS_BUF_SLOT].ssbo = nullptr;
+      context_->pipeline_state.ssbo_bindings[GPU_SSBO_POLYLINE_COL_BUF_SLOT].ssbo = nullptr;
+      context_->pipeline_state.ssbo_bindings[GPU_SSBO_INDEX_BUF_SLOT].ssbo = nullptr;
       context_->pipeline_state.ssbo_bindings[GPU_SSBO_POLYLINE_POS_BUF_SLOT].bound = false;
       context_->pipeline_state.ssbo_bindings[GPU_SSBO_POLYLINE_COL_BUF_SLOT].bound = false;
       context_->pipeline_state.ssbo_bindings[GPU_SSBO_INDEX_BUF_SLOT].bound = false;
@@ -340,8 +338,8 @@ void MTLImmediate::end()
   /* Reset allocation after draw submission. */
   has_begun_ = false;
   if (current_allocation_.metal_buffer) {
-    [current_allocation_.metal_buffer release];
-    current_allocation_.metal_buffer = nil;
+    current_allocation_.metal_buffer->release();
+    current_allocation_.metal_buffer = nullptr;
   }
 }
 
