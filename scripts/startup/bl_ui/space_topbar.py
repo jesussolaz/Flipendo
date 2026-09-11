@@ -83,14 +83,14 @@ class TOPBAR_PT_tool_fallback(Panel):
     bl_ui_units_x = 8
 
     def draw(self, context):
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
         layout = self.layout
 
+        # Las opciones de la herramienta de reserva y sus ajustes: dibujo nativo
+        # (C++, `FL_toolbar_ui.hh`).
         tool_settings = context.tool_settings
-        ToolSelectPanelHelper.draw_fallback_tool_items(layout, context)
+        layout.template_tool_fallback_items(pie=False)
         if tool_settings.workspace_tool_type == 'FALLBACK':
-            tool = context.tool
-            ToolSelectPanelHelper.draw_active_tool_fallback(context, layout, tool)
+            layout.template_tool_fallback_settings(context.tool)
 
 
 class TOPBAR_MT_editor_menus(Menu):

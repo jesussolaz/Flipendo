@@ -8,12 +8,18 @@ __all__ = (
 
 
 def _km_expand_from_toolsystem(space_type, context_mode):
+    # Los nombres salen del catalogo nativo (C++, `FL_toolsystem.hpp`), que los guarda
+    # como literales; antes los daba `ToolSelectPanelHelper.keymap_ui_hierarchy`. Un modo
+    # sin herramientas da la cadena vacia, que es lo mismo que devolvia aquel generador.
     def _fn():
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        for cls in ToolSelectPanelHelper.__subclasses__():
-            if cls.bl_space_type == space_type:
-                return cls.keymap_ui_hierarchy(context_mode)
-        raise Exception("keymap not found")
+        import bpy
+        names = bpy.context.window_manager.tool_keymap_names(
+            space_type=space_type,
+            mode=context_mode or "",
+        )
+        for km_name in (names.split("\n") if names else ()):
+            yield (km_name, space_type, 'WINDOW', [])
+            yield (km_name + " (fallback)", space_type, 'WINDOW', [])
     return _fn
 
 
@@ -26,13 +32,10 @@ def _km_hierarchy_iter_recursive(items):
 
 
 def generate():
-    import bpy
-
-    if bpy.app.background:
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        for cls in ToolSelectPanelHelper.__subclasses__():
-            cls.register_ensure()
-
+    # En segundo plano habia que forzar el registro del catalogo Python, porque hasta que
+    # corria, el campo `keymap` de cada herramienta seguia siendo un objeto funcion y no
+    # el nombre del keymap. El catalogo nativo lo guarda ya como literal, asi que en
+    # segundo plano se ve exactamente lo mismo que con interfaz.
     return list(_km_hierarchy_iter_recursive(_km_hierarchy))
 
 

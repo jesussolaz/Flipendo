@@ -103,8 +103,16 @@ const ToolDecl erase = {
  * Las dos van en la misma fila y con `use_property_split` desactivado en el Python. Eso
  * es colocacion, no dato: `PropRow` todavia no la expresa y se pinta una debajo de otra. */
 static const PropRow trim_settings[] = {
-    {PropSource::ToolSettingsSub, "gpencil_paint.brush.gpencil_settings", "use_active_layer_only"},
-    {PropSource::ToolSettingsSub, "gpencil_paint.brush.gpencil_settings", "use_keep_caps_eraser"},
+    {PropSource::ToolSettingsSub,
+     "gpencil_paint.brush.gpencil_settings",
+     "use_active_layer_only",
+     nullptr,
+     PROP_ROW_OWN_ROW | PROP_ROW_NO_SPLIT},
+    {PropSource::ToolSettingsSub,
+     "gpencil_paint.brush.gpencil_settings",
+     "use_keep_caps_eraser",
+     nullptr,
+     PROP_ROW_SAME_ROW},
 };
 
 const ToolDecl trim = {

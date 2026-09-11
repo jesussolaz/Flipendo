@@ -46,7 +46,11 @@ namespace flipendo::toolsystem {
 namespace template_widget::view3d_ggt_xform_extrude {
 
 static const PropRow settings_rows[] = {
-    {PropSource::GizmoGroup, "VIEW3D_GGT_xform_extrude", "axis_type", nullptr, PROP_ROW_EXPAND},
+    {PropSource::GizmoGroup,
+     "VIEW3D_GGT_xform_extrude",
+     "axis_type",
+     nullptr,
+     PROP_ROW_EXPAND | PROP_ROW_OWN_ROW | PROP_ROW_ALIGN},
 };
 
 const blender::Span<PropRow> settings = span(settings_rows);

@@ -3,7 +3,7 @@
 # Unidades fijas: metrico, scale_length=1, sin split, rotacion en grados.
 # El binario CON Python y el binario SIN Python tienen que escribir esto igual.
 
-[cubiertos] 108
+[cubiertos] 133
 NONE           | 2*3                    | ok=1 | 6
 NONE           | 1+1                    | ok=1 | 2
 NONE           | 10-4                   | ok=1 | 6
@@ -112,11 +112,33 @@ MASS           | 500g                   | ok=1 | 0.50000002500000007
 AREA           | 2m2                    | ok=1 | 2
 VOLUME         | 3m3                    | ok=1 | 3
 CAMERA         | 50mm                   | ok=1 | 50
+NONE           | 2**3                   | ok=1 | 8
+NONE           | 2**10                  | ok=1 | 1024
+NONE           | 2**0.5                 | ok=1 | 1.4142135623730951
+NONE           | 2**-1                  | ok=1 | 0.5
+NONE           | -2**2                  | ok=1 | -4
+NONE           | 2**3**2                | ok=1 | 512
+NONE           | (2**3)**2              | ok=1 | 64
+NONE           | 2*3**2                 | ok=1 | 18
+NONE           | 2**3+1                 | ok=1 | 9
+NONE           | 0**-1                  | ok=0 | 0
+NONE           | (-8)**(1/3)            | ok=0 | 0
+NONE           | 7%3                    | ok=1 | 1
+NONE           | -7%3                   | ok=1 | 2
+NONE           | 7%-3                   | ok=1 | -2
+NONE           | -7%-3                  | ok=1 | -1
+NONE           | 7.5%2                  | ok=1 | 1.5
+NONE           | 7%0                    | ok=0 | 0
+NONE           | 2+7%3                  | ok=1 | 3
+NONE           | 7//2                   | ok=1 | 3
+NONE           | -7//2                  | ok=1 | -4
+NONE           | 7//-2                  | ok=1 | -4
+NONE           | -7//-2                 | ok=1 | 3
+NONE           | 7.5//2                 | ok=1 | 3
+NONE           | 7//0                   | ok=0 | 0
+NONE           | 1+2*3**2%5//2          | ok=1 | 2
 
-[no-cubiertos] 11
-NONE           | 2**3                   | ** no lo tokeniza BLI_expr_pylike; se escribe pow(2,3)
-NONE           | 7%3                    | % no lo tokeniza BLI_expr_pylike; se escribe fmod(7,3)
-NONE           | 7//2                   | // no lo tokeniza BLI_expr_pylike; se escribe floor(7/2)
+[no-cubiertos] 9
 NONE           | 0x10                   | literales hexadecimales: solo Python
 NONE           | 1_000                  | separador de miles del literal: solo Python
 NONE           | round(2.5)             | round() de C redondea 2.5 a 3; Python redondea a 2 (bancario)
@@ -125,3 +147,4 @@ NONE           | clamp(5,0,1)           | clamp existe en BLI_expr_pylike y no e
 NONE           | smoothstep(0,1,0.5)    | smoothstep existe en BLI_expr_pylike y no en math de Python
 NONE           | 2,5                    | Python lo lee como tupla y suma 2+5=7; aqui es error de sintaxis
 LENGTH         | 10km, 2m               | lista separada por comas: Python la suma, aqui es error
+NONE           | 3**500                 | entero**entero grande: Python lo calcula exacto con enteros de precision arbitraria y luego redondea; aqui es pow() en doble desde el principio

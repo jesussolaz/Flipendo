@@ -64,14 +64,13 @@
 
 #  include "WM_api.hh"
 
+#  include "FL_game_runtime.hh"
 #  include "FL_keymap_dump.hpp"
-#  include "FL_operator_dump.hpp"
+#  include "FL_mesh_ops_selftest.hh"
 #  include "FL_numinput_native.hh"
 #  include "FL_object_ops_selftest.hh"
-#  if __has_include("FL_ui_dump.hpp")
-#    include "FL_ui_dump.hpp"
-#    define FL_UI_DUMP_AVAILABLE
-#  endif
+#  include "FL_operator_dump.hpp"
+#  include "FL_ui_dump.hpp"
 #  include "preset/FL_preset.hpp"
 #  include "toolsystem/FL_toolsystem_dump.hpp"
 
@@ -2751,7 +2750,6 @@ static int arg_handle_fl_check_presets(int argc, const char **argv, void *data)
   return 0;
 }
 
-#  ifdef FL_UI_DUMP_AVAILABLE
 static const char arg_handle_fl_dump_ui_doc[] =
     "<filepath>\n"
     "\tVuelca el REGISTRO de interfaz (paneles, menus y cabeceras) y sale.\n"
@@ -2800,7 +2798,24 @@ static int arg_handle_fl_check_ui(int argc, const char **argv, void *data)
   fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
   return 0;
 }
-#  endif
+static const char arg_handle_fl_dump_runtime_doc[] =
+    "<bundle> [informe]\n"
+    "\tVuelca el estado observable de un juego ya exportado: estructura del\n"
+    "\tbundle, ficheros con su tamano, el .blend empotrado y los objetos con\n"
+    "\tpropiedad de juego `fl_component`. Sirve para comparar byte a byte el\n"
+    "\tentregable que produce el camino Python con el que produce el C++\n"
+    "\t(Carril J). Vale en --background.";
+static int arg_handle_fl_dump_runtime(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::game::runtime_dump(argv[1], (argc > 2) ? argv[2] : nullptr);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (argc > 2) ? 2 : 1;
+  }
+  fprintf(stderr, "\nError: falta la ruta del bundle despues de '%s'.\n", argv[0]);
+  return 0;
+}
 
 static const char arg_handle_fl_selftest_object_ops_doc[] =
     "<filepath>\n"
@@ -2817,6 +2832,41 @@ static int arg_handle_fl_selftest_object_ops(int argc, const char **argv, void *
     return 1;
   }
   fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_selftest_mesh_ops_doc[] =
+    "<filepath>\n"
+    "\tConstruye escenas deterministas (Suzanne, icoesfera, esferas UV con atributo de\n"
+    "\tcolor, cubo con vertices sueltos, rejilla con mascara de pintura), invoca\n"
+    "\t`paint.vertex_color_dirt` por su idname y vuelca el atributo de color elemento a\n"
+    "\telemento. Se compara con tests/flipendo/meshops/baseline-python.txt (Carril C).";
+static int arg_handle_fl_selftest_mesh_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::mesh_ops_selftest::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_mesh_ops_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-mesh-ops, pero compara el volcado con la linea base indicada\n"
+    "\ty dice cuantos elementos de color coinciden por caso. Sale con codigo 0 solo si\n"
+    "\tno hay ni una diferencia (Carril C).";
+static int arg_handle_fl_check_mesh_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::mesh_ops_selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
   return 0;
 }
 
@@ -3406,13 +3456,14 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-convert-presets", CB(arg_handle_fl_convert_presets), C);
   BLI_args_add(ba, nullptr, "--fl-check-presets", CB(arg_handle_fl_check_presets), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-numinput", CB(arg_handle_fl_selftest_numinput), C);
-#  ifdef FL_UI_DUMP_AVAILABLE
+  BLI_args_add(ba, nullptr, "--fl-dump-runtime", CB(arg_handle_fl_dump_runtime), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);
-#  endif
   BLI_args_add(
       ba, nullptr, "--fl-selftest-object-ops", CB(arg_handle_fl_selftest_object_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-selftest-mesh-ops", CB(arg_handle_fl_selftest_mesh_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-check-mesh-ops", CB(arg_handle_fl_check_mesh_ops), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

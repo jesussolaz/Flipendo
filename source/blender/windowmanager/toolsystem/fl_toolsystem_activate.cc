@@ -272,6 +272,36 @@ bool activation_compute(const bContext *C,
  * encontrarlo se sincroniza con el contexto (`refresh_from_context`), que en los modos
  * de pincel puede cambiar la herramienta guardada.
  */
+/** La clave (espacio, modo) del contexto. Separada de `active_tref` porque hay consultas
+ * sobre el modo que no necesitan —ni deben esperar— que la herramienta activa exista ya. */
+static bool tool_key_from_context(const bContext *C, const int space_type, bToolKey *r_key)
+{
+  *r_key = bToolKey{};
+  r_key->space_type = space_type;
+  switch (space_type) {
+    case SPACE_VIEW3D:
+      r_key->mode = CTX_data_mode_enum(C);
+      return true;
+    case SPACE_IMAGE: {
+      const SpaceImage *sima = CTX_wm_space_image(C);
+      r_key->mode = sima != nullptr ? sima->mode : SI_MODE_VIEW;
+      return true;
+    }
+    case SPACE_NODE:
+      r_key->mode = 0;
+      return true;
+    case SPACE_SEQ: {
+      const SpaceSeq *sseq = CTX_wm_space_seq(C);
+      if (sseq == nullptr) {
+        return false;
+      }
+      r_key->mode = sseq->view;
+      return true;
+    }
+  }
+  return false;
+}
+
 static bToolRef *active_tref(const bContext *C,
                              WorkSpace *workspace,
                              const int space_type,
@@ -281,29 +311,8 @@ static bToolRef *active_tref(const bContext *C,
     return nullptr;
   }
   bToolKey key{};
-  key.space_type = space_type;
-  switch (space_type) {
-    case SPACE_VIEW3D:
-      key.mode = CTX_data_mode_enum(C);
-      break;
-    case SPACE_IMAGE: {
-      const SpaceImage *sima = CTX_wm_space_image(C);
-      key.mode = sima != nullptr ? sima->mode : SI_MODE_VIEW;
-      break;
-    }
-    case SPACE_NODE:
-      key.mode = 0;
-      break;
-    case SPACE_SEQ: {
-      const SpaceSeq *sseq = CTX_wm_space_seq(C);
-      if (sseq == nullptr) {
-        return nullptr;
-      }
-      key.mode = sseq->view;
-      break;
-    }
-    default:
-      return nullptr;
+  if (!tool_key_from_context(C, space_type, &key)) {
+    return nullptr;
   }
 
   bToolRef *tref = nullptr;
@@ -396,13 +405,21 @@ const ToolDecl *tool_find_by_id_active(const bContext *C,
 }
 
 /** El tipo de pincel en entero. Depende del modo de pintura de la herramienta: el
- * mismo nombre es otro numero en escultura que en pintura de vertices. */
-static int brush_type_value(const bToolRef *tref, const char *identifier)
+ * mismo nombre es otro numero en escultura que en pintura de vertices.
+ *
+ * Toma el espacio y el modo sueltos, no un `bToolRef`, porque hay una pregunta legitima
+ * —"tiene este modo alguna herramienta de tal tipo de pincel"— que se hace ANTES de que
+ * exista ninguna herramienta activa. `BKE_paintmode_get_from_tool` solo lee esos dos
+ * campos, asi que el `bToolRef` de paso es un detalle de su firma, no un requisito. */
+static int brush_type_value_in(const int space_type, const int mode, const char *identifier)
 {
   if (STREQ(identifier, "ANY")) {
     return -1;
   }
-  const PaintMode paint_mode = BKE_paintmode_get_from_tool(tref);
+  bToolRef key_only{};
+  key_only.space_type = short(space_type);
+  key_only.mode = mode;
+  const PaintMode paint_mode = BKE_paintmode_get_from_tool(&key_only);
   if (paint_mode != PaintMode::Invalid) {
     const EnumPropertyItem *items = BKE_paint_get_tool_enum_from_paintmode(paint_mode);
     int value = -1;
@@ -412,6 +429,74 @@ static int brush_type_value(const bToolRef *tref, const char *identifier)
   }
   fprintf(stderr, "Herramientas: tipo de pincel '%s' desconocido en este modo.\n", identifier);
   return -1;
+}
+
+static int brush_type_value(const bToolRef *tref, const char *identifier)
+{
+  return brush_type_value_in(tref->space_type, tref->mode, identifier);
+}
+
+bool tool_with_brush_type_exists(const bContext *C, const int space_type, const int brush_type)
+{
+  /* El modo sale del CONTEXTO, no de la herramienta activa.
+   *
+   * La primera version pedia el `bToolRef` activo para sacar de el el modo de pintura, y
+   * devolvia `false` si no lo habia. Parecia inofensivo —en el dibujo siempre hay
+   * herramienta— y no lo era: en un modo al que se acaba de entrar y cuya barra aun no se
+   * ha dibujado, `WM_toolsystem_ref_find` devuelve nulo, y entonces el estante escondia
+   * TODOS los pinceles del modo. La prueba diferencial lo caza en los cuatro modos de
+   * lapiz de grasa: 10 diferencias, todas "el nativo dice que no y el Python que si".
+   * El Python nunca miro la herramienta activa; esto tampoco. */
+  bToolKey key{};
+  if (!tool_key_from_context(C, space_type, &key)) {
+    return false;
+  }
+  const ToolbarDecl *toolbar = toolbar_for_space(space_type);
+  if (toolbar == nullptr) {
+    return false;
+  }
+  /* El modo con el que se busca es `context.mode`, TAMBIEN fuera de la vista 3D, y eso
+   * se replica a proposito aunque parezca un error.
+   *
+   * El Python pregunta `cls.tools_from_context(context, mode=context.mode)`
+   * (`properties_paint_common.py:34`), y `context.mode` es el modo del OBJETO
+   * ('OBJECT', 'PAINT_TEXTURE'...). En el editor de imagen los modos del catalogo se
+   * llaman de otra forma ('VIEW', 'UV', 'PAINT'), asi que alli no casa ninguno y la
+   * busqueda solo ve las herramientas comunes del espacio —que no son de pincel—: el
+   * estante de pinceles del editor de imagen NUNCA filtra por tipo. Buscar con el modo
+   * del espacio, que es lo natural, devuelve `true` donde el Python devolvia `false` y
+   * hace desaparecer del estante los cinco pinceles de pintura 2D. Es el mismo criterio
+   * que ya se documento para el tipo de pincel en la fase 2. */
+  const char *lookup_mode = nullptr;
+  RNA_enum_identifier(rna_enum_context_mode_items, CTX_data_mode_enum(C), &lookup_mode);
+  /* Usan el pincel pero no fijan su tipo: el Python las salta por idname. */
+  static const char *ignored[] = {
+      "builtin.arc",
+      "builtin.curve",
+      "builtin.line",
+      "builtin.box",
+      "builtin.circle",
+      "builtin.polyline",
+  };
+  for (const ToolDecl *item : tools_for_space_mode(C, *toolbar, lookup_mode)) {
+    if (item->brush_type == nullptr || (item->options & TOOL_OPTION_USE_BRUSHES) == 0) {
+      continue;
+    }
+    bool skip = false;
+    for (const char *idname : ignored) {
+      if (STREQ(item->idname, idname)) {
+        skip = true;
+        break;
+      }
+    }
+    if (skip) {
+      continue;
+    }
+    if (brush_type_value_in(key.space_type, key.mode, item->brush_type) == brush_type) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /* -------------------------------------------------------------------- */

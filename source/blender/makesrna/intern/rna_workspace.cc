@@ -6,6 +6,8 @@
  * \ingroup RNA
  */
 
+#include <climits>
+
 #include "RNA_define.hh"
 #include "RNA_enum_types.hh"
 #include "RNA_types.hh"
@@ -36,6 +38,15 @@
 #  include "RNA_access.hh"
 
 #  include "WM_toolsystem.hh"
+
+/* El catalogo nativo de herramientas. Las dos consultas de abajo sustituyen a
+ * `ToolSelectPanelHelper.tool_active_from_context` y a
+ * `BrushAssetShelf.has_tool_with_brush_type`, que vivian en
+ * `bl_ui/space_toolsystem_common.py` y en `bl_ui/properties_paint_common.py`. Puente en
+ * la direccion buena: Python llamando a C++, mientras `bl_ui` sigue siendo Python. */
+#  include "BKE_context.hh"
+
+#  include "toolsystem/FL_toolsystem.hpp"
 
 static void rna_window_update_all(Main * /*bmain*/, Scene * /*scene*/, PointerRNA * /*ptr*/)
 {
@@ -153,6 +164,44 @@ static bToolRef *rna_WorkSpace_tools_from_space_sequencer(WorkSpace *workspace,
   key.mode = mode;
   return rna_WorkSpace_tools_from_tkey(workspace, &key, create);
 }
+/* El espacio del que se toma la herramienta activa.
+ *
+ * El editor de Propiedades no tiene herramientas propias: el panel "Active Tool" que
+ * dibuja alli es el de la vista 3D. El Python lo resuelve en
+ * `_tool_active_from_context` metiendo 'PROPERTIES' en la misma rama que 'VIEW_3D'
+ * (`space_toolsystem_common.py:464`); sin esta traduccion, los estantes de pincel del
+ * editor de Propiedades se quedarian sin herramienta. */
+static int rna_workspace_tools_space_type(const bContext *C)
+{
+  const SpaceLink *sl = CTX_wm_space_data(C);
+  if (sl == nullptr) {
+    return SPACE_EMPTY;
+  }
+  return (sl->spacetype == SPACE_PROPERTIES) ? SPACE_VIEW3D : sl->spacetype;
+}
+
+static bToolRef *rna_WorkSpace_tools_from_active_space(WorkSpace * /*workspace*/,
+                                                       bContext *C,
+                                                       bool create)
+{
+  const int space_type = rna_workspace_tools_space_type(C);
+  if (space_type == SPACE_EMPTY) {
+    return nullptr;
+  }
+  return flipendo::toolsystem::tool_active_ref(C, space_type, create);
+}
+
+static bool rna_WorkSpace_tools_has_tool_with_brush_type(WorkSpace * /*workspace*/,
+                                                         bContext *C,
+                                                         int brush_type)
+{
+  const int space_type = rna_workspace_tools_space_type(C);
+  if (space_type == SPACE_EMPTY) {
+    return false;
+  }
+  return flipendo::toolsystem::tool_with_brush_type_exists(C, space_type, brush_type);
+}
+
 const EnumPropertyItem *rna_WorkSpace_tools_mode_itemf(bContext * /*C*/,
                                                        PointerRNA *ptr,
                                                        PropertyRNA * /*prop*/,
@@ -406,6 +455,31 @@ static void rna_def_workspace_tools(BlenderRNA *brna, PropertyRNA *cprop)
   RNA_def_boolean(func, "create", false, "Create", "");
   /* return type */
   parm = RNA_def_pointer(func, "result", "WorkSpaceTool", "", "");
+  RNA_def_function_return(func, parm);
+
+  /* Sistema de herramientas nativo: lo que preguntaba `space_toolsystem_common.py`.
+   *
+   * Las cuatro `from_space_*` de arriba exigen decir el espacio Y el modo, y cada
+   * espacio saca el suyo de un sitio distinto (la vista 3D de `context.mode`, el editor
+   * de imagen de `space_data.mode`, el de secuencias de `view_type`). Ese reparto era
+   * justo lo que hacia `_tool_active_from_context`; aqui lo hace el motor. */
+  func = RNA_def_function(
+      srna, "from_active_space", "rna_WorkSpace_tools_from_active_space");
+  RNA_def_function_flag(func, FUNC_USE_CONTEXT);
+  RNA_def_function_ui_description(
+      func, "Tool of the space and mode of the current context, synced with it");
+  RNA_def_boolean(func, "create", false, "Create", "");
+  parm = RNA_def_pointer(func, "result", "WorkSpaceTool", "", "");
+  RNA_def_function_return(func, parm);
+
+  func = RNA_def_function(
+      srna, "has_tool_with_brush_type", "rna_WorkSpace_tools_has_tool_with_brush_type");
+  RNA_def_function_flag(func, FUNC_USE_CONTEXT);
+  RNA_def_function_ui_description(
+      func, "Whether a brush tool of the given brush type is available in this context");
+  parm = RNA_def_int(func, "brush_type", 0, INT_MIN, INT_MAX, "Brush Type", "", INT_MIN, INT_MAX);
+  RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
+  parm = RNA_def_boolean(func, "result", false, "", "");
   RNA_def_function_return(func, parm);
 
   func = RNA_def_function(

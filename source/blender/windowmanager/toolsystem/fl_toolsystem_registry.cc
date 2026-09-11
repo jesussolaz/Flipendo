@@ -324,6 +324,40 @@ static const char *mode_for_toolbar(const bContext *C, const ToolbarDecl &toolba
   return toolbar.mode_from_context != nullptr ? toolbar.mode_from_context(C) : nullptr;
 }
 
+blender::Vector<blender::StringRefNull> tool_keymap_names_for_mode(const int space_type,
+                                                                   const char *mode)
+{
+  blender::Vector<blender::StringRefNull> out;
+  const ToolbarDecl *toolbar = toolbar_for_space(space_type);
+  if (toolbar == nullptr) {
+    return out;
+  }
+  for (const ModeTools &mode_tools : toolbar->modes) {
+    const bool matches = (mode == nullptr) ? (mode_tools.mode == nullptr) :
+                                             (mode_tools.mode != nullptr &&
+                                              STREQ(mode_tools.mode, mode));
+    if (!matches) {
+      continue;
+    }
+    for (const ToolEntry &entry : mode_tools.entries) {
+      /* En el Python estas dos son objetos funcion y `_tools_flatten` las da por
+       * `None`. Ver la nota del contrato. */
+      if (entry.poll != nullptr || entry.generated != nullptr) {
+        continue;
+      }
+      for (const ToolDecl *tool : entry.tools) {
+        if (tool->keymap_name == nullptr) {
+          continue;
+        }
+        if (!out.contains(blender::StringRefNull(tool->keymap_name))) {
+          out.append(tool->keymap_name);
+        }
+      }
+    }
+  }
+  return out;
+}
+
 blender::Vector<const ToolDecl *> tools_for_context(const bContext *C, const int space_type)
 {
   const ToolbarDecl *toolbar = toolbar_for_space(space_type);

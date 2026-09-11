@@ -57,6 +57,8 @@
 #include "ED_util.hh"
 #include "ED_uvedit.hh"
 
+#include "FL_game_runtime.hh"
+
 #include "io_ops.hh"
 
 void ED_spacetypes_init()
@@ -100,6 +102,7 @@ void ED_spacetypes_init()
   object::operatortypes_object();
   ED_operatortypes_lattice();
   ED_operatortypes_logic();
+  flipendo::game::operatortypes_register();
   ED_operatortypes_mesh();
   geometry::operatortypes_geometry();
   sculpt_paint::operatortypes_sculpt();

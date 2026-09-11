@@ -41,7 +41,11 @@ const ToolDecl cursor = {
 /* El unico ajuste es el tipo de corte del operador de division (blando o duro), en una
  * fila expandida para que las dos opciones se vean a la vez en la cabecera. */
 static const PropRow blade_settings[] = {
-    {PropSource::Operator, "sequencer.split", "type", nullptr, PROP_ROW_EXPAND},
+    {PropSource::Operator,
+     "sequencer.split",
+     "type",
+     nullptr,
+     PROP_ROW_EXPAND | PROP_ROW_OWN_ROW},
 };
 
 /* La cuchilla es la unica del grupo que vive en la linea de tiempo y no en la

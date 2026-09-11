@@ -33,6 +33,10 @@
  * flipendo::panels_register(art, SPACE_LOGIC, panels);
  * \endcode
  *
+ * Vive en `editors/include/` a proposito: es el contrato con el que CUALQUIER modulo
+ * de editor declara su interfaz, asi que tiene que estar donde todos miran sin anadir
+ * rutas privadas a su CMakeLists.
+ *
  * Doctrina: politicas/LENGUAJE-CPP.md.
  */
 

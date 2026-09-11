@@ -40,3 +40,15 @@ void ED_buttons_set_context(const bContext *C,
                             SpaceProperties *sbuts,
                             PointerRNA *ptr,
                             int context);
+
+/**
+ * Fija la pestana del editor de Propiedades y recalcula su ruta de contexto.
+ *
+ * Existe para el volcador de interfaz (`--fl-dump-ui-layout`): un panel de la
+ * pestana de Material no pasa ni su `poll` mientras el editor este en Objeto,
+ * porque `context.material` sale de la ruta que calcula esta llamada. Sin esto,
+ * la mitad de `properties_*.py` quedaria sin cubrir por un detalle de contexto.
+ *
+ * \return `true` si la pestana quedo puesta; `false` si en esta escena no existe.
+ */
+bool ED_buttons_context_tab_set(const bContext *C, SpaceProperties *sbuts, int context);

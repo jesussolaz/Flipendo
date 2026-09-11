@@ -16,7 +16,7 @@
  *  - Constants:
  *      pi, True, False
  *  - Operators:
- *      +, -, *, /, ==, !=, <, <=, >, >=, and, or, not, ternary if
+ *      +, -, *, /, //, %, **, ==, !=, <, <=, >, >=, and, or, not, ternary if
  *  - Functions:
  *      min, max, radians, degrees,
  *      abs, fabs, floor, ceil, trunc, int,
@@ -293,6 +293,25 @@ static double op_add(double a, double b)
   return a + b;
 }
 
+/* Flipendo: `%` de Python NO es `fmod()`. Python usa modulo con suelo -- el signo del
+ * resultado es el del divisor-- y C usa el truncado -- el signo del dividendo. Medido:
+ * `-7 % 3` es 2 en Python y `fmod(-7,3)` es -1. Copiar `fmod` a secas habria sido un
+ * fallo silencioso mas, que es justo lo que este trabajo esta quitando. */
+static double op_mod(double a, double b)
+{
+  const double r = fmod(a, b);
+  if (r != 0.0 && ((r < 0.0) != (b < 0.0))) {
+    return r + b;
+  }
+  return r;
+}
+
+/* `//` de Python sobre reales es `floor(a/b)`: `-7 // 2` es -4, no -3. */
+static double op_floordiv(double a, double b)
+{
+  return floor(a / b);
+}
+
 static double op_sub(double a, double b)
 {
   return a - b;
@@ -466,6 +485,8 @@ static BuiltinOpDef builtin_ops[] = {
 #define TOKEN_NOT MAKE_CHAR2('N', 'O')
 #define TOKEN_IF MAKE_CHAR2('I', 'F')
 #define TOKEN_ELSE MAKE_CHAR2('E', 'L')
+#define TOKEN_POW MAKE_CHAR2('*', '*')
+#define TOKEN_FLOORDIV MAKE_CHAR2('/', '/')
 
 static const char *token_eq_characters = "!=><";
 static const char *token_characters = "~`!@#$%^&*+-=/\\?:;<>(){}[]|.,\"'";
@@ -670,6 +691,16 @@ static bool parse_next_token(ExprParseState *state)
     return (end == out);
   }
 
+  /* Operadores de dos caracteres `**` y `//`. Van antes que el caso de un solo
+   * caracter, o `**` se leeria como dos multiplicaciones seguidas y fallaria. */
+  if ((state->cur[0] == '*' && state->cur[1] == '*') ||
+      (state->cur[0] == '/' && state->cur[1] == '/'))
+  {
+    state->token = MAKE_CHAR2(state->cur[0], state->cur[1]);
+    state->cur += 2;
+    return true;
+  }
+
   /* ?= tokens */
   if (state->cur[1] == '=' && strchr(token_eq_characters, state->cur[0])) {
     state->token = MAKE_CHAR2(state->cur[0], state->cur[1]);
@@ -749,19 +780,16 @@ static int parse_function_args(ExprParseState *state)
   }
 }
 
-static bool parse_unary(ExprParseState *state)
+static bool parse_unary(ExprParseState *state);
+
+/* Todo lo que no lleva signo delante: literal, parametro, constante, llamada o
+ * parentesis. Se separo de `parse_unary()` para poder meter `**` en medio con la
+ * precedencia de Python (ver `parse_power()`). */
+static bool parse_primary(ExprParseState *state)
 {
   int i;
 
   switch (state->token) {
-    case '+':
-      return parse_next_token(state) && parse_unary(state);
-
-    case '-':
-      CHECK_ERROR(parse_next_token(state) && parse_unary(state));
-      parse_add_func(state, op_negate);
-      return true;
-
     case '(':
       return parse_next_token(state) && parse_expr(state) && state->token == ')' &&
              parse_next_token(state);
@@ -835,6 +863,42 @@ static bool parse_unary(ExprParseState *state)
   }
 }
 
+/* `**`, con la precedencia rara de Python y a proposito:
+ * - liga MAS fuerte que el menos unario de su IZQUIERDA: `-2**2` es -4, no 4;
+ * - liga MENOS que el de su DERECHA: `2**-1` es 0.5;
+ * - es asociativo por la derecha: `2**3**2` es 512, no 64.
+ * Sale solo escribiendo la gramatica de CPython tal cual:
+ *   power ::= primary ["**" u_expr]
+ *   u_expr ::= power | "-" u_expr | "+" u_expr
+ */
+static bool parse_power(ExprParseState *state)
+{
+  CHECK_ERROR(parse_primary(state));
+
+  if (state->token == TOKEN_POW) {
+    CHECK_ERROR(parse_next_token(state) && parse_unary(state));
+    parse_add_func(state, BinaryOpFunc(pow));
+  }
+
+  return true;
+}
+
+static bool parse_unary(ExprParseState *state)
+{
+  switch (state->token) {
+    case '+':
+      return parse_next_token(state) && parse_unary(state);
+
+    case '-':
+      CHECK_ERROR(parse_next_token(state) && parse_unary(state));
+      parse_add_func(state, op_negate);
+      return true;
+
+    default:
+      return parse_power(state);
+  }
+}
+
 static bool parse_mul(ExprParseState *state)
 {
   CHECK_ERROR(parse_unary(state));
@@ -849,6 +913,16 @@ static bool parse_mul(ExprParseState *state)
       case '/':
         CHECK_ERROR(parse_next_token(state) && parse_unary(state));
         parse_add_func(state, op_div);
+        break;
+
+      case TOKEN_FLOORDIV:
+        CHECK_ERROR(parse_next_token(state) && parse_unary(state));
+        parse_add_func(state, op_floordiv);
+        break;
+
+      case '%':
+        CHECK_ERROR(parse_next_token(state) && parse_unary(state));
+        parse_add_func(state, op_mod);
         break;
 
       default:

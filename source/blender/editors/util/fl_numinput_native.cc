@@ -281,10 +281,35 @@ const Case cases[] = {
     CASE_OK("3m3", B_UNIT_VOLUME),
     CASE_OK("50mm", B_UNIT_CAMERA),
 
+    /* --- Potencia, modulo y division entera (BLI_expr_pylike los aprendio el
+     *     2026-09-11; la precedencia rara de `**` esta medida aqui) --- */
+    CASE_OK("2**3", B_UNIT_NONE),
+    CASE_OK("2**10", B_UNIT_NONE),
+    CASE_OK("2**0.5", B_UNIT_NONE),
+    CASE_OK("2**-1", B_UNIT_NONE),   /* El unario liga MAS que ** por la derecha. */
+    CASE_OK("-2**2", B_UNIT_NONE),   /* ...y MENOS por la izquierda: -4, no 4. */
+    CASE_OK("2**3**2", B_UNIT_NONE), /* Asociativo por la derecha: 512, no 64. */
+    CASE_OK("(2**3)**2", B_UNIT_NONE),
+    CASE_OK("2*3**2", B_UNIT_NONE),  /* ** liga mas que *: 18, no 36. */
+    CASE_OK("2**3+1", B_UNIT_NONE),
+    CASE_OK("0**-1", B_UNIT_NONE),   /* Error en los dos. */
+    CASE_OK("(-8)**(1/3)", B_UNIT_NONE), /* Error en los dos: complejo / NaN. */
+    CASE_OK("7%3", B_UNIT_NONE),
+    CASE_OK("-7%3", B_UNIT_NONE), /* Modulo con suelo: 2, no -1. */
+    CASE_OK("7%-3", B_UNIT_NONE), /* -2, el signo es el del divisor. */
+    CASE_OK("-7%-3", B_UNIT_NONE),
+    CASE_OK("7.5%2", B_UNIT_NONE),
+    CASE_OK("7%0", B_UNIT_NONE), /* Error en los dos. */
+    CASE_OK("2+7%3", B_UNIT_NONE), /* % liga mas que +: 3, no 0. */
+    CASE_OK("7//2", B_UNIT_NONE),
+    CASE_OK("-7//2", B_UNIT_NONE), /* Division con suelo: -4, no -3. */
+    CASE_OK("7//-2", B_UNIT_NONE),
+    CASE_OK("-7//-2", B_UNIT_NONE),
+    CASE_OK("7.5//2", B_UNIT_NONE),
+    CASE_OK("7//0", B_UNIT_NONE), /* Error en los dos. */
+    CASE_OK("1+2*3**2%5//2", B_UNIT_NONE), /* Todas juntas, por la precedencia. */
+
     /* --- Declarados NO cubiertos: aqui los dos builds difieren a proposito --- */
-    CASE_NO("2**3", B_UNIT_NONE, "** no lo tokeniza BLI_expr_pylike; se escribe pow(2,3)"),
-    CASE_NO("7%3", B_UNIT_NONE, "% no lo tokeniza BLI_expr_pylike; se escribe fmod(7,3)"),
-    CASE_NO("7//2", B_UNIT_NONE, "// no lo tokeniza BLI_expr_pylike; se escribe floor(7/2)"),
     CASE_NO("0x10", B_UNIT_NONE, "literales hexadecimales: solo Python"),
     CASE_NO("1_000", B_UNIT_NONE, "separador de miles del literal: solo Python"),
     CASE_NO("round(2.5)", B_UNIT_NONE, "round() de C redondea 2.5 a 3; Python redondea a 2 (bancario)"),
@@ -295,6 +320,10 @@ const Case cases[] = {
        "smoothstep existe en BLI_expr_pylike y no en math de Python"),
     CASE_NO("2,5", B_UNIT_NONE, "Python lo lee como tupla y suma 2+5=7; aqui es error de sintaxis"),
     CASE_NO("10km, 2m", B_UNIT_LENGTH, "lista separada por comas: Python la suma, aqui es error"),
+    CASE_NO("3**500",
+            B_UNIT_NONE,
+            "entero**entero grande: Python lo calcula exacto con enteros de precision "
+            "arbitraria y luego redondea; aqui es pow() en doble desde el principio"),
 };
 
 #undef CASE_OK

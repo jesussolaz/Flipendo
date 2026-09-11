@@ -1310,3 +1310,13 @@ ID *buttons_context_id_path(const bContext *C)
 
   return nullptr;
 }
+
+bool ED_buttons_context_tab_set(const bContext *C, SpaceProperties *sbuts, const int context)
+{
+  /* `buttons_context_compute` respeta `mainbuser` y solo cambia `mainb` si la
+   * pestana pedida no existe en la escena, que es justo lo que hay que saber. */
+  sbuts->mainbuser = context;
+  sbuts->mainb = context;
+  buttons_context_compute(C, sbuts);
+  return sbuts->mainb == context;
+}

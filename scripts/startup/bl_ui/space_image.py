@@ -29,10 +29,6 @@ from bl_ui.properties_paint_common import (
 from bl_ui.properties_grease_pencil_common import (
     AnnotationDataPanel,
 )
-from bl_ui.space_toolsystem_common import (
-    ToolActivePanelHelper,
-)
-
 from bpy.app.translations import (
     contexts as i18n_contexts,
     pgettext_iface as iface_,
@@ -54,10 +50,21 @@ class BrushButtonsPanel(UnifiedPaintPanel):
         return tool_settings.brush
 
 
-class IMAGE_PT_active_tool(Panel, ToolActivePanelHelper):
+class IMAGE_PT_active_tool(Panel):
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = "Tool"
+    bl_label = "Active Tool"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        # La cabecera de la herramienta activa: dibujo nativo (C++, `FL_toolbar_ui.hh`).
+        layout.column().template_tool_header(
+            show_tool_icon_always=True,
+            space_type='IMAGE_EDITOR',
+        )
 
 
 class IMAGE_MT_view(Menu):
@@ -704,8 +711,8 @@ class IMAGE_HT_tool_header(Header):
 
         # Active Tool
         # -----------
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.draw_active_tool_header(context, layout)
+        # Dibujo nativo (C++, `FL_toolbar_ui.hh`).
+        tool = layout.template_tool_header()
         tool_mode = context.mode if tool is None else tool.mode
 
         # Object Mode Options
@@ -733,8 +740,7 @@ class IMAGE_HT_tool_header(Header):
 
         # Active Tool
         # -----------
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         tool_mode = context.mode if tool is None else tool.mode
 
         if tool_mode == 'PAINT':
