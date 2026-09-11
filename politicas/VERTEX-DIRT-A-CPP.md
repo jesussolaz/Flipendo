@@ -59,18 +59,42 @@ TOTAL 13112/13112 elementos de color identicos, 13146/13146 lineas   (rc=0)
 de color de 8 bits y `%.9g` idéntico en el caso de color flotante. No hay margen
 declarado porque no hizo falta ninguno.
 
-> **Actualización de esa misma noche, a las 02:55: lo esperado pasa a ser 13111/13112.**
-> El único elemento que difiere es el 43 del caso 6 (esfera UV con `FLOAT_COLOR` en
-> dominio POINT), `0.451389611` frente a `0.451384932`, 1e-5 relativo y estable entre
-> ejecuciones. No es la migración: construyendo la misma esfera UV en el binario de
-> referencia y en el actual, las **posiciones salen idénticas y las normales no**
-> (`co=4.33623790741e-05` en los dos; `no=2.67952971811e-05` frente a
-> `no=2.68996051958e-05`). Algo que entró en el árbol esa noche cambió el cálculo de
-> normales de vértice, y la suciedad por cavidad es por definición una función de la
-> normal. Los diez casos de color de 8 bits siguen byte a byte idénticos porque el
-> redondeo a byte se come 1e-5. La línea base no se puede recapturar —haría falta un
-> binario con el Python **y** las normales nuevas— así que se deja congelada y queda
-> escrito aquí.
+> **Corrección de esa misma noche (03:20): un elemento de los 13112 es inestable, y la
+> culpa es del cálculo de normales, que NO es determinista.**
+>
+> A las 02:55 el comprobador empezó a dar 13111/13112 en vez de 13112/13112. El único
+> elemento que baila es el 43 del caso 6 —la esfera UV con atributo `FLOAT_COLOR` en
+> dominio POINT—, con una diferencia de 1e-5 relativo. La primera explicación que escribí
+> aquí ("algo que entró en el árbol esta noche cambió el cálculo de normales") **era
+> falsa**, y la desmonta el experimento más simple: ejecutar cuatro veces seguidas el
+> **mismo binario de referencia, que no ha cambiado**, construir la misma esfera UV y
+> sumar las normales de sus vértices:
+>
+> ```
+> PROBE no=2.7911332559e-05
+> PROBE no=2.7911332559e-05
+> PROBE no=2.7911332559e-05
+> PROBE no=2.80749853019e-05     <-- misma versión, misma escena, otro resultado
+> ```
+>
+> El cálculo de normales de vértice acumula en paralelo y el orden de la suma en coma
+> flotante depende de cómo repartan los hilos, así que **varía entre ejecuciones**. Las
+> posiciones sí son estables (`co=4.33623790741e-05` siempre).
+>
+> Consecuencias, y son generales, no solo de este operador:
+>
+> - La suciedad por cavidad es por definición una función de la normal, así que hereda esa
+>   inestabilidad. En el dominio POINT se amplifica, porque el Python multiplica el mismo
+>   vértice una vez por cada bucle que lo toca.
+> - **Los diez casos de color de 8 bits son inmunes**: el redondeo a byte se come 1e-5.
+>   Por eso 13111 de los 13112 elementos nunca fallan.
+> - Lo esperado es **13112/13112**, y un 13111/13112 con la única diferencia en el
+>   elemento 43 del caso 6 **no es una regresión**: es esta inestabilidad. Cualquier otra
+>   diferencia sí lo es.
+> - **Aviso para otros carriles**: cualquier línea base congelada que dependa de normales
+>   de vértice en coma flotante sin cuantizar tiene este mismo problema. Si hace falta una
+>   comprobación estable al 100%, o se cuantiza la salida o se evita el dominio POINT con
+>   color flotante.
 
 ### Un fallo que cazó `--fl-check-optypes` después
 
