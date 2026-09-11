@@ -18,6 +18,8 @@
 
 #include "BKE_context.hh"
 #include "BKE_screen.hh"
+
+#include "FL_topbar_menus.hh"
 #include "BKE_undo_system.hh"
 
 #include "ED_screen.hh"
@@ -315,6 +317,8 @@ void ED_spacetype_topbar()
 
   recent_files_menu_register();
   undo_history_menu_register();
+
+  blender::ed::topbar::topbar_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

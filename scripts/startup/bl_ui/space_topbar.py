@@ -201,69 +201,6 @@ class TOPBAR_MT_file(Menu):
         layout.operator("wm.quit_blender", text="Quit", icon='QUIT')
 
 
-class TOPBAR_MT_file_new(Menu):
-    bl_label = "New File"
-
-    @staticmethod
-    def app_template_paths():
-        import os
-
-        template_paths = bpy.utils.app_template_paths()
-
-        # Expand template paths.
-
-        # Use a set to avoid duplicate user/system templates.
-        # This is a corner case, but users managed to do it! #76849.
-        app_templates = set()
-        for path in template_paths:
-            for d in os.listdir(path):
-                if d.startswith(("__", ".")):
-                    continue
-                template = os.path.join(path, d)
-                if os.path.isdir(template):
-                    app_templates.add(d)
-
-        return sorted(app_templates)
-
-    @staticmethod
-    def draw_ex(layout, _context, *, use_splash=False, use_more=False):
-        layout.operator_context = 'INVOKE_DEFAULT'
-
-        # Limit number of templates in splash screen, spill over into more menu.
-        paths = TOPBAR_MT_file_new.app_template_paths()
-        splash_limit = 5
-
-        if use_splash:
-            icon = 'FILE_NEW'
-            show_more = len(paths) > (splash_limit - 1)
-            if show_more:
-                paths = paths[:splash_limit - 2]
-        elif use_more:
-            icon = 'FILE_NEW'
-            paths = paths[splash_limit - 2:]
-            show_more = False
-        else:
-            icon = 'NONE'
-            show_more = False
-
-        # Draw application templates.
-        if not use_more:
-            props = layout.operator("wm.read_homefile", text="General", icon=icon)
-            props.app_template = ""
-
-        for d in paths:
-            props = layout.operator("wm.read_homefile", text=bpy.path.display_name(iface_(d)), icon=icon)
-            props.app_template = d
-
-        layout.operator_context = 'EXEC_DEFAULT'
-
-        if show_more:
-            layout.menu("TOPBAR_MT_templates_more", text="...")
-
-    def draw(self, context):
-        TOPBAR_MT_file_new.draw_ex(self.layout, context)
-
-
 class TOPBAR_MT_file_recover(Menu):
     bl_label = "Recover"
 
@@ -330,13 +267,6 @@ class TOPBAR_MT_blender_system(Menu):
 
         layout.operator("screen.spacedata_cleanup")
         layout.operator("wm.operator_presets_cleanup")
-
-
-class TOPBAR_MT_templates_more(Menu):
-    bl_label = "Templates"
-
-    def draw(self, context):
-        bpy.types.TOPBAR_MT_file_new.draw_ex(self.layout, context, use_more=True)
 
 
 class TOPBAR_MT_file_import(Menu):
@@ -603,32 +533,6 @@ class TOPBAR_MT_help(Menu):
         layout.operator("wm.sysinfo")
 
 
-class TOPBAR_MT_file_context_menu(Menu):
-    bl_label = "File"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_AREA'
-        layout.menu("TOPBAR_MT_file_new", text="New", text_ctxt=i18n_contexts.id_windowmanager, icon='FILE_NEW')
-        layout.operator("wm.open_mainfile", text="Open...", icon='FILE_FOLDER')
-        layout.menu("TOPBAR_MT_file_open_recent")
-
-        layout.separator()
-
-        layout.operator("wm.link", text="Link...", icon='LINK_BLEND')
-        layout.operator("wm.append", text="Append...", icon='APPEND_BLEND')
-
-        layout.separator()
-
-        layout.menu("TOPBAR_MT_file_import", icon='IMPORT')
-        layout.menu("TOPBAR_MT_file_export", icon='EXPORT')
-
-        layout.separator()
-
-        layout.operator("screen.userpref_show", text="Preferences...", icon='PREFERENCES')
-
-
 class TOPBAR_MT_workspace_menu(Menu):
     bl_label = "Workspace"
 
@@ -823,16 +727,13 @@ class TOPBAR_PT_grease_pencil_layers(Panel):
 
 classes = (
     TOPBAR_HT_upper_bar,
-    TOPBAR_MT_file_context_menu,
     TOPBAR_MT_workspace_menu,
     TOPBAR_MT_editor_menus,
     TOPBAR_MT_blender,
     TOPBAR_MT_blender_system,
     TOPBAR_MT_file,
-    TOPBAR_MT_file_new,
     TOPBAR_MT_file_recover,
     TOPBAR_MT_file_defaults,
-    TOPBAR_MT_templates_more,
     TOPBAR_MT_file_import,
     TOPBAR_MT_file_export,
     TOPBAR_MT_file_external_data,
