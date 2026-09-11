@@ -67,6 +67,7 @@
 #  include "FL_external_editor.hh"
 #  include "FL_game_runtime.hh"
 #  include "FL_keymap_dump.hpp"
+#  include "keymap/FL_keymap_menu_check.hpp"
 #  include "keymap/FL_keyconfig_io.hpp"
 #  include "manual/FL_manual_reference.hpp"
 #  include "FL_mesh_ops_selftest.hh"
@@ -2659,6 +2660,22 @@ static int arg_handle_fl_check_keymap(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_check_keymap_menus_doc[] =
+    "[fichero]\n"
+    "\tComprueba que TODO menu o panel que el keymap nativo abre POR NOMBRE existe.\n"
+    "\tUn nombre que no resuelve deja la tecla muda y sin mensaje de error: esto lo\n"
+    "\tcaza. Con <fichero> escribe ademas la lista de nombres que ve.\n"
+    "\tVale en --background. Ver politicas/MENUS-DEL-KEYMAP-A-CPP.md.";
+static int arg_handle_fl_check_keymap_menus(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  /* El fichero es opcional: si el siguiente argumento es otra opcion, no lo es. */
+  const bool has_file = (argc > 1) && (argv[1][0] != '-');
+  const bool ok = FL_keymap_check_menus(CTX_wm_manager(C), has_file ? argv[1] : nullptr);
+  WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  return has_file ? 1 : 0;
+}
+
 static const char arg_handle_fl_selftest_keyconfig_doc[] =
     "<filepath>\n"
     "\tActiva Blender y cambia select_mouse por los caminos nativos; vuelca cifras y sale.";
@@ -3844,6 +3861,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
                C);
   BLI_args_add(ba, nullptr, "--fl-dump-keymap-native", CB(arg_handle_fl_dump_keymap_native), C);
   BLI_args_add(ba, nullptr, "--fl-check-keymap", CB(arg_handle_fl_check_keymap), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-check-keymap-menus", CB(arg_handle_fl_check_keymap_menus), C);
   BLI_args_add(
       ba, nullptr, "--fl-selftest-keyconfig", CB(arg_handle_fl_selftest_keyconfig), C);
   BLI_args_add(ba, nullptr, "--fl-dump-tools", CB(arg_handle_fl_dump_tools), C);

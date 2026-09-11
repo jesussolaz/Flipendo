@@ -61,6 +61,7 @@ set(SRC
   keymap/fl_keymap_build.cc
   keymap/fl_keymap_params.cc
   keymap/fl_keymap_default.cc
+  keymap/fl_keymap_menu_check.cc
   keymap/fl_keymap_g28.cc
   keymap/fl_keymap_g27.cc
   keymap/fl_keymap_g26.cc
@@ -164,6 +165,7 @@ set(SRC
   keymap/FL_keymap_build.hpp
   keymap/FL_keymap_params.hpp
   keymap/FL_keymap_default.hpp
+  keymap/FL_keymap_menu_check.hpp
   WM_api.hh
   WM_manual.hpp
   WM_keymap.hh
