@@ -80,21 +80,6 @@ def _wm_wait_cursor(value):
                 window.cursor_modal_restore()
 
 
-class PREFERENCES_OT_keyconfig_activate(Operator):
-    bl_idname = "preferences.keyconfig_activate"
-    bl_label = "Activate Keyconfig"
-
-    filepath: StringProperty(
-        subtype='FILE_PATH',
-    )
-
-    def execute(self, _context):
-        if bpy.utils.keyconfig_set(self.filepath, report=self.report):
-            return {'FINISHED'}
-        else:
-            return {'CANCELLED'}
-
-
 class PREFERENCES_OT_copy_prev(Operator):
     """Copy settings from previous version"""
     bl_idname = "preferences.copy_prev"
@@ -1288,7 +1273,6 @@ classes = (
     PREFERENCES_OT_addon_show,
     PREFERENCES_OT_app_template_install,
     PREFERENCES_OT_copy_prev,
-    PREFERENCES_OT_keyconfig_activate,
     PREFERENCES_OT_keyconfig_export,
     PREFERENCES_OT_keyconfig_import,
     PREFERENCES_OT_keyconfig_remove,

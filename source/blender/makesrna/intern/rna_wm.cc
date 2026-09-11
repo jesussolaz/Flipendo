@@ -7,6 +7,7 @@
  */
 
 #include <cstdlib>
+#include <optional>
 
 #include "DNA_scene_types.h"
 #include "DNA_windowmanager_types.h"
@@ -1309,6 +1310,10 @@ static void rna_WindowManager_extensions_statusbar_update(Main * /*bmain*/,
 static PointerRNA rna_wmKeyConfig_preferences_get(PointerRNA *ptr)
 {
   wmKeyConfig *kc = static_cast<wmKeyConfig *>(ptr->data);
+  if (STREQ(kc->idname, WM_KEYCONFIG_STR_DEFAULT)) {
+    wmKeyConfigPref *kpt = BKE_keyconfig_pref_ensure(&U, kc->idname);
+    return RNA_pointer_create_with_parent(*ptr, &RNA_BlenderKeyConfigPreferences, kpt->prop);
+  }
   wmKeyConfigPrefType_Runtime *kpt_rt = BKE_keyconfig_pref_type_find(kc->idname, true);
   if (kpt_rt) {
     wmKeyConfigPref *kpt = BKE_keyconfig_pref_ensure(&U, kc->idname);
@@ -1317,6 +1322,91 @@ static PointerRNA rna_wmKeyConfig_preferences_get(PointerRNA *ptr)
   else {
     return PointerRNA_NULL;
   }
+}
+
+static void rna_BlenderKeyConfigPreferences_update(bContext *C,
+                                                    Main * /*bmain*/,
+                                                    Scene * /*scene*/,
+                                                    PointerRNA * /*ptr*/)
+{
+  wmWindowManager *wm = CTX_wm_manager(C);
+  if (wm == nullptr || wm->defaultconf == nullptr) {
+    return;
+  }
+
+  /* Equivalente nativo de Prefs.update_fn -> Blender.py:load(). El constructor
+   * vuelve a leer las preferencias desde UserDef y WM_keyconfig_update recompone
+   * la capa del usuario sobre el nuevo mapa por defecto. */
+  WM_keyconfig_reload(C);
+  WM_keyconfig_update_tag(nullptr, nullptr);
+  WM_keyconfig_update(wm);
+}
+
+static void rna_BlenderKeyConfigPreferences_draw(IDProperty *group, uiLayout *layout)
+{
+  PointerRNA prefs = RNA_pointer_create_discrete(
+      nullptr, &RNA_BlenderKeyConfigPreferences, group);
+  const bool select_left = RNA_enum_get(&prefs, "select_mouse") == 0;
+  const bool emulate_three_button = (U.flag & USER_TWOBUTTONMOUSE) != 0 &&
+                                    U.mouse_emulate_3_button_modifier == USER_EMU_MMB_MOD_ALT;
+
+  uiLayoutSetPropSep(layout, true);
+  uiLayoutSetPropDecorate(layout, false);
+
+  uiLayout &general = layout->column(false);
+  general.row(false).prop(
+      &prefs, "select_mouse", UI_ITEM_R_EXPAND, "Select with Mouse Button", ICON_NONE);
+  general.row(false).prop(
+      &prefs, "spacebar_action", UI_ITEM_R_EXPAND, "Spacebar Action", ICON_NONE);
+  if (select_left) {
+    general.row(false).prop(
+        &prefs, "gizmo_action", UI_ITEM_R_EXPAND, "Activate Gizmo Event", ICON_NONE);
+  }
+  else {
+    general.row(false).prop(
+        &prefs, "rmb_action", UI_ITEM_R_EXPAND, "Right Mouse Select Action", ICON_NONE);
+  }
+  general.row(false).prop(&prefs, "tool_key_mode", UI_ITEM_R_EXPAND, std::nullopt, ICON_NONE);
+
+  uiLayout &general_checks = layout->column(false).column(true);
+  uiLayout &alt_row = general_checks.row(false);
+  alt_row.prop(&prefs, "use_alt_click_leader", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  uiLayout &alt_access = alt_row.row(false);
+  alt_access.prop(&prefs,
+                  select_left ? "use_alt_tool" : "use_alt_cursor",
+                  UI_ITEM_NONE,
+                  std::nullopt,
+                  ICON_NONE);
+  uiLayoutSetEnabled(&alt_access, !emulate_three_button);
+  general_checks.row(false).prop(
+      &prefs, "use_select_all_toggle", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  if (U.flag & USER_DEVELOPER_UI) {
+    general_checks.row(false).prop(
+        &prefs, "use_region_toggle_pie", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  }
+
+  uiLayout &view = layout->column(false);
+  view.label("3D View", ICON_NONE);
+  view.row(false).prop(
+      &prefs, "v3d_tilde_action", UI_ITEM_R_EXPAND, "Grave Accent / Tilde Action", ICON_NONE);
+  view.row(false).prop(
+      &prefs, "v3d_mmb_action", UI_ITEM_R_EXPAND, "Middle Mouse Action", ICON_NONE);
+  view.row(false).prop(&prefs,
+                       "v3d_alt_mmb_drag_action",
+                       UI_ITEM_R_EXPAND,
+                       "Alt Middle Mouse Drag Action",
+                       ICON_NONE);
+
+  uiLayout &view_checks = layout->column(false).column(true);
+  view_checks.prop(&prefs, "use_v3d_tab_menu", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  view_checks.prop(&prefs, "use_pie_click_drag", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  view_checks.prop(&prefs, "use_v3d_shade_ex_pie", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  view_checks.prop(&prefs, "use_alt_navigation", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+
+  uiLayout &file_browser = layout->column(false);
+  file_browser.label("File Browser", ICON_NONE);
+  file_browser.row(false).prop(
+      &prefs, "use_file_single_click", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 }
 
 static IDProperty **rna_wmKeyConfigPref_idprops(PointerRNA *ptr)
@@ -2892,6 +2982,8 @@ static void rna_def_keyconfig_prefs(BlenderRNA *brna)
 {
   StructRNA *srna;
   PropertyRNA *prop;
+  FunctionRNA *func;
+  PropertyRNA *parm;
 
   srna = RNA_def_struct(brna, "KeyConfigPreferences", nullptr);
   RNA_def_struct_ui_text(srna, "Key-Config Preferences", "");
@@ -2909,6 +3001,201 @@ static void rna_def_keyconfig_prefs(BlenderRNA *brna)
   RNA_def_property_string_sdna(prop, nullptr, "idname");
   RNA_def_property_flag(prop, PROP_REGISTER);
   RNA_define_verify_sdna(true);
+
+  /* Preferencias integradas de la unica configuracion distribuida. Antes las
+   * declaraba scripts/presets/keyconfig/Blender.py; son IDProperties de UserDef,
+   * por lo que el almacenamiento y la compatibilidad con userpref.blend siguen
+   * siendo los mismos. */
+  static const EnumPropertyItem select_mouse_items[] = {
+      {0,
+       "LEFT",
+       0,
+       "Left",
+       "Use left mouse button for selection. The standard behavior that works well for mouse, "
+       "trackpad and tablet devices"},
+      {1,
+       "RIGHT",
+       0,
+       "Right",
+       "Use right mouse button for selection, and left mouse button for actions. This works "
+       "well primarily for keyboard and mouse devices"},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+  static const EnumPropertyItem spacebar_action_items[] = {
+      {0,
+       "PLAY",
+       0,
+       "Play",
+       "Toggle animation playback ('Shift-Space' for Tools or brush asset popup)"},
+      {1,
+       "TOOL",
+       0,
+       "Tools",
+       "Open the popup toolbar or brush asset popup (Shift-Space plays the animation)"},
+      {2, "SEARCH", 0, "Search", "Open the operator search popup"},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+  static const EnumPropertyItem tool_key_mode_items[] = {
+      {0, "IMMEDIATE", 0, "Immediate", "Activate actions immediately"},
+      {1, "TOOL", 0, "Active Tool", "Activate the tool for editors that support tools"},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+  static const EnumPropertyItem rmb_action_items[] = {
+      {0, "TWEAK", 0, "Select & Tweak", "Right mouse always tweaks"},
+      {1, "FALLBACK_TOOL", 0, "Selection Tool", "Right mouse uses the selection tool"},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+  static const EnumPropertyItem gizmo_action_items[] = {
+      {0,
+       "PRESS",
+       0,
+       "Press",
+       "Press causes immediate activation, preventing click being passed to the tool"},
+      {1,
+       "DRAG",
+       0,
+       "Drag",
+       "Drag allows click events to pass through to the tool, adding a small delay"},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+  static const EnumPropertyItem tilde_action_items[] = {
+      {0,
+       "VIEW",
+       0,
+       "Navigate",
+       "View operations (useful for keyboards without a numpad)"},
+      {1, "GIZMO", 0, "Gizmos", "Control transform gizmos"},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+  static const EnumPropertyItem mmb_action_items[] = {
+      {0, "ORBIT", 0, "Orbit", ""},
+      {1, "PAN", 0, "Pan", ""},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+  static const EnumPropertyItem alt_mmb_drag_action_items[] = {
+      {0,
+       "RELATIVE",
+       0,
+       "Relative",
+       "Set the view axis where each mouse direction maps to an axis relative to the current "
+       "orientation"},
+      {1,
+       "ABSOLUTE",
+       0,
+       "Absolute",
+       "Set the view axis where each mouse direction always maps to the same axis"},
+      {0, nullptr, 0, nullptr, nullptr},
+  };
+
+  srna = RNA_def_struct(brna, "BlenderKeyConfigPreferences", "KeyConfigPreferences");
+  RNA_def_struct_sdna(srna, "IDProperty");
+  RNA_def_struct_ui_text(
+      srna, "Blender Key-Config Preferences", "Preferences for the native Blender keymap");
+
+#define KEYCONFIG_ENUM(identifier, ui_name, ui_description, items, default_value) \
+  prop = RNA_def_property(srna, identifier, PROP_ENUM, PROP_NONE); \
+  RNA_def_property_enum_items(prop, items); \
+  RNA_def_property_enum_default(prop, default_value); \
+  RNA_def_property_flag(prop, PROP_IDPROPERTY | PROP_CONTEXT_UPDATE); \
+  RNA_def_property_ui_text(prop, ui_name, ui_description); \
+  RNA_def_property_update(prop, 0, "rna_BlenderKeyConfigPreferences_update")
+
+#define KEYCONFIG_BOOL(identifier, ui_name, ui_description, default_value) \
+  prop = RNA_def_property(srna, identifier, PROP_BOOLEAN, PROP_NONE); \
+  RNA_def_property_boolean_default(prop, default_value); \
+  RNA_def_property_flag(prop, PROP_IDPROPERTY | PROP_CONTEXT_UPDATE); \
+  RNA_def_property_ui_text(prop, ui_name, ui_description); \
+  RNA_def_property_update(prop, 0, "rna_BlenderKeyConfigPreferences_update")
+
+  KEYCONFIG_ENUM("select_mouse",
+                 "Select Mouse",
+                 "Mouse button used for selection",
+                 select_mouse_items,
+                 0);
+  KEYCONFIG_ENUM("spacebar_action",
+                 "Spacebar Action",
+                 "Action when Space is pressed",
+                 spacebar_action_items,
+                 0);
+  KEYCONFIG_ENUM("tool_key_mode",
+                 "Tool Keys",
+                 "Method of keys to activate tools such as move, rotate and scale",
+                 tool_key_mode_items,
+                 0);
+  KEYCONFIG_ENUM("rmb_action",
+                 "Right Mouse Select Action",
+                 "Default action for the right mouse button",
+                 rmb_action_items,
+                 0);
+  KEYCONFIG_BOOL("use_region_toggle_pie",
+                 "Region Toggle Pie",
+                 "N-key opens a pie menu to toggle regions",
+                 false);
+  KEYCONFIG_BOOL("use_alt_click_leader",
+                 "Alt Click Tool Prompt",
+                 "Tapping Alt shows a prompt to activate a tool with a second keystroke",
+                 false);
+  KEYCONFIG_BOOL("use_alt_tool",
+                 "Alt Tool Access",
+                 "Hold Alt to use the active tool when the gizmo would normally be required",
+                 false);
+  KEYCONFIG_BOOL("use_alt_cursor",
+                 "Alt Cursor Access",
+                 "Hold Alt-Left Mouse to place the cursor",
+                 false);
+  KEYCONFIG_BOOL("use_select_all_toggle",
+                 "Select All Toggles",
+                 "Causes Select All to deselect when a selection exists",
+                 false);
+  KEYCONFIG_ENUM("gizmo_action",
+                 "Activate Gizmo",
+                 "Activation event for gizmos that support drag motion",
+                 gizmo_action_items,
+                 1);
+  RNA_def_property_translation_context(prop, BLT_I18NCONTEXT_EDITOR_VIEW3D);
+  KEYCONFIG_BOOL("use_v3d_tab_menu",
+                 "Tab for Pie Menu",
+                 "Causes Tab to open the mode pie menu",
+                 false);
+  KEYCONFIG_BOOL("use_v3d_shade_ex_pie",
+                 "Extra Shading Pie Menu Items",
+                 "Show additional options in the shading menu",
+                 false);
+  KEYCONFIG_ENUM("v3d_tilde_action",
+                 "Tilde Action",
+                 "Action when Tilde is pressed",
+                 tilde_action_items,
+                 0);
+  KEYCONFIG_ENUM("v3d_mmb_action",
+                 "MMB Action",
+                 "Action when Middle Mouse is dragged in the viewport",
+                 mmb_action_items,
+                 0);
+  KEYCONFIG_ENUM("v3d_alt_mmb_drag_action",
+                 "Alt-MMB Drag Action",
+                 "Action when Alt-Middle Mouse is dragged in the viewport",
+                 alt_mmb_drag_action_items,
+                 0);
+  KEYCONFIG_BOOL("use_pie_click_drag",
+                 "Pie Menu on Drag",
+                 "Activate some pie menus on drag and their secondary action on tap",
+                 false);
+  KEYCONFIG_BOOL("use_file_single_click",
+                 "Open Folders on Single Click",
+                 "Navigate into folders by clicking them once instead of twice",
+                 false);
+  KEYCONFIG_BOOL("use_alt_navigation",
+                 "Transform Navigation with Alt",
+                 "During transformations, use Alt to navigate in the 3D View",
+                 true);
+
+#undef KEYCONFIG_BOOL
+#undef KEYCONFIG_ENUM
+
+  func = RNA_def_function(srna, "draw", "rna_BlenderKeyConfigPreferences_draw");
+  RNA_def_function_ui_description(func, "Draw native key configuration preferences");
+  parm = RNA_def_pointer(func, "layout", "UILayout", "", "Layout to draw into");
+  RNA_def_parameter_flags(parm, PROP_NEVER_NULL, PARM_REQUIRED);
 }
 
 static void rna_def_keyconfig(BlenderRNA *brna)
