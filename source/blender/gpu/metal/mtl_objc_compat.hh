@@ -143,7 +143,7 @@ using CAMetalLayerPtr = CA::MetalLayer *;
 #  define MTL_NSSTRING_EMPTY nullptr
 
 /* Alias de los nombres Objective-C a los de metal-cpp. GENERADO mecanicamente
- * cruzando lo que declara `extern/metal-cpp/Metal/*.hpp` con los nombres que usa
+ * cruzando lo que declara `extern/metal-cpp/Metal/ *.hpp` con los nombres que usa
  * este backend; la correspondencia es siempre quitar el prefijo `MTL` y entrar en
  * el espacio de nombres `MTL::`.
  *

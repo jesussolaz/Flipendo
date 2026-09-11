@@ -4,6 +4,18 @@
 
 /** \file
  * \ingroup gpu
+ *
+ * PRIMER FICHERO DEL BACKEND DE METAL EN C++ PURO (era mtl_query.mm).
+ *
+ * Los envios de mensaje de Objective-C pasan a llamadas de metal-cpp:
+ *
+ *     [rec setVisibilityResultMode:m offset:o]  ->  rec->setVisibilityResultMode(m, o)
+ *     [ctx->device hasUnifiedMemory]            ->  ctx->device->hasUnifiedMemory()
+ *     [blit synchronizeResource:b]              ->  blit->synchronizeResource(b)
+ *
+ * No hay conversion de tipos por medio: `id<MTLRenderCommandEncoder>` y
+ * `MTL::RenderCommandEncoder *` son el mismo puntero, y las cabeceras ya los declaran
+ * con un nombre neutral (`MTLRenderCommandEncoderPtr`, ver mtl_objc_compat.hh).
  */
 
 #include "mtl_query.hh"
@@ -81,10 +93,9 @@ void MTLQueryPool::begin_query()
   ctx->set_visibility_buffer(buffer);
 
   ctx->ensure_begin_render_pass();
-  id<MTLRenderCommandEncoder> rec = ctx->main_command_buffer.get_active_render_command_encoder();
-  [rec setVisibilityResultMode:mtl_type_
-                        offset:(query_id % VISIBILITY_COUNT_PER_BUFFER) *
-                               VISIBILITY_RESULT_SIZE_IN_BYTES];
+  MTLRenderCommandEncoderPtr rec = ctx->main_command_buffer.get_active_render_command_encoder();
+  rec->setVisibilityResultMode(
+      mtl_type_, (query_id % VISIBILITY_COUNT_PER_BUFFER) * VISIBILITY_RESULT_SIZE_IN_BYTES);
   query_issued_ += 1;
 }
 
@@ -92,8 +103,8 @@ void MTLQueryPool::end_query()
 {
   MTLContext *ctx = MTLContext::get();
 
-  id<MTLRenderCommandEncoder> rec = ctx->main_command_buffer.get_active_render_command_encoder();
-  [rec setVisibilityResultMode:MTLVisibilityResultModeDisabled offset:0];
+  MTLRenderCommandEncoderPtr rec = ctx->main_command_buffer.get_active_render_command_encoder();
+  rec->setVisibilityResultMode(MTLVisibilityResultModeDisabled, 0);
 }
 
 void MTLQueryPool::get_occlusion_result(MutableSpan<uint32_t> r_values)
@@ -102,11 +113,11 @@ void MTLQueryPool::get_occlusion_result(MutableSpan<uint32_t> r_values)
 
   /* Create a blit encoder to synchronize the query buffer results between
    * GPU and CPU when not using shared-memory. */
-  if ([ctx->device hasUnifiedMemory] == false) {
-    id<MTLBlitCommandEncoder> blit_encoder = ctx->main_command_buffer.ensure_begin_blit_encoder();
+  if (ctx->device->hasUnifiedMemory() == false) {
+    MTLBlitCommandEncoderPtr blit_encoder = ctx->main_command_buffer.ensure_begin_blit_encoder();
     BLI_assert(blit_encoder);
     for (gpu::MTLBuffer *buf : buffer_) {
-      [blit_encoder synchronizeResource:buf->get_metal_buffer()];
+      blit_encoder->synchronizeResource(buf->get_metal_buffer());
     }
     BLI_assert(ctx->get_inside_frame());
   }

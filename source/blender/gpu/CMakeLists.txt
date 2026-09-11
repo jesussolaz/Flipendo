@@ -343,17 +343,18 @@ set(METAL_SRC
   metal/mtl_backend.mm
   metal/mtl_batch.mm
   metal/mtl_command_buffer.mm
+  metal/mtl_cpp_impl.cc
   metal/mtl_context.mm
   metal/mtl_debug.mm
   metal/mtl_framebuffer.mm
   metal/mtl_immediate.mm
   metal/mtl_index_buffer.mm
   metal/mtl_memory.mm
-  metal/mtl_query.mm
+  metal/mtl_query.cc
   metal/mtl_shader.mm
   metal/mtl_shader_generator.mm
   metal/mtl_shader_interface.mm
-  metal/mtl_shader_log.mm
+  metal/mtl_shader_log.cc
   metal/mtl_state.mm
   metal/mtl_storage_buffer.mm
   metal/mtl_texture.mm
@@ -365,6 +366,7 @@ set(METAL_SRC
   metal/mtl_batch.hh
   metal/mtl_capabilities.hh
   metal/mtl_common.hh
+  metal/mtl_objc_compat.hh
   metal/mtl_context.hh
   metal/mtl_debug.hh
   metal/mtl_framebuffer.hh
@@ -418,6 +420,13 @@ endif()
 
 if(WITH_METAL_BACKEND)
   list(APPEND SRC ${METAL_SRC})
+
+  # metal-cpp: binding C++ de Apple, solo cabeceras. Es lo que permite que los
+  # ficheros de metal/ sean `.cc` en vez de `.mm` (ver politicas/OBJC-A-CPP.md).
+  # Va en INC_SYS para que sus avisos no cuenten como avisos del arbol.
+  list(APPEND INC_SYS
+    ../../../extern/metal-cpp
+  )
 endif()
 
 
