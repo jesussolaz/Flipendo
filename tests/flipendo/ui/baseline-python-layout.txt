@@ -28030,12 +28030,7 @@ DRAW
 === MENU TOPBAR_MT_file_open_recent
 DRAW
   LAYOUT_ROOT activo=si align=no alignment=EXPAND emboss=UNDEFINED enabled=si heading='' prop_decorate=si prop_sep=no redalert=no scale_x=0 scale_y=0 units_x=0 units_y=0
-    BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/T1_LaMancha.blend", display_file_selector=False)' rna=None text='T1_LaMancha.blend' tip='' type=BUT
-    BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/MolinoInterior.blend", display_file_selector=False)' rna=None text='MolinoInterior.blend' tip='' type=BUT
-    BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/Molino.blend", display_file_selector=False)' rna=None text='Molino.blend' tip='' type=BUT
-    BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/private/tmp/claude-501/-Users-jesussolaz/f076fbf6-ab97-45b7-be8b-de67bc43ed26/scratchpad/reopen-tmp.blend", display_file_selector=False)' rna=None text='reopen-tmp.blend' tip='' type=BUT
-    BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/Alonso.blend", display_file_selector=False)' rna=None text='Alonso.blend' tip='' type=BUT
-    BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/template/KeyARPG.blend", display_file_selector=False)' rna=None text='KeyARPG.blend' tip='' type=BUT
+    BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="<RECIENTE>", display_file_selector=False)' rna=None text='<RECIENTE>' tip='' type=BUT
     BUTTON activo=si emboss=PULLDOWN enabled=si icon=NONE op=None rna=None text='' tip='' type=SEPR
     BUTTON activo=si emboss=PULLDOWN enabled=si icon=TRASH op='bpy.ops.wm.clear_recent_files()' rna=None text='Clear Recent Files List...' tip='Clear the recent files list' type=BUT
 === MENU TOPBAR_MT_file_previews
@@ -30591,11 +30586,7 @@ DRAW
       LAYOUT_COLUMN activo=si align=no alignment=EXPAND emboss=PULLDOWN enabled=si heading='' prop_decorate=si prop_sep=no redalert=no scale_x=0 scale_y=0 units_x=0 units_y=0
         LAYOUT_ROW activo=si align=no alignment=EXPAND emboss=PULLDOWN enabled=si heading='' prop_decorate=si prop_sep=no redalert=no scale_x=0 scale_y=0 units_x=0 units_y=0
           BUTTON activo=si emboss=PULLDOWN enabled=si icon=BLANK1 op=None rna=None text='Recent Files' tip='' type=LABEL
-        BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/T1_LaMancha.blend", display_file_selector=False)' rna=None text='T1_LaMancha.blend' tip='' type=BUT
-        BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/MolinoInterior.blend", display_file_selector=False)' rna=None text='MolinoInterior.blend' tip='' type=BUT
-        BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/Molino.blend", display_file_selector=False)' rna=None text='Molino.blend' tip='' type=BUT
-        BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/private/tmp/claude-501/-Users-jesussolaz/f076fbf6-ab97-45b7-be8b-de67bc43ed26/scratchpad/reopen-tmp.blend", display_file_selector=False)' rna=None text='reopen-tmp.blend' tip='' type=BUT
-        BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="/Users/jesussolaz/Flipendo/game/anima/Alonso.blend", display_file_selector=False)' rna=None text='Alonso.blend' tip='' type=BUT
+        BUTTON activo=si emboss=PULLDOWN enabled=si icon=FILE_BLEND op='bpy.ops.wm.open_mainfile(filepath="<RECIENTE>", display_file_selector=False)' rna=None text='<RECIENTE>' tip='' type=BUT
     BUTTON activo=si emboss=PULLDOWN enabled=si icon=NONE op=None rna=None text='' tip='' type=SEPR
     LAYOUT_SPLIT activo=si align=no alignment=EXPAND emboss=PULLDOWN enabled=si heading='' percentage=0 prop_decorate=si prop_sep=no redalert=no scale_x=0 scale_y=0 units_x=0 units_y=0
       LAYOUT_COLUMN activo=si align=no alignment=EXPAND emboss=PULLDOWN enabled=si heading='' prop_decorate=si prop_sep=no redalert=no scale_x=0 scale_y=0 units_x=0 units_y=0

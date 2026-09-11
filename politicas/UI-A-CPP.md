@@ -1060,3 +1060,31 @@ El clip de película y la máscara. Un `MovieClip` necesita un vídeo o una secu
 imágenes en disco y `MASK_OT_new` solo corre desde el editor de clips con un clip
 cargado; meter un vídeo de prueba en el repo es una decisión de assets que no es de
 este carril. Los cinco menús del editor de clips siguen `NO-CUBIERTO`.
+
+## La línea base no puede llevar dentro el estado del usuario (11-09, jefe de proyecto)
+
+Tres carriles distintos toparon la misma noche con dos bloques que salían rojos sin que
+nadie los hubiera tocado: `TOPBAR_MT_file_open_recent` y `WM_MT_splash`. La causa es que
+**el volcado de diseño llevaba dentro la lista de ficheros recientes del usuario**, con
+sus rutas absolutas — y `--factory-startup` no la reinicia, porque no es parte de la
+escena sino de la configuración.
+
+La línea base congelada en el repositorio llegó a tener dentro rutas de
+`~/Flipendo/game/anima/*.blend`. Eso significa que **no se reproducía en otra máquina, ni
+en la misma al día siguiente**: cualquiera que la comprobara veía rojos que no había
+causado, y —peor— podía acostumbrarse a ignorarlos.
+
+La cura tiene dos mitades, y la primera sola no basta:
+
+1. **Elidir el valor, conservar la forma.** La ruta del operador y la etiqueta del botón
+   (que es el nombre del fichero) se sustituyen por `<RECIENTE>`. Así un cambio de
+   estructura del menú se sigue viendo.
+2. **Colapsar las repeticiones consecutivas.** Con solo lo anterior, el *número* de
+   entradas sigue dependiendo de cuántos ficheros haya abierto el usuario: seis un día,
+   nueve al siguiente. Se colapsan en una sola línea.
+
+Regla general, que vale para cualquier volcado futuro: **lo que no viene del árbol no
+entra en la línea base.** Rutas de la máquina, fecha de compilación, historial del
+usuario, orden de un `set` con punteros dentro. Antes de congelar nada, genera el volcado
+dos veces con el mismo binario: si no se reproduce a sí mismo, lo que tienes no es una
+línea base, es una foto de tu ordenador.

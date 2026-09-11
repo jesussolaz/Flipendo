@@ -398,8 +398,19 @@ static bool bloques_escribir(const blender::Vector<Bloque> &bloques,
   fprintf(fp, "%s\n", marca);
   for (const Bloque &bloque : bloques) {
     fprintf(fp, "=== %s\n", bloque.clave.c_str());
+    /* Las entradas de ficheros recientes ya salen elididas como <RECIENTE>, pero
+     * su NUMERO depende de cuantos ficheros haya abierto el usuario, asi que una
+     * linea base con ellas tampoco se reproduce. Se colapsan las repeticiones
+     * consecutivas en una sola: la forma del menu se sigue viendo, la cuenta del
+     * historial del usuario no entra. */
+    const std::string *anterior = nullptr;
     for (const std::string &linea : bloque.lineas) {
+      const bool es_reciente = linea.find("<RECIENTE>") != std::string::npos;
+      if (es_reciente && anterior != nullptr && *anterior == linea) {
+        continue;
+      }
       fprintf(fp, "%s\n", linea.c_str());
+      anterior = &linea;
     }
   }
   fclose(fp);
@@ -708,6 +719,25 @@ static void rutas_normalizar(std::string &texto)
       pos += strlen("<SCRIPTS>");
     }
   }
+
+  /* Los ficheros recientes del usuario NO son del arbol y cambian solos: el menu
+   * TOPBAR_MT_file_open_recent y el panel del splash los pintan con su ruta
+   * absoluta, asi que una linea base congelada con ellos dentro no se reproduce
+   * en otra maquina, ni en la misma al dia siguiente. Se elide el valor y se
+   * conserva la forma, para que un cambio de estructura del menu si se vea. */
+  {
+    static const std::string marca = "open_mainfile(filepath=\"";
+    size_t pos = 0;
+    while ((pos = texto.find(marca, pos)) != std::string::npos) {
+      const size_t ini = pos + marca.size();
+      const size_t fin = texto.find('"', ini);
+      if (fin == std::string::npos) {
+        break;
+      }
+      texto.replace(ini, fin - ini, "<RECIENTE>");
+      pos = ini + strlen("<RECIENTE>");
+    }
+  }
 }
 
 
@@ -747,7 +777,12 @@ static void serializar_boton(const uiBut *but,
     linea += " rna=None";
   }
 
-  linea += " text=" + quoted(but->drawstr.c_str());
+  /* Si la ruta ya se elidio por ser un fichero reciente del usuario, la etiqueta
+   * del boton es el nombre de ese mismo fichero: tambien se elide, o la linea
+   * sigue dependiendo del historial. Con las lineas ya iguales, el escritor
+   * colapsa las repeticiones. */
+  const bool es_reciente = linea.find("<RECIENTE>") != std::string::npos;
+  linea += " text=" + quoted(es_reciente ? "<RECIENTE>" : but->drawstr.c_str());
   linea += " tip=" + quoted(but->tip);
   linea += std::string(" type=") + but_type_nombre(but->type);
 
