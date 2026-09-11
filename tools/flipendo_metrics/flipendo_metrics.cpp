@@ -48,6 +48,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -108,6 +109,10 @@ static std::string pct(long long part, long long total)
 static bool starts_with(const std::string &s, const std::string &t)
 {
   return s.size() >= t.size() && s.compare(0, t.size(), t) == 0;
+}
+static bool ends_with(const std::string &s, const std::string &t)
+{
+  return s.size() >= t.size() && s.compare(s.size() - t.size(), t.size(), t) == 0;
 }
 static bool contains(const std::string &s, const std::string &t)
 {
@@ -191,7 +196,8 @@ static ProcResult run_process(const std::vector<std::string> &argv,
                               const std::string &cwd,
                               const std::string &stdin_data,
                               int timeout_s,
-                              bool merge_stderr = true)
+                              bool merge_stderr = true,
+                              const std::vector<std::string> *env = nullptr)
 {
   ProcResult r;
   if (argv.empty()) return r;
@@ -206,6 +212,13 @@ static ProcResult run_process(const std::vector<std::string> &argv,
   if (pid == 0) {
     /* Hijo: grupo propio para poder matar al árbol entero si se pasa de tiempo. */
     setsid();
+    if (env) {
+      for (const std::string &kv : *env) {
+        size_t eq = kv.find('=');
+        if (eq == std::string::npos) continue;
+        setenv(kv.substr(0, eq).c_str(), kv.c_str() + eq + 1, 1);
+      }
+    }
     if (!cwd.empty()) { if (chdir(cwd.c_str()) != 0) _exit(127); }
     dup2(inp[0], STDIN_FILENO);
     dup2(outp[1], STDOUT_FILENO);
@@ -736,28 +749,239 @@ static HistPoint measure_point(const Git &git, const std::string &rev,
 }
 
 /* -------------------------------------------------------------------------- */
+/* Leer un fichero entero                                                      */
+
+static bool read_file(const std::string &p, std::string &out)
+{
+  std::ifstream f(p, std::ios::binary);
+  if (!f) return false;
+  out.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+  return true;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Declaraciones que acompañan a una línea base                                */
+/*                                                                             */
+/* El arnés (carril ARNES, 2026-09-11) admite dos ficheros junto a cada línea   */
+/* base, y esta herramienta TIENE QUE HONRARLOS o publicará rojos falsos:       */
+/*                                                                             */
+/*   <linea-base>.tolerancia    `tolerancia-relativa <numero>`                  */
+/*   <linea-base>.divergencias  bloques `linea N` / `python:` / `cpp:` / `razon:`*/
+/*                                                                             */
+/* La semántica se copia de `source/blender/editors/include/FL_selftest_compare.hh`,
+ * que es quien la implementa dentro del binario: misma normalización           */
+/* (`max(1,|a|,|b|)`), mismo troceado por palabras, mismas tres salidas de una  */
+/* divergencia (cumplida / regresión al valor del Python / cualquier otra cosa).*/
+/* Si las dos implementaciones se separaran, el informe mentiría; por eso el    */
+/* generador compara además su veredicto con el del comprobador hermano cuando  */
+/* los dos existen.                                                             */
+
+struct Divergence {
+  int line_no = 0;
+  std::string python, cpp, razon;
+  bool honoured = false;
+};
+
+struct Declarations {
+  double tolerance = 0.0;
+  std::string tol_path, div_path;
+  std::vector<Divergence> divergences;
+  bool any() const { return tolerance > 0.0 || !divergences.empty(); }
+};
+
+static std::string chomp(const std::string &s)
+{
+  std::string r = s;
+  while (!r.empty() && (r.back() == '\n' || r.back() == '\r')) r.pop_back();
+  return r;
+}
+
+static Declarations read_declarations(const std::string &baseline_abs)
+{
+  Declarations d;
+  std::string t;
+  if (read_file(baseline_abs + ".tolerancia", t)) {
+    d.tol_path = baseline_abs + ".tolerancia";
+    for (const std::string &ln : split_lines(t)) {
+      if (ln.empty() || ln[0] == '#') continue;
+      double v = 0.0;
+      if (sscanf(ln.c_str(), "tolerancia-relativa %lf", &v) == 1) d.tolerance = v;
+    }
+  }
+  std::string g;
+  if (read_file(baseline_abs + ".divergencias", g)) {
+    d.div_path = baseline_abs + ".divergencias";
+    for (const std::string &raw : split_lines(g)) {
+      const std::string ln = chomp(raw);
+      if (ln.empty() || ln[0] == '#') continue;
+      int n = 0;
+      if (sscanf(ln.c_str(), "linea %d", &n) == 1) {
+        Divergence dv;
+        dv.line_no = n;
+        d.divergences.push_back(dv);
+        continue;
+      }
+      if (d.divergences.empty()) continue;
+      size_t colon = ln.find(':');
+      if (colon == std::string::npos) continue;
+      /* El valor va detrás del primer `:` SIN recortar: los volcados empiezan por
+       * espacios y recortarlos rompería la comparación. */
+      const std::string key = ln.substr(0, colon), val = ln.substr(colon + 1);
+      if (key == "python") d.divergences.back().python = val;
+      else if (key == "cpp") d.divergences.back().cpp = val;
+      else if (key == "razon") d.divergences.back().razon = val;
+    }
+  }
+  return d;
+}
+
+/* Igualdad palabra a palabra con tolerancia RELATIVA en los números, normalizando
+ * por `max(1,|a|,|b|)` igual que `FL_selftest_compare.hh`. */
+static bool equal_within(const std::string &a, const std::string &b, double tol, double &worst)
+{
+  std::vector<std::string> ta = split_ws(a), tb = split_ws(b);
+  if (ta.size() != tb.size()) return false;
+  worst = 0.0;
+  for (size_t i = 0; i < ta.size(); ++i) {
+    if (ta[i] == tb[i]) continue;
+    char *ea = nullptr, *eb = nullptr;
+    double va = strtod(ta[i].c_str(), &ea), vb = strtod(tb[i].c_str(), &eb);
+    if (ea == ta[i].c_str() || *ea != '\0' || eb == tb[i].c_str() || *eb != '\0') return false;
+    if (!std::isfinite(va) || !std::isfinite(vb)) return false;
+    const double scale = std::fmax(1.0, std::fmax(std::fabs(va), std::fabs(vb)));
+    const double rel = std::fabs(va - vb) / scale;
+    if (rel > tol) return false;
+    worst = std::fmax(worst, rel);
+  }
+  return true;
+}
+
+struct CompareResult {
+  bool ok = false;
+  long long total_lines = 0, same_lines = 0, tolerated = 0;
+  long long div_total = 0, div_honoured = 0, div_broken = 0;
+  double worst_tolerated = 0.0;
+  std::string why;        /* primera diferencia, o el motivo del fallo */
+  std::string regression; /* si una divergencia ha vuelto al valor del Python */
+};
+
+/* Compara el volcado con su línea base honrando las declaraciones. Espeja a
+ * `flipendo::selftest::compare_to_baseline`, incluida su regla mas importante:
+ * comparar CERO líneas no es un aprobado. */
+static CompareResult compare_to_baseline(const std::string &actual_abs,
+                                         const std::string &baseline_abs,
+                                         const Declarations &decl)
+{
+  CompareResult r;
+  std::string xa, xb;
+  if (!read_file(actual_abs, xa)) { r.why = "no se pudo leer el volcado"; return r; }
+  if (!read_file(baseline_abs, xb)) { r.why = "no existe la linea base"; return r; }
+
+  std::vector<Divergence> divs = decl.divergences;
+  r.div_total = (long long)divs.size();
+  std::vector<std::string> la = split_lines(xa), lb = split_lines(xb);
+  const size_t n = std::max(la.size(), lb.size());
+  for (size_t i = 0; i < n; ++i) {
+    const int line_no = (int)i + 1;
+    const bool has_a = i < la.size(), has_b = i < lb.size();
+    const std::string sa = has_a ? la[i] : "(falta linea en el volcado)";
+    const std::string sb = has_b ? lb[i] : "(falta linea en la linea base)";
+    r.total_lines++;
+
+    Divergence *declared = nullptr;
+    for (Divergence &d : divs) if (d.line_no == line_no) { declared = &d; break; }
+
+    bool accepted = false;
+    if (declared) {
+      if (sa == declared->cpp) {
+        declared->honoured = true;
+        accepted = true;
+      }
+      else if (sa == declared->python) {
+        r.div_broken++;
+        r.regression = sfmt("linea %d: REGRESION, ha vuelto al valor del Python que el C++ "
+                            "corregia a proposito (esperado `%s`, obtenido `%s`)",
+                            line_no, declared->cpp.c_str(), sa.c_str());
+      }
+      else {
+        r.div_broken++;
+        r.regression = sfmt("linea %d: declarada como divergencia pero no da ni el valor del "
+                            "Python ni el declarado del C++ (esperado `%s`, obtenido `%s`)",
+                            line_no, declared->cpp.c_str(), sa.c_str());
+      }
+    }
+    else if (has_a && has_b && sa == sb) {
+      accepted = true;
+    }
+    else if (has_a && has_b && decl.tolerance > 0.0) {
+      double worst = 0.0;
+      if (equal_within(sb, sa, decl.tolerance, worst)) {
+        accepted = true;
+        r.tolerated++;
+        r.worst_tolerated = std::fmax(r.worst_tolerated, worst);
+      }
+    }
+
+    if (accepted) r.same_lines++;
+    else if (!declared && r.why.empty()) {
+      std::string a1 = sa, b1 = sb;
+      if (a1.size() > 90) a1 = a1.substr(0, 90) + "...";
+      if (b1.size() > 90) b1 = b1.substr(0, 90) + "...";
+      r.why = sfmt("linea %d: obtenido `%s` / linea base `%s`", line_no, a1.c_str(), b1.c_str());
+    }
+  }
+  for (const Divergence &d : divs) {
+    if (d.honoured) { r.div_honoured++; continue; }
+    if (d.line_no > r.total_lines) {
+      r.div_broken++;
+      if (r.regression.empty())
+        r.regression = sfmt("la divergencia declarada para la linea %d no se pudo comprobar: "
+                            "el volcado solo llega a %lld lineas",
+                            d.line_no, r.total_lines);
+    }
+  }
+  if (r.total_lines == 0) {
+    r.why = "no se comparo ni una linea: el volcado y la linea base estan los dos vacios, "
+            "asi que no se ha verificado nada";
+    return r;
+  }
+  r.ok = (r.same_lines == r.total_lines) && (r.div_broken == 0);
+  if (!r.ok && r.why.empty() && !r.regression.empty()) r.why = r.regression;
+  return r;
+}
+
+/* -------------------------------------------------------------------------- */
 /* La batería de verificadores del binario                                     */
 
 struct Verifier {
   std::string flag;        /* --fl-check-keymap */
   std::string label;       /* lo que se imprime (puede llevar variante) */
-  std::string kind;        /* "check" o "selftest" */
+  std::string kind;        /* "check" | "selftest" | "volcador" */
   std::string doc;         /* doc string tal cual está en creator_args.cc */
   std::vector<std::string> args;
   std::vector<std::string> baselines;   /* para los selftest: con qué comparar el volcado */
+  std::vector<std::string> env;         /* NOMBRE=valor para el hijo */
   std::string out_file;                 /* volcado del selftest, si lo hay */
   bool gui = false;
   std::string gui_reason;
+  std::string doc_baseline_missing;     /* la ayuda declara una línea base que no existe */
 
   /* resultado */
   bool ran = false;
   int rc = -1;
   bool timed_out = false;
   double secs = 0;
+  long long passes = 0;
   std::string mode;       /* "background" | "grafico" */
-  std::string verdict;    /* VERDE | ROJO | SIN LINEA BASE | NO EJECUTADO */
+  std::string verdict;    /* VERDE | ROJO | INESTABLE | SIN LINEA BASE | VOLCADOR | NO EJECUTADO */
   std::string detail;
   std::string baseline_used;
+
+  /* declaraciones honradas: qué había declarado y qué hizo falta de verdad */
+  Declarations decl;
+  long long tol_passes_used = 0;   /* pasadas en las que la tolerancia hizo falta */
+  long long div_honoured = 0;
+  double worst_tolerated = 0.0;
 };
 
 /* Extrae el doc string de un argumento: `arg_handle_fl_<x>_doc[] = "..." "...";` */
@@ -801,43 +1025,65 @@ struct Recipe {
   const char *baselines;   /* separados por '|', el primero es el preferente */
   int gui;                 /* 1 = necesita modo gráfico */
   const char *gui_reason;
+  const char *env;         /* NOMBRE=valor separados por '|'; "@scratch" = dir temporal */
 };
 
 static const Recipe kRecipes[] = {
     /* Escriben un informe; el veredicto lo da el código de salida. */
-    {"--fl-check-presets", "scripts/presets|@out", "", 0, ""},
-    {"--fl-check-keyconfig-io", "@out", "", 0, ""},
-    {"--fl-check-keymap-menus", "", "", 0, ""},
+    {"--fl-check-presets", "scripts/presets|@out", "", 0, "", ""},
+    {"--fl-check-keyconfig-io", "@out", "", 0, "", ""},
+    {"--fl-check-keymap-menus", "", "", 0, "", ""},
     /* El catálogo de herramientas vive en `toolsystem/`, no en `tools/`: la
      * convención de nombres no lo encuentra y sin línea base este comprobador
      * SALE CON 0 aunque no haya comprobado nada (verde falso, medido). */
-    {"--fl-check-tools", "@baseline", "tests/flipendo/toolsystem/baseline-python.txt", 0, ""},
+    {"--fl-check-tools", "@baseline", "tests/flipendo/toolsystem/baseline-python.txt", 0, "", ""},
     /* El keymap por defecto NO se carga en --background (REGLAMENTO): la
      * comparación de verdad va en modo gráfico. */
     {"--fl-check-keymap", "@baseline", "tests/flipendo/keymap/baseline-python.txt", 1,
-     "el keymap por defecto no se carga en --background"},
-    /* Los seis operadores de `wm` vuelcan a fichero y se comparan aquí. Las
-     * líneas base se identificaron comparando el volcado byte a byte contra
-     * todos los `.txt` de tests/flipendo. */
-    {"--fl-selftest-context-ops", "@out", "tests/flipendo/operators/execution-python.txt", 1,
-     "en --background no escribe nada: necesita un editor real"},
+     "el keymap por defecto no se carga en --background", ""},
+    /* Los operadores de `wm` vuelcan a fichero y se comparan aquí. Las líneas
+     * base se identificaron comparando el volcado byte a byte contra todos los
+     * `.txt` de tests/flipendo. */
     {"--fl-selftest-wm-property-ops", "@out", "tests/flipendo/operators/properties-python.txt", 1,
-     "en --background no escribe nada: necesita un editor real"},
-    {"--fl-selftest-wm-system-ops", "@out", "tests/flipendo/operators/system-python.txt", 0, ""},
-    {"--fl-selftest-wm-owner-ops", "@out", "tests/flipendo/operators/owner-python.txt", 0, ""},
+     "en --background no escribe nada: necesita un editor real", ""},
+    {"--fl-selftest-wm-system-ops", "@out", "tests/flipendo/operators/system-python.txt", 0, "", ""},
+    {"--fl-selftest-wm-owner-ops", "@out", "tests/flipendo/operators/owner-python.txt", 0, "", ""},
     {"--fl-selftest-wm-properties-edit", "@out",
-     "tests/flipendo/operators/properties-edit-native.txt", 0, ""},
+     "tests/flipendo/operators/properties-edit-native.txt", 0, "", ""},
     {"--fl-selftest-wm-batch-rename", "@out",
-     "tests/flipendo/operators/batch-rename-native.txt", 0, ""},
+     "tests/flipendo/operators/batch-rename-native.txt", 0, "", ""},
     /* Informe de cifras, sin línea base congelada en el árbol. */
-    {"--fl-selftest-keyconfig", "@out", "", 0, ""},
+    {"--fl-selftest-keyconfig", "@out", "", 0, "", ""},
     /* El volcado de C++ NO es byte a byte igual al de Python: difiere en el
      * último dígito de varios flotantes (la acumulación va en paralelo, ver la
      * lección de las 03:50 del REGLAMENTO). La línea base verificada del árbol
      * es la segunda; si coincide con esa y no con la de Python, se dice. */
     {"--fl-selftest-object-ops", "@out",
      "tests/flipendo/objectops/baseline-python.txt|tests/flipendo/objectops/run-cpp-verified.txt",
-     0, ""},
+     0, "", ""},
+    /* --- Carril ARNES, 2026-09-11 --- */
+    /* `--fl-selftest-context-ops` ya NO da veredicto: su propia ayuda dice «Solo
+     * VUELCA: el veredicto lo da --fl-check-context-ops», que es el que lee las
+     * divergencias declaradas. Se deja como volcador y el veredicto lo firma el
+     * comprobador nuevo. */
+    {"--fl-check-context-ops", "@baseline", "tests/flipendo/operators/execution-python.txt", 1,
+     "lo dice su propia ayuda: necesita modo grafico", ""},
+    /* Los operadores de presets escriben en la carpeta de scripts del usuario. Su
+     * ayuda manda apuntar `BLENDER_USER_SCRIPTS` a una carpeta vacía: si no, el
+     * arnés ensucia la configuración real de quien mide. */
+    /* Ojo con estas dos, que van al revés de lo que sugiere el nombre y se
+     * comprobó por el marcador de la primera línea de cada fichero:
+     *   presetops/baseline-python.txt      -> `# FL-PRESET-OPTYPE-SURFACE v1`
+     *   presetops/comportamiento-python.txt -> `# FL-PRESET-OPS v1`
+     * o sea que la línea base «de siempre» es la de los TIPOS de operador y el
+     * comportamiento va en la otra. */
+    {"--fl-selftest-preset-ops", "@out", "tests/flipendo/presetops/comportamiento-python.txt", 0,
+     "", "BLENDER_USER_SCRIPTS=@scratch"},
+    {"--fl-check-preset-ops", "@baseline", "tests/flipendo/presetops/comportamiento-python.txt", 0,
+     "", "BLENDER_USER_SCRIPTS=@scratch"},
+    {"--fl-check-preset-optypes", "@baseline", "tests/flipendo/presetops/baseline-python.txt", 0,
+     "", ""},
+    {"--fl-check-lod-optypes", "@baseline", "tests/flipendo/lod/optypes-python.txt", 0, "", ""},
 };
 
 static const Recipe *recipe_for(const std::string &flag)
@@ -859,8 +1105,8 @@ static std::vector<std::string> split_pipe(const std::string &s)
   return out;
 }
 
-/* Primera ruta `tests/flipendo/...` citada por el propio doc string. */
-static std::string baseline_in_doc(const std::string &doc, const std::string &root)
+/* Primera ruta `tests/flipendo/...` citada por el propio doc string, exista o no. */
+static std::string baseline_named_in_doc(const std::string &doc)
 {
   size_t p = doc.find("tests/flipendo/");
   if (p == std::string::npos) return "";
@@ -868,6 +1114,14 @@ static std::string baseline_in_doc(const std::string &doc, const std::string &ro
   while (e < doc.size() && !isspace((unsigned char)doc[e]) && doc[e] != '`' && doc[e] != ',') ++e;
   std::string path = doc.substr(p, e - p);
   while (!path.empty() && (path.back() == '.' || path.back() == ')')) path.pop_back();
+  return path;
+}
+
+/* La misma, pero solo si el fichero está de verdad en el árbol. */
+static std::string baseline_in_doc(const std::string &doc, const std::string &root)
+{
+  const std::string path = baseline_named_in_doc(doc);
+  if (path.empty()) return "";
   return fs::exists(root + "/" + path) ? path : std::string();
 }
 
@@ -913,35 +1167,6 @@ static std::vector<std::string> discover_flags(const std::string &src, const std
   return std::vector<std::string>(found.begin(), found.end());
 }
 
-static bool read_file(const std::string &p, std::string &out)
-{
-  std::ifstream f(p, std::ios::binary);
-  if (!f) return false;
-  out.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-  return true;
-}
-
-/* Compara dos ficheros como `cmp`, y si difieren dice en qué línea. */
-static bool same_file(const std::string &a, const std::string &b, std::string &why)
-{
-  std::string x, y;
-  if (!read_file(a, x)) { why = "no se pudo leer el volcado"; return false; }
-  if (!read_file(b, y)) { why = "no existe la linea base"; return false; }
-  if (x == y) return true;
-  std::vector<std::string> lx = split_lines(x), ly = split_lines(y);
-  for (size_t i = 0; i < std::max(lx.size(), ly.size()); ++i) {
-    std::string a1 = i < lx.size() ? lx[i] : "<no hay linea>";
-    std::string b1 = i < ly.size() ? ly[i] : "<no hay linea>";
-    if (a1 != b1) {
-      if (a1.size() > 90) a1 = a1.substr(0, 90) + "...";
-      if (b1.size() > 90) b1 = b1.substr(0, 90) + "...";
-      why = sfmt("linea %zu: obtenido `%s` / linea base `%s`", i + 1, a1.c_str(), b1.c_str());
-      return false;
-    }
-  }
-  why = "difieren en el final del fichero";
-  return false;
-}
 
 /* Ruido que el binario escribe por su cuenta y que no es el parte del
  * verificador: el saludo, el audio, y las excepciones de los add-ons instalados
@@ -985,7 +1210,7 @@ static std::string meaningful_tail(const std::string &out)
 
 struct Battery {
   std::vector<Verifier> v;
-  long long green = 0, red = 0, unstable = 0, nobase = 0, skipped = 0;
+  long long green = 0, red = 0, unstable = 0, nobase = 0, skipped = 0, volcadores = 0;
   long long dumpers = 0;        /* --fl-dump-*, no dan veredicto */
   long long converters = 0;     /* el resto de --fl-* */
   long long fl_args_total = 0;
@@ -1070,9 +1295,24 @@ static Battery run_battery(const std::string &root,
         else if (a == "@baseline") v.args.push_back(root + "/" + (v.baselines.empty() ? "" : v.baselines[0]));
         else v.args.push_back(a);
       }
+      for (const std::string &e : split_pipe(r->env)) {
+        if (e.empty()) continue;
+        std::string kv = e;
+        size_t at = kv.find("@scratch");
+        if (at != std::string::npos) {
+          const std::string sub = tmpdir + "/" + tmpname + ".scripts";
+          std::error_code sec;
+          fs::create_directories(sub, sec);
+          kv = kv.substr(0, at) + sub;
+        }
+        v.env.push_back(kv);
+      }
     }
     else {
       std::string bl = baseline_in_doc(v.doc, root);
+      /* Una ayuda que declara una línea base que no está en el árbol no es un
+       * detalle: es un comprobador que no puede comprobar. Se anota y se dice. */
+      if (bl.empty()) v.doc_baseline_missing = baseline_named_in_doc(v.doc);
       if (bl.empty()) bl = baseline_by_convention(flag, root);
       if (!bl.empty()) v.baselines.push_back(bl);
       if (kind == "check") {
@@ -1087,6 +1327,15 @@ static Battery run_battery(const std::string &root,
       v.gui = true;
       v.gui_reason = "lo dice su propia ayuda en creator_args.cc";
     }
+    /* Un selftest cuya ayuda dice «Solo VUELCA: el veredicto lo da --fl-check-X»
+     * NO da veredicto: es un volcador y contarlo como verde o como rojo sería
+     * inventarse una comprobación. Lo firma su comprobador hermano. */
+    if (kind == "selftest" && (contains(v.doc, "Solo VUELCA") || contains(v.doc, "solo VUELCA"))) {
+      v.kind = "volcador";
+      v.baselines.clear();
+    }
+    /* Declaraciones que acompañan a la línea base preferente. */
+    if (!v.baselines.empty()) v.decl = read_declarations(root + "/" + v.baselines[0]);
     return v;
   };
 
@@ -1133,9 +1382,10 @@ static Battery run_battery(const std::string &root,
     argv.push_back(v.flag);
     for (const std::string &a : v.args) argv.push_back(a);
 
-    ProcResult r = run_process(argv, root, "", 900);
+    ProcResult r = run_process(argv, root, "", 900, true, v.env.empty() ? nullptr : &v.env);
     parse_banner(r.out, bat.bin_hash, bat.bin_built);
     v.ran = true;
+    v.passes++;
     v.rc = r.rc;
     v.timed_out = r.timed_out;
     v.secs = r.secs;
@@ -1155,8 +1405,17 @@ static Battery run_battery(const std::string &root,
       return;
     }
     if (v.kind == "check") {
-      /* El comprobador compara él mismo y sale con EXIT_FAILURE si no cuadra. */
+      /* El comprobador compara él mismo, honra sus propias declaraciones y sale
+       * con EXIT_FAILURE si no cuadra. Aquí no se repite esa comparación: se
+       * ESCUCHA lo que dice por su salida de error, que es la fuente. */
       v.baseline_used = v.baselines.empty() ? "" : v.baselines[0];
+      if (contains(r.out, "TOLERADA")) v.tol_passes_used++;
+      for (const std::string &ln : split_lines(r.out)) {
+        if (contains(ln, "DIVERGENCIA DELIBERADA cumplida")) v.div_honoured++;
+        double w = 0.0;
+        if (sscanf(ln.c_str(), "%*[^(](desviacion relativa %lf", &w) == 1)
+          v.worst_tolerated = std::fmax(v.worst_tolerated, w);
+      }
       v.verdict = r.rc == 0 ? "VERDE" : "ROJO";
       return;
     }
@@ -1173,23 +1432,73 @@ static Battery run_battery(const std::string &root,
     }
     long long dump_lines = 0;
     for (char c : dump) if (c == '\n') ++dump_lines;
+    if (v.kind == "volcador") {
+      /* Su propia ayuda dice que no da veredicto. Lo único exigible es que
+       * vuelque algo; el juicio lo firma su comprobador hermano. */
+      v.verdict = "VOLCADOR";
+      v.detail = sfmt("volcado de %lld lineas; su ayuda dice que el veredicto lo da su "
+                      "comprobador hermano", dump_lines);
+      return;
+    }
     if (v.baselines.empty()) {
       v.verdict = "SIN LINEA BASE";
       v.detail = sfmt("informe de %lld lineas; no hay linea base congelada en el arbol", dump_lines);
       return;
     }
+    /* Antes de dar por bueno un rojo: ¿es siquiera la línea base que le toca?
+     * Los volcados llevan un marcador de formato en la primera línea
+     * (`# FL-LOD-OPS v1`). Si no coincide, lo que falla es el emparejamiento, no
+     * el código, y decir «rojo» sería acusar a quien no es. */
+    {
+      std::string base_first;
+      std::string bx;
+      if (read_file(root + "/" + v.baselines[0], bx)) {
+        std::vector<std::string> lb = split_lines(bx), la = split_lines(dump);
+        if (!lb.empty() && !la.empty() && starts_with(trim(lb[0]), "# FL-") &&
+            starts_with(trim(la[0]), "# FL-") && trim(lb[0]) != trim(la[0])) {
+          v.verdict = "SIN LINEA BASE";
+          v.detail = sfmt("la linea base no es de este volcado: el volcado dice `%s` y "
+                          "`%s` dice `%s`",
+                          trim(la[0]).c_str(), v.baselines[0].c_str(), trim(lb[0]).c_str());
+          return;
+        }
+      }
+    }
     std::string why;
     for (size_t i = 0; i < v.baselines.size(); ++i) {
-      std::string w;
-      if (same_file(v.out_file, root + "/" + v.baselines[i], w)) {
+      const std::string base_abs = root + "/" + v.baselines[i];
+      const Declarations decl = (i == 0) ? v.decl : read_declarations(base_abs);
+      CompareResult cr = compare_to_baseline(v.out_file, base_abs, decl);
+      if (cr.ok) {
         v.verdict = "VERDE";
         v.baseline_used = v.baselines[i];
         v.detail = sfmt("%lld lineas identicas a %s", dump_lines, v.baselines[i].c_str());
+        /* Lo tolerado y lo divergente se dice SIEMPRE en voz alta: una
+         * declaración callada es una excusa. */
+        if (cr.tolerated) {
+          v.tol_passes_used++;
+          v.worst_tolerated = std::fmax(v.worst_tolerated, cr.worst_tolerated);
+          v.detail = sfmt("%lld/%lld lineas identicas y %lld TOLERADA(S) por la tolerancia "
+                          "declarada %g (peor desviacion %.3g)",
+                          cr.same_lines - cr.tolerated, cr.total_lines, cr.tolerated,
+                          decl.tolerance, cr.worst_tolerated);
+        }
+        if (cr.div_honoured) {
+          v.div_honoured = cr.div_honoured;
+          v.detail += sfmt(", %lld divergencia(s) deliberada(s) cumplida(s)", cr.div_honoured);
+        }
         if (i > 0)
           v.detail += sfmt(" (NO a la preferente %s: %s)", v.baselines[0].c_str(), why.c_str());
         return;
       }
-      if (i == 0) why = w;
+      if (i == 0) {
+        why = cr.why;
+        if (cr.tolerated) {
+          v.tol_passes_used++;
+          v.worst_tolerated = std::fmax(v.worst_tolerated, cr.worst_tolerated);
+        }
+        v.div_honoured = cr.div_honoured;
+      }
     }
     v.verdict = "ROJO";
     v.baseline_used = v.baselines[0];
@@ -1239,15 +1548,106 @@ static Battery run_battery(const std::string &root,
                         last_green.empty() ? "(sin detalle)" : last_green.c_str());
       }
     }
+    /* Un verificador CON DECLARACIÓN se pasa tres veces aunque haya salido verde.
+     * No es desconfianza: es la única forma de contestar a «¿esta declaración
+     * sigue haciendo falta?». Si en tres pasadas no se tolera ni una línea, la
+     * declaración puede sobrar, y eso hay que decirlo igual que se dice un rojo:
+     * una excepción que nadie revisa se convierte en una excusa permanente. */
+    else if (v.decl.any() && v.verdict == "VERDE" && v.secs <= 60.0 && v.passes == 1) {
+      const double first_secs = v.secs;
+      const std::string first = v.detail;
+      double acc = first_secs;
+      bool any_red = false;
+      std::string red_detail;
+      for (int pass = 2; pass <= 3; ++pass) {
+        execute(v);
+        acc += v.secs;
+        if (v.verdict != "VERDE") { any_red = true; red_detail = v.detail; }
+      }
+      v.secs = acc;
+      if (any_red) {
+        v.verdict = "INESTABLE";
+        v.detail = sfmt("no se reproduce a si mismo ni con su declaracion: %s", red_detail.c_str());
+      }
+      else {
+        v.verdict = "VERDE";
+        v.detail = first;
+      }
+    }
+
     if (v.verdict == "VERDE") bat.green++;
     else if (v.verdict == "ROJO") bat.red++;
     else if (v.verdict == "INESTABLE") bat.unstable++;
+    else if (v.verdict == "VOLCADOR") bat.volcadores++;
     else bat.nobase++;
   }
   bat.secs = now_secs() - t0;
   bat.ran_gui = do_gui;
   fs::remove_all(tmpdir, ec);
   return bat;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Inventario de declaraciones del árbol                                       */
+/*                                                                             */
+/* «Una declaración escondida es una excusa; una declarada y contada es una     */
+/* decisión de ingeniería.» Por eso se cuentan TODAS las que hay en el árbol,   */
+/* no solo las que se usaron, y se dice cuál no llegó a hacer falta.            */
+
+struct DeclaredFile {
+  std::string path;       /* ruta relativa del `.tolerancia` / `.divergencias` */
+  std::string kind;       /* "tolerancia" | "divergencias" */
+  std::string baseline;   /* la línea base a la que acompaña */
+  bool baseline_exists = false;
+  std::string summary;    /* qué declara, en una línea */
+  std::string reason;     /* el `razon:` de la primera divergencia, recortado */
+  std::string used_by;    /* verificadores que la ejercitaron en esta pasada */
+  bool needed = false;    /* hizo falta de verdad en alguna pasada */
+  /* «Hizo falta» se cuenta POR DECLARACIÓN, no por verificador: la misma
+   * tolerancia la usan `--fl-check-mesh-ops` y `--fl-selftest-mesh-ops`, y el
+   * valor inestable solo aparece en algunas pasadas. Si se contara por
+   * verificador, el informe diría a la vez «hizo falta» y «puede sobrar». */
+  long long passes_total = 0, passes_needed = 0;
+};
+
+static std::vector<DeclaredFile> scan_declarations(const std::string &root)
+{
+  std::vector<DeclaredFile> out;
+  std::error_code ec;
+  const std::string base = root + "/tests";
+  if (!fs::exists(base, ec)) return out;
+  for (auto it = fs::recursive_directory_iterator(base, fs::directory_options::skip_permission_denied, ec);
+       it != fs::recursive_directory_iterator(); it.increment(ec)) {
+    if (ec) break;
+    if (!it->is_regular_file(ec)) continue;
+    const std::string p = it->path().string();
+    const bool tol = ends_with(p, ".tolerancia");
+    const bool div = ends_with(p, ".divergencias");
+    if (!tol && !div) continue;
+    DeclaredFile d;
+    d.path = p.substr(root.size() + 1);
+    d.kind = tol ? "tolerancia" : "divergencias";
+    d.baseline = d.path.substr(0, d.path.size() - (tol ? 11 : 13));
+    d.baseline_exists = fs::exists(root + "/" + d.baseline);
+    const Declarations decl = read_declarations(root + "/" + d.baseline);
+    if (tol) {
+      d.summary = sfmt("tolerancia relativa %g", decl.tolerance);
+    }
+    else {
+      d.summary = sfmt("%zu divergencia(s) deliberada(s)", decl.divergences.size());
+      for (const Divergence &dv : decl.divergences) {
+        d.summary += sfmt(", linea %d", dv.line_no);
+        if (d.reason.empty() && !dv.razon.empty()) {
+          d.reason = dv.razon;
+          if (d.reason.size() > 200) d.reason = d.reason.substr(0, 200) + "...";
+        }
+      }
+    }
+    out.push_back(d);
+  }
+  std::sort(out.begin(), out.end(),
+            [](const DeclaredFile &a, const DeclaredFile &b) { return a.path < b.path; });
+  return out;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1434,8 +1834,9 @@ int main(int argc, char **argv)
       std::printf("%-34s %-13s %-11s %5.1fs  %s\n", v.label.c_str(), v.verdict.c_str(),
                   v.mode.c_str(), v.secs, v.detail.c_str());
     std::printf("\nverde %lld · rojo %lld · inestable %lld · sin linea base %lld · "
-                "no ejecutados %lld · %.0f s\n",
-                bat.green, bat.red, bat.unstable, bat.nobase, bat.skipped, bat.secs);
+                "volcadores %lld · no ejecutados %lld · %.0f s\n",
+                bat.green, bat.red, bat.unstable, bat.nobase, bat.volcadores, bat.skipped,
+                bat.secs);
     return bat.red == 0 ? 0 : 1;
   }
 
@@ -1885,12 +2286,25 @@ int main(int argc, char **argv)
     else {
       r += "- El árbol de trabajo estaba limpio: el binario corresponde al commit medido.\n\n";
     }
-    r += "**Un `--fl-selftest-*` no es una prueba, es un volcador**: escribe un fichero y sale\n";
-    r += "con 0 aunque no haya escrito nada (medido: sin argumento imprime «falta el fichero\n";
-    r += "de salida» y devuelve 0 igual). Contarlos como «verdes» por su código de salida\n";
-    r += "sería un verde falso. Aquí el veredicto de un selftest se saca comparando su\n";
-    r += "volcado byte a byte con su línea base, que es lo que hace su `--fl-check-*` hermano\n";
-    r += "cuando existe.\n\n";
+    r += "**Un `--fl-selftest-*` no es una prueba, es un volcador**: escribe un fichero y su\n";
+    r += "código de salida no es un veredicto. Contarlos como «verdes» por ese código sería un\n";
+    r += "verde falso. Aquí el veredicto de un selftest se saca comparando su volcado con su\n";
+    r += "línea base —honrando las declaraciones, ver más abajo—, que es lo que hace su\n";
+    r += "`--fl-check-*` hermano cuando existe. Y los que en su propia ayuda dicen «Solo\n";
+    r += "VUELCA: el veredicto lo da `--fl-check-X`» se marcan **volcador** y no se cuentan ni\n";
+    r += "verdes ni rojos: quien firma es el comprobador.\n\n";
+    {
+      std::string missing;
+      for (const Verifier &v : bat.v) {
+        if (v.doc_baseline_missing.empty()) continue;
+        missing += sfmt("- `%s` declara en su ayuda la línea base `%s`, que **no está en el\n"
+                        "  árbol**. Sin ella no hay nada que comparar.\n",
+                        v.label.c_str(), v.doc_baseline_missing.c_str());
+      }
+      if (!missing.empty()) {
+        r += "**Comprobadores cuya línea base declarada no existe:**\n\n" + missing + "\n";
+      }
+    }
     r += "Y un rojo no se firma a la primera: **todo rojo se repite hasta tres veces**, porque\n";
     r += "el REGLAMENTO ya midió que hay resultados no deterministas (el cálculo de normales\n";
     r += "acumula en paralelo y en coma flotante). Si alguna pasada sale verde, el veredicto\n";
@@ -1899,6 +2313,8 @@ int main(int argc, char **argv)
     r += "la batería— y su fila dice que va con una sola pasada.\n\n";
     r += sfmt("**Resultado: %lld en verde, %lld en rojo, %lld inestables, %lld sin línea base con\n"
               "la que comparar", bat.green, bat.red, bat.unstable, bat.nobase);
+    if (bat.volcadores)
+      r += sfmt(", %lld que su propia ayuda declara volcadores (no dan veredicto)", bat.volcadores);
     if (bat.skipped) r += sfmt(", %lld no ejecutados", bat.skipped);
     r += sfmt(".** Tardó %.0f segundos en total; el más lento, %.0f s.\n\n", bat.secs, [&] {
       double m = 0;
@@ -1927,6 +2343,7 @@ int main(int argc, char **argv)
                   v->verdict == "VERDE" ? "verde" :
                   v->verdict == "ROJO" ? "**ROJO**" :
                   v->verdict == "INESTABLE" ? "**inestable**" :
+                  v->verdict == "VOLCADOR" ? "volcador" :
                   v->verdict == "SIN LINEA BASE" ? "sin línea base" : "no ejecutado",
                   v->secs, det.empty() ? "(sin salida)" : det.c_str());
       }
@@ -1941,7 +2358,8 @@ int main(int argc, char **argv)
     if (bat.red || bat.unstable || bat.nobase) {
       r += "### Lo que no está en verde, con su detalle\n\n";
       for (const Verifier &v : bat.v) {
-        if (v.verdict == "VERDE" || v.verdict == "NO EJECUTADO") continue;
+        if (v.verdict == "VERDE" || v.verdict == "NO EJECUTADO" || v.verdict == "VOLCADOR")
+          continue;
         r += sfmt("- **`%s`** — %s (rc=%d, modo %s)", v.label.c_str(), v.verdict.c_str(), v.rc,
                   v.mode.c_str());
         if (!v.baseline_used.empty()) r += sfmt(", línea base `%s`", v.baseline_used.c_str());
@@ -1949,6 +2367,74 @@ int main(int argc, char **argv)
       }
       r += "\n";
     }
+    /* Requisito del carril ARNES: las declaraciones se cuentan y se nombran. */
+    {
+      std::vector<DeclaredFile> decls = scan_declarations(root);
+      long long ntol = 0, ndiv = 0;
+      for (DeclaredFile &d : decls) {
+        (d.kind == "tolerancia" ? ntol : ndiv)++;
+        for (const Verifier &v : bat.v) {
+          if (v.baselines.empty() || v.baselines[0] != d.baseline) continue;
+          if (v.verdict == "NO EJECUTADO") continue;
+          if (!d.used_by.empty()) d.used_by += ", ";
+          d.used_by += "`" + v.label + "`";
+          d.passes_total += v.passes;
+          if (d.kind == "tolerancia") d.passes_needed += v.tol_passes_used;
+          else if (v.div_honoured > 0) d.passes_needed += 1;
+        }
+        d.needed = d.passes_needed > 0;
+      }
+      r += "### Declaraciones honradas\n\n";
+      r += sfmt("Junto a las líneas base hay **%lld tolerancia(s)** y **%lld fichero(s) de\n"
+                "divergencias deliberadas**. Esta batería **los lee y los honra**: un valor\n"
+                "dentro de la tolerancia declarada no es un rojo, y una divergencia declarada y\n"
+                "cumplida tampoco. Al revés también: si la divergencia deja de ocurrir, es\n"
+                "ROJO, porque entonces la declaración sobra.\n\n",
+                ntol, ndiv);
+      if (decls.empty()) {
+        r += "Hoy no hay ninguna declarada.\n\n";
+      }
+      else {
+        r += "| Fichero | Declara | Línea base | ¿Quién la usa? | ¿Hizo falta? |\n";
+        r += "|---|---|---|---|---|\n";
+        for (const DeclaredFile &d : decls) {
+          std::string needed;
+          if (d.used_by.empty()) needed = "no se ejercitó en esta pasada";
+          else if (d.needed)
+            needed = sfmt("**sí**, en %lld de %lld pasadas", d.passes_needed, d.passes_total);
+          else needed = sfmt("**no**, en 0 de %lld pasadas", d.passes_total);
+          r += sfmt("| `%s` | %s | %s | %s | %s |\n", d.path.c_str(), d.summary.c_str(),
+                    d.baseline_exists ? "existe" : "**NO EXISTE**",
+                    d.used_by.empty() ? "—" : d.used_by.c_str(), needed.c_str());
+        }
+        r += "\n";
+        for (const DeclaredFile &d : decls) {
+          if (d.reason.empty()) continue;
+          r += sfmt("- `%s`: %s\n", d.path.c_str(), d.reason.c_str());
+        }
+        r += "\n";
+        /* La otra mitad del encargo: una declaración que deja de hacer falta es
+         * noticia, porque significa que algo cambió por debajo. Se juzga por
+         * declaración y sobre TODAS las pasadas de TODOS los verificadores que la
+         * usan; si uno solo la necesitó, la declaración se gana el sitio. */
+        std::string sobran;
+        for (const DeclaredFile &d : decls) {
+          if (d.used_by.empty() || d.needed) continue;
+          sobran += sfmt("- `%s`: **no hizo falta en ninguna de las %lld pasadas** de %s. O el\n"
+                         "  resultado se ha vuelto determinista, o la escena ya no llega al caso\n"
+                         "  que la necesitaba: en los dos casos la declaración hay que revisarla,\n"
+                         "  no heredarla.\n",
+                         d.path.c_str(), d.passes_total, d.used_by.c_str());
+        }
+        if (!sobran.empty()) {
+          r += "**Declaraciones que en esta pasada no hicieron falta:**\n\n" + sobran + "\n";
+        }
+        else {
+          r += "Todas las declaradas hicieron falta en esta pasada: ninguna sobra hoy.\n\n";
+        }
+      }
+    }
+
     /* Un `--fl-check-X` y su `--fl-selftest-X` miran lo mismo por dos caminos: el
      * comprobador compara elemento a elemento mientras ejecuta, el volcador
      * escribe el fichero y aquí se compara byte a byte. Que discrepen es una
@@ -1961,7 +2447,14 @@ int main(int argc, char **argv)
         std::string sibling = a.flag;
         sibling.replace(0, std::string("--fl-check-").size(), "--fl-selftest-");
         for (const Verifier &b : bat.v) {
-          if (b.flag != sibling || b.verdict == "NO EJECUTADO" || a.verdict == "NO EJECUTADO") continue;
+          if (b.flag != sibling) continue;
+          /* Solo se comparan dos VEREDICTOS. Un volcador declarado no emite
+           * veredicto, y un «sin línea base» tampoco: enfrentarlos daría una
+           * discrepancia inventada. */
+          auto is_verdict = [](const std::string &s) {
+            return s == "VERDE" || s == "ROJO" || s == "INESTABLE";
+          };
+          if (!is_verdict(a.verdict) || !is_verdict(b.verdict)) continue;
           if (a.verdict == b.verdict) continue;
           pairs += sfmt("- `%s` da **%s** y `%s` da **%s** sobre la misma línea base.\n",
                         a.label.c_str(), a.verdict.c_str(), b.label.c_str(), b.verdict.c_str());
@@ -2021,7 +2514,7 @@ int main(int argc, char **argv)
               mil(py).c_str(), mil(mm).c_str(), mil(glsl).c_str());
   if (!bat.v.empty())
     std::printf("  bateria: %lld verde, %lld rojo, %lld inestable, %lld sin linea base, "
-                "%lld no ejecutados\n",
-                bat.green, bat.red, bat.unstable, bat.nobase, bat.skipped);
+                "%lld volcadores, %lld no ejecutados\n",
+                bat.green, bat.red, bat.unstable, bat.nobase, bat.volcadores, bat.skipped);
   return 0;
 }
