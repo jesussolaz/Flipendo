@@ -68,6 +68,9 @@
 extern "C" void *objc_autoreleasePoolPush(void);
 extern "C" void objc_autoreleasePoolPop(void *pool);
 
+/* Simbolos del runtime de bloques (libSystem). Son C y se pueden declarar. */
+extern "C" void *_NSConcreteStackBlock[32];
+
 namespace ghost_objc {
 
 /* -------------------------------------------------------------------------
@@ -251,6 +254,75 @@ inline id autorelease(id obj)
 {
   return obj ? msg<id>(obj, GHOST_SEL(autorelease)) : nullptr;
 }
+
+/* -------------------------------------------------------------------------
+ * Bloques de Clang, fabricados desde C++ ESTANDAR.
+ *
+ * Hay APIs de Cocoa que solo aceptan un bloque (`^`) y no tienen variante con selector
+ * ni con puntero a funcion. En `intern/ghost` hay exactamente UNA:
+ * `NSColorSampler showSamplerWithSelectionHandler:`, el cuentagotas que toma un color
+ * de la pantalla.
+ *
+ * Un bloque no es magia del compilador: es una struct con una disposicion publicada y
+ * estable (el Block ABI de Clang). Se puede construir a mano, y asi no hace falta
+ * activar `-fblocks`, que es una extension y no C++ estandar.
+ *
+ * MEDIDO antes de usarlo: se construye, se invoca en la pila, **sobrevive a
+ * `_Block_copy` al monticulo** —que es lo que hace toda API que guarde el bloque— y
+ * Objective-C lo ejecuta correctamente cuando se le pasa a un metodo de verdad.
+ *
+ * LIMITACION A PROPOSITO: solo captura UN PUNTERO. Con una sola captura POD no hacen
+ * falta las ayudas de copia y destruccion (`BLOCK_HAS_COPY_DISPOSE`), que es donde
+ * estan las complicaciones de verdad. Si algun dia hiciera falta capturar un objeto de
+ * Objective-C (que hay que retener al copiar el bloque), esto NO vale tal cual: lo
+ * correcto es pasar un puntero a una struct, como se hace en `getPixelAtCursor`.
+ */
+class Block {
+ public:
+  /** Firma del cuerpo: el primer parametro es el propio bloque. */
+  using Invoke = void (*)(void *, ...);
+
+  Block(Invoke invoke, void *context)
+  {
+    literal_.isa = (void *)_NSConcreteStackBlock;
+    /* Sin BLOCK_HAS_COPY_DISPOSE: la unica captura es un puntero POD y la copia al
+     * monticulo puede ser una copia de memoria tal cual. */
+    literal_.flags = 0;
+    literal_.reserved = 0;
+    literal_.invoke = invoke;
+    literal_.descriptor = &descriptor_;
+    literal_.context = context;
+  }
+
+  /** El bloque a pasar a Cocoa. Vive mientras viva este objeto (o su copia). */
+  void *get()
+  {
+    return &literal_;
+  }
+
+  /** Dentro del cuerpo: recupera la captura a partir del bloque recibido. */
+  static void *context_of(void *block)
+  {
+    return static_cast<Literal *>(block)->context;
+  }
+
+ private:
+  struct Descriptor {
+    unsigned long reserved;
+    unsigned long size;
+  };
+  struct Literal {
+    void *isa;
+    int flags;
+    int reserved;
+    Invoke invoke;
+    Descriptor *descriptor;
+    void *context;
+  };
+
+  Literal literal_{};
+  Descriptor descriptor_{0, sizeof(Literal)};
+};
 
 /* -------------------------------------------------------------------------
  * Fabricar clases de Objective-C en tiempo de ejecucion.

@@ -155,7 +155,7 @@ if(WITH_HEADLESS)
   add_definitions(-DWITH_HEADLESS)
 elseif(APPLE AND NOT WITH_GHOST_X11)
   list(APPEND SRC
-    intern/GHOST_SystemCocoa.mm
+    intern/GHOST_SystemCocoa.cc
     intern/GHOST_WindowCocoa.cc
     intern/GHOST_WindowViewCocoa.cc
 
