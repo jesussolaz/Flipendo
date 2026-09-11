@@ -194,55 +194,6 @@ class GreasePencilBrushFalloff:
                 row.operator("brush.curve_preset", icon='NOCURVE', text="").shape = 'MAX'
 
 
-class GREASE_PENCIL_MT_move_to_layer(Menu):
-    bl_label = "Move to Layer"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator_context = 'INVOKE_REGION_WIN'
-        grease_pencil = context.active_object.data
-
-        layout.operator("grease_pencil.move_to_layer", text="New Layer", icon='ADD').add_new_layer = True
-
-        if not grease_pencil.layers:
-            return
-
-        layout.separator()
-
-        for i in range(len(grease_pencil.layers) - 1, -1, -1):
-            layer = grease_pencil.layers[i]
-            if layer == grease_pencil.layers.active:
-                icon = 'GREASEPENCIL'
-            else:
-                icon = 'NONE'
-            layout.operator("grease_pencil.move_to_layer", text=layer.name, icon=icon).target_layer_name = layer.name
-
-
-class GREASE_PENCIL_MT_layer_active(Menu):
-    bl_label = "Change Active Layer"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator_context = 'INVOKE_REGION_WIN'
-        obd = context.active_object.data
-
-        nlop = layout.operator("grease_pencil.layer_add", text="New Layer", icon='ADD')
-        nlop.new_layer_name = "Layer"
-
-        if not obd.layers:
-            return
-
-        layout.separator()
-
-        for i in range(len(obd.layers) - 1, -1, -1):
-            layer = obd.layers[i]
-            if layer == obd.layers.active:
-                icon = 'GREASEPENCIL'
-            else:
-                icon = 'NONE'
-            layout.operator("grease_pencil.layer_active", text=layer.name, icon=icon).layer = i
-
-
 class GPENCIL_UL_annotation_layer(UIList):
     def draw_item(self, _context, layout, _data, item, icon, _active_data, _active_propname, _index):
         # assert(isinstance(item, bpy.types.GPencilLayer)
@@ -747,31 +698,6 @@ class GREASE_PENCIL_MT_snap(Menu):
         layout.operator("view3d.snap_cursor_to_grid", text="Cursor to Grid")
 
 
-class GREASE_PENCIL_MT_snap_pie(Menu):
-    bl_label = "Snap"
-
-    def draw(self, _context):
-        layout = self.layout
-        pie = layout.menu_pie()
-
-        pie.operator("view3d.snap_cursor_to_grid", text="Cursor to Grid", icon='CURSOR')
-        pie.operator("grease_pencil.snap_to_grid", text="Selection to Grid", icon='RESTRICT_SELECT_OFF')
-        pie.operator("grease_pencil.snap_cursor_to_selected", text="Cursor to Selected", icon='CURSOR')
-        pie.operator(
-            "grease_pencil.snap_to_cursor",
-            text="Selection to Cursor",
-            icon='RESTRICT_SELECT_OFF',
-        ).use_offset = False
-        pie.operator(
-            "grease_pencil.snap_to_cursor",
-            text="Selection to Cursor (Keep Offset)",
-            icon='RESTRICT_SELECT_OFF',
-        ).use_offset = True
-        pie.separator()
-        pie.operator("view3d.snap_cursor_to_center", text="Cursor to World Origin", icon='CURSOR')
-        pie.separator()
-
-
 class GREASE_PENCIL_MT_stroke_simplify(Menu):
     bl_label = "Simplify Stroke"
 
@@ -785,11 +711,8 @@ classes = (
     GPENCIL_UL_layer,
     GPENCIL_UL_masks,
 
-    GREASE_PENCIL_MT_move_to_layer,
-    GREASE_PENCIL_MT_layer_active,
 
     GREASE_PENCIL_MT_snap,
-    GREASE_PENCIL_MT_snap_pie,
 
 
     GREASE_PENCIL_MT_stroke_simplify,

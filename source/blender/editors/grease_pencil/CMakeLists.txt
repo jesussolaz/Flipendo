@@ -5,6 +5,7 @@
 set(INC
   ../include
   ../../makesrna
+  ../interface
   ../../../../extern/curve_fit_nd
   ../sculpt_paint
   ../../modifiers/intern/lineart
@@ -16,6 +17,7 @@ set(INC_SYS
 )
 
 set(SRC
+  intern/fl_grease_pencil_menus.cc
   intern/grease_pencil_add.cc
   intern/grease_pencil_bake_animation.cc
   intern/grease_pencil_edit.cc
@@ -37,6 +39,8 @@ set(SRC
   intern/grease_pencil_utils.cc
   intern/grease_pencil_vertex_paint.cc
   intern/grease_pencil_weight_paint.cc
+
+  intern/FL_grease_pencil_menus.hh
 )
 
 set(LIB

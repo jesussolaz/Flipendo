@@ -17,6 +17,7 @@
 #include "DNA_scene_types.h"
 
 #include "ED_grease_pencil.hh"
+#include "FL_grease_pencil_menus.hh"
 #include "ED_screen.hh"
 
 #include "WM_api.hh"
@@ -290,6 +291,9 @@ static void keymap_grease_pencil_fill_tool(wmKeyConfig *keyconf)
 
 void ED_operatortypes_grease_pencil()
 {
+  /* Menus nativos que el keymap abre por nombre (fl_grease_pencil_menus.cc). */
+  blender::ed::greasepencil::menus_register();
+
   ED_operatortypes_grease_pencil_draw();
   ED_operatortypes_grease_pencil_frames();
   ED_operatortypes_grease_pencil_layers();
