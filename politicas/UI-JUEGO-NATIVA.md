@@ -212,13 +212,17 @@ Trampa ya conocida y pagada en VideoTexture, que aquí también aplica: **el
 
 ## 8. Lo que este documento NO dice
 
-- El **paso 1 ya está hecho** (`FL_UiCanvas` y el gancho nativo de dibujado,
-  commit «Interfaz de juego: el lienzo 2D nativo, primera pieza del sustituto de
-  bgui»). Verificado con captura de pantalla en los dos binarios: en la zona que
-  pinta el lienzo, 749 píxeles distintos de 63.000 (1,19 %, delta medio 1,22), y
-  eso es el 3D que se ve por debajo del panel translúcido; en el resto de la
-  pantalla, donde no pinta nadie, la diferencia es tres veces mayor (3,48 %).
-  Del paso 2 en adelante no hay todavía ni una línea.
+- Los **pasos 1 y 2 ya están hechos**:
+  - **Paso 1**, `FL_UiCanvas` y el gancho nativo de dibujado. Verificado con
+    captura de pantalla en los dos binarios: 749 píxeles distintos de 63.000
+    (1,19 %) en la zona del lienzo, contra 3,48 % en el resto de la pantalla.
+  - **Paso 2**, `FL_UiWidget` + `FL_UiFrame` + `FL_UiLabel` + `FL_UiSystem`, con
+    las banderas `FL_UI_*` con los mismos valores que las `BGUI_*`, los seis
+    eventos y el tick desde `FL_ComponentManager`. Verificado con el mismo método
+    y un árbol que mezcla a propósito colocación en píxeles y normalizada:
+    **316 píxeles distintos de 63.000 (0,50 %), delta máximo de UN nivel**, contra
+    10.319 (2,47 %, máximo 89) en el resto de la pantalla.
+  - Del paso 3 en adelante no hay todavía ni una línea.
 - Las cifras de tamaño son estimaciones, no medidas.
 - `doc/python_api/rst/bgui/` (la documentación de la API) tendrá que reescribirse
   o retirarse con la librería; no se ha contado en las 2.391 líneas.
