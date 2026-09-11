@@ -218,67 +218,109 @@ exigir al C++ que la reproduzca byte a byte. Los 3.673/3.673 del keymap y los
 
 ---
 
-## 5. El bundle instalado no se limpia: 406 ficheros `.py` fantasma
+## 5. El bundle instalado no se limpiaba — **arreglado el 2026-09-11**
 
-> Medido el 2026-09-11 a las 03:50. **Esto afecta a la verificación de todos los
-> carriles, no solo a los tests, y por eso está aquí y no en una nota al pie.**
+> Medido a las 03:50, arreglado a las 04:15. **Afectaba a la verificación de
+> todos los carriles**, y por eso está aquí y no en una nota al pie.
 
-`cmake --install` **copia, pero no borra**. Cuando un carril migra un `.py` a C++
-y lo retira del árbol, el fichero **sigue en `dev/build/bin/Blender.app`** hasta
-que alguien reconstruye el bundle desde cero. Medido:
+### El defecto
 
-```
-406 ficheros .py en el bundle instalado que YA NO existen en scripts/
-```
+`cmake --install` **copia, pero no borra**. Cuando un carril migraba un `.py` a
+C++ y lo retiraba del árbol, el fichero **seguía dentro del bundle**, en
+`sys.path`, y se seguía importando.
 
-Y no son inertes: **siguen en `sys.path` y siguen importándose**. Comprobado
-lanzando el binario instalado y pidiendo importar ocho módulos retirados esta
-misma noche:
+| Medida (03:50) | Antes |
+|---|---:|
+| `.py` huérfanos en `Blender.app` | **406** |
+| `.py` huérfanos en `Blenderplayer.app` | **578** |
+| Módulos retirados esa noche todavía importables | **8 de 8** |
 
-```
-IMPORTABLE-AUNQUE-BORRADO: rna_manual_reference
-IMPORTABLE-AUNQUE-BORRADO: graphviz_export
-IMPORTABLE-AUNQUE-BORRADO: bl_app_override
-IMPORTABLE-AUNQUE-BORRADO: bl_text_utils.external_editor
-IMPORTABLE-AUNQUE-BORRADO: bl_keymap_utils.keymap_from_toolbar
-IMPORTABLE-AUNQUE-BORRADO: bpy.utils.toolsystem
-IMPORTABLE-AUNQUE-BORRADO: bpy_extras.mesh_utils
-IMPORTABLE-AUNQUE-BORRADO: bpy_extras.id_map_utils
-```
+Los ocho, comprobados importando desde el binario: `rna_manual_reference`,
+`graphviz_export`, `bl_app_override`, `bl_text_utils.external_editor`,
+`bl_keymap_utils.keymap_from_toolbar`, `bpy.utils.toolsystem`,
+`bpy_extras.mesh_utils`, `bpy_extras.id_map_utils`.
 
-**El riesgo es el peor que hay en una migración:** un carril retira el Python,
-compila, arranca el binario, ve que todo sigue funcionando y da la migración por
-buena — cuando lo que está funcionando puede ser el Python viejo que quedó en el
-bundle. La evidencia diría «idéntico» porque literalmente es el mismo código.
+**El riesgo era el peor que hay en una migración:** retirar el Python, compilar,
+arrancar, ver que todo sigue funcionando y dar la migración por buena — cuando lo
+que funciona es el Python viejo que quedó en el bundle. La evidencia diría
+«idéntico» porque literalmente es el mismo código.
 
-Los 12 huérfanos de `startup/` **no** se cargan (comprobado: ni
-`bl_operators/__init__.py` ni `bl_ui/__init__.py` los nombran ya), así que ahí no
-hay daño. El daño está en `modules/`, que se importa por nombre, y en
-`addons_core/`, donde quedan 18 directorios fantasma (`rigify`, `io_scene_fbx`,
-`io_scene_gltf2`, `io_curve_svg`, `io_anim_bvh`, `io_mesh_uv_layout`,
-`pose_library`, `node_wrangler`, `ui_translate`, `viewport_vr_preview`,
-`hydra_storm`, `bge_mixer`, `bge_speedy_pivots` y los cuatro
-`game_engine_*.py` que el carril del motor migró esta noche).
+### La causa, y una sorpresa
 
-### Cómo se limpia
+El Player **ya tenía** un paso de limpieza, desde upstream, con el motivo
+correcto escrito al lado:
 
-```
-rm -rf /Users/jesussolaz/Flipendo/dev/build/bin/Blender.app/Contents/Resources/4.5/scripts
-~/Flipendo/dev/noche/nb install
+```cmake
+# important to make a clean  install each time, else old scripts get loaded.
+install(CODE "file(REMOVE_RECURSE ${PLAYER_TARGETDIR_VER})")
 ```
 
-**No se hizo esta noche, a propósito.** Los arneses de línea base del sistema de
-herramientas (`tests/flipendo/toolsystem/*_gui.py`) **importan
-`bl_ui.space_toolsystem_common`, que ya es huérfano**: borrarlo del bundle a las
-04:00, con carriles midiendo, les quitaría la capacidad de recapturar su línea
-base de Python. Se limpia cuando cierre la noche, y a partir de ahí se limpia
-**antes de cada verificación que pretenda demostrar que un Python ya no hace
-falta**.
+**Nunca borró nada.** `${PLAYER_TARGETDIR_VER}` es una ruta **relativa**
+(`Blenderplayer.app/Contents/Resources/4.5`) y `file(REMOVE_RECURSE)` la resolvía
+contra el directorio de trabajo del script de instalación, es decir contra
+`dev/build/Blenderplayer.app/…`, que no existe. Upstream diagnosticó el problema
+y escribió una cura que no curaba. Blender.app no tenía ni eso.
+
+### El arreglo
+
+Opción `WITH_INSTALL_PRUNE_SCRIPTS` (por defecto **ON**), declarada en
+`CMakeLists.txt`, con un paso de poda en los dos bundles:
+
+- `source/creator/CMakeLists.txt`, **fuera de `if(WITH_PYTHON)`** y antes de
+  todas las reglas que escriben en `scripts/`. Va fuera del `if` a propósito: los
+  presets y las plantillas de aplicación se instalan en `scripts/` **también sin
+  intérprete**, así que la poda tiene que valer en `dev/build` y en
+  `dev/build-nopy`.
+- `source/blenderplayer/CMakeLists.txt`, sustituyendo la limpieza rota.
+
+**Se poda solo `scripts/`.** Ni `datafiles/`, ni `python/`, ni `extensions/`:
+`extensions/system/` lo pueden poblar «users or administrators» (lo dice el
+comentario de su propia regla de instalación), y borrarlo sería tirar algo que no
+viene del árbol. Comprobado además que **MPFB2 no está en el bundle** (0
+coincidencias): vive en `~/Library/Application Support/UPBGE/4.5/extensions/
+user_default/mpfb`, que la poda no toca.
+
+### Verificado
+
+| | Antes | Después |
+|---|---:|---:|
+| `.py` huérfanos en `dev/build/Blender.app` | 406 | **0** (de 292) |
+| `.py` huérfanos en `dev/build/Blenderplayer.app` | 578 | **0** (de 298) |
+| `.py` huérfanos en `dev/build-nopy/Blender.app` | 0 | **0** (de 0) |
+| Módulos retirados importables desde el binario | 8/8 | **0/8** |
+
+La poda imprime la ruta **absoluta** que limpia, y se la vio disparar en los tres
+destinos y en los logs de otros tres carriles:
+
+```
+-- Flipendo: podando scripts instalados en …/dev/build/bin/Blender.app/…/4.5/scripts
+-- Flipendo: podando scripts instalados en …/dev/build/bin/Blenderplayer.app/…/4.5/scripts
+-- Flipendo: podando scripts instalados en …/dev/build-nopy/bin/Blender.app/…/4.5/scripts
+```
+
+`nb install` rc=0. Arranque limpio tras la poda, tres veces en `--background` y
+una en modo gráfico: 248 keymaps, panel de Extensiones relleno, 32 operadores
+`extensions.*`, cero tracebacks.
+
+### Efecto colateral que hay que conocer
+
+La poda **se llevó `bl_ui/space_toolsystem_common.py` del bundle**, que era
+huérfano y que importan los **siete** arneses `tests/flipendo/toolsystem/*_gui.py`.
+Se recupera del histórico en un comando:
+
+```
+git show 231333893fc^:scripts/startup/bl_ui/space_toolsystem_common.py \
+  > <bundle>/4.5/scripts/startup/bl_ui/space_toolsystem_common.py
+```
+
+Y si hiciera falta desactivarla del todo:
+`cmake -S dev/upbge -B dev/build -DWITH_INSTALL_PRUNE_SCRIPTS=OFF`.
 
 ### La regla que sale de aquí
 
 Una migración solo está verificada si se ha comprobado **con el bundle limpio**.
-«Compila y arranca» no prueba nada mientras el `.py` retirado siga ahí.
+«Compila y arranca» no probaba nada mientras el `.py` retirado siguiera ahí.
+Ahora lo prueba.
 
 ---
 
@@ -323,8 +365,9 @@ binario único (`BLI`, `blenkernel`, `bmesh`, `depsgraph`, `gpu`, `nodes`,
 | **Nunca se ejecutan** | **255** (52 suites) |
 | Código de salida | **139 = SIGSEGV** |
 
-**El corredor se cae a la mitad.** Después de
-`LibRemapTest.never_null_usage_storage_requested_on_remap` imprime:
+**El corredor se cae a la mitad**, y no por un solo motivo: son **al menos cuatro
+bloqueadores encadenados** (§7). El primero, después de
+`LibRemapTest.never_null_usage_storage_requested_on_remap`, imprime:
 
 ```
 Memoryblock source/blender/blenlib/BLI_vector.hh:1126: double free
@@ -359,10 +402,8 @@ ejecute `blender_test` a mano tiene que pasarlo**; `ctest` lo pasa solo.
 carril. Lo valioso es la foto y que quede encendida. Por orden:
 
 1. **El SIGSEGV del corredor** es lo primero: mientras esté, 255 casos (el 36 %)
-   son invisibles y la red vale un tercio menos de lo que parece. Empezar por
-   `BLI_vector.hh:1126` con `--gtest_filter` para aislar el caso que lo provoca
-   (el corredor muere en el desmontaje de `LibRemapTest`, así que el culpable
-   puede ser ese o el `SetUp` del siguiente).
+   son invisibles y la red vale un tercio menos de lo que parece. **Ya está
+   localizado**, ver §7.
 2. `AssetCatalogTest.read_write_unicode_filepath`, el único fallo real.
 3. Ejecutar las 52 suites que no se alcanzan, con `--gtest_filter`, para saber
    cuántas de esas 255 pasan de verdad. **Hasta entonces, la cifra honesta de
@@ -374,3 +415,111 @@ La §2 decía «encender `WITH_GTESTS` es la mejor relación valor/hora». Sigue
 siendo cierto —448 comprobaciones que antes no corría nadie—, pero con el
 matiz que da la medición: **la red C++ que creíamos tener entera está rota por
 la mitad**, y eso refuerza, no debilita, la decisión de no borrar `tests/python`.
+
+---
+
+## 7. El SIGSEGV del corredor, localizado
+
+Lo pidió el jefe de proyecto: dejarlo escrito con precisión, porque es trabajo de
+la próxima noche. Esto es lo que se midió.
+
+### Dónde está
+
+**`source/blender/blenkernel/intern/lib_remap_test.cc:70-93`**, la clase
+`LibRemapTest` y sus `SetUpTestSuite()` / `TearDownTestSuite()`.
+
+### Cómo se acotó
+
+Ejecutando la suite sola:
+
+```
+./blender_test --test-assets-dir … --gtest_filter='LibRemapTest.*'
+  [  PASSED  ] 11 tests.
+  Error: Not freed memory blocks: 4294967293, total unfreed memory 0.000000 MB
+  EXIT=134   (SIGABRT)
+```
+
+**Los 11 casos pasan** y aun así el proceso aborta. Y después, caso por caso, los
+once por separado:
+
+```
+LibRemapTest.embedded_ids_can_not_be_remapped              EXIT=134  -> 4294967293
+LibRemapTest.embedded_ids_can_not_be_deleted               EXIT=134  -> 4294967293
+LibRemapTest.delete_when_remap_to_self_not_allowed         EXIT=134  -> 4294967293
+LibRemapTest.users_are_decreased_when_not_skipping_never_null  EXIT=134  -> 4294967293
+LibRemapTest.users_are_same_when_skipping_never_null       EXIT=134  -> 4294967293
+LibRemapTest.do_not_delete_when_cannot_unset               EXIT=134  -> 4294967293
+LibRemapTest.force_never_null_usage                        EXIT=134  -> 4294967293
+LibRemapTest.never_null_usage_flag_not_requested_on_delete EXIT=134  -> 4294967293
+LibRemapTest.never_null_usage_storage_requested_on_delete  EXIT=134  -> 4294967293
+LibRemapTest.never_null_usage_flag_not_requested_on_remap  EXIT=134  -> 4294967293
+LibRemapTest.never_null_usage_storage_requested_on_remap   EXIT=134  -> 4294967293
+```
+
+**Los once dan exactamente lo mismo.** Por tanto **no es ningún caso: es el
+fixture.**
+
+### Qué significa `4294967293`
+
+Es `2^32 − 3`, es decir **−3 leído como sin signo**: el contador de bloques de
+`guardedalloc` acabó **negativo**. Hubo **tres liberaciones más que reservas**.
+Eso es un doble free, y encaja con el mensaje que da la ejecución completa:
+`Memoryblock source/blender/blenlib/BLI_vector.hh:1126: double free` (esa línea
+es el `allocator_.allocate(...)` del crecimiento de `blender::Vector`, es decir
+el bloque que se libera dos veces es un búfer de `Vector`).
+
+### La hipótesis que hay que comprobar primero
+
+`SetUpTestSuite()` llama a `CLG_init`, `BKE_idtype_init`, `RNA_init`,
+`node_system_init`, `BKE_appdir_init`, `IMB_init`, `BKE_materials_init`; y
+`TearDownTestSuite()` los cierra todos, más `GHOST_DisposeSystemPaths()`.
+
+Son **inicializaciones globales de proceso**. En el corredor único
+(`WITH_TESTS_SINGLE_BINARY=ON`, que es como está configurado) ese estado lo
+comparten las 117 suites: `LibRemapTest` desmonta subsistemas que otras suites ya
+habían montado —o que se vuelven a montar después—, y por eso el contador queda
+en −3 y el proceso muere **en cuanto termina esa suite**, arrastrando a las 52
+suites que venían detrás (la siguiente en el orden de registro es
+`BMainMergeTest`).
+
+Dicho de otro modo: **el fallo probablemente no está en el código que se prueba,
+sino en que una suite hace init/exit global dentro de un binario compartido.**
+
+### No es uno: son al menos CUATRO bloqueadores encadenados
+
+Esto es lo que más importa saber antes de empezar. Excluyendo el primero aparece
+el segundo, y así. Medido:
+
+| Filtro | Casos ejecutados | Pasan | Salida | Dónde se para |
+|---|---:|---:|---:|---|
+| *(ninguno)* | 449 | 448 | 139 | tras `LibRemapTest` (aborta al desmontar) |
+| `-LibRemapTest.*` | **494** | 493 | 139 | **`BlendfileLoadingTest.CanaryTest`** |
+| `…:-BlendfileLoadingTest.*` | **573** | **572** | 139 | **`NodeTest.tree_iterator_1mat_3scenes`** |
+| `…:-NodeTest.*` | 570 | 569 | 139 | **`AbstractHierarchyIteratorTest.ExportSubsetTest`** |
+
+Los tres últimos son distintos del primero: **el caso empieza (`[ RUN ]`) y nunca
+termina** — no imprime ni `[ OK ]` ni `[ FAILED ]`. Eso es una caída dentro de la
+prueba, no un desmontaje sucio.
+
+**La mejor cifra alcanzada en una sola ejecución es 573 ejecutados / 572 pasando**
+(excluyendo `LibRemapTest` y `BlendfileLoadingTest`). El único fallo real sigue
+siendo `AssetCatalogTest.read_write_unicode_filepath`, en todas las
+combinaciones.
+
+Y un dato más: `--gtest_repeat=2` sobre `LibRemapTest` no da −6, da **EXIT=138**
+(otra señal distinta). Es decir, repetir el init/exit global empeora el estado en
+vez de acumularlo linealmente, lo que refuerza que el problema es estado global
+compartido, no una fuga contable.
+
+### Por dónde empezar
+
+1. `LibRemapTest`: mover las inicializaciones globales de `SetUpTestSuite` al
+   entorno global del corredor (`tests/gtests/runner/blender_test.cc`), o aislar
+   la suite en su propio ejecutable. `WITH_TESTS_SINGLE_BINARY=OFF` lo hace para
+   todas: más caro de enlazar, pero aísla los cuatro bloqueadores de golpe y
+   probablemente sea la forma más rápida de ver la foto completa.
+2. Con eso, volver a medir: la cifra real de cobertura C++ está en algún punto
+   entre **572** y **703**, y hoy nadie sabe dónde.
+3. Mientras tanto, para trabajar:
+   `./blender_test --test-assets-dir … --gtest_filter='-LibRemapTest.*:BlendfileLoadingTest.*'`
+   da 573 casos útiles.
