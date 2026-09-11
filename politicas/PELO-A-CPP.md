@@ -145,6 +145,28 @@ dibuje nada).
 (`--fl-dump-hair`), byte a byte. El generador de `primitive_random_sphere` se
 construye con la semilla por defecto, así que los 500 mechones salen iguales siempre.
 
+### 3.4 El arnés, probado al revés
+
+`politicas/ARNES-A-PRUEBA.md` es tajante: **un comprobador que no puede fallar no es un
+comprobador**. Las tres banderas nuevas se han ejecutado en las condiciones malas y
+salen distintas de 0; y en la buena, verde.
+
+| Condición | Bandera | Salida |
+|---|---|---:|
+| Sin argumento | `--fl-compare-png` | **1** |
+| Con una sola captura de las dos | `--fl-compare-png` | **1** |
+| Con una captura que no existe | `--fl-compare-png` | **1** |
+| Con dos capturas de **tamaños distintos** (800×600 contra 400×300) | `--fl-compare-png` | **1** |
+| Con las dos capturas de verdad | `--fl-compare-png` | 0 |
+| Sin argumento | `--fl-dump-hair` | **1** |
+| Sobre una escena **sin ningún `Curves`** (el cubo de fábrica) | `--fl-dump-hair` | **1** |
+| Sobre la escena de pelo | `--fl-dump-hair` | 0 |
+| Sin argumento | `--fl-make-hair-scene` | **1** |
+
+La cuarta fila es la que más importa y es propia de este carril: comparar dos capturas
+de tamaños distintos es la forma silenciosa de «no pudo comparar» que más fácil sería
+dejar pasar recortando a la menor. No se recorta: se falla y se dice.
+
 ---
 
 ## 4. Trampas pagadas en la fase 1
