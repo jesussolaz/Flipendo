@@ -69,6 +69,7 @@
 #include "io_utils.hh"
 
 #include "FL_node_menus.hh"
+#include "FL_node_ui.hh"
 #include "node_intern.hh" /* own include */
 
 using blender::float2;
@@ -1898,6 +1899,9 @@ void ED_spacetype_node()
   art->listener = node_region_listener;
   art->init = node_header_region_init;
   art->draw = node_header_region_draw;
+  /* La cabecera y sus paneles emergentes: antes, `space_node.py`. */
+  node_ui_header_register(art);
+  node_ui_header_panels_register(art);
 
   BLI_addhead(&st->regiontypes, art);
 
@@ -1910,6 +1914,8 @@ void ED_spacetype_node()
   art->message_subscribe = ED_area_do_mgs_subscribe_for_tool_ui;
   art->init = node_buttons_region_init;
   art->draw = node_buttons_region_draw;
+  /* Los paneles de la barra lateral: antes, `space_node.py`. */
+  node_ui_panels_register(art);
   BLI_addhead(&st->regiontypes, art);
 
   /* regions: toolbar */
@@ -1932,6 +1938,7 @@ void ED_spacetype_node()
   WM_menutype_add(MEM_dupallocN<MenuType>(__func__, add_root_catalogs_menu_type()));
 
   blender::ed::space_node::node_menus_register();
+  blender::ed::space_node::node_ui_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

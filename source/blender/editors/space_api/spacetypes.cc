@@ -74,6 +74,9 @@ void ED_spacetypes_init()
   ED_spacetype_image();
   ED_spacetype_node();
   ED_spacetype_buttons();
+  /* `NODE_PT_node_color_presets` vive en la cabecera de Propiedades (heredaba de
+   * `PresetPanel`), asi que se registra cuando esa region ya existe. */
+  space_node::node_preset_panels_register();
   ED_spacetype_info();
   ED_spacetype_file();
   ED_spacetype_action();

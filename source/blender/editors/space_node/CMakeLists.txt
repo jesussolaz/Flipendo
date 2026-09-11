@@ -23,6 +23,7 @@ set(INC_SYS
 set(SRC
   add_menu_assets.cc
   fl_node_menus.cc
+  fl_node_ui.cc
   clipboard.cc
   drawnode.cc
   link_drag_search.cc
@@ -43,6 +44,7 @@ set(SRC
   space_node.cc
 
   FL_node_menus.hh
+  FL_node_ui.hh
   node_intern.hh
 )
 

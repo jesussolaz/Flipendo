@@ -136,4 +136,13 @@ void ui_template_node_asset_menu_items(uiLayout &layout,
                                        const bContext &C,
                                        StringRef catalog_path);
 
+/**
+ * Da de alta `NODE_PT_node_color_presets`. Como en `space_node.py` —donde hereda de
+ * `PresetPanel`— ese panel vive en la CABECERA DEL EDITOR DE PROPIEDADES, no en la
+ * del editor de nodos, asi que hay que registrarlo despues de
+ * `ED_spacetype_buttons()`: cuando corre `ED_spacetype_node()` esa region todavia
+ * no existe. Lo llama `ED_spacetypes_init()`.
+ */
+void node_preset_panels_register();
+
 }  // namespace blender::ed::space_node
