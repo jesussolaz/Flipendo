@@ -325,8 +325,8 @@ añadir sus pasos a esta lista.
 ## 12. AVISO: `scripts/modules/bgui` NO SE TOCA
 
 Hasta que **los nueve widgets** estén escritos y la comparación de píxeles salga,
-`scripts/modules/bgui` se queda donde está. Hay tres widgets de nueve
-(`Frame`, `Label`, `FrameButton`), así que **la capacidad todavía NO está
+`scripts/modules/bgui` se queda donde está. Hay **cuatro widgets de nueve**
+(`Frame`, `Label`, `FrameButton`, `Image`), así que **la capacidad todavía NO está
 cubierta**. Que nadie lo borre creyendo que ya lo está: es la regla de «migrar, no
 borrar» de la doctrina, y aquí el original es la única referencia que queda para
 comparar.
