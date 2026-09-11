@@ -23,11 +23,15 @@ set(INC_SYS
 
 set(SRC
   fl_game_camera_cull.cc
+  fl_hair_scene.cc
+  fl_image_compare.cc
   fl_game_character.cc
   fl_game_publishing.cc
   fl_game_runtime.cc
 
   ../include/FL_game_runtime.hh
+  ../include/FL_hair_scene.hh
+  ../include/FL_image_compare.hh
 )
 
 set(LIB
@@ -36,6 +40,7 @@ set(LIB
   PRIVATE bf::blenloader
   PRIVATE bf::blentranslation
   PRIVATE bf::depsgraph
+  PRIVATE bf::imbuf
   PRIVATE bf::dna
   PRIVATE bf::intern::guardedalloc
   PRIVATE bf::windowmanager

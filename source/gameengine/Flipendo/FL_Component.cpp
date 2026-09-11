@@ -6,6 +6,7 @@
 #include "KX_Scene.hpp"
 #include "EXP_ListValue.hpp"
 #include "CM_Message.hpp"
+#include "FL_GameDumpProbe.hpp"
 #include "FL_RenderToTexture.hpp"
 #include "FL_UiCanvas.hpp"
 #include "FL_UiWidget.hpp"
@@ -90,6 +91,7 @@ void FL_ComponentManager::Tick(KX_Scene *scene, float dt)
   /* Sondas de verificacion: no hacen nada si no estan sus variables de entorno.
    * Van en Tick y no en AttachScene porque cuentan frames. */
   FL_RttProbeTick(scene);
+  FL_GameDumpProbeTick(scene);
   FL_UiProbeTick();
 
   /* Interfaz nativa: tickea los sistemas enganchados (raton y foco). */

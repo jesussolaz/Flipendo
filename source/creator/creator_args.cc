@@ -66,6 +66,8 @@
 
 #  include "FL_external_editor.hh"
 #  include "FL_game_runtime.hh"
+#  include "FL_hair_scene.hh"
+#  include "FL_image_compare.hh"
 #  include "FL_keymap_dump.hpp"
 #  include "keymap/FL_keymap_menu_check.hpp"
 #  include "keymap/FL_keyconfig_io.hpp"
@@ -2972,6 +2974,63 @@ static int arg_handle_fl_check_keyconfig_io(int argc, const char **argv, void *d
   return flipendo::harness::arg_missing(C, argv[0], "el informe de salida");
 }
 
+static const char arg_handle_fl_make_hair_scene_doc[] =
+    "<filepath>\n"
+    "\tConstruye la ESCENA DE PELO del arnes y la guarda en <filepath>: una cabeza de\n"
+    "\tmalla y una melena de tipo Curves (500 mechones de 8 puntos, deterministas), con\n"
+    "\tla vista 3D en modo camara para que el Player dibuje por la camara. Es la escena\n"
+    "\tcon la que se comprueba que el pelo llega al juego. Vale en --background.";
+static int arg_handle_fl_make_hair_scene(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::hair_scene::make_scene(C, argv[1]);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "la ruta del .blend de salida");
+}
+
+static const char arg_handle_fl_dump_hair_doc[] =
+    "<salida>\n"
+    "\tVuelca el estado observable del pelo de la escena cargada: cada objeto Curves con\n"
+    "\tsu numero de curvas y de puntos, los del objeto EVALUADO por el depsgraph (que es\n"
+    "\tlo que llega al dibujado), su caja envolvente y si esta oculto. Sale con fallo si\n"
+    "\tla escena no tiene ningun Curves: sin nada que comparar no hay comprobacion.\n"
+    "\tVale en --background.";
+static int arg_handle_fl_dump_hair(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::hair_scene::dump_hair(C, argv[1]);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
+}
+
+static const char arg_handle_fl_compare_png_doc[] =
+    "<a.png> <b.png> [umbral]\n"
+    "\tCompara dos capturas e informa: pixeles distintos, porcentaje, delta medio y\n"
+    "\tmaximo, y la CAJA donde estan las diferencias. El umbral por canal es 0 por\n"
+    "\tdefecto (comparacion exacta).\n"
+    "\tOJO: dos ejecuciones del mismo binario sobre la misma escena NO dan el mismo\n"
+    "\tPNG (EEVEE acumula muestras). Una diferencia solo significa algo por encima de\n"
+    "\tese suelo de ruido, asi que hay que medirlo antes. Vale en --background.";
+static int arg_handle_fl_compare_png(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 2) {
+    const int threshold = (argc > 3) ? atoi(argv[3]) : 0;
+    const bool ok = flipendo::image_compare::compare(argv[1], argv[2], threshold);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (argc > 3) ? 3 : 2;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "las dos capturas a comparar");
+}
+
 static const char arg_handle_fl_ui_scene_doc[] =
     "<spec>\n"
     "\tMonta en la escena el dato que una pestana de datos necesita para que su poll\n"
@@ -4178,6 +4237,9 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
       ba, nullptr, "--fl-check-keyconfig-io", CB(arg_handle_fl_check_keyconfig_io), C);
   BLI_args_add(ba, nullptr, "--fl-ui-scene", CB(arg_handle_fl_ui_scene), C);
   BLI_args_add(ba, nullptr, "--fl-make-ui-scene", CB(arg_handle_fl_make_ui_scene), C);
+  BLI_args_add(ba, nullptr, "--fl-make-hair-scene", CB(arg_handle_fl_make_hair_scene), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-hair", CB(arg_handle_fl_dump_hair), C);
+  BLI_args_add(ba, nullptr, "--fl-compare-png", CB(arg_handle_fl_compare_png), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);
