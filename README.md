@@ -24,7 +24,7 @@
 ![El molino de La Mancha, la pieza que fija el listón de calidad del proyecto](docs/img/anima/molino-CamHeroe.jpg)
 
 
-Blender eliminó el soporte de macOS Intel en la versión 5.0, y con él murió la línea de UPBGE para estos equipos (el último binario oficial es UPBGE 0.44, con el backend Metal a medias). Flipendo continúa esa línea por su cuenta: base de Blender 4.5 + game engine, compilado y probado en hardware real (MacBook Pro 2019, Radeon Pro 5300M).
+Blender eliminó el soporte de macOS Intel en la versión 5.0, y con él murió la línea de UPBGE para estos equipos: el último binario oficial es UPBGE 0.44, y su backend Metal viene a medias — **medido en este proyecto**: los filtros 2D ni compilan y `bge.texture` responde `Texture is not available`. Flipendo continúa esa línea por su cuenta: base de Blender 4.5 + game engine, compilado y probado en hardware real (MacBook Pro 2019, Radeon Pro 5300M).
 
 Lo que empezó como mantener viva una línea abandonada se ha convertido en algo más concreto: **quitarle el intérprete de Python al motor** y dejar una base de C++ sobre la que se pueda construir de verdad.
 
@@ -131,20 +131,26 @@ Blender y UPBGE arrastran décadas de capas superpuestas. Organizar lo heredado 
 
 Contexto honesto: Unreal y Unity son ecosistemas industriales con miles de personas detrás; Flipendo lo mantiene una persona, con un nicho concreto — **que un Mac siga siendo ciudadano de primera y que el flujo de trabajo viva dentro de Blender**. Esta tabla existe para elegir herramienta con datos, no para pretender otra cosa.
 
-| | **Flipendo** | **UPBGE 0.50+** | **Unreal Engine 5** | **Unity 6** |
+> **Hasta dónde llega esta tabla.** La columna de Flipendo está medida en este árbol
+> y se puede comprobar. Las de **UPBGE 0.50, Unreal y Unity no**: son documentación
+> pública y precios, leídos antes del **2026-09-11**, que cambian sin avisar y que
+> aquí nadie ha podido verificar. Están marcadas con *(sin verificar)* y sirven para
+> orientarse, no como dato. Antes de decidir con ellas, compruébalas en la fuente.
+
+| | **Flipendo** | **UPBGE 0.50+** *(sin verificar)* | **Unreal Engine 5** *(sin verificar)* | **Unity 6** *(sin verificar)* |
 |---|---|---|---|---|
-| **macOS Intel (x86_64)** | ✅ objetivo principal, build nativo Metal | ❌ eliminado (el último fue 0.44, con Metal roto) | ⚠️ funciona, pero sin Nanite/Lumen y con el editor cada vez más pesado; el foco es Apple Silicon | ✅ aún soportado |
+| **macOS Intel (x86_64)** | ✅ objetivo principal, build nativo Metal | ❌ eliminado: 0.50 se basa en Blender 5.0, que ya no publica `macos-x64` | ⚠️ el editor arranca, pero Nanite/Lumen no están disponibles en esta GPU y el foco declarado es Apple Silicon | ⚠️ el editor aún corre en Intel, pero el foco declarado es Apple Silicon |
 | **Editar y jugar sin exportar** (el editor ES la herramienta 3D) | ✅ es Blender: modelas, animas y pulsas P | ✅ ídem | ❌ pipeline de importación desde la DCC | ❌ pipeline de importación desde la DCC |
 | **Lenguaje de juego** | **C++ nativo** (`FL_Component`); el sistema de componentes Python fue eliminado | Python + logic bricks + nodos | C++ y Blueprints | C# |
-| **Intérprete en el juego exportado** | **ninguno** — el Player sin CPython compila y juega | CPython embebido | ninguno (C++ compilado) | Mono/IL2CPP |
-| **Tamaño del runtime** | **536 MB** y bajando (era 771 MB con CPython) | ~770 MB | ~1 GB+ por proyecto vacío | varía según backend |
+| **Intérprete en el juego exportado** | **ninguno** — medido: 0 símbolos `_Py` y 0 ficheros `.py` en el bundle del Player | CPython embebido | ninguno (C++ compilado) | Mono/IL2CPP |
+| **Tamaño del runtime** | **538 MB**, frente a los 762 MB del mismo Player con CPython (`du -sh`, 2026-09-11) | no medido aquí | no medido aquí; el orden de magnitud que se cita es de 1 GB por proyecto vacío | varía mucho según backend y plataforma |
 | **Post-proceso en Mac Intel** | ✅ filtros 2D en Metal (arreglado en este fork; acepta también la sintaxis GLSL antigua de los tutoriales) | ❌ en 0.44/macOS ni compilaba; 0.50 no existe para Intel | ✅ | ✅ |
 | **Render-to-texture en Mac Intel** (espejos, minimapas, CCTV) | ✅ restaurado **y nativo en C++**: funciona en el Player sin intérprete | ❌ (mismo motivo) | ✅ | ✅ |
 | **Motor de render** | EEVEE (rasterizador tiempo real de Blender) | EEVEE | Nanite+Lumen (no en Mac Intel), rasterizador clásico como alternativa | URP / HDRP |
-| **Plataformas de exportación** | macOS (hoy); el código heredó soporte Win/Linux de UPBGE pero se **podó a propósito** para simplificar | Windows, Linux, macOS ARM | Todas: PC, consolas, móvil | Todas: PC, consolas, móvil, web |
-| **Licencia y coste** | GPL-2.0+, gratis, código abierto completo | GPL-2.0+, gratis | Gratis hasta 1 M$ de ingresos, luego 5% de royalties; código fuente visible pero no libre | Gratis hasta 200 k$ (Personal); suscripción por asiento después; código cerrado |
+| **Plataformas de exportación** | macOS, y solo macOS: el soporte Win/Linux heredado de UPBGE se **podó a propósito** (no queda ningún `platform_windows`/`platform_unix` en `build_files/cmake/platform/`, ni ningún GHOST de Win32/X11/Wayland) | Windows, Linux, macOS ARM | Todas: PC, consolas, móvil | Todas: PC, consolas, móvil, web |
+| **Licencia y coste** | GPL-2.0+, gratis, código abierto completo | GPL-2.0+, gratis | de pago por royalties a partir de cierto volumen de ingresos, y con licencia por asiento en usos no-videojuego; código fuente visible pero no libre. **Epic ha cambiado estas condiciones más de una vez: mira la licencia vigente** | plan gratuito con tope de ingresos y suscripción por asiento por encima; código cerrado. **Unity también las ha cambiado más de una vez: mira la vigente** |
 | **Asset store / ecosistema** | ❌ (lo que haya para Blender) | pequeño | enorme | enorme |
-| **Add-ons de terceros** | ❌ y **por diseño**: sin intérprete no hay add-ons Python | ✅ | ✅ plugins C++ | ✅ paquetes C# |
+| **Add-ons de terceros** | ❌ en el juego exportado, y **por diseño**: sin intérprete no hay add-ons Python. El editor todavía lleva intérprete mientras dura la migración, así que ahí sí funcionan | ✅ | ✅ plugins C++ | ✅ paquetes C# |
 | **Madurez / riesgo** | ⚠️ fork joven de una persona; historia corta y verificada commit a commit | comunidad pequeña, desarrollo activo | industria AAA | industria, muy extendido en indie/móvil |
 | **Para quién tiene sentido** | tienes un Mac, quieres flujo 100% Blender y un motor GPL sin intérprete que puedas tocar por dentro | mismo perfil, pero quieres scripting en Python y multiplataforma | equipo/proyecto AAA o portfolio industrial, hardware moderno | indie multiplataforma, móvil, ecosistema C# |
 
@@ -157,14 +163,16 @@ La fila que más cambia el cálculo es la de add-ons: quitar Python **cuesta** e
 | Filtros 2D (post-proceso) | ❌ el shader ni compila en Metal | ✅ presets y custom |
 | Filtros custom con sintaxis GLSL antigua (`gl_FragColor`, `texture2D`) | ❌ | ✅ traductor integrado |
 | `bge.texture` / VideoTexture (render-to-texture) | ❌ `Texture is not available` | ✅ ImageRender vía GPUViewport, **con fachada C++**: funciona sin Python |
-| Interfaz de juego | `bgui`, en Python | ✅ lienzo y widgets **nativos en C++**, dibujados sin intérprete |
-| Publicar y exportar el juego | addons Python (dos de los cinco, rotos desde 2019) | ✅ operadores nativos en C++, verificados publicando el juego real |
-| Cierre del player con `ImageRender` activo | ❌ segfault | ✅ (use-after-free corregido) |
-| Componentes de gameplay | Python | ✅ C++ nativo |
-| Mapa de teclado | script de 8.669 líneas | ✅ C++, verificado atajo a atajo |
-| Catálogo de herramientas | script de 3.752 líneas | ✅ C++, verificado herramienta a herramienta (el script ya no existe) |
+| Interfaz de juego | `bgui`: 2.391 líneas de Python en 15 ficheros | ⚠️ **a medias, y a propósito**: lienzo nativo en C++ (`FL_UiCanvas`) y **4 de los 9 widgets** (`Frame`, `Label`, `FrameButton`, `Image`). Hasta que estén los nueve y la comparación de píxeles salga, `bgui` **no se borra** |
+| Publicar y exportar el juego | 5 add-ons Python, **2 de ellos rotos desde 2019** | ✅ operadores nativos en C++ (`source/blender/editors/flipendo/`, 1.965 líneas), verificados publicando el juego real |
+| Cierre del player con `ImageRender` activo | ❌ segfault | ✅ (use-after-free corregido; 3/3 cierres limpios) |
+| Componentes de gameplay | Python | ✅ C++ nativo (`FL_Component`) |
+| Mapa de teclado | script de 8.669 líneas | ✅ C++, verificado atajo a atajo: 248/248 keymaps, 3.673/3.673 atajos (el script ya no existe) |
+| Catálogo de herramientas | script de 3.752 líneas | ✅ C++, verificado herramienta a herramienta, 416/416 (el script ya no existe) |
+| Editor de nodos | `space_node.py`, 1.063 líneas y 34 clases | ✅ 84 líneas y 7 clases; los otros 27 tipos, en C++ (diseño 2.004/2.004 bloques idénticos) |
+| Presets | 173 ficheros `.py` que el editor ejecutaba | ✅ 172 ficheros de datos `.fpreset`; **0 líneas de código** |
 
-Todo verificado con capturas y tests en Metal — ver los mensajes de commit, que documentan cada verificación.
+Todo verificado con capturas y tests en Metal — ver los mensajes de commit y `politicas/`, que documentan cada verificación con sus cifras. La fila con ⚠️ es la única que todavía no está cerrada; se queda en la tabla precisamente para que se vea.
 
 ### El look de Kingdom Hearts, como filtro nativo
 
