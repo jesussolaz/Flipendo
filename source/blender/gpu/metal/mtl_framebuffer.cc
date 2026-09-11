@@ -41,12 +41,12 @@ MTLFrameBuffer::MTLFrameBuffer(MTLContext *ctx, const char *name) : FrameBuffer(
   mtl_stencil_attachment_.used = false;
 
   for (int i = 0; i < MTL_FB_CONFIG_MAX; i++) {
-    framebuffer_descriptor_[i] = [[MTLRenderPassDescriptor alloc] init];
+    framebuffer_descriptor_[i] = MTL::RenderPassDescriptor::alloc()->init();
     descriptor_dirty_[i] = true;
   }
 
   for (int i = 0; i < GPU_FB_MAX_COLOR_ATTACHMENT; i++) {
-    colour_attachment_descriptors_[i] = [[MTLRenderPassColorAttachmentDescriptor alloc] init];
+    colour_attachment_descriptors_[i] = MTL::RenderPassColorAttachmentDescriptor::alloc()->init();
   }
 
   /* Initial state. */
@@ -72,17 +72,17 @@ MTLFrameBuffer::~MTLFrameBuffer()
 
   /* Free Render Pass Descriptors. */
   for (int config = 0; config < MTL_FB_CONFIG_MAX; config++) {
-    if (framebuffer_descriptor_[config] != nil) {
-      [framebuffer_descriptor_[config] release];
-      framebuffer_descriptor_[config] = nil;
+    if (framebuffer_descriptor_[config] != nullptr) {
+      framebuffer_descriptor_[config]->release();
+      framebuffer_descriptor_[config] = nullptr;
     }
   }
 
   /* Free color attachment descriptors. */
   for (int i = 0; i < GPU_FB_MAX_COLOR_ATTACHMENT; i++) {
-    if (colour_attachment_descriptors_[i] != nil) {
-      [colour_attachment_descriptors_[i] release];
-      colour_attachment_descriptors_[i] = nil;
+    if (colour_attachment_descriptors_[i] != nullptr) {
+      colour_attachment_descriptors_[i]->release();
+      colour_attachment_descriptors_[i] = nullptr;
     }
   }
 
@@ -1581,11 +1581,11 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
     descriptor_dirty_[descriptor_config] = true;
   }
 
-  if (descriptor_dirty_[descriptor_config] || framebuffer_descriptor_[descriptor_config] == nil) {
+  if (descriptor_dirty_[descriptor_config] || framebuffer_descriptor_[descriptor_config] == nullptr) {
 
     /* Create descriptor if it does not exist. */
-    if (framebuffer_descriptor_[descriptor_config] == nil) {
-      framebuffer_descriptor_[descriptor_config] = [[MTLRenderPassDescriptor alloc] init];
+    if (framebuffer_descriptor_[descriptor_config] == nullptr) {
+      framebuffer_descriptor_[descriptor_config] = MTL::RenderPassDescriptor::alloc()->init();
     }
 
     /* Configure multilayered rendering. */
@@ -1627,10 +1627,10 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
 
       BLI_assert(len > 0);
       BLI_assert(valid);
-      framebuffer_descriptor_[descriptor_config].renderTargetArrayLength = len;
+      framebuffer_descriptor_[descriptor_config]->setRenderTargetArrayLength(len);
     }
     else {
-      framebuffer_descriptor_[descriptor_config].renderTargetArrayLength = 0;
+      framebuffer_descriptor_[descriptor_config]->setRenderTargetArrayLength(0);
     }
 
     /* Color attachments. */
@@ -1639,8 +1639,8 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
       MTLAttachment &attachment_config = mtl_color_attachments_[attachment_ind];
 
       if (attachment_config.used) {
-        id<MTLTexture> texture = attachment_config.texture->get_metal_handle_base();
-        if (texture == nil) {
+        MTLTexturePtr texture = attachment_config.texture->get_metal_handle_base();
+        if (texture == nullptr) {
           MTL_LOG_ERROR("Attempting to assign invalid texture as attachment");
         }
 
@@ -1648,12 +1648,12 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
                                       GPU_TEXTURE_USAGE_MEMORYLESS);
 
         /* IF SRGB is enabled, but we are rendering with SRGB disabled, sample texture view. */
-        id<MTLTexture> source_color_texture = texture;
+        MTLTexturePtr source_color_texture = texture;
         if (this->get_is_srgb() && attachment_config.texture->is_format_srgb() &&
             !this->get_srgb_enabled())
         {
           source_color_texture = attachment_config.texture->get_non_srgb_handle();
-          BLI_assert(source_color_texture != nil);
+          BLI_assert(source_color_texture != nullptr);
         }
 
         /* Resolve appropriate load action -- IF force load, perform load.
@@ -1686,28 +1686,26 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
         /* Create attachment descriptor. */
         MTLRenderPassColorAttachmentDescriptor *attachment =
             colour_attachment_descriptors_[attachment_ind];
-        BLI_assert(attachment != nil);
+        BLI_assert(attachment != nullptr);
 
-        attachment.texture = source_color_texture;
-        attachment.loadAction = mtl_load_action_from_gpu(load_action);
-        attachment.clearColor = (load_action == GPU_LOADACTION_CLEAR) ?
-                                    MTLClearColorMake(
+        attachment->setTexture(source_color_texture);
+        attachment->setLoadAction(mtl_load_action_from_gpu(load_action));
+        attachment->setClearColor((load_action == GPU_LOADACTION_CLEAR) ?
+                                    MTL::ClearColor::Make(
                                         UNPACK4(attachment_config.clear_value.color)) :
-                                    MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
-        attachment.storeAction = mtl_store_action_from_gpu(store_action);
-        attachment.level = attachment_config.mip;
-        attachment.slice = attachment_config.slice;
-        attachment.depthPlane = attachment_config.depth_plane;
+                                    MTL::ClearColor::Make(0.0, 0.0, 0.0, 0.0));
+        attachment->setStoreAction(mtl_store_action_from_gpu(store_action));
+        attachment->setLevel(attachment_config.mip);
+        attachment->setSlice(attachment_config.slice);
+        attachment->setDepthPlane(attachment_config.depth_plane);
         colour_attachments++;
 
         /* Copy attachment info back in. */
-        [framebuffer_descriptor_[descriptor_config].colorAttachments setObject:attachment
-                                                            atIndexedSubscript:attachment_ind];
+        framebuffer_descriptor_[descriptor_config]->colorAttachments()->setObject(attachment, attachment_ind);
       }
       else {
         /* Disable color attachment. */
-        [framebuffer_descriptor_[descriptor_config].colorAttachments setObject:nil
-                                                            atIndexedSubscript:attachment_ind];
+        framebuffer_descriptor_[descriptor_config]->colorAttachments()->setObject(nullptr, attachment_ind);
       }
     }
     BLI_assert(colour_attachments == colour_attachment_count_);
@@ -1715,8 +1713,7 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
 
     /* Depth attachment. */
     if (mtl_depth_attachment_.used) {
-      framebuffer_descriptor_[descriptor_config].depthAttachment.texture =
-          (id<MTLTexture>)mtl_depth_attachment_.texture->get_metal_handle_base();
+      framebuffer_descriptor_[descriptor_config]->depthAttachment()->setTexture((MTLTexturePtr)mtl_depth_attachment_.texture->get_metal_handle_base());
 
       bool texture_is_memoryless = (mtl_depth_attachment_.texture->usage_get() &
                                     GPU_TEXTURE_USAGE_MEMORYLESS);
@@ -1746,26 +1743,20 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
         store_action = GPU_STOREACTION_DONT_CARE;
       }
 
-      framebuffer_descriptor_[descriptor_config].depthAttachment.loadAction =
-          mtl_load_action_from_gpu(load_action);
-      framebuffer_descriptor_[descriptor_config].depthAttachment.clearDepth =
-          (load_action == GPU_LOADACTION_CLEAR) ? mtl_depth_attachment_.clear_value.depth : 0;
-      framebuffer_descriptor_[descriptor_config].depthAttachment.storeAction =
-          mtl_store_action_from_gpu(store_action);
-      framebuffer_descriptor_[descriptor_config].depthAttachment.level = mtl_depth_attachment_.mip;
-      framebuffer_descriptor_[descriptor_config].depthAttachment.slice =
-          mtl_depth_attachment_.slice;
-      framebuffer_descriptor_[descriptor_config].depthAttachment.depthPlane =
-          mtl_depth_attachment_.depth_plane;
+      framebuffer_descriptor_[descriptor_config]->depthAttachment()->setLoadAction(mtl_load_action_from_gpu(load_action));
+      framebuffer_descriptor_[descriptor_config]->depthAttachment()->setClearDepth((load_action == GPU_LOADACTION_CLEAR) ? mtl_depth_attachment_.clear_value.depth : 0);
+      framebuffer_descriptor_[descriptor_config]->depthAttachment()->setStoreAction(mtl_store_action_from_gpu(store_action));
+      framebuffer_descriptor_[descriptor_config]->depthAttachment()->setLevel(mtl_depth_attachment_.mip);
+      framebuffer_descriptor_[descriptor_config]->depthAttachment()->setSlice(mtl_depth_attachment_.slice);
+      framebuffer_descriptor_[descriptor_config]->depthAttachment()->setDepthPlane(mtl_depth_attachment_.depth_plane);
     }
     else {
-      framebuffer_descriptor_[descriptor_config].depthAttachment.texture = nil;
+      framebuffer_descriptor_[descriptor_config]->depthAttachment()->setTexture(nullptr);
     }
 
     /*  Stencil attachment. */
     if (mtl_stencil_attachment_.used) {
-      framebuffer_descriptor_[descriptor_config].stencilAttachment.texture =
-          (id<MTLTexture>)mtl_stencil_attachment_.texture->get_metal_handle_base();
+      framebuffer_descriptor_[descriptor_config]->stencilAttachment()->setTexture((MTLTexturePtr)mtl_stencil_attachment_.texture->get_metal_handle_base());
 
       bool texture_is_memoryless = (mtl_stencil_attachment_.texture->usage_get() &
                                     GPU_TEXTURE_USAGE_MEMORYLESS);
@@ -1795,21 +1786,15 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
         store_action = GPU_STOREACTION_DONT_CARE;
       }
 
-      framebuffer_descriptor_[descriptor_config].stencilAttachment.loadAction =
-          mtl_load_action_from_gpu(load_action);
-      framebuffer_descriptor_[descriptor_config].stencilAttachment.clearStencil =
-          (load_action == GPU_LOADACTION_CLEAR) ? mtl_stencil_attachment_.clear_value.stencil : 0;
-      framebuffer_descriptor_[descriptor_config].stencilAttachment.storeAction =
-          mtl_store_action_from_gpu(store_action);
-      framebuffer_descriptor_[descriptor_config].stencilAttachment.level =
-          mtl_stencil_attachment_.mip;
-      framebuffer_descriptor_[descriptor_config].stencilAttachment.slice =
-          mtl_stencil_attachment_.slice;
-      framebuffer_descriptor_[descriptor_config].stencilAttachment.depthPlane =
-          mtl_stencil_attachment_.depth_plane;
+      framebuffer_descriptor_[descriptor_config]->stencilAttachment()->setLoadAction(mtl_load_action_from_gpu(load_action));
+      framebuffer_descriptor_[descriptor_config]->stencilAttachment()->setClearStencil((load_action == GPU_LOADACTION_CLEAR) ? mtl_stencil_attachment_.clear_value.stencil : 0);
+      framebuffer_descriptor_[descriptor_config]->stencilAttachment()->setStoreAction(mtl_store_action_from_gpu(store_action));
+      framebuffer_descriptor_[descriptor_config]->stencilAttachment()->setLevel(mtl_stencil_attachment_.mip);
+      framebuffer_descriptor_[descriptor_config]->stencilAttachment()->setSlice(mtl_stencil_attachment_.slice);
+      framebuffer_descriptor_[descriptor_config]->stencilAttachment()->setDepthPlane(mtl_stencil_attachment_.depth_plane);
     }
     else {
-      framebuffer_descriptor_[descriptor_config].stencilAttachment.texture = nil;
+      framebuffer_descriptor_[descriptor_config]->stencilAttachment()->setTexture(nullptr);
     }
 
     /* Attachmentless render support. */
@@ -1817,9 +1802,9 @@ MTLRenderPassDescriptor *MTLFrameBuffer::bake_render_pass_descriptor(bool load_c
                                 (mtl_stencil_attachment_.used ? 1 : 0);
     if (total_num_attachments == 0) {
       BLI_assert(width_ > 0 && height_ > 0);
-      framebuffer_descriptor_[descriptor_config].renderTargetWidth = width_;
-      framebuffer_descriptor_[descriptor_config].renderTargetHeight = height_;
-      framebuffer_descriptor_[descriptor_config].defaultRasterSampleCount = 1;
+      framebuffer_descriptor_[descriptor_config]->setRenderTargetWidth(width_);
+      framebuffer_descriptor_[descriptor_config]->setRenderTargetHeight(height_);
+      framebuffer_descriptor_[descriptor_config]->setDefaultRasterSampleCount(1);
     }
 
     descriptor_dirty_[descriptor_config] = false;
@@ -1867,7 +1852,7 @@ void MTLFrameBuffer::blit(uint read_slot,
     return;
   }
 
-  id<MTLBlitCommandEncoder> blit_encoder = nil;
+  MTLBlitCommandEncoderPtr blit_encoder = nullptr;
 
   /* If the color format is not the same, we cannot use the BlitCommandEncoder, and instead use
    * a Graphics-based blit. */
@@ -1924,7 +1909,7 @@ void MTLFrameBuffer::blit(uint read_slot,
       }
     }
   }
-  if ((do_depth || do_stencil) && blit_encoder == nil) {
+  if ((do_depth || do_stencil) && blit_encoder == nullptr) {
     blit_encoder = mtl_context->main_command_buffer.ensure_begin_blit_encoder();
   }
 

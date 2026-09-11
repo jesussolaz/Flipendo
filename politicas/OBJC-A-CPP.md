@@ -333,6 +333,28 @@ Orden de preferencia al encontrarse un simbolo indefinido:
 3. **`id` pelado**, solo cuando al definidor no se le puede tocar (bloqueado por
    GHOST). Se paga con perdida de tipado y un `reinterpret_cast` en el `.cc`.
 
+### 11-quater. El comprobador de dependencias tambien se equivoca
+
+Hay un script (`deps.py`) que antes de migrar dice que funciones con tipo Metal
+cruzarian la frontera. Ahorra builds, pero **no es una autoridad**: cada vez que me fie
+de un «0 bloqueos» sin mirar, el enlace me corrigio. Tres fallos suyos, ya conocidos:
+
+1. **Unia las lineas de continuacion ANTES de quitar comentarios**, asi que el `*/` del
+   comentario de arriba quedaba pegado a la declaracion y la expresion regular no la
+   reconocia. Se salto `MTLContext::ensure_render_pipeline_state`. Corregido: limpia
+   comentarios primero.
+2. **Casa por NOMBRE de funcion, sin clase.** Hay dos `blit()`: `MTLFrameBuffer::blit`
+   (solo `uint`, inofensiva) y `MTLTexture::blit(MTLBlitCommandEncoderPtr, ...)`. El
+   script aviso de «blit», yo mire la de MTLFrameBuffer, la di por falso positivo y el
+   enlace fallo por la otra. **Ante un aviso, hay que mirar CADA sobrecarga.**
+3. **Confunde los `MTL*` de Blender con los de Apple.** `gpu::MTLBuffer *` en una firma
+   no es un tipo de Objective-C y no rompe nada, pero el patron `MTL[A-Z]\w+` lo marca.
+   De ahi salen falsos positivos como `set_visibility_buffer` o `MTLStorageBuf`.
+
+Resumen util: el script sirve para **encontrar candidatos**, y el enlazador es el unico
+que dictamina. Un `nb install` fallido no es un fracaso del metodo: es la verificacion
+funcionando.
+
 ### 11-ter. Comprobar el grafo ANTES de compilar, y en TODAS las cabeceras
 
 Error propio que costo una build entera: comprobe las firmas con tipos Metal de

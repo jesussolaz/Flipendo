@@ -363,7 +363,11 @@ class MTLTexture : public Texture {
   MTLTexturePtr get_metal_handle_base();
   MTLTexturePtr get_non_srgb_handle();
   MTLSamplerState get_sampler_state();
-  void blit(MTLBlitCommandEncoderPtr blit_encoder,
+  /* `id` pelado y no `MTLBlitCommandEncoderPtr`: se define en mtl_texture.mm
+   * (Objective-C++) y la llama mtl_framebuffer.cc (C++ puro). El mangling de C++
+   * incluye los tipos de los parametros. Vuelve al tipo cuando migre mtl_texture.
+   * Ver politicas/OBJC-A-CPP.md seccion 11. */
+  void blit(id blit_encoder,
             uint src_x_offset,
             uint src_y_offset,
             uint src_z_offset,

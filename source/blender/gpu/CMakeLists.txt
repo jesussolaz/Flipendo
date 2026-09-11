@@ -346,7 +346,7 @@ set(METAL_SRC
   metal/mtl_cpp_impl.cc
   metal/mtl_context.mm
   metal/mtl_debug.cc
-  metal/mtl_framebuffer.mm
+  metal/mtl_framebuffer.cc
   metal/mtl_immediate.cc
   metal/mtl_index_buffer.cc
   metal/mtl_memory.cc
