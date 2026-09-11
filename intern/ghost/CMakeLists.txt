@@ -175,6 +175,11 @@ endif()
 
 
 if(APPLE)
+  # Puente de doble modo Objective-C++ / C++ puro. Lo usan las cabeceras de Cocoa de
+  # GHOST para no arrastrar AppKit a quien las incluye desde un `.cc`.
+  list(APPEND SRC
+    intern/GHOST_ObjCCompat.hh
+  )
   if(WITH_METAL_BACKEND)
     list(APPEND SRC
       intern/GHOST_ContextCGL.mm

@@ -43,7 +43,7 @@ static void ghost_fatal_error_dialog(const char *msg)
   exit(1);
 }
 
-MTLCommandQueue *GHOST_ContextCGL::s_sharedMetalCommandQueue = nil;
+GHOST_MTLCommandQueuePtr GHOST_ContextCGL::s_sharedMetalCommandQueue = nil;
 int GHOST_ContextCGL::s_sharedCount = 0;
 
 GHOST_ContextCGL::GHOST_ContextCGL(bool stereoVisual,
@@ -180,7 +180,7 @@ GHOST_TSuccess GHOST_ContextCGL::updateDrawingContext()
   return GHOST_kFailure;
 }
 
-id<MTLTexture> GHOST_ContextCGL::metalOverlayTexture()
+GHOST_MTLTexturePtr GHOST_ContextCGL::metalOverlayTexture()
 {
   /* Increment Swap-chain - Only needed if context is requesting a new texture */
   current_swapchain_index = (current_swapchain_index + 1) % METAL_SWAPCHAIN_SIZE;
@@ -192,18 +192,16 @@ id<MTLTexture> GHOST_ContextCGL::metalOverlayTexture()
   return m_defaultFramebufferMetalTexture[current_swapchain_index].texture;
 }
 
-MTLCommandQueue *GHOST_ContextCGL::metalCommandQueue()
+GHOST_MTLCommandQueuePtr GHOST_ContextCGL::metalCommandQueue()
 {
   return s_sharedMetalCommandQueue;
 }
-MTLDevice *GHOST_ContextCGL::metalDevice()
+GHOST_MTLDevicePtr GHOST_ContextCGL::metalDevice()
 {
-  id<MTLDevice> device = m_metalLayer.device;
-  return (MTLDevice *)device;
+  return m_metalLayer.device;
 }
 
-void GHOST_ContextCGL::metalRegisterPresentCallback(void (*callback)(
-    MTLRenderPassDescriptor *, id<MTLRenderPipelineState>, id<MTLTexture>, id<CAMetalDrawable>))
+void GHOST_ContextCGL::metalRegisterPresentCallback(GHOST_MetalPresentCallback callback)
 {
   this->contextPresentCallback = callback;
 }
@@ -235,7 +233,7 @@ void GHOST_ContextCGL::metalInit()
      * NOTE: All context should share a single command queue
      * to ensure correct ordering of work submitted from multiple contexts. */
     if (s_sharedMetalCommandQueue == nil) {
-      s_sharedMetalCommandQueue = (MTLCommandQueue *)[device
+      s_sharedMetalCommandQueue = [device
           newCommandQueueWithMaxCommandBufferCount:GHOST_ContextCGL::max_command_buffer_count];
     }
     /* Ensure active GHOSTContext retains a reference to the shared context. */
@@ -298,9 +296,7 @@ void GHOST_ContextCGL::metalInit()
     /* Ensure library is released. */
     [library autorelease];
 
-    m_metalRenderPipeline = (MTLRenderPipelineState *)[device
-        newRenderPipelineStateWithDescriptor:desc
-                                       error:&error];
+    m_metalRenderPipeline = [device newRenderPipelineStateWithDescriptor:desc error:&error];
     if (error) {
       ghost_fatal_error_dialog(
           "GHOST_ContextCGL::metalInit: newRenderPipelineStateWithDescriptor:error: failed!");
@@ -426,8 +422,10 @@ void GHOST_ContextCGL::metalSwapBuffers()
 
     assert(contextPresentCallback);
     assert(m_defaultFramebufferMetalTexture[current_swapchain_index].texture != nil);
+    /* Los cuatro parametros del callback son `id` pelado para que la firma mangle
+     * igual en un `.mm` y en un `.cc` (ver GHOST_ObjCCompat.hh). */
     (*contextPresentCallback)(passDescriptor,
-                              (id<MTLRenderPipelineState>)m_metalRenderPipeline,
+                              m_metalRenderPipeline,
                               m_defaultFramebufferMetalTexture[current_swapchain_index].texture,
                               drawable);
   }

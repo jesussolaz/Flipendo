@@ -1030,10 +1030,15 @@ class MTLContext : public Context {
   void set_ghost_window(GHOST_WindowHandle ghostWinHandle);
 };
 
-/* GHOST Context callback and present. */
-void present(MTLRenderPassDescriptor *blit_descriptor,
-             MTLRenderPipelineStatePtr blit_pso,
-             MTLTexturePtr swapchain_texture,
-             CAMetalDrawablePtr drawable);
+/* GHOST Context callback and present.
+ *
+ * Los tres ultimos parametros son `id` PELADO y no `MTLxxxPtr` a proposito: esta
+ * funcion la registra GHOST_ContextCGL como puntero a funcion, asi que su firma
+ * cruza la frontera entre Objective-C++ y C++ puro. Un `id<T>` lleva el protocolo
+ * dentro del simbolo mangleado y un `MTL::Xxx *` de metal-cpp escribe otro nombre:
+ * en los dos casos el `.mm` y el `.cc` generarian simbolos distintos y no enlazaria.
+ * `id` pelado es `objc_object *` en los dos modos. Tipo declarado en
+ * GHOST_ContextCGL::GHOST_MetalPresentCallback; no cambiar uno sin el otro. */
+void present(id blit_descriptor, id blit_pso, id swapchain_texture, id drawable);
 
 }  // namespace blender::gpu

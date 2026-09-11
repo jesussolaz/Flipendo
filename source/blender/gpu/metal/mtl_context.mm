@@ -2650,10 +2650,7 @@ id<MTLComputePipelineState> MTLContextComputeUtils::get_buffer_clear_pso()
 /** \name Swap-chain management and Metal presentation.
  * \{ */
 
-void present(MTLRenderPassDescriptor *blit_descriptor,
-             id<MTLRenderPipelineState> blit_pso,
-             id<MTLTexture> swapchain_texture,
-             id<CAMetalDrawable> drawable)
+void present(id blit_descriptor, id blit_pso, id swapchain_texture, id drawable)
 {
 
   MTLContext *ctx = MTLContext::get();
