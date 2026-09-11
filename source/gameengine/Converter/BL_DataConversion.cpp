@@ -34,20 +34,15 @@
 #  pragma warning(disable : 4786)
 #endif
 
-/* Since threaded object update we've disabled in-place
- * curve evaluation (in cases when applying curve modifier
- * with target curve non-evaluated yet).
- *
- * This requires game engine to take care of DAG and object
- * evaluation (currently it's designed to export only objects
- * it able to render).
- *
- * This workaround will make sure that curve_cache for curves
- * is up-to-date.
+/* Flipendo, 2026-09-12 (carril PELO): aqui habia un `#define THREADED_DAG_WORKAROUND`
+ * heredado de UPBGE que envolvia el `case OB_CURVES_LEGACY`. Se definia SIEMPRE, en
+ * este mismo fichero y sin condicion ninguna, asi que no encendia ni apagaba nada:
+ * era una condicion falsa que hacia creer que las curvas se convertian «solo a
+ * veces». Se ha quitado junto con el codigo comentado que guardaba (una llamada a
+ * `BKE_displist_make_curveTypes` desactivada desde la 2.8). Medido: con el macro
+ * quitado, la sonda `FL_GAME_DUMP` da la misma lista de objetos de juego que antes.
+ * Ver politicas/PELO-A-CPP.md.
  */
-
-/* TODO: Disabled for now, because of eval_ctx. */
-#define THREADED_DAG_WORKAROUND
 
 #include "BL_DataConversion.hpp"
 
@@ -931,25 +926,52 @@ static KX_GameObject *BL_gameobject_from_blenderobject(Object *ob,
       break;
     }
 
-#ifdef THREADED_DAG_WORKAROUND
-    case OB_CURVES_LEGACY: {
-      /*bContext *C = KX_GetActiveEngine()->GetContext();
-      if (ob->runtime.curve_cache == nullptr) {
-        Depsgraph *depsgraph = CTX_data_depsgraph_on_load(C);
-        BKE_displist_make_curveTypes(
-            depsgraph, blenderscene, DEG_get_evaluated_object(depsgraph, ob), false, false);
-      }*/
-      // eevee add curves to scene.objects list
+    /* Curvas HEREDADAS (`Curve`: bezier, nurbs, texto de curva).
+     *
+     * Medido el 2026-09-12: este camino YA funcionaba sin interprete, al reves de lo
+     * que se daba por hecho. El `#ifdef WITH_PYTHON` de aqui abajo solo tapa la
+     * busqueda del proxy de Python; `gameobj` nace a `nullptr` al principio de la
+     * funcion y el `if (!gameobj)` de despues crea el objeto nativo pase lo que
+     * pase. Desde este cambio las curvas heredadas y el pelo comparten UN SOLO
+     * `case`, asi que la evidencia del binario sin CPython vale para los dos: es
+     * literalmente el mismo codigo. */
+    case OB_CURVES_LEGACY:
+    /* Y el PELO moderno y sus dos hermanos.
+     *
+     * `OB_CURVES` es el objeto de pelo de Blender 3.5+; `OB_POINTCLOUD` y
+     * `OB_VOLUME` son los otros dos tipos de geometria que Blender 4.5 trata como
+     * renderizables (`OB_TYPE_IS_GEOMETRY` en DNA_object_types.h) y que este switch
+     * tampoco contemplaba. Sin `case`, `BL_gameobject_from_blenderobject` devuelve
+     * `nullptr` y el objeto NO existe para el motor: no esta en la lista de objetos
+     * de la escena, no tiene nodo en el grafo de escena, no se le puede cambiar la
+     * visibilidad, ni emparentarlo a un hueso, ni colgarle un componente, ni
+     * matarlo. EEVEE lo seguia pintando —dibuja por el depsgraph de Blender, no por
+     * la lista del motor—, que es lo que despista: parece que «esta» y no esta.
+     *
+     * Se convierte a `KX_EmptyObject` igual que MBALL, SURF o GREASE_PENCIL: un
+     * objeto de juego con transformacion y sin malla propia, que es exactamente lo
+     * que hace falta para que el pelo tenga dueno en el motor. La geometria la sigue
+     * pintando EEVEE.
+     *
+     * NATIVO A PROPOSITO, sin `#ifdef WITH_PYTHON`: la doctrina de Flipendo es cero
+     * Python en el juego, y el pelo es codigo nuevo, asi que no nace atado al
+     * interprete. El proxy de Python (`custom_object`) no se extiende a estos tipos;
+     * cuando haga falta un objeto de juego propio para el pelo sera una clase C++
+     * (fase 3), no una clase de Python. */
+    case OB_CURVES:
+    case OB_POINTCLOUD:
+    case OB_VOLUME: {
 #ifdef WITH_PYTHON
-      gameobj = BL_gameobject_from_customobject(ob, &KX_GameObject::Type, kxscene);
+      /* Solo para las curvas heredadas, que es donde UPBGE lo permitia. */
+      if (ob->type == OB_CURVES_LEGACY) {
+        gameobj = BL_gameobject_from_customobject(ob, &KX_GameObject::Type, kxscene);
+      }
 #endif
       if (!gameobj) {
         gameobj = new KX_EmptyObject();
       }
-      // set transformation
       break;
     }
-#endif
   }
 
   if (gameobj) {
