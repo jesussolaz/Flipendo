@@ -613,6 +613,19 @@ comentarios de GHOST). Se deja de momento a proposito: retirar la rama `__OBJC__
 cambio que no aporta comportamiento y que conviene hacer cuando GHOST termine, para no
 tocar dos veces. Queda como unica tarea de limpieza pendiente del backend.
 
+### Verificacion final (build verde, con las 8 firmas ya revertidas)
+
+| Comprobacion | Resultado |
+|---|---|
+| `nb install` | **rc=0**, 0 errores, 0 simbolos indefinidos |
+| Ficheros de `gpu/metal` | **21/21 `.cc`**, 0 errores, 0 avisos nuevos |
+| Render EEVEE 1920x1080 vs linea base | **0 pixeles distintos de 2.073.600**, max 0/255 |
+| Player `ArpgNative.blend` | **5/5 componentes** |
+| Editor en modo grafico | vivo, **0 errores** |
+
+VERIFICACION FINAL hecha DESPUES de revertir las firmas, no antes: revertir tipos no
+deberia cambiar comportamiento, pero «no deberia» no es una verificacion.
+
 ### El bloque `^`, que era el miedo
 
 `[cmdbuf addCompletedHandler:^(id<MTLCommandBuffer>){...}]` paso a lambda de C++:
