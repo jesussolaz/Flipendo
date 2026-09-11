@@ -293,3 +293,36 @@ que no hay nada que reponer hacia atrás.
 | `WM_MT_region_toggle_pie` | vive en `bl_operators/wm.py` | carril B |
 | `POSE_MT_selection_sets_select` | `pose.selection_set_select` sigue siendo operador de Python | sin asignar |
 | `OUTLINER_MT_context_menu` | llama a `OUTLINER_MT_collection_new.draw_without_context_menu()`, un método de clase distinto de `draw()`: `uiItemMContents()` no sirve | este carril, cuando toque migrar también ese trozo |
+
+### Octava a décima tanda: clips, secuenciador y editores pequeños (2026-09-11)
+
+| Familia | Fichero C++ | Menús |
+|---|---|---|
+| 14 · Editor de clips | `space_clip/fl_clip_menus.cc` | 8 |
+| 15 · Secuenciador (6 de 8) | `space_sequencer/fl_sequencer_menus.cc` | 6 |
+
+**97 de los 133.** Quedan 36.
+
+## Los 36 que quedan, y qué hace falta para cada uno
+
+| Menús | Qué falta |
+|---|---|
+| `VIEW3D_MT_object_context_menu` (229 líneas), `VIEW3D_MT_edit_mesh_context_menu` (209), `VIEW3D_MT_greasepencil_edit_context_menu` (106), `SEQUENCER_MT_add` (63), `SEQUENCER_MT_context_menu` (121), `NODE_MT_context_menu` (100) | Nada especial: son largos. Una tanda cada uno o de dos en dos |
+| Los 9 `VIEW3D_PT_*_context_menu` y `VIEW3D_PT_snapping`, `USERPREF_PT_ndof_settings`, `TOPBAR_PT_name`, `TOPBAR_PT_name_marker` | **Son paneles, no menús**: van con `flipendo::panels_register()` sobre su región, no con `menus_register()`. Es otro mecanismo y merece su propia tanda |
+| `TOPBAR_MT_file_context_menu`, `TOPBAR_MT_file_new` | `space_topbar.py`. Al tocar ese fichero hay que reponer la fila `wm.save_as_runtime` en `TOPBAR_MT_file_export` (ver más arriba) |
+| `NODE_MT_add`, `NODE_MT_view_pie`, `FILEBROWSER_MT_context_menu`, `FILEBROWSER_MT_view_pie`, `ASSETBROWSER_MT_context_menu`, `MASK_MT_add`, `ANIM_MT_keyframe_insert_pie`, los 3 `GREASE_PENCIL_MT_*` | Cortos. `MASK_MT_add` y `ANIM_MT_keyframe_insert_pie` no tienen editor propio: hay que elegirles un punto de registro (`editors/mask`, `editors/animation`) |
+| `VIEW3D_MT_bone_options_*` (3), `WM_MT_region_toggle_pie`, `POSE_MT_selection_sets_select`, `OUTLINER_MT_context_menu` | Bloqueados por trabajo ajeno o por código Python que aún no existe en C++ (ver la tabla anterior) |
+
+## Una laguna de la línea base que hay que tener presente
+
+La línea base se congela sobre la **escena de fábrica**, y eso deja sin cubrir el
+dibujo de todo menú cuyo `poll` dependa de datos que ahí no hay. En la tanda del
+editor de clips, cinco de los ocho salieron `NO-CUBIERTO motivo=poll` porque no
+hay ningún clip cargado. De esos queda verificado el **registro** —idname,
+etiqueta, banderas, contexto de traducción y que tienen `draw` y `poll`— pero no
+el dibujo.
+
+No es un fallo de la migración ni del volcador: es el alcance de la línea base.
+Para cerrarlo haría falta una segunda línea base sobre un `.blend` con clip,
+máscara, partículas y modo edición. Mientras no exista, cada parte dice qué
+bloques quedaron sin cubrir y por qué.
