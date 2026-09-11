@@ -567,3 +567,31 @@ lista ni el contenido de una estantería. Para una lista habría que fabricar un
 de datos que dibujar, y eso es inventarse el dato — el mismo motivo por el que los
 paneles instanciados salen `NO-CUBIERTO`. Lo que sí queda cubierto es que la lista
 **existe, con los callbacks que debe tener**, que es donde estaba el agujero.
+
+## Estado del camino crítico, tras D4
+
+Los dos obstáculos que impedían cerrar editores enteros **ya no están**:
+
+| Obstáculo | Estado |
+|---|---|
+| `PresetPanel` sin dibujo en C++ (17 clases, 12 ficheros) | **Resuelto** (D4.1) |
+| `FL_ui_registry` sin `UIList` ni `AssetShelf`, e invisibles al volcado | **Resuelto** (D4.2) |
+| `properties_paint_common` compartido entre tres carriles | Sigue en pie |
+| Los 7 clones `node_panel()` de las pestañas de Propiedades | Dependencia: funciones compartidas que escribirá el carril de Propiedades |
+
+### El editor de nodos está listo para que lo cojan
+
+Queda **medido, con las APIs verificadas una a una y sin bloqueos propios**: 30 tipos —
+1 cabecera, 11 menús, 18 paneles—, 1.209 líneas de Python. Lo único que espera son las
+funciones compartidas de los 7 paneles clonados; hasta que existan, **no se escriben los
+clones**: la decisión del proyecto es función compartida, no copia, porque dos copias se
+desincronizan y aquí se busca propiedad total del código, no duplicado.
+
+El resto del fichero no depende de eso y puede escribirse ya.
+
+### El editor de imagen/UV, después
+
+Le queda un solo obstáculo de fondo, `properties_paint_common` (1.965 líneas, 14
+llamadas desde `space_image.py`), que hay que migrar como módulo compartido de acuerdo
+con los carriles de la vista 3D y de Propiedades. Sus dos listas y su estantería ya se
+pueden declarar y ya se ven en el volcado.
