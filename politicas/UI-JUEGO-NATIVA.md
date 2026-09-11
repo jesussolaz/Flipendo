@@ -222,7 +222,14 @@ Trampa ya conocida y pagada en VideoTexture, que aquí también aplica: **el
     y un árbol que mezcla a propósito colocación en píxeles y normalizada:
     **316 píxeles distintos de 63.000 (0,50 %), delta máximo de UN nivel**, contra
     10.319 (2,47 %, máximo 89) en el resto de la pantalla.
-  - Del paso 3 en adelante no hay todavía ni una línea.
+  - **Paso 3 (parte)**, `FL_UiFrameButton`: el primero de los nueve widgets, con
+    los colores y el comportamiento de `bgui.FrameButton` (+0,1 al pasar por
+    encima, −0,1 al mantener pulsado, vuelta al reposo tras pintar), los seis
+    ganchos internos `Handle*` y el `PostDraw()` que bgui necesita. Verificado con
+    **autoprueba de eventos sintéticos idéntica en los dos binarios (9 líneas, 0
+    diferencias)** y **170 píxeles distintos de 81.900 (0,21 %, delta máximo 1)**
+    en la zona de la interfaz, contra 1,99 % en el resto de la pantalla.
+  - De los otros seis widgets no hay todavía ni una línea.
 - Las cifras de tamaño son estimaciones, no medidas.
 - `doc/python_api/rst/bgui/` (la documentación de la API) tendrá que reescribirse
   o retirarse con la librería; no se ha contado en las 2.391 líneas.
@@ -244,3 +251,88 @@ base de cada widget que se vaya añadiendo.
 **Trampa pagada:** la captura se *encola* y el motor la vuelca en `EndFrame`,
 después de dibujar. Pedirla y salir en el mismo tic la deja sin escribir, y el log
 dice que se ha capturado. La sonda espera 15 frames antes de salir.
+
+---
+
+## 10. Autoprueba del reparto de eventos
+
+Un widget no se verifica sólo mirándolo: hay que comprobar **quién recibe qué**.
+Y no hace falta un ratón de verdad.
+
+```
+FL_UI_DEMO=1 FL_UI_SELFTEST=1 <Blenderplayer> ... <escena.blend>
+```
+
+empuja al árbol posiciones y estados de ratón **sintéticos** (`DispatchMouse` es
+público a propósito) e imprime, en orden, qué widget recibió qué. La salida es
+determinista, así que comparar los dos binarios es un `diff`:
+
+```
+FL_UI_SELFTEST: boton en (280,185) 162x34
+FL_UI_SELFTEST: fuera del panel -> (nada)
+FL_UI_SELFTEST: sobre el panel, fuera del boton -> panel:entra panel:encima
+FL_UI_SELFTEST: sobre el boton -> boton:entra boton:encima panel:sale
+FL_UI_SELFTEST: pulsando el boton -> boton:encima boton:pulsa
+FL_UI_SELFTEST: manteniendo el boton -> boton:encima boton:mantiene
+FL_UI_SELFTEST: soltando el boton -> boton:encima boton:suelta
+FL_UI_SELFTEST: fuera del panel otra vez -> boton:sale
+FL_UI_SELFTEST: fin
+```
+
+Ahí se lee la semántica que había que reproducir de bgui: **el hijo se queda el
+evento y el padre deja de estar encima en el mismo paso**, y pulsar, mantener y
+soltar van sólo al widget que está debajo del ratón. Cada widget nuevo debería
+añadir sus pasos a esta lista.
+
+---
+
+## 11. Trampas pagadas (las que ahorran horas)
+
+1. **La captura de pantalla se encola.** `RAS_ICanvas::MakeScreenShot` sólo apunta
+   la petición; el motor la vuelca en `EndFrame`, después de dibujar. Pedirla y
+   salir en el mismo tic la deja sin escribir **mientras el log dice que se ha
+   capturado**. La sonda espera 15 frames antes de salir.
+2. **Una sonda que cuenta frames no va en `AttachScene`.** `FL_ComponentManager::
+   AttachScene` vuelve en seguida cuando la escena ya está atada, así que el
+   contador nunca pasaba de 1 y el volcado no llegaba nunca. Va en `Tick`.
+3. **El `.blend` manda sobre la cámara.** El Player dibuja a través del `View3D`
+   guardado en el fichero: si su vista no está en modo cámara
+   (`region_3d.view_perspective = 'CAMERA'`), ni el render principal ni el
+   `ImageRender` usan la cámara. Es la misma trampa que costó tiempo en
+   VideoTexture y vale para cualquier escena de prueba.
+4. **`bpy.ops.logic.sensor_add` revienta en `--background`** (`sensor_add_exec`
+   → `ED_undo_push_old` sin pila de deshacer). Si alguien quiere montar una escena
+   de comparación con controlador Python, que lo sepa antes de perder el rato.
+
+---
+
+## 12. AVISO: `scripts/modules/bgui` NO SE TOCA
+
+Hasta que **los nueve widgets** estén escritos y la comparación de píxeles salga,
+`scripts/modules/bgui` se queda donde está. Hay tres widgets de nueve
+(`Frame`, `Label`, `FrameButton`), así que **la capacidad todavía NO está
+cubierta**. Que nadie lo borre creyendo que ya lo está: es la regla de «migrar, no
+borrar» de la doctrina, y aquí el original es la única referencia que queda para
+comparar.
+
+Lo mismo vale para `doc/python_api/rst/bgui/`: se retira con la librería, no antes.
+
+---
+
+## 13. Orden recomendado para lo que queda
+
+1. **Quad con textura en el lienzo** (`GPU_SHADER_3D_IMAGE`). Va primero porque lo
+   necesitan dos widgets (`Image`, `ImageButton`) y porque ya sabemos sacar el
+   `GPUTexture` de una `Image` de Blender por el trabajo de VideoTexture.
+2. **`Image`** y **`ImageButton`**: con el quad hecho son cortos, y `ImageButton`
+   reutiliza la máquina de estados que ya tiene `FL_UiFrameButton`.
+3. **`ProgressBar`**: es dos `FL_UiFrame` anidados, lo que la demo ya hace a mano.
+   Envolverlo en su clase y darle la propiedad `percent`.
+4. **`TextBlock`**: el ajuste de línea necesita medir con `TextWidth`, que ya está.
+5. **`ListBox`**: el primero que necesita `PushClip`/`PopClip` de verdad.
+6. **`TextInput`**: el último y el más largo (518 líneas en Python). Cursor,
+   selección, doble clic y colores por estado.
+7. **Tema en INI**: se puede dejar para el final porque ninguna de las piezas
+   anteriores lo necesita para funcionar, sólo para no llevar los colores en el
+   código.
+8. **Sólo entonces**, retirar `scripts/modules/bgui` y su documentación.
