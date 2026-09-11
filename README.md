@@ -96,9 +96,9 @@ Estado real. Las cifras de abajo están medidas el **2026-09-11** sobre el commi
 | El build necesita Python | **no** para `--target install`: ninguna orden de `build.ninja` invoca un intérprete. Solo lo usa el target `package_archive`, que no compila nada |
 | Player sin CPython | **compila y juega** — 0 símbolos `_Py`, 538 MB frente a 762 MB |
 | Ficheros `.py` dentro del juego exportado | **0** (el Player con Python lleva 2.022) |
-| Python restante | **191.224 líneas en 613 ficheros**. De ellas, 119.105 son el editor (`scripts/`), 44.842 los tests, 14.649 las herramientas de desarrollo y 12.628 el resto. Al empezar el proyecto eran **492.366**: **−61,2 %** |
-| Objective-C++ | **22.289 líneas en 25 ficheros**. El frente vivo es el backend Metal: **11 ficheros, 12.703 líneas**; la capa de cabeceras ya es C++ puro, y lo que hay que reescribir son envíos de mensaje, no líneas |
-| Verificadores integrados en el binario | **46**: 16 `--fl-check-*`, 14 `--fl-dump-*` y 16 `--fl-selftest-*`, de **50 opciones `--fl-*`** registradas en `creator_args.cc` |
+| Python restante | **189.766 líneas en 611 ficheros**. Por zonas: interfaz del editor 51.087, tests heredados 37.769, módulos 24.544, gestor de extensiones 22.703, utillaje 14.649, operadores 11.765 |
+| Objective-C++ | **5.060 líneas en 8 ficheros, y el binario no compila ninguna**: son todas de Cycles, que está apagado (`WITH_CYCLES=OFF`, cero objetos en `build.ninja`). El backend gráfico, la ventana, el teclado y el ratón son C++ puro |
+| Verificación | **61 opciones `--fl-*`** en el binario: 22 comprobadores, 16 volcadores, 19 autopruebas y 4 utilidades. El estado se **genera** midiendo el árbol, no se escribe: [`politicas/ESTADO.md`](politicas/ESTADO.md). Y ninguna puede salir en verde sin haber comparado nada: [`politicas/ARNES-A-PRUEBA.md`](politicas/ARNES-A-PRUEBA.md) |
 
 **Cómo se verifica.** Nada se da por migrado leyendo el código: se congela lo que produce el Python y el C++ tiene que reproducirlo exactamente. Para la interfaz, eso significa capturas. Cada par de columnas es la barra de herramientas del mismo editor y modo, dibujada por **Python a la izquierda** y por **C++ a la derecha** — vista 3D en modo objeto, edición y escultura; editor UV, nodos y secuenciador:
 
