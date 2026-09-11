@@ -14,6 +14,8 @@
 
 #include "FL_manual_reference.hpp"
 
+#include "WM_manual.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -419,6 +421,38 @@ std::optional<std::string> url_from_rna_id(bContext *C, const std::string &rna_i
 /** \} */
 
 /* -------------------------------------------------------------------------- */
+/** \name El proveedor de URLs, sobre el punto de extension de `WM_manual.hpp`
+ *
+ * `wm_system_ops.cc` (carril B) tiene su propio proveedor integrado con **cinco**
+ * entradas y una reserva que manda todo lo demas a `search.html?q=<ruta>`. Eso
+ * no es el comportamiento del Python: el Python tenia **4.253** entradas exactas
+ * y llevaba al parrafo concreto del manual, con su ancla. Aqui se registra la
+ * tabla de datos como proveedor, y como los proveedores se consultan en orden
+ * inverso al registro, este se consulta ANTES que el integrado: si la ruta esta
+ * en la tabla se devuelve la URL exacta, y si no se devuelve `false` para que la
+ * reserva del buscador siga funcionando. Ninguno de los dos se estorba.
+ * \{ */
+
+static bool data_table_provider(const blender::StringRef rna_id, std::string &r_url)
+{
+  const std::optional<std::string> suffix = find_url_suffix(std::string(rna_id));
+  if (!suffix.has_value()) {
+    return false;
+  }
+  /* `url_prefix()` no necesita contexto: el `itemf` del enum de idioma lo ignora
+   * (`rna_lang_enum_properties_itemf` marca su `bContext *` como no usado). */
+  r_url = url_prefix(nullptr) + suffix.value();
+  return true;
+}
+
+void provider_register_builtin_table()
+{
+  provider_register(data_table_provider);
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------------- */
 /** \name Conversion desde el Python heredado
  * \{ */
 
@@ -560,6 +594,10 @@ bool check_urls(bContext *C, const char *baseline_path)
   const std::string prefix = url_prefix(C);
   int n = 0, same = 0, diff = 0;
   int prefix_checked = 0;
+  /* El camino de verdad del operador: `flipendo::manual::url_lookup()`, que
+   * recorre los proveedores registrados. Se comprueba aparte porque ahi es donde
+   * puede fallar el REGISTRO y el ORDEN, no la tabla. */
+  int lookup_same = 0, lookup_diff = 0, lookup_fallback = 0;
   std::string line;
 
   while (std::getline(in, line)) {
@@ -594,6 +632,29 @@ bool check_urls(bContext *C, const char *baseline_path)
     n++;
     const std::optional<std::string> suffix = find_url_suffix(key);
     const std::string got = suffix.has_value() ? suffix.value() : std::string("-");
+
+    /* Por el camino del operador. */
+    std::string lookup_url;
+    const bool lookup_ok = url_lookup(key, lookup_url);
+    if (value == "-") {
+      /* El Python no daba URL y avisaba; el proveedor de reserva de
+       * `wm_system_ops.cc` manda al buscador del manual. Es una mejora
+       * deliberada, no una diferencia: se cuenta aparte. */
+      lookup_fallback++;
+    }
+    else if (lookup_ok && lookup_url == prefix + value) {
+      lookup_same++;
+    }
+    else {
+      if (lookup_diff < 10) {
+        printf("manual: LOOKUP DISTINTO %s\n  python: %s\n  c++   : %s\n",
+               key.c_str(),
+               (prefix + value).c_str(),
+               lookup_ok ? lookup_url.c_str() : "(sin proveedor)");
+      }
+      lookup_diff++;
+    }
+
     if (got == value) {
       same++;
     }
@@ -610,7 +671,12 @@ bool check_urls(bContext *C, const char *baseline_path)
          same,
          diff,
          prefix_checked ? " (prefijo incluido)" : " (SIN prefijo en la linea base)");
-  return diff == 0;
+  printf("manual: por url_lookup() (el camino del operador): %d identicas, %d distintas, "
+         "%d a la reserva del buscador\n",
+         lookup_same,
+         lookup_diff,
+         lookup_fallback);
+  return (diff == 0) && (lookup_diff == 0);
 }
 
 /** \} */

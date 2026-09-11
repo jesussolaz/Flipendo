@@ -91,6 +91,17 @@ std::string url_prefix(bContext *C);
 /** Prefijo + sufijo, o nada si la ruta RNA no esta en la tabla. */
 std::optional<std::string> url_from_rna_id(bContext *C, const std::string &rna_id);
 
+/**
+ * Registra la tabla de datos como proveedor de URLs del manual
+ * (`WM_manual.hpp`). Se llama una vez, desde `WM_init()`.
+ *
+ * Hace falta porque el proveedor integrado de `wm_system_ops.cc` solo tiene
+ * cinco entradas y manda el resto al buscador del manual: sin esto, «Ver manual
+ * en linea» deja de llevar al parrafo concreto para practicamente toda ruta RNA,
+ * que es justo la capacidad que tenian las 4.253 entradas del Python.
+ */
+void provider_register_builtin_table();
+
 /* -------------------------------------------------------------------------- */
 /** \name Herramientas de conversion y verificacion
  * \{ */

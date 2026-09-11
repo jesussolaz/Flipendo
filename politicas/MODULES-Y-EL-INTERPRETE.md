@@ -131,6 +131,34 @@ gramática de valores; esto es una tabla de dos columnas donde lo único
 estructural es el orden. Un formato general para un caso que no lo necesita es
 deuda, no reutilización.
 
+**Y una trampa que costó encontrar, con el operador ya nativo.** Cuando el carril
+B migró `WM_OT_doc_view_manual` a `wm_system_ops.cc`, su proveedor integrado
+(`builtin_manual_provider`) se quedó con **cinco** entradas escritas a mano y una
+reserva que manda todo lo demás a `search.html?q=<ruta>`. Su comentario lo llama
+«contrato sustituto de la enorme tabla Python generada». No lo es: el Python
+tenía **4.253** entradas y llevaba al **párrafo concreto del manual, con su
+ancla**. Un buscador no es el mismo comportamiento observable, y el usuario no
+ve ningún error — es exactamente el tipo de pérdida silenciosa que la doctrina
+persigue.
+
+Arreglado sin tocar el fichero del otro carril, usando su propio punto de
+extensión (`WM_manual.hpp`): `provider_register_builtin_table()` registra la
+tabla de datos como proveedor desde `WM_init()`. Como los proveedores se
+consultan en orden inverso al registro, la tabla se consulta **antes** que el
+integrado; si la ruta está en la tabla se devuelve la URL exacta y si no se
+devuelve `false` para que la reserva del buscador siga funcionando. Los dos
+conviven y ninguno se estorba. `--fl-check-manual` comprueba ahora **las dos
+cosas**: la tabla y el camino real del operador (`url_lookup()`), que es donde
+puede fallar el registro y el orden.
+
+**Queda anotado para el carril B, y no lo toco:** su `manual_language_code()`
+usa `BLT_lang_get()`, que devuelve el *locale activo* y con la traducción apagada
+vale `"en_US"`. El Python leía `preferences.view.language` —el identificador del
+enum, `DEFAULT` incluido, con caída a `$LANG`—. Con un idioma elegido pero la
+traducción desactivada, las dos cosas no coinciden y el prefijo del manual sale
+distinto. El prefijo que verifica `--fl-check-manual` es el nuestro, que sí
+reproduce el del Python.
+
 **Cobertura de pruebas que hay que reponer:** `tests/python/bl_rna_manual_reference.py`
 (187 líneas) validaba la tabla desde dentro: que el dato tiene la forma correcta,
 que **toda** ruta RNA tiene entrada y que **todo** patrón se usa alguna vez, y

@@ -87,6 +87,7 @@
 #include "wm_files.hh"
 #include "wm_platform_support.hh"
 #include "wm_surface.hh"
+#include "manual/FL_manual_reference.hpp"
 #include "wm_window.hh"
 
 #include "ED_anim_api.hh"
@@ -211,6 +212,11 @@ void WM_init(bContext *C, int argc, const char **argv)
   BKE_keyconfig_pref_type_init();
 
   wm_operatortypes_register();
+
+  /* La tabla del manual en linea (4.253 rutas RNA -> URL) como proveedor: sin
+   * esto solo quedan las cinco entradas del proveedor integrado y el resto va al
+   * buscador. Ver source/blender/windowmanager/manual/. */
+  flipendo::manual::provider_register_builtin_table();
 
   WM_paneltype_init(); /* Lookup table only. */
   WM_menutype_init();
