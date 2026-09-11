@@ -44,3 +44,7 @@ case=11 op=OBJECT_OT_select_hierarchy
   0 name=Select Hierarchy desc=Select object relative to the active object's position in the hierarchy translation_context=Operator
   1 prop=direction type=ENUM subtype=NONE array=0 name=Direction desc=Direction to select in the hierarchy enumflag=0 default=PARENT items=PARENT:Parent::0;CHILD:Child::1
   2 prop=extend type=BOOLEAN subtype=NONE array=0 name=Extend desc=Extend the existing selection default=0
+case=12 op=MESH_OT_faces_mirror_uv
+  0 name=Copy Mirrored UV Coords desc=Copy mirror UV coordinates on the X axis based on a mirrored mesh translation_context=Operator
+  1 prop=direction type=ENUM subtype=NONE array=0 name=Axis Direction desc= enumflag=0 default=POSITIVE items=POSITIVE:Positive::0;NEGATIVE:Negative::1
+  2 prop=precision type=INT subtype=NONE array=0 name=Precision desc=Tolerance for finding vertex duplicates default=3 min=1 max=16 softmin=1 softmax=16

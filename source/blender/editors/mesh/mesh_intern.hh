@@ -116,6 +116,9 @@ void MESH_OT_primitive_torus_add(wmOperatorType *ot);
  * bl_operators/vertexpaint_dirt.py, Flipendo C2) */
 void PAINT_OT_vertex_color_dirt(wmOperatorType *ot);
 
+/* `mesh_faces_mirror_uv.cc` (portado de bl_operators/mesh.py, Flipendo C2) */
+void MESH_OT_faces_mirror_uv(wmOperatorType *ot);
+
 /* `view3d_edit_mesh_extrude.cc` (idnames `view3d.edit_mesh_extrude_*`, portados de
  * bl_operators/view3d.py, Flipendo C2) */
 void VIEW3D_OT_edit_mesh_extrude_individual_move(wmOperatorType *ot);

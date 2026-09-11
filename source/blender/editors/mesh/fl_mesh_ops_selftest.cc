@@ -30,6 +30,7 @@
 #include "BKE_attribute.hh"
 #include "BKE_context.hh"
 #include "BKE_customdata.hh"
+#include "BKE_mesh_types.hh"
 #include "BKE_layer.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_main.hh"
@@ -455,6 +456,194 @@ bool check(bContext *C, const char *baseline_path)
   }
   return flipendo::selftest::compare_to_baseline(
       "fl-check-mesh-ops", actual_path, baseline_path);
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------------- */
+/** \name mesh.faces_mirror_uv
+ * \{ */
+
+namespace {
+
+/* Las mismas UV deterministas que pone el guion de captura: aritmetica entera en double
+ * y truncado a float al guardar, igual que `uvs[i].uv = (a, b)` desde Python. */
+void set_deterministic_uvs(Mesh *mesh, const int mod_u, const int mul_u, const int mod_v,
+                           const int mul_v)
+{
+  bke::MutableAttributeAccessor attributes = mesh->attributes_for_write();
+  const StringRef name = CustomData_get_active_layer_name(&mesh->corner_data,
+                                                          CD_PROP_FLOAT2);
+  bke::SpanAttributeWriter<float2> uv = attributes.lookup_for_write_span<float2>(name);
+  if (!uv) {
+    return;
+  }
+  for (const int i : uv.span.index_range()) {
+    uv.span[i] = float2(float(double((i * mul_u) % mod_u) / double(mod_u)),
+                        float(double((i * mul_v) % mod_v) / double(mod_v)));
+  }
+  uv.finish();
+}
+
+int uv_layer_count(const Mesh *mesh)
+{
+  int count = 0;
+  for (const int i : IndexRange(mesh->corner_data.totlayer)) {
+    if (mesh->corner_data.layers[i].type == CD_PROP_FLOAT2) {
+      count++;
+    }
+  }
+  return count;
+}
+
+void remove_all_uv_layers(Mesh *mesh)
+{
+  while (true) {
+    const int index = CustomData_get_active_layer(&mesh->corner_data, CD_PROP_FLOAT2);
+    if (index == -1) {
+      break;
+    }
+    const std::string name = CustomData_get_active_layer_name(&mesh->corner_data,
+                                                              CD_PROP_FLOAT2);
+    if (!mesh->attributes_for_write().remove(name)) {
+      break;
+    }
+  }
+}
+
+void dump_mirror_case(FILE *f, const int index, const char *label, const Object *ob)
+{
+  const Mesh *mesh = static_cast<const Mesh *>(ob->data);
+  fprintf(f, "case=%d %s\n", index, label);
+  fprintf(f,
+          "  mesh verts=%d faces=%d loops=%d uvlayers=%d\n",
+          mesh->verts_num,
+          mesh->faces_num,
+          mesh->corners_num,
+          uv_layer_count(mesh));
+
+  const int uv_index = CustomData_get_active_layer(&mesh->corner_data, CD_PROP_FLOAT2);
+  if (uv_index == -1) {
+    fprintf(f, "  nouv\n");
+    return;
+  }
+  const StringRef name = CustomData_get_active_layer_name(&mesh->corner_data, CD_PROP_FLOAT2);
+  const VArraySpan<float2> uv = *mesh->attributes().lookup<float2>(name);
+  for (const int i : uv.index_range()) {
+    fprintf(f, "  %d %.9g %.9g\n", i, double(uv[i].x), double(uv[i].y));
+  }
+}
+
+void select_only_active(bContext *C, Object *ob)
+{
+  {
+    PointerRNA ptr;
+    WM_operator_properties_create(&ptr, "object.select_all");
+    RNA_enum_set_identifier(C, &ptr, "action", "DESELECT");
+    WM_operator_name_call(C, "object.select_all", WM_OP_EXEC_DEFAULT, &ptr, nullptr);
+    WM_operator_properties_free(&ptr);
+  }
+  Scene *scene = CTX_data_scene(C);
+  ViewLayer *view_layer = CTX_data_view_layer(C);
+  BKE_view_layer_synced_ensure(scene, view_layer);
+  if (Base *base = BKE_view_layer_base_find(view_layer, ob)) {
+    BKE_view_layer_base_select_and_set_active(view_layer, base);
+  }
+  DEG_id_tag_update(&scene->id, ID_RECALC_BASE_FLAGS);
+}
+
+wmOperatorStatus call_mirror_uv(bContext *C, const char *direction, const int precision)
+{
+  PointerRNA ptr;
+  WM_operator_properties_create(&ptr, "mesh.faces_mirror_uv");
+  RNA_enum_set_identifier(C, &ptr, "direction", direction);
+  RNA_int_set(&ptr, "precision", precision);
+  const wmOperatorStatus status = WM_operator_name_call(
+      C, "mesh.faces_mirror_uv", WM_OP_EXEC_DEFAULT, &ptr, nullptr);
+  WM_operator_properties_free(&ptr);
+  return status;
+}
+
+}  // namespace
+
+bool dump_mirror_uv(bContext *C, const char *filepath)
+{
+  FILE *f = fopen(filepath, "w");
+  if (f == nullptr) {
+    fprintf(stderr, "fl-selftest-mirror-uv: no se pudo escribir '%s'\n", filepath);
+    return false;
+  }
+  fprintf(f, "# FL-MIRROR-UV-SELFTEST v1\n");
+  int index = 0;
+
+  /* Rejilla simetrica respecto a X, en las dos direcciones y con dos precisiones. */
+  const char *directions[] = {"POSITIVE", "NEGATIVE"};
+  const int precisions[] = {3, 1};
+  for (const char *direction : directions) {
+    for (const int precision : precisions) {
+      purge(C);
+      add_primitive(C, "mesh.primitive_grid_add", [](PointerRNA *ptr) {
+        RNA_int_set(ptr, "x_subdivisions", 4);
+        RNA_int_set(ptr, "y_subdivisions", 3);
+        RNA_float_set(ptr, "size", 2.0f);
+      });
+      Object *ob = CTX_data_active_object(C);
+      set_deterministic_uvs(static_cast<Mesh *>(ob->data), 23, 7, 17, 11);
+      select_only_active(C, ob);
+      const wmOperatorStatus status = call_mirror_uv(C, direction, precision);
+      fprintf(f, "# ret=['%s']\n", (status & OPERATOR_FINISHED) ? "FINISHED" : "CANCELLED");
+      char label[256];
+      BLI_snprintf(label,
+                   sizeof(label),
+                   "op=mesh.faces_mirror_uv dir=%s prec=%d",
+                   direction,
+                   precision);
+      dump_mirror_case(f, index++, label, ob);
+    }
+  }
+
+  /* Malla SIN capa UV: tiene que avisar y no romper nada. */
+  {
+    purge(C);
+    add_primitive(C, "mesh.primitive_cube_add", [](PointerRNA *ptr) {
+      RNA_float_set(ptr, "size", 2.0f);
+    });
+    Object *ob = CTX_data_active_object(C);
+    remove_all_uv_layers(static_cast<Mesh *>(ob->data));
+    select_only_active(C, ob);
+    const wmOperatorStatus status = call_mirror_uv(C, "POSITIVE", 3);
+    fprintf(f, "# ret=['%s']\n", (status & OPERATOR_FINISHED) ? "FINISHED" : "CANCELLED");
+    dump_mirror_case(f, index++, "op=mesh.faces_mirror_uv sin-capa-uv", ob);
+  }
+
+  /* Cubo: simetrico en X pero con caras que no se emparejan por vertices. */
+  {
+    purge(C);
+    add_primitive(C, "mesh.primitive_cube_add", [](PointerRNA *ptr) {
+      RNA_float_set(ptr, "size", 2.0f);
+    });
+    Object *ob = CTX_data_active_object(C);
+    set_deterministic_uvs(static_cast<Mesh *>(ob->data), 13, 5, 7, 3);
+    select_only_active(C, ob);
+    const wmOperatorStatus status = call_mirror_uv(C, "POSITIVE", 3);
+    fprintf(f, "# ret=['%s']\n", (status & OPERATOR_FINISHED) ? "FINISHED" : "CANCELLED");
+    dump_mirror_case(f, index++, "op=mesh.faces_mirror_uv cubo", ob);
+  }
+
+  fclose(f);
+  fprintf(stderr, "fl-selftest-mirror-uv: volcado en '%s' (%d casos)\n", filepath, index);
+  return true;
+}
+
+bool check_mirror_uv(bContext *C, const char *baseline_path)
+{
+  char actual_path[FILE_MAX];
+  BLI_path_join(
+      actual_path, sizeof(actual_path), BKE_tempdir_session(), "fl-selftest-mirror-uv-actual.txt");
+  if (!dump_mirror_uv(C, actual_path)) {
+    return false;
+  }
+  return flipendo::selftest::compare_to_baseline("fl-check-mirror-uv", actual_path, baseline_path);
 }
 
 /** \} */

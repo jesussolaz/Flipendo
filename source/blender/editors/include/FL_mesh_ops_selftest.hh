@@ -34,4 +34,9 @@ bool dump(bContext *C, const char *filepath);
  * ni una linea distinta. */
 bool check(bContext *C, const char *baseline_path);
 
+/** Lo mismo para `mesh.faces_mirror_uv`. Linea base:
+ * `tests/flipendo/mirroruv/baseline-python.txt`. */
+bool dump_mirror_uv(bContext *C, const char *filepath);
+bool check_mirror_uv(bContext *C, const char *baseline_path);
+
 }  // namespace flipendo::mesh_ops_selftest

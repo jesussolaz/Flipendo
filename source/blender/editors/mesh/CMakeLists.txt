@@ -45,6 +45,7 @@ set(SRC
   editmesh_utils.cc
   fl_mesh_ops_selftest.cc
   mesh_data.cc
+  mesh_faces_mirror_uv.cc
   mesh_mirror.cc
   mesh_ops.cc
   mesh_vertex_dirt.cc

@@ -67,6 +67,7 @@
 #  include "FL_external_editor.hh"
 #  include "FL_game_runtime.hh"
 #  include "FL_keymap_dump.hpp"
+#  include "keymap/FL_keyconfig_io.hpp"
 #  include "manual/FL_manual_reference.hpp"
 #  include "FL_mesh_ops_selftest.hh"
 #  include "FL_numinput_native.hh"
@@ -2872,6 +2873,25 @@ static int arg_handle_fl_check_external_editor(int argc, const char **argv, void
   return 0;
 }
 
+static const char arg_handle_fl_check_keyconfig_io_doc[] =
+    "<informe> [heredado.py]\n"
+    "\tExporta la configuracion de teclado como datos, la vuelve a importar y la\n"
+    "\tvuelve a exportar: los dos ficheros tienen que salir identicos. Si el ciclo\n"
+    "\tpierde un atajo, una propiedad o un modificador, el informe lo dice.\n"
+    "\tCon un `.py` exportado por el Python de antes, lo lee de forma NATIVA y\n"
+    "\tcompara: es la prueba de la compatibilidad hacia atras. Vale en --background.";
+static int arg_handle_fl_check_keyconfig_io(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::keyconfig::check_roundtrip(C, argv[1], (argc > 2) ? argv[2] : nullptr);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (argc > 2) ? 2 : 1;
+  }
+  fprintf(stderr, "\nError: falta el informe despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_ui_doc[] =
     "<filepath>\n"
     "\tVuelca el REGISTRO de interfaz (paneles, menus y cabeceras) y sale.\n"
@@ -3753,6 +3773,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(
       ba, nullptr, "--fl-check-external-editor", CB(arg_handle_fl_check_external_editor), C);
   BLI_args_add(ba, nullptr, "--fl-check-manual", CB(arg_handle_fl_check_manual), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-check-keyconfig-io", CB(arg_handle_fl_check_keyconfig_io), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);
