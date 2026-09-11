@@ -842,3 +842,187 @@ Objective-C++ en `intern/ghost`: **4.340 → 3.499**. En todo el arbol: **17.362
 a la vez y no se pueden partir. Son 89 metodos con codificacion de tipo escrita a mano
 en el camino de entrada del programa. La tecnica ya esta probada (§21); lo que queda es
 volumen y cuidado.
+
+---
+
+# Parte III — Recibir mensajes: delegados, vistas y el final de `intern/ghost`
+
+> La parte II cubria MANDAR mensajes desde C++. Esta cubre lo contrario: que Cocoa nos
+> LLAME. Es lo que hacia falta para `GHOST_WindowCocoa`, `GHOST_WindowViewCocoa` y
+> `GHOST_SystemCocoa`, los tres ultimos `.mm` de `intern/ghost`. Estan cerrados.
+
+## 24. La regla que hace esto seguro: NO escribir las codificaciones de tipo
+
+`class_addMethod` necesita una cadena que describe el tipo de retorno y el de todos los
+parametros, empezando por los dos ocultos `self` (`@`) y `_cmd` (`:`). Escribir a mano
+las 68 que hacian falta en `intern/ghost` habria sido la parte mas peligrosa de toda la
+migracion: **una mal puesta no da error de compilacion ni de registro**, corrompe la
+pila de argumentos dentro del manejador de eventos.
+
+**No hay que escribirlas: el runtime ya las sabe.**
+
+    class_getInstanceMethod(superclase, sel) -> method_getTypeEncoding   (sobreescrituras)
+    protocol_getMethodDescription(protocolo, sel, requerido, instancia)  (protocolos)
+
+`ghost_objc::ClassBuilder` las pide y **aborta con un mensaje claro si nadie conoce el
+selector**. Eso convierte el fallo silencioso mas probable de esta migracion —una errata
+en un nombre de selector— en un fallo ruidoso y temprano, en el registro de la clase,
+antes de que se dibuje un pixel. De las 68, solo **3** se escriben a mano (metodos
+propios, firma `v@:@`), y para esas el constructor comprueba ademas que no contradigan al
+runtime si este las conoce.
+
+Lo que devuelve el runtime, y que nadie deberia intentar adivinar:
+
+    drawRect:                                v48@0:8{CGRect={CGPoint=dd}{CGSize=dd}}16
+    firstRectForCharacterRange:actualRange:  {CGRect=...}40@0:8{_NSRange=QQ}16^{_NSRange=QQ}32
+    draggingEntered:                         Q24@0:8@16
+
+**Orden obligatorio:** declarar los protocolos ANTES de anadir los metodos, o la
+busqueda no los encuentra.
+
+## 25. Declarar un protocolo obliga a implementarlo ENTERO
+
+Medido en el piloto: se declaro conformidad con `NSTextInputClient` implementando solo
+dos metodos y AppKit mato la aplicacion con «unrecognized selector» en
+`validAttributesForMarkedText`. Antes de declarar un protocolo hay que mirar cuantos
+metodos OBLIGATORIOS tiene:
+
+    protocol_copyMethodDescriptionList(p, /*requerido*/ true, /*instancia*/ true, &n)
+
+De los cuatro de esta fase: `NSWindowDelegate`, `NSDraggingDestination` y
+`NSApplicationDelegate` tienen **0 obligatorios**; `NSTextInputClient` los tiene todos y
+se implementan los 11.
+
+## 26. De 37 metodos, Cocoa solo llama a 24
+
+El `@implementation` de la vista tenia 37 metodos. La mayoria eran ayudas internas
+(`composing_free`, `processImeEvent`, `convertNSString`...) que estaban en Objective-C
+por vecindad, no porque nadie las llamara por selector. **Solo hay que registrar lo que
+Cocoa invoca**; el resto pasa a ser funciones de C++ normales. Menos superficie y ningun
+selector mas que pueda estar mal escrito.
+
+Lo mismo con los inicializadores propios (`initWithSystemCocoa:...`): se llama al
+inicializador designado de la superclase —cuya codificacion conoce el runtime— y los
+punteros se escriben desde C++ con `ivar_set`. Dos metodos menos que registrar.
+
+**Y una ventaja que no se esperaba:** fabricar la clase en ejecucion elimina el apaño de
+la herencia multiple. El original incluia `GHOST_WindowViewCocoa.hh` DOS VECES con macros
+distintas para generar `CocoaOpenGLView : NSOpenGLView` y `CocoaMetalView : NSView`,
+porque Objective-C no tiene herencia multiple. Ahora las MISMAS funciones se registran en
+dos clases con superclase distinta: ni macros, ni doble inclusion, ni codigo duplicado.
+
+## 27. Bloques (`^`) desde C++ ESTANDAR, sin `-fblocks`
+
+Hay APIs que solo aceptan un bloque. En `intern/ghost` habia exactamente una:
+`NSColorSampler showSamplerWithSelectionHandler:`.
+
+Clang acepta bloques en C++ con `-fblocks`, pero eso es una extension. **No hace falta:**
+un bloque es una struct con una disposicion publicada (Block ABI de Clang) y se puede
+construir a mano. `ghost_objc::Block` lo hace en ~40 lineas.
+
+Probado ANTES de usarlo, que es la parte que importa: se construye, se invoca en la pila,
+**sobrevive a `_Block_copy` al monticulo** —lo que hace toda API que guarde el bloque— y
+Objective-C lo ejecuta al pasarlo a un metodo de verdad.
+
+Limitacion deliberada: **captura UN SOLO PUNTERO**. Con una captura POD no hacen falta
+las ayudas de copia y destruccion (`BLOCK_HAS_COPY_DISPOSE`), que es donde estan las
+complicaciones. Si hay que capturar mas, se mete todo en una struct y se captura su
+direccion. Eso ademas sustituye a `__block`, que es otra extension.
+
+Dos cosas mas que ahorran bloques:
+- Muchas APIs de `dispatch` tienen variante con PUNTERO A FUNCION: `dispatch_after_f`,
+  `dispatch_async_f`. Usarlas evita el bloque entero.
+- **Trampa de propiedad:** el compilador retiene las capturas de objeto de un bloque al
+  copiarlo. Fabricandolo a mano, NO. Si el objeto se usa despues de que acabe la llamada
+  (aqui, 0,1 s despues), hay que retenerlo a mano o es un uso despues de liberar.
+
+## 28. Un selector con un ESPACIO dentro compila y mata la aplicacion
+
+Caso real de esta fase. Un selector muy largo partido en dos lineas dentro de una macro
+que lo estringiza:
+
+    GHOST_SEL(initWithBitmapDataPlanes:pixelsWide:...:
+                                      hasAlpha:...)
+
+La operacion `#` del preprocesador **convierte la secuencia de espacios en UN espacio**,
+asi que se registra un selector que no existe. No da error; mata la aplicacion la primera
+vez que se usa. Un selector largo va SIEMPRE como literal de una sola pieza (los
+literales adyacentes de C++ se concatenan sin espacio y eso si vale).
+
+## 29. El escaner de selectores: la comprobacion que sustituye al compilador
+
+Lo que el compilador dejo de comprobar se recupera con un programa de 40 lineas: extrae
+del codigo fuente TODOS los selectores usados y, contra las **26.293 clases** cargadas en
+un proceso con AppKit, Metal, QuartzCore y Carbon, comprueba que al menos una los
+implemente. Un nombre con una errata no lo implementa nadie.
+
+Dos detalles sin los que da falsos positivos:
+- hay que buscar tambien en TODOS los protocolos (`objc_copyProtocolList`): los metodos
+  opcionales de `NSWindowDelegate` no los implementa ninguna clase hasta que alguien lo
+  hace;
+- los metodos PROPIOS (los que registramos nosotros) no los conoce nadie por definicion,
+  y hay que sacarlos de la lista a mano.
+
+Resultado en `intern/ghost`: **307 selectores comprobados, 0 con espacio, 306
+implementados**, y el unico restante es nuestro.
+
+## 30. Traducir un fichero de 2.000 lineas: no reescribirlo
+
+En `GHOST_SystemCocoa.mm` (2.199 lineas) la forma de equivocarse no es traducir mal un
+envio: es **transcribir mal las 1.400 lineas que no habia que tocar**. Asi que se
+tradujeron solo las construcciones de Objective-C y el resto se dejo literal, y eso se
+midio:
+
+    las 307 lineas de `convertButton` + `convertKey`   IDENTICAS byte a byte
+    del resto del fichero, 1.202 de 1.668 lineas       LITERALES (72%)
+
+Se declaran `NSPoint`, `NSSize`, `NSRect`, `unichar` y `NSTimeInterval` como alias de sus
+equivalentes de CoreGraphics (en 64 bits SON los mismos tipos, y hay `static_assert` que
+lo comprueba) para no tener que tocar el codigo heredado.
+
+Los otros dos idiomas que quedaban:
+- **Enumeracion rapida** (`for (x in coleccion)`): sobre un NSArray, recorrido por indice
+  con `count` y `objectAtIndex:`. Exactamente equivalente.
+- **Literales**: `@[a]` es `[NSArray arrayWithObjects:a, nil]`; `@YES` es
+  `[NSNumber numberWithBool:YES]`; y **ojo con el diccionario**: `@{k : v}` es
+  `[NSDictionary dictionaryWithObjectsAndKeys:v, k, nil]`, o sea VALOR primero. Invertirlo
+  compila y da un diccionario al reves.
+
+## 31. Como se verifica todo esto
+
+A las comprobaciones de la parte II se anaden dos que resultaron decisivas:
+
+- **El menu de la aplicacion, leido por accesibilidad.** Verifica de una vez toda la
+  traduccion del `NSMenu` (11 entradas con sus `@selector`), que de otro modo solo se ve
+  mirando la pantalla: **37 entradas**, con las 5 propias de UPBGE y las 4 de Window.
+- **Las cifras de pixeles como serie, no como valor suelto.** Medir `T`, `N` y la rueda
+  ANTES de migrar y repetirlo en cada tanda. La rueda dio **2.833.074 pixeles en las
+  cuatro medidas**, al pixel. Una cifra suelta no dice nada; la misma cifra cuatro veces
+  seguidas sobre codigo distinto dice que el camino de entrada no ha cambiado.
+
+Y la sonda de `static_assert` **cazo un error real** en esta fase:
+`NSBitmapFormatFloatingPointSamples` no es `1 << 3`, es `1 << 2`. Escrito mal, al pegar
+una imagen del portapapeles se habrian aceptado bitmaps de muestras en coma flotante que
+hay que rechazar. 74 constantes y tipos comprobados, 1 fallo encontrado.
+
+## 32. Estado final
+
+**`intern/ghost` no tiene una sola linea de Objective-C++.** En todo el arbol:
+
+| | Al empezar | Ahora |
+|---|---:|---:|
+| Objective-C++ total | 30.536 | **5.246** |
+| `gpu/metal` | 20.950 | **0** |
+| `intern/ghost` | 4.340 | **0** |
+| `intern/cycles` (APAGADO, 0 en build.ninja) | 5.060 | 5.060 |
+| `blendthumb` (extension del Finder, no el motor) | 186 | 186 |
+
+Lo que queda no lo compila el motor: 5.060 lineas de Cycles, que esta apagado
+(comprobado fichero a fichero en `build.ninja`), y 186 de la extension de miniaturas del
+Finder, que es un bundle aparte.
+
+**Recomendacion para Cycles:** migrarlo hoy no quita ni una linea del binario y, peor, no
+habria forma de verificarlo, que es justo lo que dijo el carril de Metal en la parte I y
+sigue siendo cierto. Se migra cuando (y si) se encienda Cycles. `blendthumb` si es
+cerrable y es pequeno: 186 lineas, sin delegados, y con toda la infraestructura de este
+documento ya escrita.
