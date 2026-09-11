@@ -53,12 +53,12 @@ es lo que queda vivo de verdad:
   todavía se ejecutan las 9.055 líneas de Python y se construye una segunda
   configuración de teclado, en paralelo a la nativa.
 
-**Decisión: no se tocan.** No son presets de datos —no hay ninguna asignación de
-propiedad que convertir, hay 235 funciones que fabrican keymaps— y su sustituto
-nativo ya existe: `flipendo::keymap::register_default()`. Lo que falta es cambiar
-el operador de activación para que llame a ese registro en vez de ejecutar el
-script, y eso es código del carril del keymap (`fl_keymap_*`), no de este. Queda
-escrito abajo como deuda con nombre.
+**B4 lo ha cerrado.** No se fingió que fueran presets de propiedades: los 235
+constructores ya transliterados siguen en `flipendo::keymap`, y
+`preferences.keyconfig_activate` es ahora un operador C++ que reconstruye «Blender»
+con ese registro. `Blender.fpreset` es únicamente el marcador de datos que descubre
+el menú. Las 17 decisiones de teclado continúan vivas mediante RNA nativo. Los dos
+scripts distribuidos y sus 9.055 líneas se han retirado.
 
 ---
 
@@ -226,15 +226,7 @@ commit que las obtuvo y en `~/Flipendo/dev/noche/informes/F1-presets.md`.
 
 ## Deuda abierta, con nombre y apellidos
 
-1. **`scripts/presets/keyconfig/Blender.py` y
-   `keyconfig/keymap_data/blender_default.py` (9.055 líneas).** Siguen en Python.
-   No son datos: fabrican keymaps, y su sustituto nativo
-   (`flipendo::keymap::register_default`) ya existe y ya es quien construye el
-   keymap por defecto. Lo que falta es que `preferences.keyconfig_activate` llame
-   al registro nativo en vez de ejecutar el script. Es trabajo del carril del
-   keymap; este no toca `fl_keymap_*`.
-
-2. **Los cinco presets de FFmpeg con condicional NTSC/PAL**
+1. **Los cinco presets de FFmpeg con condicional NTSC/PAL**
    (`DVD_(note_colon__this_changes_render_resolution).py`, `H264_in_MP4.py`,
    `H264_in_Matroska.py`, `Ogg_Theora.py`, `Xvid.py`). Deciden `gopsize` 18 o 15
    según `scene.render.fps != 25`, que es estado de la escena en el momento de
@@ -244,25 +236,25 @@ commit que las obtuvo y en `~/Flipendo/dev/noche/informes/F1-presets.md`.
    <ruta> != <literal>`), o cinco proveedores de preset nativos. Mientras tanto
    siguen en `.py` y siguen funcionando.
 
-3. **`scripts/presets/text_editor/Visual_Studio_Code.py`.** Su `match
+2. **`scripts/presets/text_editor/Visual_Studio_Code.py`.** Su `match
    platform.system()` colapsa en Flipendo, que es solo macOS, a la rama `_` →
    `"code"`. Es el mismo razonamiento que el pase de macOS del keymap, que está
    siempre activo. Convertido con esa rama fija y anotado en el fichero.
 
-4. **`context.particle_system` y `context.active_operator` no se montan en el
+3. **`context.particle_system` y `context.active_operator` no se montan en el
    arnés**, así que `hair_dynamics/Default.py` (1) y los dos presets de
    `operator/wm.collada_export` (2) se convierten pero **no se comparan**. Son
    3 de 165. Para el primero haría falta un sistema de partículas real sobre un
    objeto; para los otros, una instancia de operador viva.
 
-5. **El escritor nativo y el operador.** `scripts/startup/bl_operators/presets.py`
+4. **El escritor nativo y el operador.** `scripts/startup/bl_operators/presets.py`
    sigue siendo el que registra `script.execute_preset` y la familia
    `AddPreset*`, porque están atados a `bl_ui` (los menús `Menu`/`PresetPanel` y
    su `bl_label`, que un operador nativo no puede escribir). Lo que sí deja de
    ser Python es el **trabajo**: leer, aplicar y escribir presets. Ver el estado
    exacto en el informe.
 
-6. **Punteros a datos.** El escritor de Python guardaba un puntero a un ID con
+5. **Punteros a datos.** El escritor de Python guardaba un puntero a un ID con
    `repr()`, que daba `bpy.data.images['Foo']` — Python válido que al reejecutarse
    volvía a resolver. El formato de datos solo entiende `none` para un puntero, y
    el lector nativo rechaza `bpy.data.…` con un error claro. Afecta a
@@ -272,7 +264,7 @@ commit que las obtuvo y en `~/Flipendo/dev/noche/informes/F1-presets.md`.
    `data("images", "Foo")` en el formato, resuelto contra `bpy.data` con RNA.
    Hasta entonces: error visible, nunca pérdida silenciosa.
 
-7. **Los presets de tema son XML**, no Python-como-datos, y siguen pasando por
+6. **Los presets de tema son XML**, no Python-como-datos, y siguen pasando por
    `rna_xml.py`. Es otra familia y otro formato; no entra en esta migración.
 
 ---
@@ -292,11 +284,12 @@ sobrescriba se queda como estaba.
 | Qué | Cifra |
 |---|---:|
 | Presets `.py` de partida | 173 (10.287 líneas) |
-| Convertidos a `.fpreset` | **166** (165 por la herramienta + 1 a mano) |
+| Presets de propiedades convertidos a `.fpreset` | **166** (165 por la herramienta + 1 a mano) |
+| Marcadores de keyconfig `.fpreset` | **1** («Blender», construcción C++) |
 | Mismo estado por los dos caminos | **148 de 166 comparados, 0 distintos** |
 | `.fpreset` que leen y aplican sin un error | **151 de 166** (0 con error, 15 sin contexto) |
-| `.py` retirados | 166 |
-| `.py` que quedan | 7 (5 de FFmpeg + 2 de keyconfig) |
+| `.py` retirados | **168** (incluye los 2 de keyconfig, 9.055 líneas) |
+| `.py` que quedan | **5** (solo FFmpeg) |
 
 Los artefactos están en `tests/flipendo/presets/`:
 `comparacion-python-cpp.txt` (la comparación de los dos caminos, congelada
