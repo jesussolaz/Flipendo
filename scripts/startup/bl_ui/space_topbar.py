@@ -297,36 +297,6 @@ class TOPBAR_MT_file_import(Menu):
             self.layout.operator("wm.collada_import", text="Collada (.dae) (Legacy)")
 
 
-class TOPBAR_MT_file_export(Menu):
-    bl_idname = "TOPBAR_MT_file_export"
-    bl_label = "Export"
-    bl_owner_use_filter = False
-
-    def draw(self, _context):
-        if bpy.app.build_options.alembic:
-            self.layout.operator("wm.alembic_export", text="Alembic (.abc)")
-        if bpy.app.build_options.usd:
-            self.layout.operator(
-                "wm.usd_export", text="Universal Scene Description (.usd*)")
-
-        if bpy.app.build_options.io_gpencil:
-            # PUGIXML library dependency.
-            if bpy.app.build_options.pugixml:
-                self.layout.operator("wm.grease_pencil_export_svg", text="Grease Pencil as SVG")
-            # HARU library dependency.
-            if bpy.app.build_options.haru:
-                self.layout.operator("wm.grease_pencil_export_pdf", text="Grease Pencil as PDF")
-
-        if bpy.app.build_options.io_wavefront_obj:
-            self.layout.operator("wm.obj_export", text="Wavefront (.obj)")
-        if bpy.app.build_options.io_ply:
-            self.layout.operator("wm.ply_export", text="Stanford PLY (.ply)")
-        if bpy.app.build_options.io_stl:
-            self.layout.operator("wm.stl_export", text="STL (.stl)")
-        if bpy.app.build_options.collada:
-            self.layout.operator("wm.collada_export", text="Collada (.dae) (Legacy)")
-
-
 class TOPBAR_MT_file_external_data(Menu):
     bl_label = "External Data"
 
@@ -735,7 +705,6 @@ classes = (
     TOPBAR_MT_file_recover,
     TOPBAR_MT_file_defaults,
     TOPBAR_MT_file_import,
-    TOPBAR_MT_file_export,
     TOPBAR_MT_file_external_data,
     TOPBAR_MT_file_cleanup,
     TOPBAR_MT_file_previews,

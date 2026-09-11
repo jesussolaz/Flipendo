@@ -33,6 +33,40 @@ set(LIB
 )
 
 
+# `TOPBAR_MT_file_export` consulta las mismas banderas que `bpy.app.build_options`,
+# que no son mas que estos `#ifdef`. Sin esto, sus filas desaparecerian del menu en
+# silencio (y el volcado de dibujo lo cantaria).
+if(WITH_ALEMBIC)
+  add_definitions(-DWITH_ALEMBIC)
+endif()
+if(WITH_USD)
+  add_definitions(-DWITH_USD)
+endif()
+if(WITH_IO_GREASE_PENCIL)
+  add_definitions(-DWITH_IO_GREASE_PENCIL)
+endif()
+if(WITH_PUGIXML)
+  add_definitions(-DWITH_PUGIXML)
+endif()
+if(WITH_HARU)
+  add_definitions(-DWITH_HARU)
+endif()
+if(WITH_IO_WAVEFRONT_OBJ)
+  add_definitions(-DWITH_IO_WAVEFRONT_OBJ)
+endif()
+if(WITH_IO_PLY)
+  add_definitions(-DWITH_IO_PLY)
+endif()
+if(WITH_IO_STL)
+  add_definitions(-DWITH_IO_STL)
+endif()
+# Ojo: la opcion se llama WITH_OPENCOLLADA y el macro WITH_COLLADA. Escribir
+# `if(WITH_COLLADA)` compila sin quejarse y deja la fila de Collada fuera del menu en
+# silencio; lo canto el volcado de dibujo a la primera.
+if(WITH_OPENCOLLADA)
+  add_definitions(-DWITH_COLLADA)
+endif()
+
 blender_add_lib(bf_editor_space_topbar "${SRC}" "${INC}" "${INC_SYS}" "${LIB}")
 
 

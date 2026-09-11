@@ -5,21 +5,32 @@
 /** \file
  * \ingroup sptopbar
  *
- * Ver FL_topbar_menus.hh. Los dos menus de la barra superior que el keymap
- * nativo abre por nombre: `TOPBAR_MT_file_context_menu` (el contextual de la
- * cabecera) y `TOPBAR_MT_file_new` (el «Nuevo»).
+ * Ver FL_topbar_menus.hh. Los menus de la barra superior que ya son nativos:
+ * `TOPBAR_MT_file_context_menu` (el contextual de la cabecera), `TOPBAR_MT_file_new`
+ * (el «Nuevo»), `TOPBAR_MT_templates_more` y `TOPBAR_MT_file_export` (Archivo >
+ * Exportar).
  *
- * AVISO PARA QUIEN MIGRE `TOPBAR_MT_file_export`
- * ----------------------------------------------
- * Ese menu **no** esta aqui —el keymap no lo abre por nombre— pero cuando le
- * toque hay que reponerle a mano una fila que hoy le mete un addon ya migrado:
+ * `TOPBAR_MT_file_export`: por que esta aqui, si el keymap no lo abre
+ * ------------------------------------------------------------------
+ * No entro por la lista de los 133 del keymap, sino por una **capacidad perdida**.
+ * El addon del motor anadia a ese menu la fila «Save as game runtime» con
+ * `bpy.types.TOPBAR_MT_file_export.append(menu_func_export)` — exportar el juego como
+ * ejecutable autonomo, que es lo que vende el motor. Al migrar el addon a C++
+ * (`politicas/ADDONS-MOTOR-A-CPP.md` §4.3) el operador `wm.save_as_runtime` quedo
+ * nativo y registrado, pero la fila se quedo por el camino: desde C++ no hay forma de
+ * insertar en un menu de Python, asi que el apunte quedo como deuda «para cuando
+ * `space_topbar.py` pase a nativo». Es ese dia.
  *
- *     layout->op("WM_OT_save_as_runtime", IFACE_("Save as game runtime"), ICON_NONE);
+ * Esa fila va la ULTIMA del menu, porque `append()` dibuja despues del `draw()` de la
+ * clase. No es una licencia: es donde estaba.
  *
- * El operador ya es nativo; la fila la anadia
- * `bpy.types.TOPBAR_MT_file_export.append()` desde el addon del motor, y desde
- * C++ no hay forma de insertar en un menu de Python. Ver
- * `politicas/ADDONS-MOTOR-A-CPP.md` §4.3.
+ * Las banderas de compilacion
+ * --------------------------
+ * El `draw()` del Python consulta `bpy.app.build_options.*`, que no es mas que los
+ * `#ifdef WITH_*` de `bpy_app_build_options.cc`. Aqui se consultan los mismos macros
+ * directamente, y por eso el `CMakeLists.txt` de este editor define los nueve que hacen
+ * falta. Si alguno faltara, su fila desapareceria del menu y el volcado de dibujo lo
+ * cantaria al instante: la comprobacion se comprueba sola.
  */
 
 #include <optional>
@@ -160,6 +171,62 @@ static void file_context_menu_draw(const bContext * /*C*/, Menu *menu)
 
 /** \} */
 
+/* -------------------------------------------------------------------- */
+/** \name TOPBAR_MT_file_export
+ *
+ * Transliteracion de `TOPBAR_MT_file_export.draw()`
+ * (`scripts/startup/bl_ui/space_topbar.py:300`), MAS la fila del runtime que el addon
+ * del motor le anadia por detras (ver la cabecera del fichero).
+ *
+ * `bl_owner_use_filter = False` del Python no se transcribe porque no existe: para un
+ * `Menu`, `rna_Menu_register` no lo lee y `MenuType` no tiene ese campo. El volcado de
+ * registro lo confirma — el bloque de la linea base dice `flag=[]` y `owner_id=''`.
+ * \{ */
+
+static void file_export_draw(const bContext * /*C*/, Menu *menu)
+{
+  uiLayout *layout = menu->layout;
+
+#ifdef WITH_ALEMBIC
+  layout->op("WM_OT_alembic_export", IFACE_("Alembic (.abc)"), ICON_NONE);
+#endif
+#ifdef WITH_USD
+  layout->op("WM_OT_usd_export", IFACE_("Universal Scene Description (.usd*)"), ICON_NONE);
+#endif
+
+#ifdef WITH_IO_GREASE_PENCIL
+  /* Dependencia de la biblioteca PUGIXML. */
+#  ifdef WITH_PUGIXML
+  layout->op("WM_OT_grease_pencil_export_svg", IFACE_("Grease Pencil as SVG"), ICON_NONE);
+#  endif
+  /* Dependencia de la biblioteca HARU. */
+#  ifdef WITH_HARU
+  layout->op("WM_OT_grease_pencil_export_pdf", IFACE_("Grease Pencil as PDF"), ICON_NONE);
+#  endif
+#endif
+
+#ifdef WITH_IO_WAVEFRONT_OBJ
+  layout->op("WM_OT_obj_export", IFACE_("Wavefront (.obj)"), ICON_NONE);
+#endif
+#ifdef WITH_IO_PLY
+  layout->op("WM_OT_ply_export", IFACE_("Stanford PLY (.ply)"), ICON_NONE);
+#endif
+#ifdef WITH_IO_STL
+  layout->op("WM_OT_stl_export", IFACE_("STL (.stl)"), ICON_NONE);
+#endif
+#ifdef WITH_COLLADA
+  layout->op("WM_OT_collada_export", IFACE_("Collada (.dae) (Legacy)"), ICON_NONE);
+#endif
+
+  /* La fila que el addon del motor metia con `append()`, repuesta. Sin ella, Flipendo
+   * no tiene por donde exportar el juego como ejecutable autonomo desde el menu, que
+   * es la capacidad que distingue a este fork. El operador es nativo desde la
+   * migracion de los addons del motor. */
+  layout->op("WM_OT_save_as_runtime", IFACE_("Save as game runtime"), ICON_NONE);
+}
+
+/** \} */
+
 static const flipendo::MenuDecl topbar_menus[] = {
     {
         /*idname*/ "TOPBAR_MT_file_context_menu",
@@ -181,6 +248,13 @@ static const flipendo::MenuDecl topbar_menus[] = {
         /*description*/ nullptr,
         /*translation_context*/ nullptr,
         /*draw*/ templates_more_draw,
+    },
+    {
+        /*idname*/ "TOPBAR_MT_file_export",
+        /*label*/ N_("Export"),
+        /*description*/ nullptr,
+        /*translation_context*/ nullptr,
+        /*draw*/ file_export_draw,
     },
 };
 
