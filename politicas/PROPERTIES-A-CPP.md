@@ -99,7 +99,6 @@ se llaman. **Ésa era la señal de salida**; a partir de aquí las demás salen 
 | Fichero | Líneas | Paneles | Dependencias compartidas |
 |---|---:|---:|---|
 | `properties_animviz.py` | 123 | 0 (solo mixins de dibujo) | ninguna — es una **biblioteca**, no una pestaña; cae con sus usuarios |
-| `properties_data_lattice.py` | 105 | 4 | `PropertyPanel`, `PropertiesAnimationMixin` |
 | `properties_data_metaball.py` | 137 | 6 | `PropertyPanel`, `PropertiesAnimationMixin` |
 | `properties_data_speaker.py` | 156 | 6 | `PropertyPanel`, `PropertiesAnimationMixin` |
 | `properties_data_pointcloud.py` | 175 | 3 | `PropertyPanel`, `UIList` |
@@ -157,3 +156,27 @@ El único distinto del diseño es `TOPBAR_MT_templates_more`, que **no es de est
 menú de plantillas de aplicación). El único distinto del registro sigue siendo
 `REGION PROPERTIES WINDOW`, la deuda de orden global. **Los seis paneles y el menú de Colección
 se dibujan idénticos al Python.**
+
+## Quinta unidad: la Rejilla, y la prueba de que la extracción paga
+
+`scripts/startup/bl_ui/properties_data_lattice.py` (105 líneas, 4 paneles) pasa entera a
+`space_buttons/fl_properties_data_lattice.cc`. Es la primera que usa **los dos** ayudantes
+compartidos, que es justo para lo que se extrajeron: los paneles `DATA_PT_lattice_animation` y
+`DATA_PT_custom_props_lattice` son dos llamadas y sus metadatos, nada más.
+
+Los metadatos de los mixins, que no están en el fichero de la pestaña y hay que ir a buscar:
+
+| Mixin | `bl_label` | `bl_options` | `bl_order` |
+|---|---|---|---:|
+| `PropertiesAnimationMixin` | `Animation` | `DEFAULT_CLOSED` | **999** (`PropertyPanel.bl_order - 1`) |
+| `PropertyPanel` | `Custom Properties` | `DEFAULT_CLOSED` | **1000** |
+
+**Verificado:**
+
+| Volcado | Resultado |
+|---|---|
+| Registro | **2.113 bloques, 2.112 idénticos, 1 distinto, 0 faltan, 0 sobran** |
+| Diseño | **2.004 bloques, 2.004 idénticos, 0 distintos, 0 faltan, 0 sobran** |
+
+**Cero diferencias de diseño en todo el editor.** El único bloque distinto del registro sigue
+siendo `REGION PROPERTIES WINDOW`, la deuda de orden global.

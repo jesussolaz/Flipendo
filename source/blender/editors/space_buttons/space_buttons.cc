@@ -1112,6 +1112,7 @@ void ED_spacetype_buttons()
   fl_properties_data_empty_register(art);
   fl_properties_physics_geometry_nodes_register(art);
   fl_properties_collection_register(art);
+  fl_properties_data_lattice_register(art);
   fl_world_buttons_register(art);
   BLI_addhead(&st->regiontypes, art);
 

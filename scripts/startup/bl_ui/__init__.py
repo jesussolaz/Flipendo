@@ -27,7 +27,6 @@ _modules = [
     "properties_data_curves",
     "properties_data_grease_pencil",
     "properties_data_light",
-    "properties_data_lattice",
     "properties_data_mesh",
     "properties_data_metaball",
     "properties_data_modifier",
