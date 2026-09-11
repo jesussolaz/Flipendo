@@ -57,6 +57,7 @@ set(SRC
   toolsystem/fl_toolbar_node.cc
   toolsystem/fl_toolbar_sequencer.cc
   toolsystem/fl_toolbar_view3d.cc
+  keymap/fl_keyconfig_io.cc
   keymap/fl_keymap_build.cc
   keymap/fl_keymap_params.cc
   keymap/fl_keymap_default.cc
@@ -159,6 +160,7 @@ set(SRC
   toolsystem/fl_toolbar_node.hh
   toolsystem/fl_toolbar_sequencer.hh
   toolsystem/fl_toolbar_view3d.hh
+  keymap/FL_keyconfig_io.hpp
   keymap/FL_keymap_build.hpp
   keymap/FL_keymap_params.hpp
   keymap/FL_keymap_default.hpp

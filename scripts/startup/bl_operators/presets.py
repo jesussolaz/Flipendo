@@ -718,13 +718,15 @@ class AddPresetKeyconfig(AddPresetBase, Operator):
     bl_label = "Add Custom Keymap Configuration"
     preset_menu = "USERPREF_MT_keyconfigs"
     preset_subdir = "keyconfig"
-    # La familia keyconfig no es una lista de propiedades: fabrica keymaps y se
-    # exporta como script. Ver la deuda 1 de politicas/PRESETS-A-DATOS.md.
-    preset_ext = ".py"
+    # La familia keyconfig no es una lista de propiedades: es un mapa de teclas
+    # entero. Ya no se exporta como script: `preferences.keyconfig_export` es
+    # nativo y escribe DATOS. Ver politicas/DATOS-SIN-INTERPRETE.md.
+    preset_ext = ".fkeyconfig"
 
     def add(self, _context, filepath):
         bpy.ops.preferences.keyconfig_export(filepath=filepath)
-        bpy.utils.keyconfig_set(filepath)
+        # Cargarlo ya no es ejecutarlo: lo lee el importador nativo.
+        bpy.ops.preferences.keyconfig_import(filepath=filepath, keep_original=True)
 
 
 class RemovePresetKeyconfig(AddPresetBase, Operator):
@@ -733,7 +735,7 @@ class RemovePresetKeyconfig(AddPresetBase, Operator):
     bl_label = "Remove Keymap Configuration"
     preset_menu = "USERPREF_MT_keyconfigs"
     preset_subdir = "keyconfig"
-    preset_ext = ".py"
+    preset_ext = ".fkeyconfig"
 
     remove_active: BoolProperty(
         default=True,

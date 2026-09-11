@@ -4199,6 +4199,8 @@ void WM_OT_properties_remove(wmOperatorType *ot);
 void WM_OT_owner_enable(wmOperatorType *ot);
 void WM_OT_owner_disable(wmOperatorType *ot);
 void PREFERENCES_OT_keyconfig_activate(wmOperatorType *ot);
+void PREFERENCES_OT_keyconfig_export(wmOperatorType *ot);
+void PREFERENCES_OT_keyconfig_import(wmOperatorType *ot);
 void WM_OT_drop_blend_file(wmOperatorType *ot);
 void WM_OT_sysinfo(wmOperatorType *ot);
 void WM_OT_blenderplayer_start(wmOperatorType *ot);
@@ -4244,6 +4246,8 @@ void wm_operatortypes_register()
   WM_operatortype_append(WM_OT_owner_enable);
   WM_operatortype_append(WM_OT_owner_disable);
   WM_operatortype_append(PREFERENCES_OT_keyconfig_activate);
+  WM_operatortype_append(PREFERENCES_OT_keyconfig_export);
+  WM_operatortype_append(PREFERENCES_OT_keyconfig_import);
   WM_operatortype_append(WM_OT_drop_blend_file);
   WM_operatortype_append(WM_OT_sysinfo);
   WM_operatortype_append(WM_OT_blenderplayer_start);
