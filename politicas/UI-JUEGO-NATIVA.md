@@ -308,7 +308,15 @@ añadir sus pasos a esta lista.
    (`region_3d.view_perspective = 'CAMERA'`), ni el render principal ni el
    `ImageRender` usan la cámara. Es la misma trampa que costó tiempo en
    VideoTexture y vale para cualquier escena de prueba.
-4. **`bpy.ops.logic.sensor_add` revienta en `--background`** (`sensor_add_exec`
+4. **Una declaración adelantada de un tipo AJENO, dentro de un namespace, declara
+   un tipo NUEVO.** `struct GPUTexture *` escrito dentro de `namespace flipendo`
+   no es el `GPUTexture` de Blender: es `flipendo::GPUTexture`, y las funciones de
+   GPU dejan de encajar con un «no matching function» que no dice por qué. Es el
+   mismo fallo de espacio de nombres que dejó el árbol sin enlazar esta noche con
+   `blender::ed::object::VIEW3D_OT_transform_gizmo_set`. Las declaraciones
+   adelantadas de tipos ajenos van **fuera** del namespace, y en
+   `FL_UiCanvas.hpp` hay un comentario diciéndolo.
+5. **`bpy.ops.logic.sensor_add` revienta en `--background`** (`sensor_add_exec`
    → `ED_undo_push_old` sin pila de deshacer). Si alguien quiere montar una escena
    de comparación con controlador Python, que lo sepa antes de perder el rato.
 
