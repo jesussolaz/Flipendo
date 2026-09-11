@@ -333,3 +333,74 @@ mano con logica que el lector nativo no entienda, y perderselo sin avisar seria
 justo lo que esta migracion existe para evitar. Cuando salta, imprime el motivo
 del rechazo y «Preset no convertible a datos, se ejecuta como script». Se va con
 `bl_operators`.
+
+
+---
+
+## Auditoría de `bl_operators/presets.py` (carril C, 2026-09-11, 04:30)
+
+El encargo lo describía como "el más redundante que queda". **Medido, no lo es**: no hay
+ni una línea muerta. Lo que hay es un **envoltorio fino de Python sobre un núcleo que ya es
+C++**. Las cifras, sobre 1.023 líneas:
+
+| Categoría | Líneas |
+|---|---:|
+| Vacías | 200 |
+| Comentario | 61 |
+| **Tablas de datos** (`preset_values`, `preset_defines`, `preset_subdir`, `preset_menu`, `bl_idname`…) | **298** |
+| Código real | ~464 |
+
+26 clases: `AddPresetBase`, `ExecutePreset` y **24 envoltorios** que no hacen otra cosa que
+declarar qué rutas RNA toca su familia.
+
+### Nada está muerto: los 23 idnames están vivos
+
+Se comprobó uno a uno buscando referencias en `scripts/startup/bl_ui`, `scripts/modules` y
+`source/blender`:
+
+- **`script.execute_preset`**: referenciado desde **12 ficheros de `bl_ui` y 3 de C++**
+  (`fl_ui_dump.cc`, `FL_preset_ui.hpp`, `fl_preset_ui.cc`). Es el operador que el **panel
+  nativo de presets emite** para aplicar uno. Es el puente vivo C++ → Python.
+- Los **22 `*_preset_add` / `*_preset_remove` / `*_preset_save`**: cada uno referenciado
+  desde su panel de `bl_ui`. `node.node_color_preset_add` y `wm.operator_preset_add`
+  además desde C++.
+
+Retirar el fichero hoy **perdería capacidad**, que es justo lo que la doctrina prohíbe.
+
+### Lo que ya NO hace (y por eso parece redundante)
+
+Ni `ExecutePreset` ni `AddPresetBase` hacen ya el trabajo de verdad:
+
+- Aplicar un preset es `bpy.ops.wm.preset_apply(filepath=...)` → `WM_OT_preset_apply`, C++.
+- Escribirlo es `bpy.ops.wm.preset_write(...)` → `WM_OT_preset_write`, C++, con la tabla de
+  rutas en `fl_preset_spec.cc`.
+
+### Lo que SÍ sigue haciendo en Python, que es lo que hay que migrar
+
+1. **`ExecutePreset`** (67 líneas): actualizar el `bl_label` del menú al nombre elegido,
+   validar la extensión y sus mensajes de error, invocar los ganchos `reset_cb` y `post_cb`
+   de la clase de preset, la rama `.xml` (temas, vía `rna_xml`) y el **último recurso
+   `bpy.utils.execfile`** para un `.py` heredado que el lector nativo no sepa convertir —la
+   deuda 2 de este documento.
+2. **`AddPresetBase`** (~168 líneas): nombre → nombre de fichero, resolución de la ruta de
+   usuario, actualización del `bl_label`, la rama de borrado (que busca con `.fpreset` y
+   además con `.py`, para poder borrar presets guardados antes de la migración), la rama
+   XML y los ganchos `pre_cb` / `add` / `remove`.
+3. Las **298 líneas de tabla**, que son exactamente el tipo de dato que ya vive en C++ para
+   la escritura (`fl_preset_spec.cc`) pero todavía no para el registro de los operadores.
+
+### Plan para cerrarlo (no cabía en la noche, queda escrito)
+
+1. Un `AddPresetBase` genérico en C++: un `wmOperatorType` parametrizado por
+   `(preset_menu, preset_subdir, tipo)`, que ya puede apoyarse en `WM_OT_preset_write`.
+2. Las 24 familias como **una tabla más** junto a `fl_preset_spec.cc`, no como 24 clases.
+   Las 298 líneas de tabla se convierten en filas.
+3. `script.execute_preset` en C++, con tres cosas que no se pueden olvidar: el `bl_label`
+   del menú, los ganchos `reset_cb`/`post_cb` (**comprobar antes cuántos existen de
+   verdad**; si son cero, el gancho desaparece con el Python) y la rama `.xml` de temas.
+4. El `execfile` de último recurso es lo **último** que se quita, y solo cuando el lector
+   nativo acepte los cinco FFmpeg con su condicional NTSC/PAL. Hasta entonces, quitarlo
+   pierde capacidad.
+
+Orden recomendado: 2 → 1 → 3 → 4. La tabla primero, porque es la que quita 298 líneas sin
+riesgo y deja los 24 envoltorios reducidos a una fila cada uno.
