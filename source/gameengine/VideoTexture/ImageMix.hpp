@@ -72,13 +72,20 @@ class ImageMix : public ImageBase {
 
  protected:
   /// create new source
-  virtual ImageSource *newSource(const char *id)
+  virtual ImageSource *newSource(const char *id) override
   {
     return new ImageSourceMix(id);
   }
 
   /// calculate image from sources and set its availability
-  virtual void calcImage(unsigned int texId, double ts);
+  virtual void calcImage(unsigned int texId, double ts) override;
+
+ public:
+  /// ImageMix si avisaba al depsgraph (era ImageMixType en la lista)
+  virtual bool needsDepsgraphNotifier(void) const override
+  {
+    return true;
+  }
 };
 
 /// pixel filter for image mixer

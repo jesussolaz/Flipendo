@@ -44,6 +44,9 @@ class FL_ComponentManager {
   void RegisterType(const std::string &name, Factory factory);
   /* Escanea los objetos de la escena (una sola vez) y ata componentes. */
   void AttachScene(KX_Scene *scene);
+  /* Ata a mano un componente por nombre a un objeto. Devuelve false si el
+     nombre no esta registrado. */
+  bool AttachComponent(KX_GameObject *owner, const std::string &name);
   /* Tickea todos los componentes vivos; descarta los de objetos ya destruidos. */
   void Tick(KX_Scene *scene, float dt);
 
@@ -61,6 +64,8 @@ class FL_ComponentManager {
 /* Helper de registro estático. */
 /* Definida en FL_ArpgComponents.cpp: registra los componentes integrados. */
 void FL_RegisterBuiltinComponents(FL_ComponentManager &mgr);
+/* Definida en FL_RenderToTexture.cpp: el componente "CctvMonitor". */
+void FL_RegisterRenderToTextureComponents(FL_ComponentManager &mgr);
 
 struct FL_AutoRegister {
   FL_AutoRegister(const std::string &name, FL_ComponentManager::Factory f) {

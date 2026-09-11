@@ -85,11 +85,10 @@ if(MSVC)
 	)
 endif()
 
-if(WITH_PYTHON)
-  list(APPEND LIB
-    ge_videotexture
-  )
-endif()
+# VideoTexture se construye siempre desde que su nucleo es C++ nativo.
+list(APPEND LIB
+  ge_videotexture
+)
 
 if(WITH_GAMEENGINE_SECURITY)
   add_definitions(-DWITH_GAMEENGINE_SECURITY)

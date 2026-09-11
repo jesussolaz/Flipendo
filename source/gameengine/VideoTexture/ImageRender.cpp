@@ -18,7 +18,9 @@
 #include "GPU_viewport.hh"
 
 #include "CM_Message.hpp"
-#include "EXP_PythonCallBack.hpp"
+#ifdef WITH_PYTHON
+#  include "EXP_PythonCallBack.hpp"
+#endif
 #include "KX_Globals.hpp"
 #include "RAS_IVertex.hpp"
 #include "RAS_MeshObject.hpp"
@@ -399,6 +401,7 @@ void ImageRender::Unbind()
   GPU_framebuffer_restore();
 }
 
+#ifdef WITH_PYTHON
 void ImageRender::RunPreDrawCallbacks()
 {
   PyObject *list = m_preDrawCallbacks;
@@ -426,7 +429,9 @@ void ImageRender::RunPostDrawCallbacks()
    * will be called if we did changes related to scene_eval in ImageRender draw callbacks */
   DEG_id_tag_update(&m_camera->GetBlenderObject()->id, ID_RECALC_TRANSFORM);
 }
+#endif  // WITH_PYTHON
 
+#ifdef WITH_PYTHON
 // cast Image pointer to ImageRender
 inline ImageRender *getImageRender(PyImage *self)
 {
@@ -876,6 +881,7 @@ static PyGetSetDef imageMirrorGetSets[] = {
      nullptr},
     {nullptr}};
 
+#endif  // WITH_PYTHON
 // constructor
 ImageRender::ImageRender(KX_Scene *scene,
                          KX_GameObject *observer,
@@ -885,6 +891,13 @@ ImageRender::ImageRender(KX_Scene *scene,
                          unsigned int height,
                          unsigned short samples)
     : ImageViewport(width, height),
+#ifdef WITH_PYTHON
+      /* Trampa encontrada al partir el fichero: este segundo constructor (el del
+       * espejo) NO inicializaba los dos punteros de callbacks que el destructor
+       * hace Py_CLEAR. Con Python era basura en la pila. Se inicializan. */
+      m_preDrawCallbacks(nullptr),
+      m_postDrawCallbacks(nullptr),
+#endif
       m_render(false),
       m_done(false),
       m_scene(scene),
@@ -1049,6 +1062,7 @@ ImageRender::ImageRender(KX_Scene *scene,
   m_render = true;
 }
 
+#ifdef WITH_PYTHON
 // define python type
 PyTypeObject ImageMirrorType = {
     PyVarObject_HEAD_INIT(nullptr, 0) "VideoTexture.ImageMirror", /*tp_name*/
@@ -1089,3 +1103,5 @@ PyTypeObject ImageMirrorType = {
     0,                                                            /* tp_alloc */
     Image_allocNew,                                               /* tp_new */
 };
+
+#endif  // WITH_PYTHON

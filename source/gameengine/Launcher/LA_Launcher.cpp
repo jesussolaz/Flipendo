@@ -53,9 +53,7 @@
 #include "LA_System.hpp"
 #include "LA_SystemCommandLine.hpp"
 
-#ifdef WITH_PYTHON
-#  include "Texture.hpp"  // For FreeAllTextures.
-#endif                  // WITH_PYTHON
+#include "Texture.hpp"  // For FreeAllTextures.
 
 LA_Launcher::LA_Launcher(GHOST_ISystem *system,
                          Main *maggie,
@@ -286,9 +284,9 @@ void LA_Launcher::InitEngine()
 
 void LA_Launcher::ExitEngine()
 {
-#ifdef WITH_PYTHON
+  /* Las texturas dinamicas existen tambien sin interprete desde que VideoTexture
+   * tiene fachada C++: soltarlas ya no es cosa de Python. */
   Texture::FreeAllTextures(nullptr);
-#endif  // WITH_PYTHON
 
   DEV_Joystick::Close();
   m_ketsjiEngine->StopEngine();

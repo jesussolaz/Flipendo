@@ -73,6 +73,7 @@ void ImageMix::calcImage(unsigned int texId, double ts)
   }
 }
 
+#ifdef WITH_PYTHON
 // cast Image pointer to ImageMix
 inline ImageMix *getImageMix(PyImage *self)
 {
@@ -195,3 +196,5 @@ PyTypeObject ImageMixType = {
     0,                                                         /* tp_alloc */
     Image_allocNew,                                            /* tp_new */
 };
+
+#endif  // WITH_PYTHON

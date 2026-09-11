@@ -44,13 +44,13 @@ add_subdirectory(Physics/Dummy)
 add_subdirectory(Rasterizer)
 add_subdirectory(Rasterizer/RAS_OpenGLRasterizer)
 add_subdirectory(SceneGraph)
+# VideoTexture (render a textura: espejos, minimapas, camaras de vigilancia) ya no
+# depende de Python: su nucleo es C++ y solo los enlaces de bge.texture van dentro
+# de if(WITH_PYTHON), en su propio CMakeLists. Ver politicas/PLAYER-SIN-CPYTHON.md.
+add_subdirectory(VideoTexture)
 
 if(WITH_BULLET)
   add_subdirectory(Physics/Bullet)
-endif()
-
-if(WITH_PYTHON)
-  add_subdirectory(VideoTexture)
 endif()
 
 if(WITH_PLAYER)

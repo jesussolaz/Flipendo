@@ -7,6 +7,7 @@ set(INC
   ../Common
   ../Device
   ../Expressions
+  ../Flipendo
   ../GameLogic
   ../Ketsji
   ../Rasterizer
@@ -16,12 +17,17 @@ set(INC
   ../../blender/gpu/intern
   ../../blender/imbuf/movie/intern
   ../../blender/makesrna
-  ../../blender/python
-  ../../blender/python/generic
   ../../../intern/decklink
   ../../../intern/gpudirect
   ../../../intern/atomic
 )
+
+if(WITH_PYTHON)
+  list(APPEND INC
+    ../../blender/python
+    ../../blender/python/generic
+  )
+endif()
 
 set(INC_SYS
   ../../../intern/moto/include
@@ -31,25 +37,22 @@ set(INC_SYS
 
 add_definitions(${GL_DEFINITIONS})
 
+# NUCLEO: C++ puro, se construye SIEMPRE (tambien en el Player sin CPython).
+# Es el render-a-textura de Flipendo: ImageRender / ImageViewport / ImageBase /
+# Filter* / Texture, con el API escrito en terminos de ImageBase * en vez de
+# PyImage *. Ver politicas/PLAYER-SIN-CPYTHON.md §3.1.
 set(SRC
   Exception.cpp
   FilterBase.cpp
   FilterBlueScreen.cpp
   FilterColor.cpp
   FilterNormal.cpp
-  FilterSource.cpp
   ImageBase.cpp
   ImageBuff.cpp
   ImageMix.cpp
   ImageRender.cpp
   ImageViewport.cpp
-  PyTypeList.cpp
   Texture.cpp
-  DeckLink.cpp
-  VideoBase.cpp
-  VideoFFmpeg.cpp
-  VideoDeckLink.cpp
-  blendVideoTex.cpp
 
   Common.hpp
   Exception.hpp
@@ -63,13 +66,31 @@ set(SRC
   ImageMix.hpp
   ImageRender.hpp
   ImageViewport.hpp
-  PyTypeList.hpp
   Texture.hpp
-  DeckLink.hpp
-  VideoBase.hpp
-  VideoFFmpeg.hpp
-  VideoDeckLink.hpp
 )
+
+# ENLACES DE PYTHON: el modulo bge.texture y todo lo que solo existe para el.
+# PyTypeList es la lista de tipos de Python; blendVideoTex es el modulo;
+# FilterSource.cpp son solo PyTypeObject (las clases viven en FilterSource.hpp).
+# DECKLINK y FFMPEG siguen aqui: su logica todavia esta trenzada con la capa de
+# enlace y es la deuda que queda escrita en la politica.
+if(WITH_PYTHON)
+  list(APPEND SRC
+    FilterSource.cpp
+    PyTypeList.cpp
+    blendVideoTex.cpp
+    DeckLink.cpp
+    VideoBase.cpp
+    VideoFFmpeg.cpp
+    VideoDeckLink.cpp
+
+    PyTypeList.hpp
+    DeckLink.hpp
+    VideoBase.hpp
+    VideoFFmpeg.hpp
+    VideoDeckLink.hpp
+  )
+endif()
 
 set(LIB
   PRIVATE bf::blenkernel

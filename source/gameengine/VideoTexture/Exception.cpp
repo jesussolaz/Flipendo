@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "CM_Message.hpp"
 #include "EXP_PyObjectPlus.hpp"
 
 // exception identificators
@@ -104,7 +105,13 @@ void Exception::report(void)
   // set exception description
   setXptDesc();
   // set python error
+#ifdef WITH_PYTHON
   PyErr_SetString(PyExc_RuntimeError, what());
+#else
+  /* Sin interprete no hay PyErr donde dejar el aviso. Callarse es lo unico que no
+   * vale (politicas/PLAYER-SIN-CPYTHON.md): se dice por consola. */
+  CM_Error("VideoTexture: " << what());
+#endif
   // if log file is set
   if (m_logFile != nullptr) {
     // write description to log
@@ -193,8 +200,12 @@ void registerAllExceptions(void)
   MirrorNormalInvalidDesc.registerDesc();
   MirrorHorizontalDesc.registerDesc();
   MirrorTooSmallDesc.registerDesc();
+#ifdef WITH_PYTHON
+  /* Viven en VideoBase.cpp, que de momento sigue siendo solo Python (ffmpeg y
+   * decklink todavia tienen la logica trenzada con la capa de enlace). */
   SourceVideoEmptyDesc.registerDesc();
   SourceVideoCreationDesc.registerDesc();
+#endif
   FrameBufferInvalidDesc.registerDesc();
 #ifdef WITH_GAMEENGINE_DECKLINK
   AutoDetectionNotAvailDesc.registerDesc();

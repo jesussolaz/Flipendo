@@ -38,6 +38,7 @@ void FilterBlueScreen::setLimits(unsigned short minLimit, unsigned short maxLimi
   m_limitDist = m_squareLimits[1] - m_squareLimits[0];
 }
 
+#ifdef WITH_PYTHON
 // cast Filter pointer to FilterBlueScreen
 inline FilterBlueScreen *getFilter(PyFilter *self)
 {
@@ -153,3 +154,5 @@ PyTypeObject FilterBlueScreenType = {
     0,                                                                 /* tp_alloc */
     Filter_allocNew,                                                   /* tp_new */
 };
+
+#endif  // WITH_PYTHON

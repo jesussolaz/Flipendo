@@ -5,6 +5,8 @@
 #include "KX_GameObject.hpp"
 #include "KX_Scene.hpp"
 #include "EXP_ListValue.hpp"
+#include "CM_Message.hpp"
+#include "FL_RenderToTexture.hpp"
 
 namespace flipendo {
 
@@ -24,6 +26,7 @@ void FL_ComponentManager::AttachScene(KX_Scene *scene)
   if (!m_builtinsRegistered) {
     m_builtinsRegistered = true;
     FL_RegisterBuiltinComponents(*this);
+    FL_RegisterRenderToTextureComponents(*this);
   }
   for (KX_Scene *s : m_attachedScenes) {
     if (s == scene) {
@@ -36,26 +39,53 @@ void FL_ComponentManager::AttachScene(KX_Scene *scene)
   if (!objs) {
     return;
   }
+  int pedidos = 0;
+  int atados = 0;
   for (KX_GameObject *obj : objs) {
     EXP_Value *prop = obj->GetProperty("fl_component");
     if (!prop) {
       continue;
     }
-    const std::string name = prop->GetText();
-    auto it = m_factories.find(name);
-    if (it == m_factories.end()) {
-      continue;
+    ++pedidos;
+    if (AttachComponent(obj, prop->GetText())) {
+      ++atados;
     }
-    FL_Component *comp = it->second();
-    comp->SetOwner(obj);
-    comp->Start();
-    m_instances.push_back({obj, comp});
+    else {
+      /* Doctrina: sin Python nada falla en silencio. Si el .blend pide un
+       * componente que el motor no conoce, se dice. */
+      CM_Error("Flipendo: el objeto '" << obj->GetName() << "' pide el componente '"
+                                       << prop->GetText() << "' y no existe");
+    }
   }
+
+  /* Sonda de verificacion (ver FL_RenderToTexture.hpp). */
+  const int porEntorno = FL_RttAttachFromEnvironment(scene, *this);
+  atados += porEntorno;
+  pedidos += porEntorno;
+
+  CM_Message("Flipendo: componentes nativos atados " << atados << "/" << pedidos << " en la escena '"
+                                                     << scene->GetName() << "'");
+}
+
+bool FL_ComponentManager::AttachComponent(KX_GameObject *owner, const std::string &name)
+{
+  auto it = m_factories.find(name);
+  if (it == m_factories.end()) {
+    return false;
+  }
+  FL_Component *comp = it->second();
+  comp->SetOwner(owner);
+  comp->Start();
+  m_instances.push_back({owner, comp});
+  return true;
 }
 
 void FL_ComponentManager::Tick(KX_Scene *scene, float dt)
 {
   AttachScene(scene);
+
+  /* Sonda de verificacion de render a textura (no hace nada sin FL_RTT_PROBE). */
+  FL_RttProbeTick(scene);
 
   EXP_ListValue<KX_GameObject> *objs = scene->GetObjectList();
   for (auto it = m_instances.begin(); it != m_instances.end();) {

@@ -12,11 +12,15 @@
 #include "Common.hpp"
 #include "EXP_PyObjectPlus.hpp"
 #include "FilterBase.hpp"
-#include "PyTypeList.hpp"
+#ifdef WITH_PYTHON
+#  include "PyTypeList.hpp"
+#endif
 #include "GPU_texture.hh"
 
 // forward declarations
+#ifdef WITH_PYTHON
 struct PyImage;
+#endif
 class ImageSource;
 
 /// type for list of image sources
@@ -102,17 +106,42 @@ class ImageBase {
   }
 
   /// get source object
-  PyImage *getSource(const char *id);
+  ImageBase *getSource(const char *id);
   /// set source object, return true, if source was set
-  bool setSource(const char *id, PyImage *source);
+  bool setSource(const char *id, ImageBase *source);
 
   /// get pixel filter
-  PyFilter *getFilter(void)
+  FilterBase *getFilter(void)
   {
-    return m_pyfilter;
+    return m_filter;
   }
   /// set pixel filter
-  void setFilter(PyFilter *filt);
+  void setFilter(FilterBase *filt);
+
+  /** Flipendo: ¿esta fuente necesita que se avise al depsgraph tras refrescar?
+   *
+   * Antes lo decidia Texture::refresh() comparando el tipo de Python de la
+   * fuente contra VideoFFmpegType / ImageFFmpegType / ImageMixType /
+   * ImageViewportType. Sin interprete no hay tipos de Python que comparar, asi
+   * que la pregunta la responde ahora cada clase. El reparto reproduce
+   * exactamente aquella lista: ImageViewport, ImageMix y VideoFFmpeg dicen que
+   * si; ImageRender (que hereda de ImageViewport pero NO era subtipo suyo en
+   * Python) y el resto dicen que no. */
+  virtual bool needsDepsgraphNotifier(void) const
+  {
+    return false;
+  }
+
+  /// envoltorio de Python que posee esta imagen (nullptr en el camino nativo)
+  void *getWrapper(void) const
+  {
+    return m_wrapper;
+  }
+  /// fijar el envoltorio; solo lo llama la capa de enlace de Python
+  void setWrapper(void *wrapper)
+  {
+    m_wrapper = wrapper;
+  }
 
   /// calculate size(nearest power of 2)
   static short calcSize(short size);
@@ -156,7 +185,9 @@ class ImageBase {
   bool m_staticSources;
 
   /// pixel filter
-  PyFilter *m_pyfilter;
+  FilterBase *m_filter;
+  /// envoltorio de Python, si lo hay
+  void *m_wrapper;
 
   /// initialize image data
   void init(short width, short height);
@@ -260,17 +291,14 @@ class ImageBase {
   {
     // find first filter in chain
     FilterBase *firstFilter = nullptr;
-    if (m_pyfilter != nullptr)
-      firstFilter = m_pyfilter->m_filter->findFirst();
+    if (m_filter != nullptr)
+      firstFilter = m_filter->findFirst();
     // if first filter is available
     if (firstFilter != nullptr) {
-      // python wrapper for filter
-      PyFilter pyFilt;
-      pyFilt.m_filter = &filt;
-      // set specified filter as first in chain
-      firstFilter->setPrevious(&pyFilt, false);
+      // set specified filter as first in chain (sin contar referencias)
+      firstFilter->setPrevious(&filt, false);
       // convert video image
-      convImage(*(m_pyfilter->m_filter), srcBuff, srcSize);
+      convImage(*m_filter, srcBuff, srcSize);
       // delete added filter
       firstFilter->setPrevious(nullptr, false);
     }
@@ -282,12 +310,14 @@ class ImageBase {
   }
 };
 
+#ifdef WITH_PYTHON
 // python structure for image filter
 struct PyImage {
   PyObject_HEAD
   // source object
   ImageBase *m_image;
 };
+#endif
 
 // size of id
 const int SourceIdSize = 32;
@@ -309,12 +339,12 @@ class ImageSource {
   bool is(const char *id);
 
   /// get source object
-  PyImage *getSource(void)
+  ImageBase *getSource(void)
   {
     return m_source;
   }
   /// set source object
-  void setSource(PyImage *source);
+  void setSource(ImageBase *source);
 
   /// get image from source
   unsigned int *getImage(double ts = -1.0);
@@ -330,14 +360,14 @@ class ImageSource {
   short *getSize(void)
   {
     static short defSize[] = {0, 0};
-    return m_source != nullptr ? m_source->m_image->getSize() : defSize;
+    return m_source != nullptr ? m_source->getSize() : defSize;
   }
 
  protected:
   /// id of source
   char m_id[SourceIdSize];
-  /// pointer to source structure
-  PyImage *m_source;
+  /// pointer to source image
+  ImageBase *m_source;
   /// buffered image from source
   unsigned int *m_image;
 
@@ -347,6 +377,8 @@ class ImageSource {
   {
   }
 };
+
+#ifdef WITH_PYTHON
 
 // list of python image types
 extern PyTypeList pyImageTypes;
@@ -361,6 +393,8 @@ template<class T> static int Image_init(PyObject *pySelf, PyObject *args, PyObje
   if (self->m_image != nullptr)
     delete self->m_image;
   self->m_image = new T();
+  // la imagen recuerda quien la envuelve, para contar referencias
+  self->m_image->setWrapper(self);
   // initialization succeded
   return 0;
 }
@@ -407,3 +441,5 @@ int Image_setFilter(PyImage *self, PyObject *value, void *closure);
 PyObject *Image_valid(PyImage *self, void *closure);
 // for buffer access to PyImage objects
 extern PyBufferProcs imageBufferProcs;
+
+#endif  // WITH_PYTHON

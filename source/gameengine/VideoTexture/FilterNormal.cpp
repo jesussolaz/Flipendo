@@ -32,6 +32,7 @@ void FilterNormal::setDepth(float depth)
   m_depthScale = depth / depthScaleKoef;
 }
 
+#ifdef WITH_PYTHON
 // cast Filter pointer to FilterNormal
 inline FilterNormal *getFilter(PyFilter *self)
 {
@@ -145,3 +146,5 @@ PyTypeObject FilterNormalType = {
     0,                                                             /* tp_alloc */
     Filter_allocNew,                                               /* tp_new */
 };
+
+#endif  // WITH_PYTHON

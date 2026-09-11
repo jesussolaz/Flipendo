@@ -17,6 +17,7 @@
 // default filter
 FilterRGB24 defFilter;
 
+#ifdef WITH_PYTHON
 // forward declaration;
 extern PyTypeObject ImageBuffType;
 
@@ -52,6 +53,7 @@ static int ImageBuff_init(PyObject *pySelf, PyObject *args, PyObject *kwds)
   // initialization succeded
   return 0;
 }
+#endif  // WITH_PYTHON
 
 ImageBuff::~ImageBuff(void)
 {
@@ -72,9 +74,9 @@ void ImageBuff::load(unsigned char *img, short width, short height)
   // original size
   short orgSize[2] = {width, height};
   // is filter available
-  if (m_pyfilter != nullptr)
+  if (m_filter != nullptr)
     // use it to process image
-    convImage(*(m_pyfilter->m_filter), img, orgSize);
+    convImage(*m_filter, img, orgSize);
   else
     // otherwise use default filter
     convImage(defFilter, img, orgSize);
@@ -187,6 +189,7 @@ void ImageBuff::plot(ImageBuff *img, short x, short y, short mode)
   img->m_imbuf->byte_buffer.data = nullptr;
 }
 
+#ifdef WITH_PYTHON
 // cast Image pointer to ImageBuff
 inline ImageBuff *getImageBuff(PyImage *self)
 {
@@ -371,3 +374,5 @@ PyTypeObject ImageBuffType = {
     0,                                                          /* tp_alloc */
     Image_allocNew,                                             /* tp_new */
 };
+
+#endif  // WITH_PYTHON

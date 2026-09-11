@@ -65,9 +65,7 @@
 #  include "CcdPhysicsEnvironment.hpp"
 #endif
 
-#ifdef WITH_PYTHON
-#  include "Texture.hpp"  // For FreeAllTextures.
-#endif                  // WITH_PYTHON
+#include "Texture.hpp"  // For FreeAllTextures.
 
 BL_Converter::SceneSlot::SceneSlot() = default;
 
@@ -233,9 +231,8 @@ void BL_Converter::ConvertScene(KX_Scene *destinationscene,
 void BL_Converter::RemoveScene(KX_Scene *scene)
 {
 
-#ifdef WITH_PYTHON
+  /* Ya no depende de Python: la fachada C++ de VideoTexture existe siempre. */
   Texture::FreeAllTextures(scene);
-#endif  // WITH_PYTHON
 
   /* Delete the meshes as some one of them depends to the data owned by the scene
    * e.g the display array bucket owned by the meshes and needed to be unregistered

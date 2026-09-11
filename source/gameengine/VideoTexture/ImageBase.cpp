@@ -9,6 +9,8 @@
 
 #include <epoxy/gl.h>
 
+#include "MEM_guardedalloc.h"
+
 #include "Exception.hpp"
 
 #if (defined(WIN32) || defined(WIN64))
@@ -40,7 +42,8 @@ ImageBase::ImageBase(bool staticSrc)
       m_zbuff(false),
       m_depth(false),
       m_staticSources(staticSrc),
-      m_pyfilter(nullptr)
+      m_filter(nullptr),
+      m_wrapper(nullptr)
 {
   m_size[0] = m_size[1] = 0;
   m_exports = 0;
@@ -64,8 +67,10 @@ bool ImageBase::release(void)
     *it = nullptr;
   }
   // release filter object
-  Py_XDECREF(m_pyfilter);
-  m_pyfilter = nullptr;
+  if (m_filter != nullptr) {
+    VT_WrapperDecRef(m_filter->getWrapper());
+  }
+  m_filter = nullptr;
   return true;
 }
 
@@ -110,7 +115,7 @@ void ImageBase::refresh(void)
 }
 
 // get source object
-PyImage *ImageBase::getSource(const char *id)
+ImageBase *ImageBase::getSource(const char *id)
 {
   // find source
   ImageSourceList::iterator src = findSource(id);
@@ -119,12 +124,12 @@ PyImage *ImageBase::getSource(const char *id)
 }
 
 // set source object
-bool ImageBase::setSource(const char *id, PyImage *source)
+bool ImageBase::setSource(const char *id, ImageBase *source)
 {
   // find source
   ImageSourceList::iterator src = findSource(id);
   // check source loop
-  if (source != nullptr && source->m_image->loopDetect(this))
+  if (source != nullptr && source->loopDetect(this))
     return false;
   // if found, set new object
   if (src != m_sources.end())
@@ -152,15 +157,16 @@ bool ImageBase::setSource(const char *id, PyImage *source)
 }
 
 // set pixel filter
-void ImageBase::setFilter(PyFilter *filt)
+void ImageBase::setFilter(FilterBase *filt)
 {
   // reference new filter
   if (filt != nullptr)
-    Py_INCREF(filt);
+    VT_WrapperIncRef(filt->getWrapper());
   // release previous filter
-  Py_XDECREF(m_pyfilter);
+  if (m_filter != nullptr)
+    VT_WrapperDecRef(m_filter->getWrapper());
   // set new filter
-  m_pyfilter = filt;
+  m_filter = filt;
 }
 
 void ImageBase::swapImageBR()
@@ -269,7 +275,7 @@ bool ImageBase::loopDetect(ImageBase *img)
   // check all sources
   for (ImageSourceList::iterator it = m_sources.begin(); it != m_sources.end(); ++it)
     // if source detected loop, return this result
-    if ((*it)->getSource() != nullptr && (*it)->getSource()->m_image->loopDetect(img))
+    if ((*it)->getSource() != nullptr && (*it)->getSource()->loopDetect(img))
       return true;
   // no loop detected
   return false;
@@ -304,13 +310,14 @@ bool ImageSource::is(const char *id)
 }
 
 // set source object
-void ImageSource::setSource(PyImage *source)
+void ImageSource::setSource(ImageBase *source)
 {
   // reference new source
   if (source != nullptr)
-    Py_INCREF(source);
+    VT_WrapperIncRef(source->getWrapper());
   // release previous source
-  Py_XDECREF(m_source);
+  if (m_source != nullptr)
+    VT_WrapperDecRef(m_source->getWrapper());
   // set new source
   m_source = source;
 }
@@ -321,7 +328,7 @@ unsigned int *ImageSource::getImage(double ts)
   // if source is available
   if (m_source != nullptr)
     // get image from source
-    m_image = m_source->m_image->getImage(0, ts);
+    m_image = m_source->getImage(0, ts);
   // otherwise reset buffer
   else
     m_image = nullptr;
@@ -334,8 +341,10 @@ void ImageSource::refresh(void)
 {
   // if source is available, refresh it
   if (m_source != nullptr)
-    m_source->m_image->refresh();
+    m_source->refresh();
 }
+
+#ifdef WITH_PYTHON
 
 // list of image types
 PyTypeList pyImageTypes;
@@ -619,8 +628,10 @@ PyObject *Image_getSource(PyImage *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "s:getSource", &id))
     return nullptr;
   if (self->m_image != nullptr) {
-    // get source object
-    PyObject *src = reinterpret_cast<PyObject *>(self->m_image->getSource(id));
+    // get source image and, from it, its python wrapper
+    ImageBase *srcImage = self->m_image->getSource(id);
+    PyObject *src = srcImage != nullptr ? reinterpret_cast<PyObject *>(srcImage->getWrapper()) :
+                                          nullptr;
     // if source is available
     if (src != nullptr) {
       // return source
@@ -646,7 +657,7 @@ PyObject *Image_setSource(PyImage *self, PyObject *args)
       // convert to image struct
       PyImage *img = reinterpret_cast<PyImage *>(obj);
       // set source
-      if (!self->m_image->setSource(id, img)) {
+      if (!self->m_image->setSource(id, img->m_image)) {
         // if not set, retport error
         PyErr_SetString(PyExc_RuntimeError, "Invalid source or id");
         return nullptr;
@@ -667,8 +678,10 @@ PyObject *Image_getFilter(PyImage *self, void *closure)
 {
   // if image object is available
   if (self->m_image != nullptr) {
-    // pixel filter object
-    PyObject *filt = reinterpret_cast<PyObject *>(self->m_image->getFilter());
+    // pixel filter object, through its python wrapper
+    FilterBase *filter = self->m_image->getFilter();
+    PyObject *filt = filter != nullptr ? reinterpret_cast<PyObject *>(filter->getWrapper()) :
+                                         nullptr;
     // if filter is present
     if (filt != nullptr) {
       // return it
@@ -692,7 +705,7 @@ int Image_setFilter(PyImage *self, PyObject *value, void *closure)
       return -1;
     }
     // set new value
-    self->m_image->setFilter(reinterpret_cast<PyFilter *>(value));
+    self->m_image->setFilter(reinterpret_cast<PyFilter *>(value)->m_filter);
   }
   // return success
   return 0;
@@ -742,3 +755,5 @@ static void Image_releaseBuffer(PyImage *self, Py_buffer *buffer)
 
 PyBufferProcs imageBufferProcs = {(getbufferproc)Image_getbuffer,
                                   (releasebufferproc)Image_releaseBuffer};
+
+#endif  // WITH_PYTHON

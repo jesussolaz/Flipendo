@@ -10,7 +10,7 @@
 // FilterBase class implementation
 
 // constructor
-FilterBase::FilterBase(void) : m_previous(nullptr)
+FilterBase::FilterBase(void) : m_previous(nullptr), m_wrapper(nullptr)
 {
 }
 
@@ -29,15 +29,16 @@ void FilterBase::release(void)
 }
 
 // set new previous filter
-void FilterBase::setPrevious(PyFilter *filt, bool useRefCnt)
+void FilterBase::setPrevious(FilterBase *filt, bool useRefCnt)
 {
   // if reference counting has to be used
   if (useRefCnt) {
     // reference new filter
     if (filt != nullptr)
-      Py_INCREF(filt);
+      VT_WrapperIncRef(filt->getWrapper());
     // release old filter
-    Py_XDECREF(m_previous);
+    if (m_previous != nullptr)
+      VT_WrapperDecRef(m_previous->getWrapper());
   }
   // set new previous filter
   m_previous = filt;
@@ -48,11 +49,13 @@ FilterBase *FilterBase::findFirst(void)
 {
   // find first filter in chain
   FilterBase *frst;
-  for (frst = this; frst->m_previous != nullptr; frst = frst->m_previous->m_filter) {
+  for (frst = this; frst->m_previous != nullptr; frst = frst->m_previous) {
   };
   // set first filter
   return frst;
 }
+
+#ifdef WITH_PYTHON
 
 // list offilter types
 PyTypeList pyFilterTypes;
@@ -88,10 +91,10 @@ PyObject *Filter_getPrevious(PyFilter *self, void *closure)
   // if filter object is available
   if (self->m_filter != nullptr) {
     // pixel filter object
-    PyObject *filt = reinterpret_cast<PyObject *>(self->m_filter->getPrevious());
-    // if filter is present
-    if (filt != nullptr) {
-      // return it
+    FilterBase *prev = self->m_filter->getPrevious();
+    // if filter is present, return its python wrapper
+    if (prev != nullptr && prev->getWrapper() != nullptr) {
+      PyObject *filt = reinterpret_cast<PyObject *>(prev->getWrapper());
       Py_INCREF(filt);
       return filt;
     }
@@ -112,8 +115,10 @@ int Filter_setPrevious(PyFilter *self, PyObject *value, void *closure)
       return -1;
     }
     // set new value
-    self->m_filter->setPrevious(reinterpret_cast<PyFilter *>(value));
+    self->m_filter->setPrevious(reinterpret_cast<PyFilter *>(value)->m_filter);
   }
   // return success
   return 0;
 }
+
+#endif  // WITH_PYTHON

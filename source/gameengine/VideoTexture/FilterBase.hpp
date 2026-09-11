@@ -10,7 +10,9 @@
 #include "Common.hpp"
 
 #include "EXP_PyObjectPlus.hpp"
-#include "PyTypeList.hpp"
+#ifdef WITH_PYTHON
+#  include "PyTypeList.hpp"
+#endif
 
 #define VT_C(v, idx) ((unsigned char *)&v)[idx]
 #define VT_R(v) ((unsigned char *)&v)[0]
@@ -30,12 +32,40 @@
 // forward declaration
 class FilterBase;
 
+#ifdef WITH_PYTHON
 // python structure for filter
 struct PyFilter {
   PyObject_HEAD
   // source object
   FilterBase *m_filter;
 };
+#endif
+
+/* Flipendo: contador de referencias del ENVOLTORIO.
+ *
+ * El nucleo C++ de VideoTexture (FilterBase, ImageBase, Texture) trabaja ya solo
+ * con punteros nativos. Cuando el objeto lo creo Python, su duenno es el
+ * envoltorio (PyFilter / PyImage) y su vida la cuenta el interprete: al nucleo le
+ * basta subir y bajar ese contador sin saber nada mas. Sin interprete no hay
+ * envoltorio, estas dos funciones no hacen nada y el duenno es quien creo el
+ * objeto (la fachada nativa, FL_RenderToTexture). */
+inline void VT_WrapperIncRef(void *wrapper)
+{
+#ifdef WITH_PYTHON
+  Py_XINCREF(reinterpret_cast<PyObject *>(wrapper));
+#else
+  (void)wrapper;
+#endif
+}
+
+inline void VT_WrapperDecRef(void *wrapper)
+{
+#ifdef WITH_PYTHON
+  Py_XDECREF(reinterpret_cast<PyObject *>(wrapper));
+#else
+  (void)wrapper;
+#endif
+}
 
 /// base class for pixel filters
 class FilterBase {
@@ -55,12 +85,23 @@ class FilterBase {
   }
 
   /// get previous filter
-  PyFilter *getPrevious(void)
+  FilterBase *getPrevious(void)
   {
     return m_previous;
   }
   /// set previous filter
-  void setPrevious(PyFilter *filt, bool useRefCnt = true);
+  void setPrevious(FilterBase *filt, bool useRefCnt = true);
+
+  /// envoltorio de Python que posee este filtro (nullptr en el camino nativo)
+  void *getWrapper(void) const
+  {
+    return m_wrapper;
+  }
+  /// fijar el envoltorio; solo lo llama la capa de enlace de Python
+  void setWrapper(void *wrapper)
+  {
+    m_wrapper = wrapper;
+  }
 
   /// find first filter in chain
   FilterBase *findFirst(void);
@@ -73,7 +114,9 @@ class FilterBase {
 
  protected:
   /// previous pixel filter
-  PyFilter *m_previous;
+  FilterBase *m_previous;
+  /// envoltorio de Python, si lo hay
+  void *m_wrapper;
 
   /// filter pixel, source byte buffer
   virtual unsigned int filter(unsigned char *src,
@@ -112,9 +155,11 @@ class FilterBase {
     if (m_previous == nullptr)
       return *src;
     // otherwise return converted pixel
-    return m_previous->m_filter->convert(src, x, y, size, pixSize);
+    return m_previous->convert(src, x, y, size, pixSize);
   }
 };
+
+#ifdef WITH_PYTHON
 
 // list of python filter types
 extern PyTypeList pyFilterTypes;
@@ -129,6 +174,8 @@ template<class T> static int Filter_init(PyObject *pySelf, PyObject *args, PyObj
   if (self->m_filter != nullptr)
     delete self->m_filter;
   self->m_filter = new T();
+  // el filtro recuerda quien lo envuelve, para contar referencias
+  self->m_filter->setWrapper(self);
   // initialization succeded
   return 0;
 }
@@ -142,3 +189,5 @@ void Filter_dealloc(PyFilter *self);
 PyObject *Filter_getPrevious(PyFilter *self, void *closure);
 // set previous pixel filter object
 int Filter_setPrevious(PyFilter *self, PyObject *value, void *closure);
+
+#endif  // WITH_PYTHON

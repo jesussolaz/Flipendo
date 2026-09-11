@@ -37,6 +37,7 @@ set(INC
   ../Rasterizer
   ../Rasterizer/RAS_OpenGLRasterizer
   ../SceneGraph
+  ../VideoTexture
   ../../blender
   ../../blender/draw/intern
   ../../blender/editors/include
@@ -103,8 +104,10 @@ set(SRC
   KX_Scene.cpp
   ../Flipendo/FL_Component.cpp
   ../Flipendo/FL_ArpgComponents.cpp
+  ../Flipendo/FL_RenderToTexture.cpp
   ../Flipendo/FL_Component.hpp
   ../Flipendo/FL_ArpgCore.hpp
+  ../Flipendo/FL_RenderToTexture.hpp
   KX_TimeCategoryLogger.cpp
   KX_TimeLogger.cpp
   KX_VehicleWrapper.cpp
@@ -195,13 +198,12 @@ set(LIB
   ge_rasterizer
 )
 
-# VideoTexture solo se construye con Python (source/gameengine/CMakeLists.txt), asi que
-# enlazarlo incondicionalmente rompia el build sin CPython. Launcher ya lo guardaba asi.
-if(WITH_PYTHON)
-  list(APPEND LIB
-    ge_videotexture
-  )
-endif()
+# VideoTexture ya se construye siempre (su nucleo es C++ nativo), asi que vuelve a
+# enlazarse sin condicion. La guarda if(WITH_PYTHON) que hubo aqui existia solo
+# porque el subdirectorio no entraba en el build sin CPython.
+list(APPEND LIB
+  ge_videotexture
+)
 
 add_definitions(${GL_DEFINITIONS})
 

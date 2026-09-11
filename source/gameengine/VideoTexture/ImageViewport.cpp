@@ -171,6 +171,7 @@ bool ImageViewport::loadImage(unsigned int *buffer, unsigned int size, double ts
   return ret;
 }
 
+#ifdef WITH_PYTHON
 // cast Image pointer to ImageViewport
 inline ImageViewport *getImageViewport(PyImage *self)
 {
@@ -400,3 +401,5 @@ PyTypeObject ImageViewportType = {
     0,                                                              /* tp_alloc */
     Image_allocNew,                                                 /* tp_new */
 };
+
+#endif  // WITH_PYTHON

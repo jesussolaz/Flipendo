@@ -141,6 +141,15 @@ class VideoFFmpeg : public VideoBase {
   /// image calculation
   virtual void calcImage(unsigned int texId, double ts);
 
+ public:
+  /// VideoFFmpeg (y ImageFFmpeg, que envuelve esta misma clase) si avisaban
+  virtual bool needsDepsgraphNotifier(void) const override
+  {
+    return true;
+  }
+
+ protected:
+
   /// set actual position
   void setPositions(void);
 

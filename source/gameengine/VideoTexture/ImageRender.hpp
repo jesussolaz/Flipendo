@@ -63,10 +63,20 @@ class ImageRender : public ImageViewport {
   /// in case fbo is used, method to unbind
   void Unbind();
 
+#ifdef WITH_PYTHON
   void RunPreDrawCallbacks();
   void RunPostDrawCallbacks();
+#endif
 
   void SetTexture(Texture *tex);
+
+  /** ImageRender hereda de ImageViewport en C++, pero en Python NO era subtipo de
+   * ImageViewportType (tp_base = 0), asi que el PyObject_TypeCheck de
+   * Texture::refresh() nunca lo daba por bueno. Se conserva ese comportamiento. */
+  virtual bool needsDepsgraphNotifier(void) const override
+  {
+    return false;
+  }
 
 #ifdef WITH_PYTHON
   PyObject *m_preDrawCallbacks;
@@ -108,11 +118,11 @@ class ImageRender : public ImageViewport {
   KX_KetsjiEngine *m_engine;
 
   /// render 3d scene to image
-  virtual void calcImage(unsigned int texId, double ts)
+  virtual void calcImage(unsigned int texId, double ts) override
   {
     calcViewport(texId, ts);
   }
 
   /// render 3d scene to image
-  virtual void calcViewport(unsigned int texId, double ts);
+  virtual void calcViewport(unsigned int texId, double ts) override;
 };

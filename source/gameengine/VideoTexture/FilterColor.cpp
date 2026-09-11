@@ -9,6 +9,7 @@
 
 // implementation FilterGray
 
+#ifdef WITH_PYTHON
 // attributes structure
 static PyGetSetDef filterGrayGetSets[] = {  // attributes from FilterBase class
     {(char *)"previous",
@@ -58,6 +59,7 @@ PyTypeObject FilterGrayType = {
     0,                                                           /* tp_alloc */
     Filter_allocNew,                                             /* tp_new */
 };
+#endif  // WITH_PYTHON
 
 // implementation FilterColor
 
@@ -79,6 +81,7 @@ void FilterColor::setMatrix(ColorMatrix &mat)
       m_matrix[r][c] = mat[r][c];
 }
 
+#ifdef WITH_PYTHON
 // cast Filter pointer to FilterColor
 inline FilterColor *getFilterColor(PyFilter *self)
 {
@@ -201,6 +204,7 @@ PyTypeObject FilterColorType = {
     0,                                                            /* tp_alloc */
     Filter_allocNew,                                              /* tp_new */
 };
+#endif  // WITH_PYTHON
 
 // implementation FilterLevel
 
@@ -226,6 +230,7 @@ void FilterLevel::setLevels(ColorLevel &lev)
   }
 }
 
+#ifdef WITH_PYTHON
 // cast Filter pointer to FilterLevel
 inline FilterLevel *getFilterLevel(PyFilter *self)
 {
@@ -336,3 +341,5 @@ PyTypeObject FilterLevelType = {
     0,                                                            /* tp_alloc */
     Filter_allocNew,                                              /* tp_new */
 };
+
+#endif  // WITH_PYTHON

@@ -59,7 +59,13 @@ class ImageViewport : public ImageBase {
   void setPosition(int pos[2] = nullptr);
 
   /// capture image from viewport to user buffer
-  virtual bool loadImage(unsigned int *buffer, unsigned int size, double ts);
+  virtual bool loadImage(unsigned int *buffer, unsigned int size, double ts) override;
+
+  /// el viewport si avisaba al depsgraph (era ImageViewportType en la lista)
+  virtual bool needsDepsgraphNotifier(void) const override
+  {
+    return true;
+  }
 
  protected:
   unsigned int m_width;
@@ -87,7 +93,7 @@ class ImageViewport : public ImageBase {
   Texture *m_texture;
 
   /// capture image from viewport
-  virtual void calcImage(unsigned int texid, double ts)
+  virtual void calcImage(unsigned int texid, double ts) override
   {
     calcViewport(texid, ts);
   }
@@ -102,9 +108,11 @@ class ImageViewport : public ImageBase {
   }
 };
 
+#ifdef WITH_PYTHON
 PyObject *ImageViewport_getCaptureSize(PyImage *self, void *closure);
 int ImageViewport_setCaptureSize(PyImage *self, PyObject *value, void *closure);
 PyObject *ImageViewport_getWhole(PyImage *self, void *closure);
 int ImageViewport_setWhole(PyImage *self, PyObject *value, void *closure);
 PyObject *ImageViewport_getAlpha(PyImage *self, void *closure);
 int ImageViewport_setAlpha(PyImage *self, PyObject *value, void *closure);
+#endif  // WITH_PYTHON
