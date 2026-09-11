@@ -162,6 +162,7 @@ set(SRC
   creator_args.cc
   creator_signals.cc
 
+  creator_fl_harness.hh
   creator_intern.h
 )
 

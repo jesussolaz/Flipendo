@@ -80,6 +80,7 @@
 #  include "FL_rigidbody_ops_selftest.hh"
 #  include "FL_ui_dump.hpp"
 #  include "preset/FL_preset.hpp"
+#  include "FL_lod_ops_selftest.hh"
 #  include "toolsystem/FL_toolsystem_dump.hpp"
 
 /* for passing information between creator and gameengine */
@@ -101,6 +102,7 @@
 
 #  include "WM_types.hh"
 
+#  include "creator_fl_harness.hh"
 #  include "creator_intern.h" /* Own include. */
 
 /* -------------------------------------------------------------------- */
@@ -2513,11 +2515,12 @@ static int arg_handle_fl_dump_keymap(int argc, const char **argv, void *data)
     /* Vuelca y sale: asi vale igual en modo grafico, que es donde el keymap esta
      * completo. */
     const bool ok = FL_keyconfig_dump(CTX_wm_manager(C), argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_dump_operators_doc[] =
@@ -2529,28 +2532,51 @@ static int arg_handle_fl_dump_operators(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = FL_operators_dump(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
+}
+
+static const char arg_handle_fl_check_context_ops_doc[] =
+    "<linea-base>\n"
+    "\tComo --fl-selftest-context-ops, pero COMPARA con la linea base y da veredicto.\n"
+    "\tLinea base: tests/flipendo/operators/execution-python.txt. Lee las divergencias\n"
+    "\tdeliberadas de execution-python.txt.divergencias (wm.context_cycle_array corrige\n"
+    "\ta proposito un fallo del Python). Necesita modo grafico.";
+static int arg_handle_fl_check_context_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    flipendo::harness::gui_required(C, argv[0]);
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
+    const bool ok = FL_context_operators_check_schedule(C, argv[1]);
+    if (!ok) {
+      WM_exit(C, EXIT_FAILURE);
+    }
+    return 1;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_context_ops_doc[] =
     "<filepath>\n"
-    "\tEjecuta los siete operadores wm.context_* pendientes sobre datos reales y sale.";
+    "\tEjecuta los siete operadores wm.context_* pendientes sobre datos reales y sale.\n"
+    "\tSolo VUELCA: el veredicto lo da --fl-check-context-ops. Necesita modo grafico.";
 static int arg_handle_fl_selftest_context_ops(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::gui_required(C, argv[0]);
     const bool ok = FL_context_operators_selftest_schedule(C, argv[1]);
     if (!ok) {
       WM_exit(C, EXIT_FAILURE);
     }
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_selftest_wm_system_ops_doc[] =
@@ -2561,11 +2587,12 @@ static int arg_handle_fl_selftest_wm_system_ops(int argc, const char **argv, voi
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = FL_wm_system_operators_selftest(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_selftest_wm_property_ops_doc[] =
@@ -2575,14 +2602,14 @@ static int arg_handle_fl_selftest_wm_property_ops(int argc, const char **argv, v
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::gui_required(C, argv[0]);
     const bool ok = FL_wm_property_operators_selftest_schedule(C, argv[1]);
     if (!ok) {
       WM_exit(C, EXIT_FAILURE);
     }
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_selftest_wm_owner_ops_doc[] =
@@ -2593,11 +2620,12 @@ static int arg_handle_fl_selftest_wm_owner_ops(int argc, const char **argv, void
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = FL_wm_owner_operators_selftest(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_selftest_wm_properties_edit_doc[] =
@@ -2608,11 +2636,12 @@ static int arg_handle_fl_selftest_wm_properties_edit(int argc, const char **argv
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = FL_wm_properties_edit_selftest(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_selftest_wm_batch_rename_doc[] =
@@ -2623,11 +2652,12 @@ static int arg_handle_fl_selftest_wm_batch_rename(int argc, const char **argv, v
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = FL_wm_batch_rename_selftest(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_dump_keymap_native_doc[] =
@@ -2639,26 +2669,29 @@ static int arg_handle_fl_dump_keymap_native(int argc, const char **argv, void *d
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = FL_keyconfig_dump_native(CTX_wm_manager(C), argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_keymap_doc[] =
     "<baseline>\n"
-    "\tCompara el keymap nativo (C++) contra una linea base y sale.";
+    "\tCompara el keymap nativo (C++) contra una linea base y sale.\n"
+    "\tLa linea base es tests/flipendo/keymap/. Necesita modo grafico: en --background\n"
+    "\tno se carga el keymap por defecto.";
 static int arg_handle_fl_check_keymap(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = FL_keyconfig_check_native(CTX_wm_manager(C), argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_check_keymap_menus_doc[] =
@@ -2670,9 +2703,16 @@ static const char arg_handle_fl_check_keymap_menus_doc[] =
 static int arg_handle_fl_check_keymap_menus(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
-  /* El fichero es opcional: si el siguiente argumento es otra opcion, no lo es. */
+  /* El fichero es opcional y es de SALIDA (la lista de menus citados por el keymap), no
+   * una linea base: la comprobacion es contra los tipos de menu registrados y se hace
+   * igual sin el. Si se pide la lista, tiene que acabar escrita y con algo dentro. */
   const bool has_file = (argc > 1) && (argv[1][0] != '-');
   const bool ok = FL_keymap_check_menus(CTX_wm_manager(C), has_file ? argv[1] : nullptr);
+  if (has_file) {
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
+  }
   WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
   return has_file ? 1 : 0;
 }
@@ -2685,11 +2725,12 @@ static int arg_handle_fl_selftest_keyconfig(int argc, const char **argv, void *d
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = FL_keyconfig_selftest(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_dump_tools_doc[] =
@@ -2701,27 +2742,30 @@ static int arg_handle_fl_dump_tools(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::toolsystem::dump_native(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_tools_doc[] =
     "<baseline>\n"
     "\tCompara el catalogo nativo de herramientas contra una linea base y sale.\n"
-    "\tSolo compara las secciones ya trasladadas; lista aparte las que faltan.";
+    "\tSolo compara las secciones ya trasladadas; lista aparte las que faltan.\n"
+    "\tLa linea base es tests/flipendo/toolsystem/baseline-python.txt (NO vive en\n"
+    "\ttools/: ahi no hay ninguna, y sin ella esto salia con 0 sin comprobar nada).";
 static int arg_handle_fl_check_tools(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::toolsystem::check_native(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_dump_tool_activation_doc[] =
@@ -2733,11 +2777,12 @@ static int arg_handle_fl_dump_tool_activation(int argc, const char **argv, void 
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::toolsystem::dump_activation_native(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_dump_tool_queries_doc[] =
@@ -2749,11 +2794,12 @@ static int arg_handle_fl_dump_tool_queries(int argc, const char **argv, void *da
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::toolsystem::dump_queries_native(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_dump_toolbar_keymaps_doc[] =
@@ -2764,11 +2810,12 @@ static int arg_handle_fl_dump_toolbar_keymaps(int argc, const char **argv, void 
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::toolsystem::dump_toolbar_keymaps_native(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 
@@ -2780,12 +2827,12 @@ static int arg_handle_fl_convert_presets(int argc, const char **argv, void *data
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::dir_required(C, argv[0], argv[1]);
     const bool ok = flipendo::preset::convert_tree(argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el directorio despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el directorio");
 }
 
 static const char arg_handle_fl_check_presets_doc[] =
@@ -2796,12 +2843,14 @@ static int arg_handle_fl_check_presets(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 2) {
+    flipendo::harness::dir_required(C, argv[0], argv[1]);
     const bool ok = flipendo::preset::check_tree(C, argv[1], argv[2]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[2], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 2;
   }
-  fprintf(stderr, "\nError: hacen falta <dir> y <informe> despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "<dir> y <informe>");
 }
 
 static const char arg_handle_fl_convert_manual_reference_doc[] =
@@ -2815,12 +2864,14 @@ static int arg_handle_fl_convert_manual_reference(int argc, const char **argv, v
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 2) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::manual::convert_py_table(argv[1], argv[2]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[2], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 2;
   }
-  fprintf(stderr, "\nError: hacen falta <entrada.py> y <salida.txt> despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "<entrada.py> y <salida.txt>");
 }
 
 static const char arg_handle_fl_dump_manual_doc[] =
@@ -2834,12 +2885,14 @@ static int arg_handle_fl_dump_manual(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 2) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::manual::dump_urls(C, argv[1], argv[2]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[2], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 2;
   }
-  fprintf(stderr, "\nError: hacen falta <lista> y <salida> despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "<lista> y <salida>");
 }
 
 static const char arg_handle_fl_check_manual_doc[] =
@@ -2850,12 +2903,12 @@ static int arg_handle_fl_check_manual(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::manual::check_urls(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_dump_external_editor_doc[] =
@@ -2867,12 +2920,14 @@ static int arg_handle_fl_dump_external_editor(int argc, const char **argv, void 
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 2) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::text::external_editor_dump(argv[1], argv[2]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[2], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 2;
   }
-  fprintf(stderr, "\nError: hacen falta <casos> y <salida> despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "<casos> y <salida>");
 }
 
 static const char arg_handle_fl_check_external_editor_doc[] =
@@ -2883,12 +2938,12 @@ static int arg_handle_fl_check_external_editor(int argc, const char **argv, void
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::text::external_editor_check(argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_check_keyconfig_io_doc[] =
@@ -2902,12 +2957,18 @@ static int arg_handle_fl_check_keyconfig_io(int argc, const char **argv, void *d
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    /* Aqui argv[1] es el informe que se ESCRIBE (la comprobacion es de ida y vuelta
+     * contra si misma), y argv[2], si esta, el `.py` heredado con el que contrastar. */
+    if (argc > 2) {
+      flipendo::harness::baseline_required(C, argv[0], argv[2]);
+    }
     const bool ok = flipendo::keyconfig::check_roundtrip(C, argv[1], (argc > 2) ? argv[2] : nullptr);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return (argc > 2) ? 2 : 1;
   }
-  fprintf(stderr, "\nError: falta el informe despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el informe de salida");
 }
 
 static const char arg_handle_fl_ui_scene_doc[] =
@@ -2927,8 +2988,7 @@ static int arg_handle_fl_ui_scene(int argc, const char **argv, void *data)
     }
     return 1;
   }
-  fprintf(stderr, "\nError: falta la especificacion de escena despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la especificacion de escena");
 }
 
 static const char arg_handle_fl_make_ui_scene_doc[] =
@@ -2943,11 +3003,12 @@ static int arg_handle_fl_make_ui_scene(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::ui_dump::make_scene(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_dump_ui_doc[] =
@@ -2959,11 +3020,12 @@ static int arg_handle_fl_dump_ui(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::ui_dump::dump_registry(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_dump_ui_layout_doc[] =
@@ -2975,11 +3037,12 @@ static int arg_handle_fl_dump_ui_layout(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::ui_dump::dump_layout(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_dump_preset_panel_doc[] =
@@ -2992,11 +3055,12 @@ static int arg_handle_fl_dump_preset_panel(int argc, const char **argv, void *da
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::ui_dump::dump_preset_panel(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_ui_doc[] =
@@ -3008,12 +3072,12 @@ static int arg_handle_fl_check_ui(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::ui_dump::check(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 static const char arg_handle_fl_dump_runtime_doc[] =
     "<bundle> [informe]\n"
@@ -3026,12 +3090,17 @@ static int arg_handle_fl_dump_runtime(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::dir_required(C, argv[0], argv[1]);
     const bool ok = flipendo::game::runtime_dump(argv[1], (argc > 2) ? argv[2] : nullptr);
+    if (argc > 2) {
+      WM_exit(C,
+              flipendo::harness::dump_written(argv[0], argv[2], ok) ? EXIT_SUCCESS :
+                                                                      EXIT_FAILURE);
+    }
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return (argc > 2) ? 2 : 1;
   }
-  fprintf(stderr, "\nError: falta la ruta del bundle despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la ruta del bundle");
 }
 
 static const char arg_handle_fl_selftest_object_ops_doc[] =
@@ -3045,11 +3114,12 @@ static int arg_handle_fl_selftest_object_ops(int argc, const char **argv, void *
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::object_ops_selftest::dump(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_selftest_mesh_ops_doc[] =
@@ -3063,11 +3133,12 @@ static int arg_handle_fl_selftest_mesh_ops(int argc, const char **argv, void *da
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::mesh_ops_selftest::dump(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_mesh_ops_doc[] =
@@ -3079,12 +3150,12 @@ static int arg_handle_fl_check_mesh_ops(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::mesh_ops_selftest::check(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_rigidbody_ops_doc[] =
@@ -3098,11 +3169,12 @@ static int arg_handle_fl_selftest_rigidbody_ops(int argc, const char **argv, voi
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::rigidbody_ops_selftest::dump(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_rigidbody_ops_doc[] =
@@ -3114,12 +3186,12 @@ static int arg_handle_fl_check_rigidbody_ops(int argc, const char **argv, void *
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::rigidbody_ops_selftest::check(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_object_select_doc[] =
@@ -3133,11 +3205,12 @@ static int arg_handle_fl_selftest_object_select(int argc, const char **argv, voi
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::object_select_selftest::dump(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_object_select_doc[] =
@@ -3148,12 +3221,12 @@ static int arg_handle_fl_check_object_select(int argc, const char **argv, void *
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::object_select_selftest::check(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_mirror_uv_doc[] =
@@ -3166,11 +3239,12 @@ static int arg_handle_fl_selftest_mirror_uv(int argc, const char **argv, void *d
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::mesh_ops_selftest::dump_mirror_uv(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_mirror_uv_doc[] =
@@ -3181,12 +3255,12 @@ static int arg_handle_fl_check_mirror_uv(int argc, const char **argv, void *data
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::mesh_ops_selftest::check_mirror_uv(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_find_adjacent_doc[] =
@@ -3200,11 +3274,12 @@ static int arg_handle_fl_selftest_find_adjacent(int argc, const char **argv, voi
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::mesh_ops_selftest::dump_find_adjacent(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_find_adjacent_doc[] =
@@ -3215,12 +3290,12 @@ static int arg_handle_fl_check_find_adjacent(int argc, const char **argv, void *
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::mesh_ops_selftest::check_find_adjacent(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_dupli_face_doc[] =
@@ -3233,11 +3308,12 @@ static int arg_handle_fl_selftest_dupli_face(int argc, const char **argv, void *
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::object_select_selftest::dump_dupli_face(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_dupli_face_doc[] =
@@ -3248,12 +3324,12 @@ static int arg_handle_fl_check_dupli_face(int argc, const char **argv, void *dat
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::object_select_selftest::check_dupli_face(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_object_misc_doc[] =
@@ -3266,11 +3342,12 @@ static int arg_handle_fl_selftest_object_misc(int argc, const char **argv, void 
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::object_select_selftest::dump_misc_ops(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_object_misc_doc[] =
@@ -3280,12 +3357,12 @@ static int arg_handle_fl_check_object_misc(int argc, const char **argv, void *da
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::object_select_selftest::check_misc_ops(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_dump_optypes_doc[] =
@@ -3299,11 +3376,12 @@ static int arg_handle_fl_dump_optypes(int argc, const char **argv, void *data)
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::optype_surface::dump(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_optypes_doc[] =
@@ -3314,12 +3392,76 @@ static int arg_handle_fl_check_optypes(int argc, const char **argv, void *data)
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::optype_surface::check(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
+}
+
+static const char arg_handle_fl_check_lod_optypes_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-check-preset-optypes, pero de los tres operadores de niveles de\n"
+    "\tdetalle. Linea base: tests/flipendo/lod/optypes-python.txt.";
+static int arg_handle_fl_check_lod_optypes(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
+    const bool ok = flipendo::optype_surface::check_lod(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
+}
+
+static const char arg_handle_fl_dump_lod_optypes_doc[] =
+    "<filepath>\n"
+    "\tVuelca la superficie de registro de los tres operadores de niveles de detalle.";
+static int arg_handle_fl_dump_lod_optypes(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::optype_surface::dump_lod(C, argv[1]);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
+    return 1;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
+}
+
+static const char arg_handle_fl_selftest_lod_ops_doc[] =
+    "<filepath>\n"
+    "\tEjecuta los tres operadores de niveles de detalle (object.lod_by_name,\n"
+    "\tlod_clear_all y lod_generate) sobre once escenas y vuelca lo observable.";
+static int arg_handle_fl_selftest_lod_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::lod_selftest::dump(C, argv[1]);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
+    return 1;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
+}
+
+static const char arg_handle_fl_check_lod_ops_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-lod-ops, pero compara con la linea base indicada.";
+static int arg_handle_fl_check_lod_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
+    const bool ok = flipendo::lod_selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_preset_ops_doc[] =
@@ -3331,11 +3473,12 @@ static int arg_handle_fl_selftest_preset_ops(int argc, const char **argv, void *
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::preset::selftest::dump(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_preset_ops_doc[] =
@@ -3345,12 +3488,12 @@ static int arg_handle_fl_check_preset_ops(int argc, const char **argv, void *dat
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::preset::selftest::check(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_dump_preset_optypes_doc[] =
@@ -3363,11 +3506,12 @@ static int arg_handle_fl_dump_preset_optypes(int argc, const char **argv, void *
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::optype_surface::dump_presets(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_fl_check_preset_optypes_doc[] =
@@ -3378,12 +3522,12 @@ static int arg_handle_fl_check_preset_optypes(int argc, const char **argv, void 
 {
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
+    flipendo::harness::baseline_required(C, argv[0], argv[1]);
     const bool ok = flipendo::optype_surface::check_presets(C, argv[1]);
     WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "la linea base");
 }
 
 static const char arg_handle_fl_selftest_numinput_doc[] =
@@ -3397,11 +3541,12 @@ static int arg_handle_fl_selftest_numinput(int argc, const char **argv, void *da
   bContext *C = static_cast<bContext *>(data);
   if (argc > 1) {
     const bool ok = flipendo::numinput::selftest::dump(C, argv[1]);
-    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS :
+                                                                    EXIT_FAILURE);
     return 1;
   }
-  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
-  return 0;
+  return flipendo::harness::arg_missing(C, argv[0], "el fichero de salida");
 }
 
 static const char arg_handle_python_expr_run_doc[] =
@@ -3939,6 +4084,7 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-dump-operators", CB(arg_handle_fl_dump_operators), C);
   BLI_args_add(
       ba, nullptr, "--fl-selftest-context-ops", CB(arg_handle_fl_selftest_context_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-check-context-ops", CB(arg_handle_fl_check_context_ops), C);
   BLI_args_add(ba,
                nullptr,
                "--fl-selftest-wm-system-ops",
@@ -4036,6 +4182,10 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-check-object-misc", CB(arg_handle_fl_check_object_misc), C);
   BLI_args_add(ba, nullptr, "--fl-dump-optypes", CB(arg_handle_fl_dump_optypes), C);
   BLI_args_add(ba, nullptr, "--fl-check-optypes", CB(arg_handle_fl_check_optypes), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-lod-optypes", CB(arg_handle_fl_dump_lod_optypes), C);
+  BLI_args_add(ba, nullptr, "--fl-check-lod-optypes", CB(arg_handle_fl_check_lod_optypes), C);
+  BLI_args_add(ba, nullptr, "--fl-selftest-lod-ops", CB(arg_handle_fl_selftest_lod_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-check-lod-ops", CB(arg_handle_fl_check_lod_ops), C);
   BLI_args_add(ba, nullptr, "--fl-selftest-preset-ops", CB(arg_handle_fl_selftest_preset_ops), C);
   BLI_args_add(ba, nullptr, "--fl-check-preset-ops", CB(arg_handle_fl_check_preset_ops), C);
   BLI_args_add(ba, nullptr, "--fl-dump-preset-optypes", CB(arg_handle_fl_dump_preset_optypes), C);
