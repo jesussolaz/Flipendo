@@ -70,7 +70,14 @@ uiLayout *prop_unified(uiLayout *layout,
    * estando cuando el Python revienta en la linea siguiente. */
   uiLayout *row = &layout->row(true);
 
+  /* `ups = context.tool_settings.unified_paint_settings`: sin escena el Python revienta
+   * AQUI, con la fila ya creada. `unified_paint_settings` es un struct dentro de
+   * `ToolSettings`, asi que solo sale nulo si no hay `ToolSettings` — que es justo el
+   * caso en el que el Python lanza el `AttributeError`. */
   PointerRNA ups = unified_paint_settings(C);
+  if (ups.data == nullptr) {
+    return nullptr;
+  }
   PointerRNA *prop_owner = brush;
   const bool has_unified_name = unified_name != nullptr && unified_name[0] != '\0';
   if (unified_owns(&ups, unified_name)) {
@@ -93,9 +100,6 @@ uiLayout *prop_unified(uiLayout *layout,
   if (has_unified_name && !header) {
     /* NOTE del Python: los ajustes unificados no se pintan en la cabecera, para no
      * recargarla (D5928#136281). */
-    if (ups.data == nullptr) {
-      return nullptr;
-    }
     row->prop(&ups, unified_name, UI_ITEM_NONE, "", ICON_BRUSHES_ALL);
   }
 
@@ -108,9 +112,13 @@ bool prop_unified_color(uiLayout *parent,
                         const char *prop_name,
                         const std::optional<blender::StringRef> text)
 {
+  /* `ups = context.tool_settings.unified_paint_settings` antes que nada: sin el, el
+   * Python revienta aqui y no dibuja. */
   PointerRNA ups = unified_paint_settings(C);
-  const bool use_unified = ups.data != nullptr && RNA_boolean_get(&ups, "use_unified_color");
-  PointerRNA *prop_owner = use_unified ? &ups : brush;
+  if (ups.data == nullptr) {
+    return false;
+  }
+  PointerRNA *prop_owner = RNA_boolean_get(&ups, "use_unified_color") ? &ups : brush;
   if (prop_owner == nullptr || prop_owner->data == nullptr) {
     return false;
   }
@@ -125,8 +133,10 @@ bool prop_unified_color_picker(uiLayout *parent,
                                const bool value_slider)
 {
   PointerRNA ups = unified_paint_settings(C);
-  const bool use_unified = ups.data != nullptr && RNA_boolean_get(&ups, "use_unified_color");
-  PointerRNA *prop_owner = use_unified ? &ups : brush;
+  if (ups.data == nullptr) {
+    return false;
+  }
+  PointerRNA *prop_owner = RNA_boolean_get(&ups, "use_unified_color") ? &ups : brush;
   if (prop_owner == nullptr || prop_owner->data == nullptr) {
     return false;
   }
