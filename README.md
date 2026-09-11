@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="#compilar-macos">Compilar</a> ·
+  <a href="#compilar-macos-intel">Compilar</a> ·
   <a href="#ánima--el-juego-que-se-hace-con-él">El juego</a> ·
   <a href="#metas-cercanas">Metas</a> ·
   <a href="#comparativa-flipendo-upbge-unreal-y-unity">Comparativa</a> ·
@@ -172,18 +172,64 @@ Cómo se usa y de dónde sale: [`examples/kingdom_hearts_look/`](examples/kingdo
 - Ejemplos de uso del motor: [`examples/`](examples/).
 - Registro de versiones: [`CHANGELOG-FLIPENDO.md`](CHANGELOG-FLIPENDO.md).
 
-## Compilar (macOS)
+## Compilar (macOS Intel)
 
-```
+### 1. El árbol
+
+```sh
 git clone https://github.com/jesussolaz/Flipendo.git
 cd Flipendo
-# librerías precompiladas de Blender (rama blender-v4.5-release):
+```
+
+### 2. Las librerías precompiladas, y la trampa que cuesta la tarde
+
+**No clones las librerías dentro de `lib/macos_x64`**, aunque sea la ruta donde CMake
+las busca. Esa ruta está registrada como **submódulo**: aparece en `.gitmodules` y en
+el índice con modo `160000`. Cualquier operación que toque el índice —`merge`,
+`checkout`, `pull`, `stash`— la sustituye por un **directorio vacío**, y el siguiente
+`cmake` aborta con:
+
+```
+Mac OSX requires pre-compiled libs at: '.../lib/macos_x64'
+```
+
+El comprobante es `build_files/cmake/platform/platform_apple.cmake:58`, que exige que
+exista `${LIBDIR}/.git`. En este proyecto pasó de verdad y dejó la compilación parada.
+
+Lo que funciona —y es exactamente como está montado el árbol de desarrollo con el que
+se compila a diario— es tener las librerías **fuera** del repositorio, entrar por un
+enlace simbólico y decirle a git que no vuelva a tocar esa entrada:
+
+```sh
+# 2,2 GB, fuera del repositorio
 git clone --depth 1 --branch blender-v4.5-release \
-  https://projects.blender.org/blender/lib-macos_x64.git lib/macos_x64
+  https://projects.blender.org/blender/lib-macos_x64.git ../lib-macos_x64
+
+# el enlace, en el sitio donde CMake mira
+rmdir lib/macos_x64
+ln -sfn ../../lib-macos_x64 lib/macos_x64
+
+# y que git deje esa entrada en paz
+git update-index --skip-worktree lib/macos_x64
+```
+
+Los otros cuatro submódulos de `lib/` (Linux, Windows, macOS ARM) y los cuatro
+add-ons de `scripts/addons_core/` quedan vacíos tras el clon. **No hacen falta para
+compilar**: en el árbol de desarrollo están vacíos y la build es verde.
+
+### 3. Configurar y compilar
+
+```sh
 cmake -S . -B ../build -G Ninja -C build_files/cmake/config/blender_release.cmake \
   -DWITH_GAMEENGINE=ON -DWITH_PLAYER=ON -DWITH_CYCLES=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build ../build --target install
 ```
+
+Esos son los flags reales: comprobados uno a uno contra el `CMakeCache.txt` del árbol
+de desarrollo (`Ninja`, `Release`, `x86_64`, `WITH_GAMEENGINE=ON`, `WITH_PLAYER=ON`,
+`WITH_CYCLES=OFF`, y el resto tal y como los deja el preset `blender_release.cmake`).
+`WITH_METAL_BACKEND` no hace falta ponerlo: en macOS ya viene `ON` por defecto
+(`CMakeLists.txt:1010`). El binario queda en `../build/bin/Blender.app`.
 
 ### Dos configuraciones: editor y Player de distribución
 
@@ -192,8 +238,13 @@ El árbol se compila de dos maneras distintas según para qué sea el binario:
 | | Editor | Player de distribución |
 |---|---|---|
 | Flags extra | *(los de arriba)* | `-DWITH_PYTHON=OFF -DWITH_USD=OFF -DWITH_HYDRA=OFF -DWITH_MATERIALX=OFF` |
-| Lleva CPython | sí | **no** |
+| Lleva CPython | sí | **no** — 0 símbolos `_Py`, ninguna `libpython` enlazada |
+| Ficheros `.py` en el bundle | 2.022 | **0** |
+| Tamaño del bundle del Player | 762 MB | **538 MB** |
 | Para qué | modelar, montar la escena, pulsar P | empaquetar el juego |
+
+*(Las cuatro cifras, medidas el 2026-09-11 sobre los dos árboles de compilación
+reales: `nm` sobre el ejecutable, `find -name '*.py'` y `du -sh` sobre cada bundle.)*
 
 El juego se **hace** con el editor y se **envía** con el Player sin CPython. El `.blend` es el mismo; solo tiene que no depender de Python (gameplay como componentes nativos atados con la propiedad de juego `fl_component`, no como scripts). Qué se gana y qué se pierde exactamente: [`politicas/PLAYER-SIN-CPYTHON.md`](politicas/PLAYER-SIN-CPYTHON.md).
 
