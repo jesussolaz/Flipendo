@@ -937,3 +937,45 @@ no.
 de fondo sigue siendo el mismo y no lo puede quitar este carril:
 **`properties_paint_common` hay que migrarlo como módulo compartido**, de acuerdo con
 los carriles de la vista 3D y de Propiedades.
+
+### `IMAGE_HT_header`: medida y entregada, no escrita — y por qué
+
+Se midió al terminar los menús, con reloj de sobra para escribirla pero no para
+escribirla **y** verificar lo que de ella se puede verificar. Se decidió no
+empezarla, por el mismo criterio con el que se paró el editor de nodos a las 04:25.
+
+El dato que inclinó la decisión no es el tamaño (110 líneas), es **cuánto de ella
+cubre el arnés**: sobre la escena de fábrica `show_uvedit`, `show_maskedit` y
+`show_render` son los tres falsos y `sima.image` es `None`, así que el volcado de
+diseño solo ejercita **22 de sus ~60 items**. Escribir a última hora un dibujo del
+que dos tercios no se comprueban es justo lo contrario de lo que hace este proyecto.
+
+`IMAGE_HT_tool_header`, en cambio, **no se puede escribir todavía** y no es cuestión
+de reloj: llama a `UnifiedPaintPanel.prop_unified`, `BrushAssetShelf.draw_popup_selector`
+y `brush_basic_texpaint_settings`, los tres de `properties_paint_common`.
+
+Lo que necesita quien coja `IMAGE_HT_header`, ya comprobado uno a uno:
+
+| Construcción del Python | C++ |
+|---|---|
+| `layout.template_edit_mode_selection()` | `uiTemplateEditModeSelection(layout, C)` |
+| `layout.template_image_layers(ima, iuser)` | `uiTemplateImageLayers(layout, C, ima, iuser)` |
+| `sub.prop_with_popover(ts, p, panel=…)` | `uiItemFullR_with_popover(layout, ptr, prop, -1, 0, flag, name, icon, panel_type)` |
+| `layout.prop_search(mesh.uv_layers, "active", mesh, "uv_layers")` | `uiItemPointerR(layout, &uv_layers_ptr, "active", &mesh_ptr, "uv_layers", …)` |
+| `layout.template_ID(sima, "image", new=…, open=…)` | `uiTemplateID(layout, C, &ptr, "image", "image.new", "image.open", nullptr)` |
+| `layout.popover_group(space_type=…, region_type=…, context=…)` | `uiItemPopoverPanelFromGroup(...)` (solo lo usa la barra de herramientas) |
+| `depress=…` en `layout.operator` | `UI_ITEM_O_DEPRESS` |
+
+Y los cinco datos que cuesta encontrar:
+
+- **`SpaceImageOverlay` usa el propio `SpaceImage` como dato**
+  (`RNA_def_struct_sdna(srna, "SpaceImage")`), igual que `SpaceUVEditor`.
+- **`UVLoopLayers` también usa el `Mesh` como dato**: el `mesh.uv_layers` de
+  `prop_search` es `RNA_pointer_create_discrete(&mesh->id, &RNA_UVLoopLayers, mesh)`.
+- **`snap_uv_element` es un enum de BANDERAS** (`PROP_ENUM_FLAG`, sdna
+  `snap_uv_mode`). El `len(...) == 1` del Python es «un solo bit puesto», y el icono
+  sale de buscar el `EnumPropertyItem` con ese valor.
+- `uv_select_mode` es un enum normal (sdna `uv_selectmode`), no un conjunto: el
+  `[:]` del Python es una rebanada de cadena, no de conjunto.
+- `sima.image_user` es `&sima->iuser`; `sima.mode != 'UV'` es
+  `sima->mode != SI_MODE_UV`.
