@@ -18,12 +18,31 @@
 #  include "GHOST_Event.hh"
 #endif
 
+/* Declaraciones opacas de doble modo. Todos estos nombres son CLASES, y un puntero a
+ * clase de Objective-C mangla igual que un puntero a una clase C++ declarada y no
+ * definida con el mismo nombre (medido con `nm`; ver GHOST_ObjCCompat.hh). Por eso esta
+ * cabecera se puede leer desde un `.cc` sin perder tipado, sin castear y sin cambiar un
+ * solo simbolo: los miembros de abajo y los tipos de retorno siguen siendo exactamente
+ * los mismos para los `.mm` que quedan.
+ *
+ * `BlenderWindow`, `CocoaMetalView` y `CocoaOpenGLView` son clases de Flipendo que se
+ * fabrican en tiempo de ejecucion (ver GHOST_WindowCocoa.cc); las otras tres son de
+ * Apple. Para esta cabecera da igual: las cinco son punteros opacos. */
+#ifdef __OBJC__
 @class CAMetalLayer;
 @class CocoaMetalView;
 @class CocoaOpenGLView;
 @class BlenderWindow;
 @class NSCursor;
 @class NSScreen;
+#else
+class CAMetalLayer;
+class CocoaMetalView;
+class CocoaOpenGLView;
+class BlenderWindow;
+class NSCursor;
+class NSScreen;
+#endif
 
 class GHOST_SystemCocoa;
 
