@@ -5,7 +5,7 @@
 > `tools/flipendo_metrics/flipendo_metrics.cpp`, que es C++ y mide el árbol:
 > ninguna cifra de este documento está copiada de otro documento.
 >
-> **Medido el 2026-09-12 00:07 sobre el commit `fe49217aabe`** (2026-09-12 00:02 — «Interfaz: el volcado y el comprobador daban resultados distintos sobre el mismo binario»).
+> **Medido el 2026-09-12 00:52 sobre el commit `6d6429cc6e5`** (2026-09-12 00:17 — «Presets: el ultimo rojo eran tres cosas distintas metidas en el mismo saco»).
 >
 > Regenerar:
 > ```sh
@@ -38,8 +38,8 @@ horas cuando hay siete carriles trabajando. La solución no es escribir mejor: e
 - **La batería** se ejecuta: cada verificador del binario, con su línea base, y el
   código de salida es el veredicto.
 
-Ficheros versionados al commit medido: **19.903**. De ellos, **11.624 son de código**:
-9.262 propios y 2.362 vendorizados. El resto (8.279) son datos, assets, textos y
+Ficheros versionados al commit medido: **19.904**. De ellos, **11.624 son de código**:
+9.262 propios y 2.362 vendorizados. El resto (8.280) son datos, assets, textos y
 configuración, que por doctrina no son código.
 
 ---
@@ -48,19 +48,19 @@ configuración, que por doctrina no son código.
 
 | Lenguaje | Ficheros | Líneas | % |
 |---|---:|---:|---:|
-| C++ | 4.345 | 2.574.866 | 75,3 % |
+| C++ | 4.345 | 2.574.947 | 75,3 % |
 | .hh | 1.854 | 292.944 | 8,6 % |
 | .hpp | 306 | 36.846 | 1,1 % |
 | .h heredada | 1.388 | 248.731 | 7,3 % |
-| Python | 611 | 189.766 | 5,6 % |
+| Python | 611 | 189.766 | 5,5 % |
 | GLSL | 745 | 68.391 | 2,0 % |
 | Objective-C++ | 8 | 5.060 | 0,1 % |
 | MSL | 4 | 1.722 | 0,1 % |
 | Metal | 1 | 832 | 0,0 % |
-| **TOTAL propio** | **9.262** | **3.419.158** | 100 % |
+| **TOTAL propio** | **9.262** | **3.419.239** | 100 % |
 
-- Familia C/C++ contando las `.h` heredadas: **3.153.387 → 92,2 %**.
-- C++ en sentido estricto (`.cc`/`.cpp`/`.hh`/`.hpp`): **2.904.656 → 85,0 %**.
+- Familia C/C++ contando las `.h` heredadas: **3.153.468 → 92,2 %**.
+- C++ en sentido estricto (`.cc`/`.cpp`/`.hh`/`.hpp`): **2.904.737 → 85,0 %**.
 - Todo lo que no es C++ (Python + GLSL + ObjC++ + MSL + Metal + C + shell):
   **265.771 → 7,8 %**.
 
@@ -149,7 +149,7 @@ pendiente, es código muerto**, y ninguna tabla por extensión la hacía.
 
 | Lenguaje | Ficheros | Líneas | Con objeto en el build | Líneas que compilan |
 |---|---:|---:|---:|---:|
-| C++ | 4.345 | 2.574.866 | 3.549 | **2.340.830** |
+| C++ | 4.345 | 2.574.947 | 3.549 | **2.340.911** |
 | Objective-C++ | 8 | 5.060 | 0 | **0** |
 | Metal | 1 | 832 | (no produce `.o`) | 0 lineas en 0 ficheros citados en el build |
 | MSL | 4 | 1.722 | (no produce `.o`) | 1.722 lineas en 4 ficheros citados en el build |
@@ -199,7 +199,7 @@ que es.
 | `59a58f78996` | 2026-09-09 23:47 | 1.003 | **247.642** | 2.484.707 | 30.536 | 68.391 | 248.745 | 34.328 | 0 |
 | `4e88d96a431` | 2026-09-10 23:19 | 1.013 | **248.065** | 2.497.382 | 30.536 | 68.391 | 248.745 | 35.019 | 0 |
 | `e713bc10e22` | 2026-09-11 23:30 | 611 | **189.766** | 2.574.808 | 5.060 | 68.391 | 248.731 | 36.846 | 0 |
-| `fe49217aabe` | 2026-09-12 00:02 | 611 | **189.766** | 2.574.866 | 5.060 | 68.391 | 248.731 | 36.846 | 0 |
+| `6d6429cc6e5` | 2026-09-12 00:17 | 611 | **189.766** | 2.574.947 | 5.060 | 68.391 | 248.731 | 36.846 | 0 |
 
 De 492.365 a 189.766 líneas de Python propio: **−302.599 líneas, 61,5 %** desde `3da0e2d745d` (2026-09-05 13:24).
 
@@ -259,13 +259,8 @@ comprobaciones distintas.
 ### Contra qué binario se ha medido
 
 - Binario: `/Users/jesussolaz/Flipendo/dev/build/bin/Blender.app/Contents/MacOS/Blender`
-- Construido del commit `c64b3c11c6f8` — **OJO: no es el commit medido (`fe49217aabe`)**, el 2026-09-11 21:57:00.
-- **El árbol de trabajo tenía 1 ficheros versionados modificados sin
-  commitear cuando se midió**, de los cuales **0 pueden cambiar el binario**
-  (fuente, cabeceras, scripts instalados o ficheros de compilación) y 1 no.
-  **Ninguno de los que pueden cambiar el binario**: el veredicto de abajo es del
-  commit medido, no de trabajo a medias de nadie.
-  Los otros 1, que no entran en el binario, por directorio: `politicas/ESTADO.md` 1.
+- Construido del commit `8bb9ce88857b` — **OJO: no es el commit medido (`6d6429cc6e5`)**, el 2026-09-11 22:16:50.
+- El árbol de trabajo estaba limpio: el binario corresponde al commit medido.
 
 **Un `--fl-selftest-*` no es una prueba, es un volcador**: escribe un fichero y su
 código de salida no es un veredicto. Contarlos como «verdes» por ese código sería un
@@ -282,50 +277,50 @@ es **INESTABLE**, que no es lo mismo que un fallo ni que un aprobado. Excepción
 declarada: un verificador que tarde más de 60 s no se repite —triplicarlo se comería
 la batería— y su fila dice que va con una sola pasada.
 
-**Resultado: 39 en verde, 1 en rojo, 0 inestables, 1 sin línea base con
-la que comparar, 1 que su propia ayuda declara volcadores (no dan veredicto).** Tardó 254 segundos en total; el más lento, 124 s.
+**Resultado: 40 en verde, 0 en rojo, 0 inestables, 1 sin línea base con
+la que comparar, 1 que su propia ayuda declara volcadores (no dan veredicto).** Tardó 208 segundos en total; el más lento, 122 s.
 
 ### Grupo 1 — valen en `--background`
 
 | Verificador | Veredicto | Tiempo | Cifras |
 |---|---|---:|---|
-| `--fl-check-dupli-face` | verde | 1.3 s | fl-check-dupli-face: TOTAL 28/28 elementos identicos, 37/37 lineas |
-| `--fl-check-external-editor` | verde | 1.5 s | editor externo: 4326 casos comparados, 4326 identicos, 0 distintos |
+| `--fl-check-dupli-face` | verde | 7.7 s | fl-check-dupli-face: TOTAL 28/28 elementos identicos, 37/37 lineas |
+| `--fl-check-external-editor` | verde | 1.4 s | editor externo: 4326 casos comparados, 4326 identicos, 0 distintos |
 | `--fl-check-find-adjacent` | verde | 1.4 s | fl-check-find-adjacent: TOTAL 65/65 elementos identicos, 92/92 lineas |
-| `--fl-check-keyconfig-io` | verde | 1.9 s | keyconfig: ciclo exportar-importar-exportar: 6680 lineas, 0 distintas |
-| `--fl-check-keymap-menus` | verde | 1.7 s | FL-KEYMAP-MENUS nombres=136 (defecto=127, solo-con-preferencia=9) configuraciones=22 elementos=4569 call_menu=3105 call_menu_pie=981 call_panel=483 re... |
-| `--fl-check-lod-ops` | verde | 1.8 s | fl-check-lod-ops: TOTAL 59/59 elementos identicos, 71/71 lineas |
-| `--fl-check-lod-optypes` | verde | 1.5 s | fl-check-lod-optypes: TOTAL 6/6 elementos identicos, 10/10 lineas |
-| `--fl-check-manual` | verde | 1.7 s | manual: por url_lookup() (el camino del operador): 7470 identicas, 0 distintas, 553 a la reserva del buscador |
-| `--fl-check-mesh-ops` | verde | 4.8 s | fl-check-mesh-ops: 1 linea(s) dentro de la tolerancia declarada 2e-05, no identicas byte a byte |
-| `--fl-check-mirror-uv` | verde | 1.5 s | fl-check-mirror-uv: TOTAL 216/216 elementos identicos, 236/236 lineas |
-| `--fl-check-object-misc` | verde | 1.9 s | fl-check-object-misc: TOTAL 42/42 elementos identicos, 55/55 lineas |
-| `--fl-check-object-select` | verde | 2.0 s | fl-check-object-select: TOTAL 152/152 elementos identicos, 178/178 lineas |
-| `--fl-check-optypes` | verde | 1.9 s | fl-check-optypes: TOTAL 44/44 elementos identicos, 66/66 lineas |
-| `--fl-check-preset-ops` | verde | 1.8 s | fl-check-preset-ops: TOTAL 89/89 elementos identicos, 103/103 lineas |
-| `--fl-check-preset-optypes` | verde | 1.7 s | fl-check-preset-optypes: TOTAL 93/93 elementos identicos, 117/117 lineas |
-| `--fl-check-presets` | **ROJO** | 3.8 s | aplicados sin error 156 de 172 (1 con error, 15 sin contexto)  [reproducido en las 3 pasadas] |
-| `--fl-check-rigidbody-ops` | verde | 2.0 s | fl-check-rigidbody-ops: TOTAL 63/63 elementos identicos, 69/69 lineas |
-| `--fl-check-theme-xml` | verde | 2.1 s | fl-check-theme-xml: TOTAL 6839/6839 elementos identicos, 6844/6844 lineas |
-| `--fl-check-tools` | verde | 2.0 s | Herramientas: 30 secciones comprobadas, 0 diferencias, 0 secciones sin trasladar. |
-| `--fl-check-ui (registro)` | verde | 2.4 s | Interfaz (registro): 2113 bloques, 2113 identicos, 0 distintos, 0 faltan, 0 sobran. |
-| `--fl-selftest-dupli-face` | verde | 9.9 s | 37 lineas identicas a tests/flipendo/dupliface/baseline-python.txt |
-| `--fl-selftest-find-adjacent` | verde | 2.0 s | 92 lineas identicas a tests/flipendo/findadjacent/baseline-python.txt |
-| `--fl-selftest-keyconfig` | sin línea base | 2.3 s | informe de 4 lineas; no hay linea base congelada en el arbol |
-| `--fl-selftest-lod-ops` | verde | 1.9 s | 71 lineas identicas a tests/flipendo/lod/baseline-python.txt |
-| `--fl-selftest-mesh-ops` | verde | 6.6 s | 13146 lineas identicas a tests/flipendo/meshops/baseline-python.txt |
-| `--fl-selftest-mirror-uv` | verde | 2.3 s | 236 lineas identicas a tests/flipendo/mirroruv/baseline-python.txt |
-| `--fl-selftest-numinput` | verde | 2.4 s | 150 lineas identicas a tests/flipendo/numinput/baseline-python.txt |
-| `--fl-selftest-object-misc` | verde | 2.7 s | 55 lineas identicas a tests/flipendo/objectmisc/baseline-python.txt |
-| `--fl-selftest-object-ops` | verde | 2.7 s | 31 lineas identicas a tests/flipendo/objectops/run-cpp-verified.txt (NO a la preferente tests/flipendo/objectops/baseline-python.txt: linea 5: obtenido `  C    ... |
-| `--fl-selftest-object-select` | verde | 3.1 s | 178 lineas identicas a tests/flipendo/objectselect/baseline-python.txt |
-| `--fl-selftest-preset-ops` | verde | 3.4 s | 103 lineas identicas a tests/flipendo/presetops/comportamiento-python.txt |
-| `--fl-selftest-rigidbody-ops` | verde | 3.4 s | 69 lineas identicas a tests/flipendo/rigidbody/baseline-python.txt |
-| `--fl-selftest-theme-xml` | verde | 4.1 s | 6844 lineas identicas a tests/flipendo/themexml/baseline-python.txt |
-| `--fl-selftest-wm-batch-rename` | verde | 3.8 s | 1 lineas identicas a tests/flipendo/operators/batch-rename-native.txt |
-| `--fl-selftest-wm-owner-ops` | verde | 5.3 s | 2 lineas identicas a tests/flipendo/operators/owner-python.txt |
-| `--fl-selftest-wm-properties-edit` | verde | 3.3 s | 2 lineas identicas a tests/flipendo/operators/properties-edit-native.txt |
-| `--fl-selftest-wm-system-ops` | verde | 2.9 s | 20 lineas identicas a tests/flipendo/operators/system-python.txt |
+| `--fl-check-keyconfig-io` | verde | 1.4 s | keyconfig: ciclo exportar-importar-exportar: 6680 lineas, 0 distintas |
+| `--fl-check-keymap-menus` | verde | 1.4 s | FL-KEYMAP-MENUS nombres=136 (defecto=127, solo-con-preferencia=9) configuraciones=22 elementos=4569 call_menu=3105 call_menu_pie=981 call_panel=483 re... |
+| `--fl-check-lod-ops` | verde | 1.3 s | fl-check-lod-ops: TOTAL 59/59 elementos identicos, 71/71 lineas |
+| `--fl-check-lod-optypes` | verde | 1.4 s | fl-check-lod-optypes: TOTAL 6/6 elementos identicos, 10/10 lineas |
+| `--fl-check-manual` | verde | 1.6 s | manual: por url_lookup() (el camino del operador): 7470 identicas, 0 distintas, 553 a la reserva del buscador |
+| `--fl-check-mesh-ops` | verde | 4.0 s | fl-check-mesh-ops: 1 linea(s) dentro de la tolerancia declarada 2e-05, no identicas byte a byte |
+| `--fl-check-mirror-uv` | verde | 1.3 s | fl-check-mirror-uv: TOTAL 216/216 elementos identicos, 236/236 lineas |
+| `--fl-check-object-misc` | verde | 1.3 s | fl-check-object-misc: TOTAL 42/42 elementos identicos, 55/55 lineas |
+| `--fl-check-object-select` | verde | 1.4 s | fl-check-object-select: TOTAL 152/152 elementos identicos, 178/178 lineas |
+| `--fl-check-optypes` | verde | 1.3 s | fl-check-optypes: TOTAL 44/44 elementos identicos, 66/66 lineas |
+| `--fl-check-preset-ops` | verde | 1.3 s | fl-check-preset-ops: TOTAL 89/89 elementos identicos, 103/103 lineas |
+| `--fl-check-preset-optypes` | verde | 1.5 s | fl-check-preset-optypes: TOTAL 93/93 elementos identicos, 117/117 lineas |
+| `--fl-check-presets` | verde | 1.6 s | aplicados sin error 156 de 172 (0 con error, 0 sin contexto sin declarar, 15 no aplicables declarados, 0 declaraciones que sobran) |
+| `--fl-check-rigidbody-ops` | verde | 1.5 s | fl-check-rigidbody-ops: TOTAL 63/63 elementos identicos, 69/69 lineas |
+| `--fl-check-theme-xml` | verde | 1.7 s | fl-check-theme-xml: TOTAL 6839/6839 elementos identicos, 6844/6844 lineas |
+| `--fl-check-tools` | verde | 1.3 s | Herramientas: 30 secciones comprobadas, 0 diferencias, 0 secciones sin trasladar. |
+| `--fl-check-ui (registro)` | verde | 1.5 s | Interfaz (registro): 2113 bloques, 2113 identicos, 0 distintos, 0 faltan, 0 sobran. |
+| `--fl-selftest-dupli-face` | verde | 1.5 s | 37 lineas identicas a tests/flipendo/dupliface/baseline-python.txt |
+| `--fl-selftest-find-adjacent` | verde | 1.7 s | 92 lineas identicas a tests/flipendo/findadjacent/baseline-python.txt |
+| `--fl-selftest-keyconfig` | sin línea base | 1.7 s | informe de 4 lineas; no hay linea base congelada en el arbol |
+| `--fl-selftest-lod-ops` | verde | 1.8 s | 71 lineas identicas a tests/flipendo/lod/baseline-python.txt |
+| `--fl-selftest-mesh-ops` | verde | 4.5 s | 13146 lineas identicas a tests/flipendo/meshops/baseline-python.txt |
+| `--fl-selftest-mirror-uv` | verde | 1.9 s | 236 lineas identicas a tests/flipendo/mirroruv/baseline-python.txt |
+| `--fl-selftest-numinput` | verde | 1.4 s | 150 lineas identicas a tests/flipendo/numinput/baseline-python.txt |
+| `--fl-selftest-object-misc` | verde | 1.4 s | 55 lineas identicas a tests/flipendo/objectmisc/baseline-python.txt |
+| `--fl-selftest-object-ops` | verde | 1.4 s | 31 lineas identicas a tests/flipendo/objectops/run-cpp-verified.txt (NO a la preferente tests/flipendo/objectops/baseline-python.txt: linea 5: obtenido `  C    ... |
+| `--fl-selftest-object-select` | verde | 1.4 s | 178 lineas identicas a tests/flipendo/objectselect/baseline-python.txt |
+| `--fl-selftest-preset-ops` | verde | 1.3 s | 103 lineas identicas a tests/flipendo/presetops/comportamiento-python.txt |
+| `--fl-selftest-rigidbody-ops` | verde | 1.4 s | 69 lineas identicas a tests/flipendo/rigidbody/baseline-python.txt |
+| `--fl-selftest-theme-xml` | verde | 1.5 s | 6844 lineas identicas a tests/flipendo/themexml/baseline-python.txt |
+| `--fl-selftest-wm-batch-rename` | verde | 1.3 s | 1 lineas identicas a tests/flipendo/operators/batch-rename-native.txt |
+| `--fl-selftest-wm-owner-ops` | verde | 1.3 s | 2 lineas identicas a tests/flipendo/operators/owner-python.txt |
+| `--fl-selftest-wm-properties-edit` | verde | 1.3 s | 2 lineas identicas a tests/flipendo/operators/properties-edit-native.txt |
+| `--fl-selftest-wm-system-ops` | verde | 1.3 s | 20 lineas identicas a tests/flipendo/operators/system-python.txt |
 
 ### Grupo 2 — necesitan modo gráfico
 
@@ -334,11 +329,11 @@ tienen ventana: estos hay que pasarlos con pantalla, y por eso van aparte.
 
 | Verificador | Veredicto | Tiempo | Cifras |
 |---|---|---:|---|
-| `--fl-check-context-ops` | verde | 14.6 s | Prueba real de context ops: 7 operadores -> /var/folders/m3/7n9l8vtx109fvnck478f7yxr0000gn/T/blender_JB0lzv/fl-check-context-ops-actual.txt |
-| `--fl-check-keymap` | verde | 4.3 s | linea base: 248 keymaps  /  quedan por transliterar: 0 |
-| `--fl-check-ui (dibujo)` | verde | 123.7 s | Interfaz (diseno): 2004 bloques, 2004 identicos, 0 distintos, 0 faltan, 0 sobran. |
+| `--fl-check-context-ops` | verde | 10.9 s | Prueba real de context ops: 7 operadores -> /var/folders/m3/7n9l8vtx109fvnck478f7yxr0000gn/T/blender_I7zxJ4/fl-check-context-ops-actual.txt |
+| `--fl-check-keymap` | verde | 2.7 s | linea base: 248 keymaps  /  quedan por transliterar: 0 |
+| `--fl-check-ui (dibujo)` | verde | 121.8 s | Interfaz (diseno): 2004 bloques, 2004 identicos, 0 distintos, 0 faltan, 0 sobran. |
 | `--fl-selftest-wm-property-ops` | verde | 3.4 s | 3 lineas identicas a tests/flipendo/operators/properties-python.txt |
-| `--fl-selftest-context-ops` | volcador | 2.9 s | volcado de 7 lineas; su ayuda dice que el veredicto lo da su comprobador hermano |
+| `--fl-selftest-context-ops` | volcador | 3.5 s | volcado de 7 lineas; su ayuda dice que el veredicto lo da su comprobador hermano |
 
 - `--fl-check-context-ops` necesita pantalla: lo dice su propia ayuda: necesita modo grafico.
 - `--fl-check-keymap` necesita pantalla: el keymap por defecto no se carga en --background.
@@ -348,8 +343,6 @@ tienen ventana: estos hay que pasarlos con pantalla, y por eso van aparte.
 
 ### Lo que no está en verde, con su detalle
 
-- **`--fl-check-presets`** — ROJO (rc=1, modo background):
-  aplicados sin error 156 de 172 (1 con error, 15 sin contexto)  [reproducido en las 3 pasadas]
 - **`--fl-selftest-keyconfig`** — SIN LINEA BASE (rc=0, modo background):
   informe de 4 lineas; no hay linea base congelada en el arbol
 
@@ -363,7 +356,7 @@ ROJO, porque entonces la declaración sobra.
 
 | Fichero | Declara | Línea base | ¿Quién la usa? | ¿Hizo falta? |
 |---|---|---|---|---|
-| `tests/flipendo/meshops/baseline-python.txt.tolerancia` | tolerancia relativa 2e-05 | existe | `--fl-check-mesh-ops`, `--fl-selftest-mesh-ops` | **sí**, en 1 de 6 pasadas |
+| `tests/flipendo/meshops/baseline-python.txt.tolerancia` | tolerancia relativa 2e-05 | existe | `--fl-check-mesh-ops`, `--fl-selftest-mesh-ops` | **sí**, en 4 de 6 pasadas |
 | `tests/flipendo/operators/execution-python.txt.divergencias` | 1 divergencia(s) deliberada(s), linea 2 | existe | `--fl-check-context-ops` | **sí**, en 3 de 3 pasadas |
 
 - `tests/flipendo/operators/execution-python.txt.divergencias`: El Python de wm.context_cycle_array hacia array[:] y luego append/pop, pero en esta version bpy_prop_array y mathutils.Vector devuelven una TUPLA al cortar: levantaba AttributeError y no rotaba nada, ...
@@ -386,7 +379,7 @@ Sale con 0 si no hay ningún rojo, así que vale de guardián antes de un push.
 ### politicas/METRICAS.md (cabecera)
 
 - **Decía:** medido al commit `87ce606a318`
-- **Mide el árbol:** ese commit va **58 commits por detrás** del medido aquí (`fe49217aabe`). Entre uno y otro: Python 191.224 → 189.766 (−1.458), C++ 2.540.538 → 2.574.866 (+34.328), Objective-C++ 30.304 → 5.060 (−25.244), `.hpp` 36.679 → 36.846 (+167)
+- **Mide el árbol:** ese commit va **60 commits por detrás** del medido aquí (`6d6429cc6e5`). Entre uno y otro: Python 191.224 → 189.766 (−1.458), C++ 2.540.538 → 2.574.947 (+34.409), Objective-C++ 30.304 → 5.060 (−25.244), `.hpp` 36.679 → 36.846 (+167)
 - **Cómo se comprobó:** `git rev-list --count` entre los dos commits y una medición completa de cada uno
 
 ---
@@ -399,4 +392,4 @@ trabajo por zonas es [`BACKLOG-EDITOR-PYTHON.md`](BACKLOG-EDITOR-PYTHON.md); la
 doctrina, [`LENGUAJE-CPP.md`](LENGUAJE-CPP.md); la historia de las mediciones,
 [`METRICAS.md`](METRICAS.md).
 
-<!-- generado por tools/flipendo_metrics/flipendo_metrics.cpp a fe49217aabe3c527c5883a8f8b1c1e7ceddfbf43 -->
+<!-- generado por tools/flipendo_metrics/flipendo_metrics.cpp a 6d6429cc6e53b35270b779a16cbe369c5af85ad4 -->
