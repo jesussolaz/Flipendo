@@ -36,7 +36,6 @@ _modules = [
     "uvcalc_transform",
     "view3d",
     "world",
-    "wm",
 ]
 
 import bpy

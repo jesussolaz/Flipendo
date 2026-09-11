@@ -15,6 +15,7 @@ set(INC_SYS
 
 set(SRC
   buttons_context.cc
+  fl_properties_data_shaderfx.cc
   buttons_ops.cc
   buttons_texture.cc
   fl_game_buttons.cc

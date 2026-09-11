@@ -45,17 +45,36 @@ presets que no abren un informe dependiente de una GPU gráfica, ocho resolucion
 documentación y las ramas sin efectos externos de `wm.path_open`.
 La línea base se obtuvo del `Blender-python.app` congelado antes de retirar las clases.
 
+## Contrato nativo del manual (B6, 2026-09-11)
+
+`wm.doc_view_manual` ya no recorre callbacks Python. `WM_manual.hpp` publica un
+registro de proveedores C++ (`provider_register`/`provider_unregister`): se consultan
+del último al primero, por lo que una extensión nativa puede sustituir la referencia
+integrada sin parchear el operador. El proveedor base conserva destinos semánticos
+para las páginas especiales que usa Flipendo y envía el resto de identificadores RNA
+válidos al buscador versionado del manual oficial. Es el contrato sustituto elegido
+para la API extensible de `bpy.utils.manual_map()`.
+
+También son nativos `wm.sysinfo`, `wm.blenderplayer_start` y
+`wm.operator_cheat_sheet`. El informe de sistema se escribe directamente desde los
+datos de build/GPU; el Player se guarda como copia temporal y se lanza con
+`posix_spawn`, sin shell; la chuleta enumera el registro real de `wmOperatorType` y
+sus propiedades RNA en `OperatorList.txt`.
+
+Los cuatro contratos de operador se compararon bloque a bloque con la línea base
+Python: **4/4 idénticos**. La build completa terminó con `rc=0` y la autoprueba previa
+de sistema siguió en `cmp=0`.
+
 ## Estado y deuda explícita
 
-Son nativos `wm.url_open`, `wm.url_open_preset`, `wm.path_open` y `wm.doc_view`.
+Son nativos `wm.url_open`, `wm.url_open_preset`, `wm.path_open`, `wm.doc_view`,
+`wm.doc_view_manual`, `wm.sysinfo`, `wm.blenderplayer_start` y
+`wm.operator_cheat_sheet`.
 
 El antiguo `preset_items` de la clase Python era mutable, pero no existe en el árbol
 ningún consumidor que lo ampliase. El contrato efectivo son los ocho valores expuestos
 por el callback RNA nativo; el volcado sigue observando un enum dinámico, igual que antes.
 
-Queda una pieza relacionada que no se debe borrar a medias:
-
-- `wm.doc_view_manual`: consulta 4.253 patrones generados en
-  `rna_manual_reference.py` y también mapas registrados por extensiones mediante
-  `bpy.utils.register_manual_map`. Migrar sólo el operador dejando esa consulta en
-  Python no reduciría la dependencia; quitarla perdería extensibilidad.
+La tabla Python generada `rna_manual_reference.py` deja de ser una dependencia del
+operador. Mientras el resto del editor siga cargando Python permanece como dato
+heredado; el contrato extensible de Flipendo es ya el registro C++.

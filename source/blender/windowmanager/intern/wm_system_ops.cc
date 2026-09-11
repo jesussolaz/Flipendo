@@ -21,10 +21,12 @@
 #include <sys/wait.h>
 #include <utility>
 #include <vector>
+#include <fnmatch.h>
 
 #include "BLI_fileops.h"
 #include "BLI_path_utils.hh"
 #include "BLI_string.h"
+#include "BLI_vector.hh"
 
 #include "BLT_lang.hh"
 #include "BLT_translation.hh"
@@ -42,6 +44,7 @@
 #include "GPU_platform.hh"
 
 #include "WM_api.hh"
+#include "WM_manual.hpp"
 #include "WM_types.hh"
 
 #include "FL_operator_dump.hpp"
@@ -470,7 +473,117 @@ std::optional<std::string> documentation_url(const char *doc_id, ReportList *rep
          property_name;
 }
 
+std::optional<std::string> documentation_rna_id(const char *doc_id, ReportList *reports)
+{
+  const std::string id = doc_id ? doc_id : "";
+  const size_t dot = id.find('.');
+  if (dot == std::string::npos) {
+    return "bpy.types." + id;
+  }
+  if (id.find('.', dot + 1) != std::string::npos) {
+    return std::nullopt;
+  }
+
+  std::string class_name = id.substr(0, dot);
+  const std::string property_name = id.substr(dot + 1);
+  if (WM_operatortype_find(id.c_str(), true) != nullptr) {
+    return "bpy.ops." + id;
+  }
+  if (WM_operatortype_find(class_name.c_str(), true) != nullptr) {
+    char python_id[OP_MAX_TYPENAME];
+    WM_operator_py_idname(python_id, class_name.c_str());
+    return "bpy.ops." + std::string(python_id);
+  }
+
+  StructRNA *srna = RNA_struct_find(class_name.c_str());
+  if (srna == nullptr) {
+    if (reports != nullptr) {
+      BKE_reportf(reports, RPT_ERROR, "Type \"%s\" cannot be found", class_name.c_str());
+    }
+    return std::nullopt;
+  }
+  PropertyRNA *property = RNA_struct_type_find_property(srna, property_name.c_str());
+  if (property == nullptr) {
+    return "bpy.types.bpy_struct";
+  }
+  for (StructRNA *base = RNA_struct_base(srna); base != nullptr; base = RNA_struct_base(base)) {
+    if (RNA_struct_type_find_property(base, property_name.c_str()) != property) {
+      break;
+    }
+    class_name = RNA_struct_identifier(base);
+  }
+  return "bpy.types." + class_name + "." + property_name;
+}
+
+struct ManualReference {
+  const char *pattern;
+  const char *suffix;
+};
+
+/* Entradas cuya URL semántica no se puede deducir del identificador RNA. El
+ * proveedor de reserva conserva además acceso al manual completo mediante su
+ * buscador. La tabla puede ampliarse sin tocar el operador ni el registro. */
+static const ManualReference manual_references[] = {
+    {"bpy.ops.wm.batch_rename*", "files/blend/rename.html#bpy-ops-wm-batch-rename"},
+    {"bpy.ops.wm.properties_edit*", "files/custom_properties.html#bpy-ops-wm-properties-edit"},
+    {"bpy.ops.wm.operator_cheat_sheet*", "advanced/operators.html#bpy-ops-wm-operator-cheat-sheet"},
+    {"bpy.ops.wm.doc_view_manual_ui_context*", "getting_started/help.html#bpy-ops-wm-doc-view-manual-ui-context"},
+    {"bpy.types.spaceproperties*", "editors/properties_editor.html#bpy-types-spaceproperties"},
+};
+
+bool builtin_manual_provider(const blender::StringRef rna_id, std::string &r_url)
+{
+  std::string lower = rna_id;
+  std::transform(lower.begin(), lower.end(), lower.begin(), [](const unsigned char c) {
+    return char(std::tolower(c));
+  });
+  for (const ManualReference &reference : manual_references) {
+    if (fnmatch(reference.pattern, lower.c_str(), 0) == 0) {
+      r_url = url_from_preset(URL_PRESET_MANUAL) + reference.suffix;
+      return true;
+    }
+  }
+  /* Contrato sustituto de la enorme tabla Python generada: un identificador
+   * RNA válido nunca pierde acceso al manual aunque aún no tenga una entrada
+   * semántica nativa; el buscador oficial recibe ese identificador. */
+  r_url = url_from_preset(URL_PRESET_MANUAL) + "search.html?q=" + url_encode(rna_id);
+  return true;
+}
+
+blender::Vector<flipendo::manual::URLProvider> &manual_providers()
+{
+  static blender::Vector<flipendo::manual::URLProvider> providers = {builtin_manual_provider};
+  return providers;
+}
+
 }  // namespace
+
+namespace flipendo::manual {
+
+void provider_register(const URLProvider provider)
+{
+  if (provider != nullptr && !manual_providers().contains(provider)) {
+    manual_providers().append(provider);
+  }
+}
+
+void provider_unregister(const URLProvider provider)
+{
+  manual_providers().remove_first_occurrence_and_reorder(provider);
+}
+
+bool url_lookup(const blender::StringRef rna_id, std::string &r_url)
+{
+  const blender::Vector<URLProvider> &providers = manual_providers();
+  for (int i = providers.size() - 1; i >= 0; i--) {
+    if (providers[i](rna_id, r_url)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace flipendo::manual
 
 static wmOperatorStatus url_open_exec(bContext * /*C*/, wmOperator *op)
 {
@@ -570,6 +683,34 @@ void WM_OT_doc_view(wmOperatorType *ot)
   ot->idname = "WM_OT_doc_view";
   ot->description = "Open online reference docs in a web browser";
   ot->exec = doc_view_exec;
+
+  PropertyRNA *prop = RNA_def_string(ot->srna, "doc_id", nullptr, 1025, "Doc ID", "");
+  RNA_def_property_flag(prop, PROP_HIDDEN);
+}
+
+static wmOperatorStatus doc_view_manual_exec(bContext * /*C*/, wmOperator *op)
+{
+  char doc_id[1025];
+  RNA_string_get(op->ptr, "doc_id", doc_id);
+  const std::optional<std::string> rna_id = documentation_rna_id(doc_id, op->reports);
+  if (!rna_id) {
+    return OPERATOR_CANCELLED;
+  }
+  std::string url;
+  if (!flipendo::manual::url_lookup(*rna_id, url)) {
+    BKE_reportf(op->reports, RPT_WARNING, "No manual reference available for '%s'", doc_id);
+    return OPERATOR_CANCELLED;
+  }
+  open_with_default_application(complete_url(url).c_str());
+  return OPERATOR_FINISHED;
+}
+
+void WM_OT_doc_view_manual(wmOperatorType *ot)
+{
+  ot->name = "View Manual";
+  ot->idname = "WM_OT_doc_view_manual";
+  ot->description = "Load online manual";
+  ot->exec = doc_view_manual_exec;
 
   PropertyRNA *prop = RNA_def_string(ot->srna, "doc_id", nullptr, 1025, "Doc ID", "");
   RNA_def_property_flag(prop, PROP_HIDDEN);

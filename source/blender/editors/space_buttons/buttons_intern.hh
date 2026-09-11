@@ -78,6 +78,7 @@ struct ButsContextTexture {
 void buttons_context_compute(const bContext *C, SpaceProperties *sbuts);
 int buttons_context(const bContext *C, const char *member, bContextDataResult *result);
 void buttons_context_register(ARegionType *art);
+void buttons_properties_data_shaderfx_register(ARegionType *art);
 ID *buttons_context_id_path(const bContext *C);
 
 extern "C" const char *buttons_context_dir[]; /* doc access */

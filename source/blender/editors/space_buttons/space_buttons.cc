@@ -1106,6 +1106,8 @@ void ED_spacetype_buttons()
   /* Los paneles de juego, que hasta ahora venian de `properties_game.py`. */
   fl_game_buttons_register(art);
   fl_game_menus_register();
+  /* La pestana Effects, que venia de `properties_data_shaderfx.py`. */
+  buttons_properties_data_shaderfx_register(art);
   BLI_addhead(&st->regiontypes, art);
 
   /* Register the panel types from modifiers. The actual panels are built per modifier rather
