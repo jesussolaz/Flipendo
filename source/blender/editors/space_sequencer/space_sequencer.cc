@@ -62,6 +62,7 @@
 #include "BLO_read_write.hh"
 
 /* Own include. */
+#include "FL_sequencer_menus.hh"
 #include "sequencer_intern.hh"
 
 namespace blender::ed::vse {
@@ -1222,6 +1223,8 @@ void ED_spacetype_sequencer()
   /* HUD. */
   art = ED_area_type_hud(st->spaceid);
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::sequencer::sequencer_menus_register();
 
   BKE_spacetype_register(std::move(st));
 

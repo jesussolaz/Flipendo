@@ -648,39 +648,6 @@ class SEQUENCER_MT_marker(Menu):
             layout.prop(st, "use_marker_sync")
 
 
-class SEQUENCER_MT_change(Menu):
-    bl_label = "Change"
-
-    def draw(self, context):
-        layout = self.layout
-        strip = context.active_strip
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-        if strip and strip.type == 'SCENE':
-            bpy_data_scenes_len = len(bpy.data.scenes)
-            if bpy_data_scenes_len > 10:
-                layout.operator_context = 'INVOKE_DEFAULT'
-                layout.operator("sequencer.change_scene", text="Change Scene...")
-            elif bpy_data_scenes_len > 1:
-                layout.operator_menu_enum("sequencer.change_scene", "scene", text="Change Scene")
-            del bpy_data_scenes_len
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-        layout.menu("SEQUENCER_MT_strip_effect_change")
-        layout.operator("sequencer.swap_inputs")
-        props = layout.operator("sequencer.change_path", text="Path/Files")
-
-        if strip:
-            strip_type = strip.type
-
-            if strip_type == 'IMAGE':
-                props.filter_image = True
-            elif strip_type == 'MOVIE':
-                props.filter_movie = True
-            elif strip_type == 'SOUND':
-                props.filter_sound = True
-
-
 class SEQUENCER_MT_navigation(Menu):
     bl_label = "Navigation"
 
@@ -1262,19 +1229,6 @@ class SEQUENCER_MT_image_apply(Menu):
         layout.operator("sequencer.strip_transform_fit", text="Stretch To Fill").fit_method = 'STRETCH'
 
 
-class SEQUENCER_MT_retiming(Menu):
-    bl_label = "Retiming"
-    bl_translation_context = i18n_contexts.operator_default
-
-    def draw(self, context):
-
-        layout = self.layout
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        layout.operator("sequencer.retiming_key_add")
-        layout.operator("sequencer.retiming_add_freeze_frame_slide")
-
-
 class SEQUENCER_MT_context_menu(Menu):
     bl_label = "Sequencer"
 
@@ -1394,67 +1348,6 @@ class SEQUENCER_MT_context_menu(Menu):
             self.draw_retime(context)
         else:
             self.draw_generic(context)
-
-
-class SEQUENCER_MT_preview_context_menu(Menu):
-    bl_label = "Sequencer Preview"
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_REGION_WIN'
-
-        props = layout.operator("wm.call_panel", text="Rename...")
-        props.name = "TOPBAR_PT_name"
-        props.keep_open = False
-
-        # TODO: support in preview.
-        # layout.operator("sequencer.delete", text="Delete")
-
-
-class SEQUENCER_MT_pivot_pie(Menu):
-    bl_label = "Pivot Point"
-
-    def draw(self, context):
-        layout = self.layout
-        pie = layout.menu_pie()
-
-        sequencer_tool_settings = context.tool_settings.sequencer_tool_settings
-
-        pie.prop_enum(sequencer_tool_settings, "pivot_point", value='CENTER')
-        pie.prop_enum(sequencer_tool_settings, "pivot_point", value='CURSOR')
-        pie.prop_enum(sequencer_tool_settings, "pivot_point", value='INDIVIDUAL_ORIGINS')
-        pie.prop_enum(sequencer_tool_settings, "pivot_point", value='MEDIAN')
-
-
-class SEQUENCER_MT_view_pie(Menu):
-    bl_label = "View"
-
-    def draw(self, context):
-        layout = self.layout
-
-        pie = layout.menu_pie()
-        pie.operator("sequencer.view_all")
-        pie.operator("sequencer.view_selected", text="Frame Selected", icon='ZOOM_SELECTED')
-        pie.separator()
-        if context.scene.use_preview_range:
-            pie.operator("anim.scene_range_frame", text="Frame Preview Range")
-        else:
-            pie.operator("anim.scene_range_frame", text="Frame Scene Range")
-
-
-class SEQUENCER_MT_preview_view_pie(Menu):
-    bl_label = "View"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        pie = layout.menu_pie()
-        pie.operator_context = 'INVOKE_REGION_PREVIEW'
-        pie.operator("sequencer.view_all_preview")
-        pie.operator("sequencer.view_selected", text="Frame Selected", icon='ZOOM_SELECTED')
-        pie.separator()
-        pie.operator("sequencer.view_zoom_ratio", text="Zoom 1:1").ratio = 1
 
 
 class SequencerButtonsPanel:
@@ -3138,7 +3031,6 @@ class SEQUENCER_PT_sequencer_snapping(Panel):
 
 
 classes = (
-    SEQUENCER_MT_change,
     SEQUENCER_HT_tool_header,
     SEQUENCER_HT_header,
     SEQUENCER_MT_editor_menus,
@@ -3172,11 +3064,6 @@ classes = (
     SEQUENCER_MT_image_apply,
     SEQUENCER_MT_color_tag_picker,
     SEQUENCER_MT_context_menu,
-    SEQUENCER_MT_preview_context_menu,
-    SEQUENCER_MT_pivot_pie,
-    SEQUENCER_MT_retiming,
-    SEQUENCER_MT_view_pie,
-    SEQUENCER_MT_preview_view_pie,
 
     SEQUENCER_PT_color_tag_picker,
 

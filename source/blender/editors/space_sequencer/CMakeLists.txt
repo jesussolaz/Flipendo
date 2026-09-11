@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../../makesrna
 
@@ -14,6 +15,7 @@ set(INC_SYS
 )
 
 set(SRC
+  fl_sequencer_menus.cc
   sequencer_add.cc
   sequencer_buttons.cc
   sequencer_channels_draw.cc
@@ -38,6 +40,7 @@ set(SRC
   sequencer_view.cc
   space_sequencer.cc
 
+  FL_sequencer_menus.hh
   sequencer_intern.hh
   sequencer_quads_batch.hh
   sequencer_scopes.hh
