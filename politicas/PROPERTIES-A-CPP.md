@@ -442,13 +442,20 @@ dejan su objeto activo (tipos 22, 29 y 27). **Lo que no está medido y se dice**
 pestañas todavía no se han comparado contra nada, porque todavía no se han migrado; el
 andamio está listo para cuando se haga.
 
-### Cómo se registra la opción (pendiente de integrar)
+### Cómo se registra la opción, y cómo acabó entrando
 
-`source/creator/creator_args.cc` tenía, cuando se cerró este turno, trabajo a medias de otro
-carril (un `--fl-make-ui-scene` propio). Con el índice compartido, commitear ese fichero
-habría metido el trabajo ajeno en este commit, que es el accidente de las 01:05. Así que la
-opción **queda escrita y verificada en el árbol de trabajo pero fuera de este commit**. Son
-tres cosas, y están probadas:
+`source/creator/creator_args.cc` tenía, cuando se escribió el andamio, trabajo a medias de
+otro carril (un `--fl-make-ui-scene` propio). Con el índice compartido, commitear ese
+fichero habría metido el trabajo ajeno en el commit del andamio con el mensaje equivocado,
+que es el accidente de las 01:05. Así que el alta se dejó escrita y verificada en el árbol
+de trabajo pero **fuera** del commit `ca64307f2e5`.
+
+**Acabó entrando media hora después, en `69270a8f633`** («Interfaz: la escena rica del arnés,
+y el defecto que ha destapado»), porque el otro carril commiteó ese fichero y se llevó estas
+tres piezas dentro. Es el riesgo que se había anotado: con el índice compartido, lo que
+dejas en un fichero ajeno lo commitea quien pase después. **No es un problema de contenido**
+—estaba probado antes de dejarlo ahí— pero sí de autoría, y por eso queda dicho. Las tres
+piezas, para quien las busque:
 
 ```cpp
 #  include "FL_properties_ui.hpp"                       /* con los demás FL_*. */
