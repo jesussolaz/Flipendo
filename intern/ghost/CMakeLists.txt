@@ -165,7 +165,7 @@ elseif(APPLE AND NOT WITH_GHOST_X11)
 
   if(WITH_INPUT_NDOF)
     list(APPEND SRC
-      intern/GHOST_NDOFManagerCocoa.mm
+      intern/GHOST_NDOFManagerCocoa.cc
 
       intern/GHOST_NDOFManagerCocoa.hh
     )
@@ -179,6 +179,7 @@ if(APPLE)
   # GHOST para no arrastrar AppKit a quien las incluye desde un `.cc`.
   list(APPEND SRC
     intern/GHOST_ObjCCompat.hh
+    intern/GHOST_ObjCRuntime.hh
   )
   if(WITH_METAL_BACKEND)
     list(APPEND SRC
@@ -191,8 +192,8 @@ endif()
 
 if(APPLE)
   list(APPEND SRC
+    intern/GHOST_SystemPathsCocoa.cc
     intern/GHOST_SystemPathsCocoa.hh
-    intern/GHOST_SystemPathsCocoa.mm
   )
 
 elseif(UNIX)

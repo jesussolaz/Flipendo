@@ -5,8 +5,14 @@
 #define DEBUG_NDOF_DRIVER false
 
 #include "GHOST_NDOFManagerCocoa.hh"
+#include "GHOST_ObjCRuntime.hh"
 #include "GHOST_SystemCocoa.hh"
-#import <Cocoa/Cocoa.h>
+
+/* CoreFoundation es C puro: se puede incluir desde un `.cc` sin arrastrar AppKit. De
+ * aqui sale `kCFBundleVersionKey`, la misma constante que usaba el original. No se
+ * sustituye por la cadena "CFBundleVersion" escrita a mano a proposito: es el simbolo
+ * de verdad, y si Apple lo cambiara el enlazador lo diria. */
+#include <CoreFoundation/CoreFoundation.h>
 
 #include <dlfcn.h>
 #include <stdint.h>
@@ -26,7 +32,17 @@ static bool driver_loaded = false;
 /* 3DxMacCore version >= minimal_version is considered "new".
  * It was firstly introduced in 3DxWare v10.8.4 r3716 and can process
  * (not yet documented in SDK manual) kConnexionCmdAppEvent events. */
-static NSString *new_driver_minimal_version = @"1.3.4.473";
+/* Era un `NSString *` inicializado con el literal `@"1.3.4.473"`, que el compilador de
+ * Objective-C crea como objeto INMORTAL en tiempo de compilacion. Desde C++ no hay
+ * literal equivalente, asi que se guarda la cadena de C y el objeto se fabrica en el
+ * unico sitio donde hace falta. Cuidado con la tentacion de poner `nullptr` como
+ * valor por defecto de un `NSString *`: compila y revienta en ejecucion (es la trampa
+ * 5 de la politica OBJC-A-CPP, pagada ya por el carril de Metal). */
+static const char *new_driver_minimal_version = "1.3.4.473";
+
+/* NSComparisonResult. Valor del SDK (`Foundation/NSObjCRuntime.h`), comprobado con
+ * `static_assert` en la sonda de constantes. */
+static constexpr long kNSOrderedAscending = -1;
 
 /* Replicate just enough of the 3Dx API for our uses, not everything the driver provides. */
 
@@ -224,6 +240,12 @@ static void DeviceEvent(uint32_t /*unused*/, uint32_t msg_type, void *msg_arg)
 
 GHOST_NDOFManagerCocoa::GHOST_NDOFManagerCocoa(GHOST_System &sys) : GHOST_NDOFManager(sys)
 {
+  /* El original no tenia `@autoreleasepool` porque los objetos autoliberados que crea
+   * (`NSString`, el diccionario) los recogia el pool del hilo principal. Aqui se pone
+   * uno explicito para no depender de que exista: este constructor puede correr antes
+   * de que AppKit haya instalado el suyo. */
+  ghost_objc::AutoreleasePool pool;
+
   if (load_driver_functions()) {
     /* Give static functions something to talk to: */
     ghost_system = dynamic_cast<GHOST_SystemCocoa *>(&sys);
@@ -238,12 +260,25 @@ GHOST_NDOFManagerCocoa::GHOST_NDOFManagerCocoa(GHOST_System &sys) : GHOST_NDOFMa
       return;
     }
 
-    const NSDictionary *dictInfos =
-        [NSBundle bundleWithPath:@"/Library/Frameworks/3DconnexionClient.framework"]
-            .infoDictionary;
-    NSString *strVersion = [dictInfos objectForKey:(NSString *)kCFBundleVersionKey];
-    const auto compare = [strVersion compare:new_driver_minimal_version];
-    const bool has_new_driver = compare != NSOrderedAscending;
+    /* Traduccion literal de:
+     *   [[NSBundle bundleWithPath:@"..."] infoDictionary]
+     *   [dictInfos objectForKey:(NSString *)kCFBundleVersionKey]
+     *   [strVersion compare:new_driver_minimal_version]
+     * `kCFBundleVersionKey` es un `CFStringRef` y `NSString *` es lo mismo (puente sin
+     * coste), asi que se pasa tal cual como `id`. Si el driver no esta instalado,
+     * `bundleWithPath:` devuelve nil y todos los envios siguientes devuelven nil / 0
+     * sin fallar, igual que en Objective-C: lo garantiza el runtime, no este codigo.
+     * Y 0 != -1, asi que `has_new_driver` sale `true`, EXACTAMENTE como antes. */
+    id dictInfos = ghost_objc::msg<id>(
+        ghost_objc::msg<id>(GHOST_CLS(NSBundle),
+                            GHOST_SEL(bundleWithPath:),
+                            ghost_objc::nsstring("/Library/Frameworks/3DconnexionClient.framework")),
+        GHOST_SEL(infoDictionary));
+    id strVersion = ghost_objc::msg<id>(
+        dictInfos, GHOST_SEL(objectForKey:), (id)kCFBundleVersionKey);
+    const long compare = ghost_objc::msg<long>(
+        strVersion, GHOST_SEL(compare:), ghost_objc::nsstring(new_driver_minimal_version));
+    const bool has_new_driver = compare != kNSOrderedAscending;
 
     /* New driver makes use of kConnexionCmdAppEvent events, which require to have all buttons
      * unmasked. Basically, this means that driver consumes all NDOF device input and then sends
