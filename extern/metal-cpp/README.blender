@@ -1,0 +1,20 @@
+Project: metal-cpp
+URL: https://github.com/apple/metal-cpp
+License: SPDX:Apache-2.0
+Upstream version: release/metal-cpp_macOS26.4_iOS26.4 (5c00949, 2026)
+Copyright: "Copyright 2020-2026 Apple Inc."
+Local modifications:
+
+- None. Vendorizado verbatim (solo se omite el directorio de ejemplos/tests del
+  repositorio original; las cabeceras van completas).
+- Es una biblioteca *header-only*: no tiene CMakeLists ni se compila por separado.
+  Un unico traductor del arbol define NS_PRIVATE_IMPLEMENTATION /
+  MTL_PRIVATE_IMPLEMENTATION / CA_PRIVATE_IMPLEMENTATION / MTLFX_PRIVATE_IMPLEMENTATION
+  para materializar los simbolos privados (ver source/blender/gpu/metal/mtl_cpp_impl.cc).
+
+Por que esta version y no la ultima (macOS27):
+  El SDK instalado en esta maquina es 26.5 (`xcrun --show-sdk-version`). metal-cpp
+  es solo un envoltorio de objc_msgSend y compila contra cualquier SDK, pero usar
+  cabeceras mas nuevas que el SDK permitiria llamar selectores que en este sistema
+  no existen y que fallarian en tiempo de ejecucion, no de compilacion. Se fija por
+  tanto el tag inmediatamente inferior al SDK.
