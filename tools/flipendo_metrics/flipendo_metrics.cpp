@@ -631,9 +631,17 @@ struct BridgeScan {
   long long with_python_occ = 0;
 };
 
+/* El propio generador lleva los nombres de los puentes escritos como datos (la
+ * tabla de arriba), así que si se escanea a sí mismo se cuenta nueve puentes que
+ * no existen. Medido: 120 en vez de 111. Se excluye por su ruta. */
+static bool is_this_generator(const std::string &path)
+{
+  return contains(path, "tools/flipendo_metrics/");
+}
+
 static void bridge_scan(const std::string &path, bool vendored, const char *data, size_t n, void *ud)
 {
-  if (vendored) return;
+  if (vendored || is_this_generator(path)) return;
   const char *lg = lang_of(path);
   if (!lg) return;
   const std::string l = lg;
@@ -1796,6 +1804,10 @@ int main(int argc, char **argv)
   if (!have_binary) {
     r += sfmt("**No medida**: no existe el binario `%s`. Compila con `nb install` y vuelve a\n"
               "generar este documento.\n\n", op.binary.c_str());
+  }
+  else if (!op.run_bateria) {
+    r += "**No ejecutada en esta pasada** (`--sin-bateria`). Este documento está incompleto:\n";
+    r += "regenéralo sin esa bandera antes de citarlo.\n\n";
   }
   else if (bat.v.empty()) {
     r += "**No medida**: no se pudo leer `source/creator/creator_args.cc` al commit.\n\n";
