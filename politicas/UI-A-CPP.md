@@ -442,3 +442,34 @@ Dos obstáculos duros, ninguno resoluble escribiendo más rápido:
    carril de la vista 3D y el de Propiedades.
 3. Entonces, y solo entonces, el editor de imagen/UV entero: 46 paneles, 9 menús,
    2 cabeceras, 2 listas y una estantería de recursos.
+
+### El tercer obstáculo, que no es de ninguno de los dos editores: `PresetPanel`
+
+Al bajar al detalle del editor de nodos apareció un bloqueo que no estaba en la primera
+medición y que es **transversal a todo `bl_ui`**.
+
+`NODE_PT_node_color_presets` hereda de `PresetPanel` (`bl_ui/utils.py`), cuyo `draw()`
+llama a `Menu.draw_preset()` (`bpy_types.py`): enumera los ficheros de una carpeta de
+presets y dibuja un elemento por cada uno, más el campo de nombre y el botón de añadir.
+
+El carril de presets migró a C++ **los datos** —leer, aplicar, escribir y capturar un
+preset (`source/blender/windowmanager/preset/`)— pero **no el dibujo del menú**: no hay
+API C++ que recorra el directorio y pinte la lista. Sin ella, `PresetPanel` no se puede
+migrar.
+
+No es un detalle del editor de nodos: **17 clases de 12 ficheros de `bl_ui` heredan de
+`PresetPanel`** — cámara, áreas seguras, materiales de lápiz, fluidos, formato y FFmpeg
+de salida, balance de blancos, trazado de rayos, dinámica de pelo, color de nodo, tres
+del editor de clips, tela, editor de texto de preferencias y pinceles de la vista 3D.
+
+**Y ojo con la trampa que casi cuela**: en una instalación de fábrica la carpeta de
+presets no existe, así que el volcado de la línea base para estos paneles es un
+`* Missing Paths *` y poco más. Reproducir *eso* en C++ haría pasar al verificador
+mientras se pierde la capacidad entera. Sería exactamente la verificación que no
+verifica nada. El trabajo de verdad es la API de enumeración, y su sitio natural es el
+módulo de presets, no el fichero de cada editor.
+
+**Prerrequisito, por tanto, para cerrar el editor de nodos**: una función C++ que
+enumere una carpeta de presets y dibuje el menú, en `source/blender/windowmanager/preset/`.
+Con ella, el editor de nodos queda cerrable de una sentada: los otros 29 tipos no tienen
+más obstáculo que escribirlos.
