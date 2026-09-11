@@ -41,9 +41,9 @@ MTLShaderInterface::MTLShaderInterface(const char *name)
 MTLShaderInterface::~MTLShaderInterface()
 {
   for (const int i : IndexRange(ARGUMENT_ENCODERS_CACHE_SIZE)) {
-    if (arg_encoders_[i].encoder != nil) {
-      id<MTLArgumentEncoder> enc = arg_encoders_[i].encoder;
-      [enc release];
+    if (arg_encoders_[i].encoder != nullptr) {
+      MTLArgumentEncoderPtr enc = arg_encoders_[i].encoder;
+      enc->release();
     }
   }
 }
@@ -85,7 +85,7 @@ void MTLShaderInterface::init()
 
   /* Null initialization for argument encoders. */
   for (const int i : IndexRange(ARGUMENT_ENCODERS_CACHE_SIZE)) {
-    arg_encoders_[i].encoder = nil;
+    arg_encoders_[i].encoder = nullptr;
     arg_encoders_[i].buffer_index = -1;
   }
 }
@@ -605,9 +605,9 @@ int MTLShaderInterface::get_argument_buffer_bind_index(ShaderStage stage) const
   return sampler_argument_buffer_bind_index_[get_shader_stage_index(stage)];
 }
 
-id<MTLArgumentEncoder> MTLShaderInterface::find_argument_encoder(int buffer_index) const
+MTLArgumentEncoderPtr MTLShaderInterface::find_argument_encoder(int buffer_index) const
 {
-  id encoder = nil;
+  MTLArgumentEncoderPtr encoder = nullptr;
   for (const int i : IndexRange(ARGUMENT_ENCODERS_CACHE_SIZE)) {
     encoder = arg_encoders_[i].buffer_index == buffer_index ? arg_encoders_[i].encoder : encoder;
   }
@@ -617,8 +617,10 @@ id<MTLArgumentEncoder> MTLShaderInterface::find_argument_encoder(int buffer_inde
 void MTLShaderInterface::insert_argument_encoder(int buffer_index, id encoder)
 {
   for (const int i : IndexRange(ARGUMENT_ENCODERS_CACHE_SIZE)) {
-    if (arg_encoders_[i].encoder == nil) {
-      arg_encoders_[i].encoder = encoder;
+    if (arg_encoders_[i].encoder == nullptr) {
+      /* `encoder` llega como `id` para que la firma mangle igual en `.mm` y en `.cc`
+       * (ver mtl_shader_interface.hh). Es el mismo puntero. */
+      arg_encoders_[i].encoder = reinterpret_cast<MTLArgumentEncoderPtr>(encoder);
       arg_encoders_[i].buffer_index = buffer_index;
       return;
     }

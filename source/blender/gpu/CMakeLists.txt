@@ -351,9 +351,9 @@ set(METAL_SRC
   metal/mtl_index_buffer.cc
   metal/mtl_memory.cc
   metal/mtl_query.cc
-  metal/mtl_shader.mm
-  metal/mtl_shader_generator.mm
-  metal/mtl_shader_interface.mm
+  metal/mtl_shader.cc
+  metal/mtl_shader_generator.cc
+  metal/mtl_shader_interface.cc
   metal/mtl_shader_log.cc
   metal/mtl_state.mm
   metal/mtl_storage_buffer.mm

@@ -504,7 +504,11 @@ class MTLPixelBuffer : public PixelBuffer {
 MTLPixelFormat gpu_texture_format_to_metal(eGPUTextureFormat tex_format);
 size_t get_mtl_format_bytesize(MTLPixelFormat tex_format);
 int get_mtl_format_num_components(MTLPixelFormat tex_format);
-bool mtl_format_supports_blending(MTLPixelFormat format);
+/* Recibe el formato como entero y no como `MTLPixelFormat` porque se define en
+ * mtl_texture_util.mm (Objective-C++) y la llama mtl_shader.cc (C++ puro): los
+ * enumerados entran en el mangling y con el tipo a pelo no enlazaba. Ver
+ * politicas/OBJC-A-CPP.md seccion 11. Vuelve al enum cuando migre mtl_texture_util. */
+bool mtl_format_supports_blending(uint64_t format);
 
 /* The type used to define the per-component data in the input buffer. */
 inline std::string tex_data_format_to_msl_type_str(eGPUDataFormat type)

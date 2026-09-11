@@ -414,6 +414,81 @@ solo espera a que `mtl_shader.mm` (52) lo desbloquee. Los dos juntos son 5.015 l
 5. `mtl_framebuffer` (136) y `mtl_texture` (357).
 6. `mtl_command_buffer` y `mtl_context`: **solo despues de la fase de GHOST**.
 
+## 14. El convertidor mecanico: lo que automatiza y donde MIENTE
+
+Hay un convertidor en el scratchpad (`conv.py`, `fixdot.py`, `unfix.py`) que hace los
+idiomas repetitivos. Automatiza bien:
+
+  [obj sel]                -> obj->sel()
+  [obj sel:a otra:b]       -> obj->sel(a, b)        (metal-cpp usa el PRIMER trozo del
+                                                     selector y el resto por posicion)
+  obj.prop                 -> obj->prop()
+  obj.prop = v             -> obj->setProp(v)
+  id<X>                    -> XPtr
+  @"texto"                 -> mtl_string("texto")
+  NSMakeRange / MTLSizeMake-> NS::Range::Make / MTL::Size::Make
+
+**Y se equivoca de cuatro formas, todas vistas de verdad en `mtl_shader`:**
+
+1. **Confunde metodos de CLASE con envios a instancia.** `[NSString stringWithFormat:]`
+   y `[[MTLCompileOptions alloc] init]` no son mensajes a un objeto existente. Salia
+   `NSString->stringWithFormat(...)`, que no compila. Hay que hacerlos a mano.
+2. **Se come las comparaciones.** El filtro para no confundir el setter `.prop = v` con
+   otra cosa tambien capturaba `.prop == v`. Convirtio
+   `if (current_attribute.format == MTLVertexFormatInvalid)` en
+   `if (current_attribute->setFormat(= MTLVertexFormatInvalid)`. Corregido con un
+   lookahead que distingue `=` de `==`, pero conviene revisar los `==` a mano.
+3. **Toca COMENTARIOS y cadenas.** Convirtio el comentario «require Metal 3.1» en
+   «require Metal 3->1()». Solo hubo uno, pero es el fallo mas peligroso del lote
+   porque **compila**. Comprobacion barata que conviene repetir siempre:
+   `grep -nE '[0-9]->[0-9A-Za-z_]+\(\)' fichero.cc`
+   y diff de los literales de cadena contra el `.mm` original.
+4. **Aplica la conversion a structs que NO son de Metal.** `MTLContextGlobalShaderPipelineState`
+   es una struct de Blender, no un objeto de Objective-C: `ctx->pipeline_state.active_shader = x`
+   acabo como `->setActive_shader(x)`. El compilador lo caza
+   («member reference type ... is **not** a pointer»), y de ahi salio `unfix.py`, que
+   deshace justo esos.
+
+**Lo que el convertidor NO puede garantizar, y por eso el render es obligatorio:** que
+el nombre de metal-cpp sea el mismo que el del selector. No siempre lo es:
+
+  newBufferWithLength:options:            -> newBuffer(...)
+  newFunctionWithName:constantValues:     -> newFunction(...)
+  newLibraryWithSource:options:           -> newLibrary(...)
+  newComputePipelineStateWithDescriptor:  -> newComputePipelineState(...)
+  newRenderPipelineStateWithDescriptor:   -> newRenderPipelineState(...)
+  objectAtIndex:                          -> object(...)
+  UTF8String                              -> utf8String()
+
+Todos estos dan **error de compilacion**, no comportamiento indefinido, porque ya son
+llamadas a metodo de C++: el compilador comprueba que el metodo exista. El riesgo real
+que queda es el **orden de los argumentos** y la **semantica**, y contra eso solo vale
+el render contra la linea base.
+
+Dos diferencias de API que hay que saber:
+
+- `NSArray<MTLArgument *> *` no existe: `NS::Array` **no es una plantilla**. Se escribe
+  `NS::Array *` y se recupera el tipo con `static_cast` al sacar cada elemento.
+- Los arrays de descriptores (`colorAttachments[i]`, `vertexDescriptor.layouts[i]`) no
+  admiten `[]`: se accede con `->object(i)`.
+
+## 15. Dos cosas de Objective-C que NO tienen equivalente y como se resolvieron
+
+**`@autoreleasepool { ... }`** pasa a una guarda RAII, `MTLAutoreleasePoolScope`, que se
+declara al principio del bloque. El pool se drena al salir del ambito, tambien por
+excepcion, igual que la construccion original. Ojo: `NS::AutoreleasePool` se libera con
+`release()`, no con `drain()`; sin recoleccion de basura son lo mismo y metal-cpp solo
+expone el primero.
+
+**`@""`** era un literal inmortal creado por el compilador. Primero se puso `nullptr`, y
+**era un fallo latente**: `mtl_shader.hh` inicializa seis `NSString *` con ese valor y
+`mtl_shader` hace `[x length]` sobre ellos. En Objective-C mandar un mensaje a `nil`
+devuelve 0 sin fallar; en C++ puro `nullptr->length()` es un cierre por violacion de
+segmento. Se resolvio con `mtl_empty_string()`: un `NS::String` vacio creado una sola
+vez y retenido para siempre, no nulo y de longitud 0, que reproduce el comportamiento
+observable del original. **Es el ejemplo perfecto de por que aqui hace falta mas
+verificacion: el codigo compilaba igual con `nullptr`.**
+
 ## 10. Cuando se borra el andamio
 
 `mtl_objc_compat.hh` es **temporal**. Cuando el ultimo `.mm` de `gpu/metal` pase a

@@ -129,18 +129,19 @@ using MTLDrawablePtr = MTL::Drawable *;
 using CAMetalDrawablePtr = CA::MetalDrawable *;
 using CAMetalLayerPtr = CA::MetalLayer *;
 
-/* En Objective-C `@""` es un literal inmortal creado por el compilador. En C++ puro
- * no hay literal equivalente, y fabricar un NS::String en el inicializador de un
- * miembro significaria reservar memoria en cada construccion. Se usa `nullptr`.
+/* En Objective-C `@""` es un literal inmortal creado por el compilador. En C++ puro no
+ * hay literal equivalente. Se devuelve un NS::String vacio creado UNA sola vez y
+ * retenido para siempre, que es lo que mas se parece: no nulo, longitud 0 e inmortal,
+ * asi que `->length()` sobre el da 0 en vez de reventar, igual que `[@"" length]`.
  *
- * NO ES EQUIVALENTE AL 100%%: en Objective-C mandar un mensaje a `nil` devuelve 0/nil
- * sin fallar, asi que `[s length]` da 0 tanto con `nil` como con `@""`, pero
- * `[array addObject:s]` si distingue. Hoy los unicos miembros afectados son los seis
- * `NSString *` de mtl_shader.hh y SOLO los toca mtl_shader.mm, que sigue siendo
- * Objective-C++ y por tanto sigue viendo `@""`. Ningun `.cc` construye todavia un
- * MTLShader. Cuando se migre mtl_shader.mm hay que resolver esto de verdad
- * (NS::String::string(...) o un std::string) y verificarlo, no darlo por hecho. */
-#  define MTL_NSSTRING_EMPTY nullptr
+ * Antes esto era `nullptr` y era un riesgo real: mtl_shader.hh inicializa seis
+ * `NSString *` con este valor y mtl_shader hace `[x length]` sobre ellos. En
+ * Objective-C mandar un mensaje a `nil` devuelve 0 sin fallar; en C++ puro
+ * `nullptr->length()` es un cierre por violacion de segmento. Con el singleton el
+ * comportamiento observable vuelve a ser identico al del codigo original.
+ *
+ * La inicializacion del estatico local es segura entre hilos desde C++11. */
+#  define MTL_NSSTRING_EMPTY ::mtl_empty_string()
 
 /* Alias de los nombres Objective-C a los de metal-cpp. GENERADO mecanicamente
  * cruzando lo que declara `extern/metal-cpp/Metal/ *.hpp` con los nombres que usa
@@ -1390,3 +1391,43 @@ inline NSString *mtl_string(const char *text)
   return NS::String::string(text, NS::UTF8StringEncoding);
 #endif
 }
+
+/* Cadena vacia inmortal, equivalente a `@""`. Ver la nota de MTL_NSSTRING_EMPTY. */
+inline NSString *mtl_empty_string()
+{
+  static NSString *empty = []() -> NSString * {
+#ifdef __OBJC__
+    return [@"" retain];
+#else
+    return NS::String::string("", NS::UTF8StringEncoding)->retain();
+#endif
+  }();
+  return empty;
+}
+
+/* Equivalente de `@autoreleasepool { ... }` para C++ puro.
+ *
+ * Se usa declarando una instancia al principio del bloque: el pool se drena al salir
+ * del ambito, tambien si se sale por excepcion, que es exactamente lo que garantizaba
+ * la construccion de Objective-C.
+ *
+ * OJO: NS::AutoreleasePool se libera con `release()`, NO con `drain()`. Son lo mismo
+ * sin recoleccion de basura (que Apple retiro hace anos), pero metal-cpp solo expone
+ * `release()`. */
+class MTLAutoreleasePoolScope {
+ public:
+#ifdef __OBJC__
+  MTLAutoreleasePoolScope() : pool_([[NSAutoreleasePool alloc] init]) {}
+  ~MTLAutoreleasePoolScope() { [pool_ drain]; }
+#else
+  MTLAutoreleasePoolScope() : pool_(NS::AutoreleasePool::alloc()->init()) {}
+  /* NS::AutoreleasePool se libera con release(), no con drain(): sin recoleccion de
+   * basura (que Apple retiro hace anos) son lo mismo, y metal-cpp solo expone release(). */
+  ~MTLAutoreleasePoolScope() { pool_->release(); }
+#endif
+  MTLAutoreleasePoolScope(const MTLAutoreleasePoolScope &) = delete;
+  MTLAutoreleasePoolScope &operator=(const MTLAutoreleasePoolScope &) = delete;
+
+ private:
+  NSAutoreleasePool *pool_;
+};

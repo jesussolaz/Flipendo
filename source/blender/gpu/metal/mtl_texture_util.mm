@@ -335,8 +335,10 @@ int get_mtl_format_num_components(MTLPixelFormat tex_format)
   }
 }
 
-bool mtl_format_supports_blending(MTLPixelFormat format)
+bool mtl_format_supports_blending(uint64_t format_raw)
 {
+  /* Ver la nota de mtl_texture.hh. */
+  const MTLPixelFormat format = (MTLPixelFormat)format_raw;
   /* Add formats as needed -- Verify platforms. */
   const MTLCapabilities &capabilities = MTLBackend::get_capabilities();
 

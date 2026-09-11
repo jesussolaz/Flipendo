@@ -786,16 +786,13 @@ bool MTLShader::generate_msl_from_glsl(const shader::ShaderCreateInfo *info)
 
   /* DEBUG: Export source to file for manual verification. */
 #if MTL_SHADER_DEBUG_EXPORT_SOURCE
-  NSFileManager *sharedFM = [NSFileManager defaultManager];
-  NSURL *app_bundle_url = [[NSBundle mainBundle] bundleURL];
+  NSFileManager *sharedFM = NSFileManager->defaultManager();
+  NSURL *app_bundle_url = NSBundle->mainBundle()->bundleURL();
   NSURL *shader_dir = [[app_bundle_url URLByDeletingLastPathComponent]
-      URLByAppendingPathComponent:@"Shaders/"
+      URLByAppendingPathComponent:mtl_string("Shaders/")
                       isDirectory:YES];
-  [sharedFM createDirectoryAtURL:shader_dir
-      withIntermediateDirectories:YES
-                       attributes:nil
-                            error:nil];
-  const char *path_cstr = [shader_dir fileSystemRepresentation];
+  sharedFM->createDirectoryAtURL(shader_dir, YES, nullptr, nullptr);
+  const char *path_cstr = shader_dir->fileSystemRepresentation();
 
   std::ofstream vertex_fs;
   vertex_fs.open(
@@ -817,21 +814,25 @@ bool MTLShader::generate_msl_from_glsl(const shader::ShaderCreateInfo *info)
 #endif
 
   /* Set MSL source NSString's. Required by Metal API. */
-  NSString *msl_final_vert = [NSString stringWithUTF8String:ss_vertex.str().c_str()];
-  NSString *msl_final_frag = [NSString stringWithUTF8String:ss_fragment.str().c_str()];
+  NSString *msl_final_vert = mtl_string(ss_vertex.str().c_str());
+  NSString *msl_final_frag = mtl_string(ss_fragment.str().c_str());
 
   this->shader_source_from_msl(msl_final_vert, msl_final_frag);
 
 #ifndef NDEBUG
   /* In debug mode, we inject the name of the shader into the entry-point function
    * name, as these are what show up in the Xcode GPU debugger. */
-  this->set_vertex_function_name(
-      [[NSString stringWithFormat:@"vertex_function_entry_%s", this->name] retain]);
-  this->set_fragment_function_name(
-      [[NSString stringWithFormat:@"fragment_function_entry_%s", this->name] retain]);
+  char vert_name[256], frag_name[256];
+  SNPRINTF(vert_name, "vertex_function_entry_%s", this->name);
+  SNPRINTF(frag_name, "fragment_function_entry_%s", this->name);
+  /* `retain` explicito: mtl_string() devuelve un objeto autoliberado y estos nombres
+   * tienen que sobrevivir a la pila de autoliberacion del hilo, igual que hacia el
+   * `[[NSString stringWithFormat:...] retain]` del codigo original. */
+  this->set_vertex_function_name(mtl_string(vert_name)->retain());
+  this->set_fragment_function_name(mtl_string(frag_name)->retain());
 #else
-  this->set_vertex_function_name(@"vertex_function_entry");
-  this->set_fragment_function_name(@"fragment_function_entry");
+  this->set_vertex_function_name(mtl_string("vertex_function_entry"));
+  this->set_fragment_function_name(mtl_string("fragment_function_entry"));
 #endif
 
   /* Bake shader interface. */
@@ -996,24 +997,23 @@ bool MTLShader::generate_msl_from_glsl_compute(const shader::ShaderCreateInfo *i
 #ifndef NDEBUG
   /* In debug mode, we inject the name of the shader into the entry-point function
    * name, as these are what show up in the Xcode GPU debugger. */
-  this->set_compute_function_name(
-      [[NSString stringWithFormat:@"compute_function_entry_%s", this->name] retain]);
+  char comp_name[256];
+  SNPRINTF(comp_name, "compute_function_entry_%s", this->name);
+  /* Ver la nota de retain en la version de vertice/fragmento. */
+  this->set_compute_function_name(mtl_string(comp_name)->retain());
 #else
-  this->set_compute_function_name(@"compute_function_entry");
+  this->set_compute_function_name(mtl_string("compute_function_entry"));
 #endif
 
   /* DEBUG: Export source to file for manual verification. */
 #if MTL_SHADER_DEBUG_EXPORT_SOURCE
-  NSFileManager *sharedFM = [NSFileManager defaultManager];
-  NSURL *app_bundle_url = [[NSBundle mainBundle] bundleURL];
+  NSFileManager *sharedFM = NSFileManager->defaultManager();
+  NSURL *app_bundle_url = NSBundle->mainBundle()->bundleURL();
   NSURL *shader_dir = [[app_bundle_url URLByDeletingLastPathComponent]
-      URLByAppendingPathComponent:@"Shaders/"
+      URLByAppendingPathComponent:mtl_string("Shaders/")
                       isDirectory:YES];
-  [sharedFM createDirectoryAtURL:shader_dir
-      withIntermediateDirectories:YES
-                       attributes:nil
-                            error:nil];
-  const char *path_cstr = [shader_dir fileSystemRepresentation];
+  sharedFM->createDirectoryAtURL(shader_dir, YES, nullptr, nullptr);
+  const char *path_cstr = shader_dir->fileSystemRepresentation();
 
   std::ofstream compute_fs;
   compute_fs.open(
@@ -1027,7 +1027,7 @@ bool MTLShader::generate_msl_from_glsl_compute(const shader::ShaderCreateInfo *i
       (std::string(path_cstr) + std::string(this->name) + "_GeneratedComputeShader.msl").c_str());
 #endif
 
-  NSString *msl_final_compute = [NSString stringWithUTF8String:ss_compute.str().c_str()];
+  NSString *msl_final_compute = mtl_string(ss_compute.str().c_str());
   this->shader_compute_source_from_msl(msl_final_compute);
 
   /* Bake shader interface. */
