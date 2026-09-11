@@ -460,6 +460,35 @@ endif()
 # -----------------------------------------------------------------------------
 # Install Targets (Generic, All Platforms)
 
+# Flipendo: poda del arbol de scripts instalado.
+#
+# `cmake --install` copia pero no borra: lo que se retira del arbol se queda
+# para siempre dentro del bundle, en `sys.path`, y se sigue importando. Por eso
+# esto va AQUI, y no dentro de `if(WITH_PYTHON)`: los presets y las plantillas
+# de aplicacion se instalan en `scripts/` incluso sin interprete, asi que la
+# poda tiene que preceder a TODAS las reglas que escriben ahi, en las dos
+# configuraciones (`dev/build` y `dev/build-nopy`).
+#
+# Se poda SOLO `scripts/`. Ni `datafiles/`, ni `python/`, ni `extensions/`:
+# `extensions/system/` lo pueden poblar «users or administrators» (ver mas
+# abajo, donde se instala), y borrarlo seria tirar algo que no viene del arbol.
+if(WITH_INSTALL_PRUNE_SCRIPTS)
+  install(
+    CODE "
+      set(_fl_prune \"${TARGETDIR_VER}/scripts\")
+      if(NOT IS_ABSOLUTE \"\${_fl_prune}\")
+        set(_fl_prune \"\${CMAKE_INSTALL_PREFIX}/\${_fl_prune}\")
+      endif()
+      set(_fl_prune \"\$ENV{DESTDIR}\${_fl_prune}\")
+      if(IS_DIRECTORY \"\${_fl_prune}\")
+        message(STATUS \"Flipendo: podando scripts instalados en \${_fl_prune}\")
+        file(REMOVE_RECURSE \"\${_fl_prune}\")
+      endif()
+      unset(_fl_prune)
+    "
+  )
+endif()
+
 if(WITH_PYTHON)
   # install(CODE "message(\"copying blender scripts...\")")
 
@@ -533,10 +562,9 @@ endif()
 # nuevo que salga del Python y sea dato va a esta lista, no a `scripts/`.
 # Ver politicas/DATOS-SIN-INTERPRETE.md.
 
-# Presets: 167 `.fpreset` (datos), 2 temas `.xml` y los `.py` que aun no tienen
-# sustituto nativo (los cinco de FFmpeg con su condicional NTSC/PAL). Los `.py`
-# se instalan tambien a proposito: sin interprete el lector nativo los rechaza
-# con un error visible, que es mejor que un preset que desaparece del menu.
+# Presets: 172 `.fpreset` (datos) y 2 temas `.xml`. Cero `.py`: los cinco de
+# FFmpeg que quedaban, con su condicional NTSC/PAL, son ya datos con un
+# guardian `when` declarado.
 install(
   DIRECTORY ${CMAKE_SOURCE_DIR}/scripts/presets
   DESTINATION ${TARGETDIR_VER}/scripts

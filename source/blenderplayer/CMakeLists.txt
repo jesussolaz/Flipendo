@@ -223,11 +223,36 @@ if(APPLE)
 
   # -----------------------------------------------------------------------------
   # Install Targets (Generic, All Platforms)
-  # important to make a clean  install each time, else old scripts get loaded.
-  install(
-    CODE
-    "file(REMOVE_RECURSE ${PLAYER_TARGETDIR_VER})"
-  )
+  #
+  # Flipendo: esta limpieza existia desde upstream con el motivo correcto escrito
+  # ("important to make a clean install each time, else old scripts get loaded"),
+  # pero NUNCA borro nada: `${PLAYER_TARGETDIR_VER}` es una ruta RELATIVA, y
+  # `file(REMOVE_RECURSE)` la resolvia contra el directorio de trabajo del script
+  # de instalacion -- es decir contra `dev/build/Blenderplayer.app/...`, que no
+  # existe. Resultado medido el 2026-09-11: 578 ficheros `.py` huerfanos dentro
+  # del bundle del Player. Ahora la ruta se hace absoluta.
+  #
+  # Y se acota a `scripts/`, que es donde estaba el problema: borrar el `4.5`
+  # entero se llevaria por delante cosas que no vienen del arbol el dia que se
+  # anada un directorio poblable (como `extensions/system` en Blender.app).
+  # Queda como deuda anotada: `datafiles/` y `python/` del Player siguen sin
+  # podarse.
+  if(WITH_INSTALL_PRUNE_SCRIPTS)
+    install(
+      CODE "
+        set(_fl_prune \"${PLAYER_TARGETDIR_VER}/scripts\")
+        if(NOT IS_ABSOLUTE \"\${_fl_prune}\")
+          set(_fl_prune \"\${CMAKE_INSTALL_PREFIX}/\${_fl_prune}\")
+        endif()
+        set(_fl_prune \"\$ENV{DESTDIR}\${_fl_prune}\")
+        if(IS_DIRECTORY \"\${_fl_prune}\")
+          message(STATUS \"Flipendo: podando scripts instalados en \${_fl_prune}\")
+          file(REMOVE_RECURSE \"\${_fl_prune}\")
+        endif()
+        unset(_fl_prune)
+      "
+    )
+  endif()
 
   if(WITH_PYTHON)
     # install(CODE "message(\"copying blender scripts...\")")

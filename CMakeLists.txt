@@ -601,6 +601,21 @@ Copy the official Blender Authors's copyright.txt into the Blender install direc
 )
 mark_as_advanced(WITH_INSTALL_COPYRIGHT)
 
+# Flipendo: `cmake --install` copia pero NO borra. Un `.py` migrado a C++ y
+# retirado del arbol seguia vivo dentro del bundle instalado y se seguia
+# importando, asi que una migracion podia pasar la verificacion con el Python
+# viejo todavia cargandose. Medido el 2026-09-11: 406 ficheros `.py` huerfanos
+# en `Blender.app` y 578 en `Blenderplayer.app`, y 8 de 8 modulos retirados esa
+# noche todavia importables desde el binario.
+# Con esto, el `scripts/` instalado es un espejo exacto del `scripts/` del arbol.
+# Ver `politicas/TESTS-A-CPP.md` seccion 5.
+option(WITH_INSTALL_PRUNE_SCRIPTS "\
+Borrar el arbol de scripts instalado antes de copiarlo, para que no queden \
+ficheros huerfanos de migraciones anteriores"
+  ON
+)
+mark_as_advanced(WITH_INSTALL_PRUNE_SCRIPTS)
+
 if((WITH_AUDASPACE AND NOT WITH_SYSTEM_AUDASPACE) OR WITH_MOD_FLUID)
   option(WITH_PYTHON_NUMPY "Include NumPy in Blender (used by Audaspace and Mantaflow)" ON)
 endif()
