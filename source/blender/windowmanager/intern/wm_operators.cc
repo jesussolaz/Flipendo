@@ -4163,6 +4163,11 @@ static void WM_OT_stereo3d_set(wmOperatorType *ot)
 /* preset/fl_preset_ops.cc (presets como datos, ver politicas/PRESETS-A-DATOS.md). */
 void WM_OT_preset_apply(wmOperatorType *ot);
 void WM_OT_preset_write(wmOperatorType *ot);
+/* preset/fl_preset_add_ops.cc: los veinte `*_preset_add` / `*_preset_remove` que eran
+ * subclases de `AddPresetBase` en `bl_operators/presets.py`. */
+namespace flipendo::preset {
+void register_add_preset_types();
+}
 /* Definidos en wm_context_ops.cc (transliterados de bl_operators/wm.py). */
 void WM_OT_context_toggle(wmOperatorType *ot);
 /* wm_tool_ops.cc */
@@ -4214,6 +4219,7 @@ void wm_operatortypes_register()
 {
   WM_operatortype_append(WM_OT_preset_apply);
   WM_operatortype_append(WM_OT_preset_write);
+  flipendo::preset::register_add_preset_types();
   WM_operatortype_append(WM_OT_context_toggle);
   WM_operatortype_append(WM_OT_tool_set_by_id);
   WM_operatortype_append(WM_OT_tool_set_by_index);

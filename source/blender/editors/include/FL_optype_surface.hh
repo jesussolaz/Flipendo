@@ -30,4 +30,23 @@ namespace flipendo::optype_surface {
 bool dump(bContext *C, const char *filepath);
 bool check(bContext *C, const char *baseline_path);
 
+/**
+ * Lo mismo para los operadores de `scripts/startup/bl_operators/presets.py`, con su
+ * propia lista y su propia linea base (`tests/flipendo/presetops/baseline-python.txt`).
+ *
+ * Va aparte, y no anadiendo idnames a la lista de arriba, porque aquella linea base
+ * esta congelada contra un binario que ya no se puede reconstruir: sus `.py` se
+ * retiraron. Este volcado ademas anade las BANDERAS -- las del tipo de operador
+ * (`REGISTER`, `INTERNAL`) y las de cada propiedad (`HIDDEN`, `SKIP_SAVE`,
+ * `ANIMATABLE`...) --, que la doctrina exige y el volcado v1 no llevaba. La trampa que
+ * cazan: una propiedad declarada desde Python NO es animable y una declarada con
+ * `RNA_def_boolean()` en C++ SI lo es, asi que sin `RNA_def_property_clear_flag()` el
+ * contrato cambia sin que se note.
+ *
+ * Uso: Blender -b --fl-dump-preset-optypes <fichero>
+ *      Blender -b --fl-check-preset-optypes <linea-base>
+ */
+bool dump_presets(bContext *C, const char *filepath);
+bool check_presets(bContext *C, const char *baseline_path);
+
 }  // namespace flipendo::optype_surface

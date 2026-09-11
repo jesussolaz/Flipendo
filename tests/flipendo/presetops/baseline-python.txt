@@ -1,0 +1,117 @@
+# FL-PRESET-OPTYPE-SURFACE v1
+case=0 op=CAMERA_OT_preset_add
+  0 name=Add Camera Preset desc=Add or remove a Camera Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  4 prop=use_focal_length type=BOOLEAN subtype=NONE array=0 name=Include Focal Length desc=Include focal length into the preset flags=SKIP_PRESET|SKIP_SAVE default=0
+case=1 op=CAMERA_OT_safe_areas_preset_add
+  0 name=Add Safe Area Preset desc=Add or remove a Safe Areas Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=2 op=CLIP_OT_camera_preset_add
+  0 name=Add Camera Preset desc=Add or remove a Tracking Camera Intrinsics Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  4 prop=use_focal_length type=BOOLEAN subtype=NONE array=0 name=Include Focal Length desc=Include focal length into the preset flags=SKIP_PRESET|SKIP_SAVE default=1
+case=3 op=CLIP_OT_track_color_preset_add
+  0 name=Add Track Color Preset desc=Add or remove a Clip Track Color Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=4 op=CLIP_OT_tracking_settings_preset_add
+  0 name=Add Tracking Settings Preset desc=Add or remove a motion tracking settings preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=5 op=CLOTH_OT_preset_add
+  0 name=Add Cloth Preset desc=Add or remove a Cloth Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=6 op=FLUID_OT_preset_add
+  0 name=Add Fluid Preset desc=Add or remove a Fluid Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=7 op=NODE_OT_node_color_preset_add
+  0 name=Add Node Color Preset desc=Add or remove a Node Color Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=8 op=PARTICLE_OT_hair_dynamics_preset_add
+  0 name=Add Hair Dynamics Preset desc=Add or remove a Hair Dynamics Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=9 op=RENDER_OT_color_management_white_balance_preset_add
+  0 name=Add White Balance Preset desc=Add or remove a white balance preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=10 op=RENDER_OT_eevee_raytracing_preset_add
+  0 name=Add Raytracing Preset desc=Add or remove an EEVEE ray-tracing preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=11 op=RENDER_OT_preset_add
+  0 name=Add Render Preset desc=Add or remove a Render Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=12 op=SCENE_OT_gpencil_brush_preset_add
+  0 name=Add Grease Pencil Brush Preset desc=Add or remove grease pencil brush preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=13 op=SCENE_OT_gpencil_material_preset_add
+  0 name=Add Grease Pencil Material Preset desc=Add or remove Grease Pencil material preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=14 op=SCRIPT_OT_execute_preset
+  0 name=Execute a Python Preset desc=Load a preset translation_context=Operator options=-
+  1 prop=filepath type=STRING subtype=FILE_PATH array=0 name=filepath desc= flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=0
+  2 prop=menu_idname type=STRING subtype=NONE array=0 name=Menu ID Name desc=ID name of the menu this was called from flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=0
+case=15 op=TEXT_EDITOR_OT_preset_add
+  0 name=Add Text Editor Preset desc=Add or remove a Text Editor Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=16 op=WM_OT_interface_theme_preset_add
+  0 name=Add Theme desc=Add a custom theme to the preset list translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=17 op=WM_OT_interface_theme_preset_remove
+  0 name=Remove Theme desc=Remove a custom theme from the preset list translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=1
+case=18 op=WM_OT_interface_theme_preset_save
+  0 name=Save Theme desc=Save a custom theme in the preset list translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=1
+case=19 op=WM_OT_keyconfig_preset_add
+  0 name=Add Custom Keymap Configuration desc=Add a custom keymap configuration to the preset list translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+case=20 op=WM_OT_keyconfig_preset_remove
+  0 name=Remove Keymap Configuration desc=Remove a custom keymap configuration from the preset list translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=1
+case=21 op=WM_OT_operator_preset_add
+  0 name=Operator Preset desc=Add or remove an Operator Preset translation_context=Operator options=INTERNAL|REGISTER
+  1 prop=name type=STRING subtype=NONE array=0 name=Name desc=Name of the preset, used to make the path name flags=NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+  2 prop=remove_name type=BOOLEAN subtype=NONE array=0 name=remove_name desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  3 prop=remove_active type=BOOLEAN subtype=NONE array=0 name=remove_active desc= flags=HIDDEN|SKIP_PRESET|SKIP_SAVE default=0
+  4 prop=operator type=STRING subtype=NONE array=0 name=Operator desc= flags=HIDDEN|NEVER_NONE|SKIP_PRESET|SKIP_SAVE default= maxlen=65
+case=22 op=WM_OT_operator_presets_cleanup
+  0 name=Clean Up Operator Presets desc=Remove outdated operator properties from presets that may cause problems translation_context=Operator options=-
+  1 prop=operator type=STRING subtype=NONE array=0 name=operator desc= flags=NEVER_NONE default= maxlen=0
+  2 prop=properties type=COLLECTION subtype=NONE array=0 name=properties desc= flags=- srna=OperatorFileListElement

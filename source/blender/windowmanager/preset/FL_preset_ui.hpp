@@ -100,6 +100,25 @@ void draw_menu(const bContext *C, uiLayout *layout, const MenuSpec &spec);
 void draw_panel(const bContext *C, uiLayout *layout, const MenuSpec &spec);
 
 /**
+ * El `bl_label` del menu o panel de presets de una familia.
+ *
+ * `AddPresetBase.execute` terminaba con `preset_menu_class.bl_label = <nombre>`, o sea
+ * escribiendo un atributo de clase de Python; asi es como el boton de presets acaba
+ * mostrando el nombre del preset que se acaba de guardar (y "Presets" cuando se borra).
+ * Sin interprete no hay atributo de clase que escribir, asi que la etiqueta vive aqui,
+ * en un registro nativo indexado por el `idname` del menu o del panel.
+ *
+ * #menu_label_set escribe ademas, si el tipo existe ya registrado, el `label` del
+ * `MenuType`/`PanelType` correspondiente, que es de donde lo saca el dibujo en C.
+ *
+ * Deuda declarada: un menu de presets que TODAVIA sea una clase de Python en `bl_ui`
+ * lee su propio `cls.bl_label`, que desde aqui no se puede tocar. Ver
+ * politicas/PRESETS-A-DATOS.md.
+ */
+void menu_label_set(blender::StringRef menu_idname, blender::StringRef label);
+std::string menu_label_get(blender::StringRef menu_idname);
+
+/**
  * El boton de preset que va en la cabecera de otro panel: el equivalente de
  * `PresetPanel.draw_panel_header()`, un popover sin relieve con el icono `PRESET`.
  */

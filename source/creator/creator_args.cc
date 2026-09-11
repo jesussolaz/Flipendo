@@ -3322,6 +3322,70 @@ static int arg_handle_fl_check_optypes(int argc, const char **argv, void *data)
   return 0;
 }
 
+static const char arg_handle_fl_selftest_preset_ops_doc[] =
+    "<filepath>\n"
+    "\tEjecuta los operadores de presets migrados (escribir, aplicar, borrar) y vuelca\n"
+    "\tlo observable. Usar con BLENDER_USER_SCRIPTS apuntando a una carpeta vacia.";
+static int arg_handle_fl_selftest_preset_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::preset::selftest::dump(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_preset_ops_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-preset-ops, pero compara con la linea base indicada.";
+static int arg_handle_fl_check_preset_ops(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::preset::selftest::check(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_dump_preset_optypes_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-dump-optypes, pero de los operadores de bl_operators/presets.py y\n"
+    "\tanadiendo las banderas del tipo y de cada propiedad. Linea base:\n"
+    "\ttests/flipendo/presetops/baseline-python.txt.";
+static int arg_handle_fl_dump_preset_optypes(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::optype_surface::dump_presets(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_preset_optypes_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-dump-preset-optypes, pero compara con la linea base indicada. Sale con\n"
+    "\tcodigo 0 solo si no hay ni una diferencia.";
+static int arg_handle_fl_check_preset_optypes(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::optype_surface::check_presets(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_selftest_numinput_doc[] =
     "<filepath>\n"
     "\tEvalua una bateria de expresiones de campo numerico (aritmetica, funciones,\n"
@@ -3972,6 +4036,11 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-check-object-misc", CB(arg_handle_fl_check_object_misc), C);
   BLI_args_add(ba, nullptr, "--fl-dump-optypes", CB(arg_handle_fl_dump_optypes), C);
   BLI_args_add(ba, nullptr, "--fl-check-optypes", CB(arg_handle_fl_check_optypes), C);
+  BLI_args_add(ba, nullptr, "--fl-selftest-preset-ops", CB(arg_handle_fl_selftest_preset_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-check-preset-ops", CB(arg_handle_fl_check_preset_ops), C);
+  BLI_args_add(ba, nullptr, "--fl-dump-preset-optypes", CB(arg_handle_fl_dump_preset_optypes), C);
+  BLI_args_add(
+      ba, nullptr, "--fl-check-preset-optypes", CB(arg_handle_fl_check_preset_optypes), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);
   BLI_args_add(ba, nullptr, "--python-exit-code", CB(arg_handle_python_exit_code_set), nullptr);
   BLI_args_add(ba, nullptr, "--addons", CB(arg_handle_addons_set), C);

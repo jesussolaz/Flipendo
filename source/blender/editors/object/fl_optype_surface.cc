@@ -15,6 +15,7 @@
 #include "MEM_guardedalloc.h"
 
 #include "BLI_array.hh"
+#include "BLI_utildefines.h"
 #include "BLI_path_utils.hh"
 #include "BLI_string.h"
 #include "BLI_vector.hh"
@@ -24,6 +25,8 @@
 #include "RNA_access.hh"
 #include "RNA_define.hh"
 #include "RNA_enum_types.hh"
+
+#include "BLI_span.hh"
 
 #include "WM_api.hh"
 #include "WM_types.hh"
@@ -65,6 +68,107 @@ const char *tracked_idnames[] = {
     "MESH_OT_select_prev_item",
 };
 
+/* Los operadores de `scripts/startup/bl_operators/presets.py` (carril OPS-3). Van en
+ * una lista aparte, y con su propia linea base, porque la de arriba esta CONGELADA
+ * contra un binario que ya no existe: los `.py` de esos operadores se retiraron y no
+ * hay forma de volver a capturarla. Anadir un idname alli obligaria a recapturar lo
+ * irrepetible.
+ *
+ * Orden alfabetico, que es el del guion de captura. */
+const char *preset_idnames[] = {
+    "CAMERA_OT_preset_add",
+    "CAMERA_OT_safe_areas_preset_add",
+    "CLIP_OT_camera_preset_add",
+    "CLIP_OT_track_color_preset_add",
+    "CLIP_OT_tracking_settings_preset_add",
+    "CLOTH_OT_preset_add",
+    "FLUID_OT_preset_add",
+    "NODE_OT_node_color_preset_add",
+    "PARTICLE_OT_hair_dynamics_preset_add",
+    "RENDER_OT_color_management_white_balance_preset_add",
+    "RENDER_OT_eevee_raytracing_preset_add",
+    "RENDER_OT_preset_add",
+    "SCENE_OT_gpencil_brush_preset_add",
+    "SCENE_OT_gpencil_material_preset_add",
+    "SCRIPT_OT_execute_preset",
+    "TEXT_EDITOR_OT_preset_add",
+    "WM_OT_interface_theme_preset_add",
+    "WM_OT_interface_theme_preset_remove",
+    "WM_OT_interface_theme_preset_save",
+    "WM_OT_keyconfig_preset_add",
+    "WM_OT_keyconfig_preset_remove",
+    "WM_OT_operator_preset_add",
+    "WM_OT_operator_presets_cleanup",
+};
+
+/**
+ * Las banderas de una propiedad, como las ve Python (`prop.is_hidden`, `is_skip_save`...).
+ *
+ * Son parte del contrato que exige la doctrina ("mismas propiedades ... y flags") y NO
+ * estaban en el volcado v1. Se anaden solo en el modo `with_flags`, que usa la lista de
+ * presets: el volcado v1 tiene que seguir saliendo byte a byte igual o su linea base
+ * congelada dejaria de valer.
+ *
+ * `SKIP_PRESET` es derivada, igual que en `rna_Property_is_skip_preset_get`: la encienden
+ * tambien `PROP_HIDDEN` y `PROP_SKIP_SAVE`.
+ */
+std::string fmt_prop_flags(PropertyRNA *prop)
+{
+  const int flag = int(RNA_property_flag(prop));
+  Vector<const char *> names;
+  if (flag & PROP_ANIMATABLE) {
+    names.append("ANIMATABLE");
+  }
+  if (flag & PROP_HIDDEN) {
+    names.append("HIDDEN");
+  }
+  if (flag & PROP_LIB_EXCEPTION) {
+    names.append("LIBRARY_EDITABLE");
+  }
+  if (flag & PROP_NEVER_NULL) {
+    names.append("NEVER_NONE");
+  }
+  if (flag & (PROP_SKIP_SAVE | PROP_HIDDEN | PROP_SKIP_PRESET)) {
+    names.append("SKIP_PRESET");
+  }
+  if (flag & PROP_SKIP_SAVE) {
+    names.append("SKIP_SAVE");
+  }
+  if (names.is_empty()) {
+    return "-";
+  }
+  std::string out;
+  for (const int i : names.index_range()) {
+    out += (i ? "|" : "");
+    out += names[i];
+  }
+  return out;
+}
+
+/** `wmOperatorType::flag` con los identificadores de `rna_enum_operator_type_flag_items`. */
+std::string fmt_optype_flags(const wmOperatorType *ot)
+{
+  Vector<std::string> names;
+  for (const EnumPropertyItem *item = rna_enum_operator_type_flag_items;
+       item != nullptr && item->identifier;
+       item++)
+  {
+    if (item->value != 0 && (ot->flag & item->value) == item->value) {
+      names.append(item->identifier);
+    }
+  }
+  std::sort(names.begin(), names.end());
+  if (names.is_empty()) {
+    return "-";
+  }
+  std::string out;
+  for (const int i : names.index_range()) {
+    out += (i ? "|" : "");
+    out += names[i];
+  }
+  return out;
+}
+
 /* `%.9g` sobre el double promovido desde float, igual que `"{:.9g}".format()` en Python. */
 std::string fmt_float(const float value)
 {
@@ -82,7 +186,7 @@ const char *enum_id_or_empty(const EnumPropertyItem *items, const int value)
   return id;
 }
 
-void dump_property(FILE *f, int n, PointerRNA *ptr, PropertyRNA *prop)
+void dump_property(FILE *f, int n, PointerRNA *ptr, PropertyRNA *prop, const bool with_flags)
 {
   const PropertyType type = RNA_property_type(prop);
   const int array_len = RNA_property_array_length(ptr, prop);
@@ -96,6 +200,9 @@ void dump_property(FILE *f, int n, PointerRNA *ptr, PropertyRNA *prop)
                      " array=" + std::to_string(array_len) +
                      " name=" + RNA_property_ui_name(prop) +
                      " desc=" + RNA_property_ui_description(prop);
+  if (with_flags) {
+    line += " flags=" + fmt_prop_flags(prop);
+  }
 
   switch (type) {
     case PROP_BOOLEAN: {
@@ -203,6 +310,19 @@ void dump_property(FILE *f, int n, PointerRNA *ptr, PropertyRNA *prop)
       line += " maxlen=" + std::to_string(RNA_property_string_maxlength(prop));
       break;
     }
+    case PROP_POINTER:
+    case PROP_COLLECTION: {
+      if (with_flags) {
+        /* El tipo de los elementos. Lo pide la doctrina y caza un fallo silencioso:
+         * `RNA_def_collection()` con el tipo por nombre NO funciona en ejecucion y deja
+         * la coleccion sin tipo, o sea sin poder recorrerse. Sin esta linea el volcado
+         * daba "identico" con la coleccion rota. */
+        StructRNA *item_srna = RNA_property_pointer_type(ptr, prop);
+        line += std::string(" srna=") +
+                (item_srna ? RNA_struct_identifier(item_srna) : "");
+      }
+      break;
+    }
     default:
       break;
   }
@@ -210,19 +330,25 @@ void dump_property(FILE *f, int n, PointerRNA *ptr, PropertyRNA *prop)
   fprintf(f, "%s\n", line.c_str());
 }
 
-}  // namespace
-
-bool dump(bContext * /*C*/, const char *filepath)
+/**
+ * El volcado. `with_flags` anade `options=` al operador y `flags=` a cada propiedad;
+ * lo pide la lista de presets y NO la lista del carril C, cuya linea base esta
+ * congelada contra un binario irrepetible.
+ */
+bool dump_list(const char *filepath,
+               const char *header,
+               const blender::Span<const char *> idnames,
+               const bool with_flags)
 {
   FILE *f = fopen(filepath, "w");
   if (f == nullptr) {
     fprintf(stderr, "fl-dump-optypes: no se pudo escribir '%s'\n", filepath);
     return false;
   }
-  fprintf(f, "# FL-OPTYPE-SURFACE v1\n");
+  fprintf(f, "# %s\n", header);
 
   int index = 0;
-  for (const char *idname : tracked_idnames) {
+  for (const char *idname : idnames) {
     fprintf(f, "case=%d op=%s\n", index++, idname);
     wmOperatorType *ot = WM_operatortype_find(idname, true);
     if (ot == nullptr) {
@@ -232,18 +358,20 @@ bool dump(bContext * /*C*/, const char *filepath)
 
     PointerRNA ptr = RNA_pointer_create_discrete(nullptr, ot->srna, nullptr);
     int n = 0;
-    fprintf(f,
-            "  %d name=%s desc=%s translation_context=%s\n",
-            n++,
-            RNA_struct_ui_name(ot->srna),
-            RNA_struct_ui_description(ot->srna),
-            RNA_struct_translation_context(ot->srna));
+    std::string head = std::string("  ") + std::to_string(n++) +
+                       " name=" + RNA_struct_ui_name(ot->srna) +
+                       " desc=" + RNA_struct_ui_description(ot->srna) +
+                       " translation_context=" + RNA_struct_translation_context(ot->srna);
+    if (with_flags) {
+      head += " options=" + fmt_optype_flags(ot);
+    }
+    fprintf(f, "%s\n", head.c_str());
 
     RNA_STRUCT_BEGIN (&ptr, prop) {
       if (STREQ(RNA_property_identifier(prop), "rna_type")) {
         continue;
       }
-      dump_property(f, n++, &ptr, prop);
+      dump_property(f, n++, &ptr, prop, with_flags);
     }
     RNA_STRUCT_END;
   }
@@ -253,15 +381,54 @@ bool dump(bContext * /*C*/, const char *filepath)
   return true;
 }
 
-bool check(bContext *C, const char *baseline_path)
+bool check_list(const char *label,
+                const char *baseline_path,
+                const char *header,
+                const blender::Span<const char *> idnames,
+                const bool with_flags)
 {
   char actual_path[FILE_MAX];
-  BLI_path_join(
-      actual_path, sizeof(actual_path), BKE_tempdir_session(), "fl-optype-surface-actual.txt");
-  if (!dump(C, actual_path)) {
+  BLI_path_join(actual_path, sizeof(actual_path), BKE_tempdir_session(), "fl-optype-surface-actual.txt");
+  if (!dump_list(actual_path, header, idnames, with_flags)) {
     return false;
   }
-  return flipendo::selftest::compare_to_baseline("fl-check-optypes", actual_path, baseline_path);
+  return flipendo::selftest::compare_to_baseline(label, actual_path, baseline_path);
+}
+
+}  // namespace
+
+bool dump(bContext * /*C*/, const char *filepath)
+{
+  return dump_list(filepath,
+                   "FL-OPTYPE-SURFACE v1",
+                   Span<const char *>(tracked_idnames, ARRAY_SIZE(tracked_idnames)),
+                   false);
+}
+
+bool check(bContext * /*C*/, const char *baseline_path)
+{
+  return check_list("fl-check-optypes",
+                    baseline_path,
+                    "FL-OPTYPE-SURFACE v1",
+                    Span<const char *>(tracked_idnames, ARRAY_SIZE(tracked_idnames)),
+                    false);
+}
+
+bool dump_presets(bContext * /*C*/, const char *filepath)
+{
+  return dump_list(filepath,
+                   "FL-PRESET-OPTYPE-SURFACE v1",
+                   Span<const char *>(preset_idnames, ARRAY_SIZE(preset_idnames)),
+                   true);
+}
+
+bool check_presets(bContext * /*C*/, const char *baseline_path)
+{
+  return check_list("fl-check-preset-optypes",
+                    baseline_path,
+                    "FL-PRESET-OPTYPE-SURFACE v1",
+                    Span<const char *>(preset_idnames, ARRAY_SIZE(preset_idnames)),
+                    true);
 }
 
 }  // namespace flipendo::optype_surface

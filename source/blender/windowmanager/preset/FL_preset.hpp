@@ -169,6 +169,27 @@ bool capture(bContext *C,
 /** \} */
 
 /* -------------------------------------------------------------------------- */
+/** \name Los operadores de anadir y quitar presets
+ * \{ */
+
+/**
+ * Registra los veinte `*_preset_add` / `*_preset_remove` que eran subclases de
+ * `AddPresetBase` en `bl_operators/presets.py`. Ver `fl_preset_add_ops.cc`.
+ */
+void register_add_preset_types();
+
+/**
+ * `--fl-selftest-preset-ops <fichero>` / `--fl-check-preset-ops <linea-base>`: prueba de
+ * CONDUCTA (no de registro) de esos operadores. Ver `fl_preset_ops_selftest.cc`.
+ */
+namespace selftest {
+bool dump(bContext *C, const char *filepath);
+bool check(bContext *C, const char *baseline_path);
+}  // namespace selftest
+
+/** \} */
+
+/* -------------------------------------------------------------------------- */
 /** \name Herramientas de linea de ordenes (verificacion y conversion)
  * \{ */
 

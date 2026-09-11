@@ -25,6 +25,8 @@ set(SRC
   preset/fl_preset_file.cc
   preset/fl_preset_spec.cc
   preset/fl_preset_ops.cc
+  preset/fl_preset_add_ops.cc
+  preset/fl_preset_ops_selftest.cc
   preset/fl_preset_apply.cc
   preset/fl_preset_check.cc
   preset/fl_preset_ui.cc

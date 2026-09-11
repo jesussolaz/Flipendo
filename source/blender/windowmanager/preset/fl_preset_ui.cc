@@ -26,6 +26,7 @@
 #include "BLI_fileops.h"
 #include "BLI_fileops_types.h"
 #include "BLI_listbase.h"
+#include "BLI_map.hh"
 #include "BLI_path_utils.hh"
 #include "BLI_string.h"
 #include "BLI_string_ref.hh"
@@ -33,6 +34,7 @@
 
 #include "BKE_appdir.hh"
 #include "BKE_context.hh"
+#include "BKE_screen.hh"
 
 #include "RNA_access.hh"
 #include "RNA_prototypes.hh"
@@ -396,6 +398,49 @@ void draw_panel(const bContext *C, uiLayout *layout, const MenuSpec &spec)
   uiLayoutSetOperatorContext(layout, WM_OP_EXEC_DEFAULT);
   draw_menu(C, layout, spec);
 }
+
+/* -------------------------------------------------------------------------- */
+/** \name La etiqueta del menu (lo que era `preset_menu_class.bl_label`)
+ * \{ */
+
+/* Clave: el `idname` del menu o del panel. Valor: su etiqueta actual. Lo que en
+ * Python era un atributo de clase mutable; aqui es un registro. Vive lo que vive el
+ * proceso, igual que el atributo de clase. */
+static blender::Map<std::string, std::string> &menu_labels()
+{
+  static blender::Map<std::string, std::string> labels;
+  return labels;
+}
+
+void menu_label_set(const blender::StringRef menu_idname, const blender::StringRef label)
+{
+  if (menu_idname.is_empty()) {
+    return;
+  }
+  const std::string idname(menu_idname);
+  const std::string value(label);
+  menu_labels().add_overwrite(idname, value);
+
+  /* Y, si el tipo ya esta registrado, su `label` de verdad: es lo que dibuja el C. */
+  if (MenuType *mt = WM_menutype_find(idname.c_str(), true)) {
+    STRNCPY(mt->label, value.c_str());
+  }
+  if (PanelType *pt = WM_paneltype_find(idname.c_str(), true)) {
+    STRNCPY(pt->label, value.c_str());
+  }
+}
+
+std::string menu_label_get(const blender::StringRef menu_idname)
+{
+  const std::string idname(menu_idname);
+  if (const std::string *value = menu_labels().lookup_ptr(idname)) {
+    return *value;
+  }
+  /* El valor de partida de `PresetPanel.bl_label` en `bl_ui/utils.py`. */
+  return "Presets";
+}
+
+/** \} */
 
 void draw_panel_header(const bContext *C, uiLayout *layout, const char *panel_idname)
 {

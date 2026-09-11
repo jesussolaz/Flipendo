@@ -1,0 +1,103 @@
+# FL-PRESET-OPS v1
+case=0 add name=[Mi Preset]
+  0 status=FINISHED
+  1 label=Mi Preset
+  2 exists=1
+  3 linea=fpreset 1
+  4 linea=subdir render
+  5 linea=set context.scene.render.fps 48
+  6 linea=set context.scene.render.fps_base 1.0
+  7 linea=set context.scene.render.pixel_aspect_x 1.0
+  8 linea=set context.scene.render.pixel_aspect_y 1.0
+  9 linea=set context.scene.render.resolution_percentage 100
+  10 linea=set context.scene.render.resolution_x 1234
+  11 linea=set context.scene.render.resolution_y 1080
+case=1 add name=[   espacios   ]
+  0 status=FINISHED
+  1 label=Espacios
+  2 exists=1
+  3 linea=fpreset 1
+  4 linea=subdir render
+  5 linea=set context.scene.render.fps 48
+  6 linea=set context.scene.render.fps_base 1.0
+  7 linea=set context.scene.render.pixel_aspect_x 1.0
+  8 linea=set context.scene.render.pixel_aspect_y 1.0
+  9 linea=set context.scene.render.resolution_percentage 100
+  10 linea=set context.scene.render.resolution_x 1234
+  11 linea=set context.scene.render.resolution_y 1080
+case=2 add name=[a:b+c/d]
+  0 status=FINISHED
+  1 label=A:B+C/D
+  2 exists=1
+  3 linea=fpreset 1
+  4 linea=subdir render
+  5 linea=set context.scene.render.fps 48
+  6 linea=set context.scene.render.fps_base 1.0
+  7 linea=set context.scene.render.pixel_aspect_x 1.0
+  8 linea=set context.scene.render.pixel_aspect_y 1.0
+  9 linea=set context.scene.render.resolution_percentage 100
+  10 linea=set context.scene.render.resolution_x 1234
+  11 linea=set context.scene.render.resolution_y 1080
+case=3 add name=[_raro_]
+  0 status=FINISHED
+  1 label=Raro
+  2 exists=1
+  3 linea=fpreset 1
+  4 linea=subdir render
+  5 linea=set context.scene.render.fps 48
+  6 linea=set context.scene.render.fps_base 1.0
+  7 linea=set context.scene.render.pixel_aspect_x 1.0
+  8 linea=set context.scene.render.pixel_aspect_y 1.0
+  9 linea=set context.scene.render.resolution_percentage 100
+  10 linea=set context.scene.render.resolution_x 1234
+  11 linea=set context.scene.render.resolution_y 1080
+case=4 add name=[x!y@z#w]
+  0 status=FINISHED
+  1 label=X Y Z W
+  2 exists=1
+  3 linea=fpreset 1
+  4 linea=subdir render
+  5 linea=set context.scene.render.fps 48
+  6 linea=set context.scene.render.fps_base 1.0
+  7 linea=set context.scene.render.pixel_aspect_x 1.0
+  8 linea=set context.scene.render.pixel_aspect_y 1.0
+  9 linea=set context.scene.render.resolution_percentage 100
+  10 linea=set context.scene.render.resolution_x 1234
+  11 linea=set context.scene.render.resolution_y 1080
+case=5 add name=[punto.y,coma;]
+  0 status=FINISHED
+  1 label=Punto Y Coma
+  2 exists=1
+  3 linea=fpreset 1
+  4 linea=subdir render
+  5 linea=set context.scene.render.fps 48
+  6 linea=set context.scene.render.fps_base 1.0
+  7 linea=set context.scene.render.pixel_aspect_x 1.0
+  8 linea=set context.scene.render.pixel_aspect_y 1.0
+  9 linea=set context.scene.render.resolution_percentage 100
+  10 linea=set context.scene.render.resolution_x 1234
+  11 linea=set context.scene.render.resolution_y 1080
+case=6 add name=[   ]
+  0 status=FINISHED
+  1 label=Punto Y Coma
+  2 sin_fichero
+case=7 apply Mi_Preset
+  0 status=FINISHED
+  1 fps=48
+  2 resolution_x=1234
+case=8 remove_name Mi Preset
+  0 status=FINISHED
+  1 label=Presets
+  2 exists=0
+case=9 remove_name por nombre visible
+  0 status=FINISHED
+  1 exists=0
+case=10 remove_name inexistente
+  0 status=CANCELLED
+case=11 remove_name de un preset de fabrica
+  0 status=CANCELLED
+case=12 remove_active
+  0 label_tras_anadir=Activo
+  1 status=FINISHED
+  2 label=Presets
+  3 exists=0
