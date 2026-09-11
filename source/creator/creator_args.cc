@@ -3165,6 +3165,39 @@ static int arg_handle_fl_check_find_adjacent(int argc, const char **argv, void *
   return 0;
 }
 
+static const char arg_handle_fl_selftest_dupli_face_doc[] =
+    "<filepath>\n"
+    "\tConstruye escenas deterministas, invoca `object.make_dupli_face` por su idname y\n"
+    "\tvuelca los objetos y las mallas resultantes. Se compara con\n"
+    "\ttests/flipendo/dupliface/baseline-python.txt (Carril C).";
+static int arg_handle_fl_selftest_dupli_face(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::object_select_selftest::dump_dupli_face(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta el fichero de salida despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
+static const char arg_handle_fl_check_dupli_face_doc[] =
+    "<filepath>\n"
+    "\tComo --fl-selftest-dupli-face, pero compara con la linea base indicada. Sale con\n"
+    "\tcodigo 0 solo si no hay ni una diferencia (Carril C).";
+static int arg_handle_fl_check_dupli_face(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const bool ok = flipendo::object_select_selftest::check_dupli_face(C, argv[1]);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return 1;
+  }
+  fprintf(stderr, "\nError: falta la linea base despues de '%s'.\n", argv[0]);
+  return 0;
+}
+
 static const char arg_handle_fl_dump_optypes_doc[] =
     "<filepath>\n"
     "\tVuelca la superficie de registro (idname, nombre, descripcion y todas las\n"
@@ -3833,6 +3866,8 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
       ba, nullptr, "--fl-selftest-object-select", CB(arg_handle_fl_selftest_object_select), C);
   BLI_args_add(
       ba, nullptr, "--fl-check-object-select", CB(arg_handle_fl_check_object_select), C);
+  BLI_args_add(ba, nullptr, "--fl-selftest-dupli-face", CB(arg_handle_fl_selftest_dupli_face), C);
+  BLI_args_add(ba, nullptr, "--fl-check-dupli-face", CB(arg_handle_fl_check_dupli_face), C);
   BLI_args_add(ba, nullptr, "--fl-dump-optypes", CB(arg_handle_fl_dump_optypes), C);
   BLI_args_add(ba, nullptr, "--fl-check-optypes", CB(arg_handle_fl_check_optypes), C);
   BLI_args_add(ba, nullptr, "--python-console", CB(arg_handle_python_console_run), C);

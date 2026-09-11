@@ -19,17 +19,25 @@
 #include "DNA_mesh_types.h"
 #include "DNA_object_types.h"
 #include "DNA_scene_types.h"
+#include "DNA_collection_types.h"
 
 #include "BKE_appdir.hh"
+#include "BKE_collection.hh"
 #include "BKE_context.hh"
 #include "BKE_layer.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_main.hh"
+#include "BKE_object.hh"
+#include "BKE_scene.hh"
+#include "BKE_mesh.hh"
 
 #include "DEG_depsgraph.hh"
 #include "DEG_depsgraph_build.hh"
 
+#include "BLI_math_vector.h"
+
 #include "RNA_access.hh"
+#include "RNA_enum_types.hh"
 
 #include "WM_api.hh"
 #include "WM_types.hh"
@@ -45,6 +53,13 @@ namespace flipendo::object_select_selftest {
 using namespace blender;
 
 namespace {
+
+const char *enum_id(const EnumPropertyItem *items, const int value)
+{
+  const char *id = "?";
+  RNA_enum_id_from_value(items, value, &id);
+  return id;
+}
 
 void call_op(bContext *C, const char *idname, const std::function<void(PointerRNA *)> &fill)
 {
@@ -348,5 +363,190 @@ bool check(bContext *C, const char *baseline_path)
   return flipendo::selftest::compare_to_baseline(
       "fl-check-object-select", actual_path, baseline_path);
 }
+
+/* -------------------------------------------------------------------------- */
+/** \name object.make_dupli_face
+ * \{ */
+
+namespace {
+
+void select_only(bContext *C, const Span<Object *> objects, Object *active)
+{
+  deselect_all(C);
+  for (Object *ob : objects) {
+    select_set(C, ob, true);
+  }
+  set_active(C, active);
+}
+
+const char *instance_type_name(const Object *ob)
+{
+  if (ob->transflag & OB_DUPLIFACES) {
+    return "FACES";
+  }
+  if (ob->transflag & OB_DUPLIVERTS) {
+    return "VERTS";
+  }
+  if (ob->transflag & OB_DUPLICOLLECTION) {
+    return "COLLECTION";
+  }
+  return "NONE";
+}
+
+void dump_dupliface_case(bContext *C, FILE *f, const int index, const char *label)
+{
+  Main *bmain = CTX_data_main(C);
+  Scene *scene = CTX_data_scene(C);
+  ViewLayer *view_layer = CTX_data_view_layer(C);
+  BKE_view_layer_synced_ensure(scene, view_layer);
+
+  fprintf(f, "case=%d %s\n", index, label);
+  int n = 0;
+  LISTBASE_FOREACH (Object *, ob, &bmain->objects) {
+    const Base *base = BKE_view_layer_base_find(view_layer, ob);
+    fprintf(f,
+            "  %d obj=%s type=%s sel=%d parent=%s inst=%s ifs=%d scale=%.9g\n",
+            n++,
+            ob->id.name + 2,
+            enum_id(rna_enum_object_type_items, ob->type),
+            (base != nullptr && (base->flag & BASE_SELECTED)) ? 1 : 0,
+            (ob->parent != nullptr) ? ob->parent->id.name + 2 : "-",
+            instance_type_name(ob),
+            (ob->transflag & OB_DUPLIFACES_SCALE) ? 1 : 0,
+            double(ob->instance_faces_scale));
+  }
+  LISTBASE_FOREACH (Mesh *, mesh, &bmain->meshes) {
+    double sum = 0.0;
+    for (const float3 &co : mesh->vert_positions()) {
+      sum += double(co.x) * 3.0 + double(co.y) * 5.0 + double(co.z) * 7.0;
+    }
+    fprintf(f,
+            "  %d mesh=%s verts=%d edges=%d faces=%d loops=%d users=%d sum=%.9g\n",
+            n++,
+            mesh->id.name + 2,
+            mesh->verts_num,
+            mesh->edges_num,
+            mesh->faces_num,
+            mesh->corners_num,
+            mesh->id.us,
+            sum);
+  }
+}
+
+Object *dupliface_add_cube(bContext *C, const float loc[3], const float rot[3], const float size)
+{
+  PointerRNA ptr;
+  WM_operator_properties_create(&ptr, "mesh.primitive_cube_add");
+  RNA_float_set(&ptr, "size", size);
+  RNA_float_set_array(&ptr, "location", loc);
+  RNA_float_set_array(&ptr, "rotation", rot);
+  WM_operator_name_call(C, "mesh.primitive_cube_add", WM_OP_EXEC_DEFAULT, &ptr, nullptr);
+  WM_operator_properties_free(&ptr);
+  return CTX_data_active_object(C);
+}
+
+void dupliface_run(bContext *C, FILE *f, int *index, const char *label)
+{
+  const wmOperatorStatus status = WM_operator_name_call(
+      C, "object.make_dupli_face", WM_OP_EXEC_DEFAULT, nullptr, nullptr);
+  fprintf(f, "# ret=['%s']\n", (status & OPERATOR_FINISHED) ? "FINISHED" : "CANCELLED");
+  dump_dupliface_case(C, f, (*index)++, label);
+}
+
+}  // namespace
+
+bool dump_dupli_face(bContext *C, const char *filepath)
+{
+  FILE *f = fopen(filepath, "w");
+  if (f == nullptr) {
+    fprintf(stderr, "fl-selftest-dupli-face: no se pudo escribir '%s'\n", filepath);
+    return false;
+  }
+  fprintf(f, "# FL-DUPLIFACE-SELFTEST v1\n");
+  Main *bmain = CTX_data_main(C);
+  Scene *scene = CTX_data_scene(C);
+  int index = 0;
+
+  /* Tres cubos con datos DISTINTOS: tres grupos, tres mallas de instancia. */
+  {
+    purge(C);
+    const float r0[3] = {0.0f, 0.0f, 0.0f};
+    const float l0[3] = {0.0f, 0.0f, 0.0f}, l1[3] = {3.0f, 1.0f, 0.0f},
+                l2[3] = {-2.0f, 4.0f, 1.0f};
+    const float r1[3] = {0.3f, 0.2f, 0.1f}, r2[3] = {0.0f, 0.7f, 0.0f};
+    Object *a = dupliface_add_cube(C, l0, r0, 1.0f);
+    Object *b = dupliface_add_cube(C, l1, r1, 2.0f);
+    Object *c = dupliface_add_cube(C, l2, r2, 0.5f);
+    select_only(C, {a, b, c}, a);
+    dupliface_run(C, f, &index, "op=object.make_dupli_face tres-datos-distintos");
+  }
+
+  /* Tres objetos que COMPARTEN malla: un solo grupo con tres caras. */
+  {
+    purge(C);
+    const float r0[3] = {0.0f, 0.0f, 0.0f};
+    const float l0[3] = {0.0f, 0.0f, 0.0f};
+    Object *a = dupliface_add_cube(C, l0, r0, 1.0f);
+    Object *shared[2];
+    const char *names[2] = {"Shared1", "Shared2"};
+    const float locs[2][3] = {{2.0f, 0.0f, 0.0f}, {0.0f, 3.0f, 1.0f}};
+    for (int i = 0; i < 2; i++) {
+      Object *ob = BKE_object_add_only_object(bmain, OB_MESH, names[i]);
+      ob->data = a->data;
+      id_us_plus(static_cast<ID *>(a->data));
+      BKE_collection_object_add(bmain, scene->master_collection, ob);
+      copy_v3_v3(ob->loc, locs[i]);
+      shared[i] = ob;
+    }
+    DEG_relations_tag_update(bmain);
+    BKE_scene_graph_update_tagged(CTX_data_ensure_evaluated_depsgraph(C), bmain);
+    select_only(C, {a, shared[0], shared[1]}, a);
+    dupliface_run(C, f, &index, "op=object.make_dupli_face malla-compartida");
+  }
+
+  /* Un solo objeto. */
+  {
+    purge(C);
+    const float loc[3] = {1.0f, 2.0f, 3.0f};
+    const float rot[3] = {0.1f, 0.2f, 0.3f};
+    Object *a = dupliface_add_cube(C, loc, rot, 1.5f);
+    select_only(C, {a}, a);
+    dupliface_run(C, f, &index, "op=object.make_dupli_face uno-solo");
+  }
+
+  /* Nada seleccionado que valga: una camara. */
+  {
+    purge(C);
+    PointerRNA ptr;
+    WM_operator_properties_create(&ptr, "object.camera_add");
+    const float loc[3] = {0.0f, 0.0f, 0.0f};
+    const float rot[3] = {0.0f, 0.0f, 0.0f};
+    RNA_float_set_array(&ptr, "location", loc);
+    RNA_float_set_array(&ptr, "rotation", rot);
+    WM_operator_name_call(C, "object.camera_add", WM_OP_EXEC_DEFAULT, &ptr, nullptr);
+    WM_operator_properties_free(&ptr);
+    Object *cam = CTX_data_active_object(C);
+    select_only(C, {cam}, cam);
+    dupliface_run(C, f, &index, "op=object.make_dupli_face sin-candidatos");
+  }
+
+  fclose(f);
+  fprintf(stderr, "fl-selftest-dupli-face: volcado en '%s' (%d casos)\n", filepath, index);
+  return true;
+}
+
+bool check_dupli_face(bContext *C, const char *baseline_path)
+{
+  char actual_path[FILE_MAX];
+  BLI_path_join(
+      actual_path, sizeof(actual_path), BKE_tempdir_session(), "fl-selftest-dupli-face-actual.txt");
+  if (!dump_dupli_face(C, actual_path)) {
+    return false;
+  }
+  return flipendo::selftest::compare_to_baseline(
+      "fl-check-dupli-face", actual_path, baseline_path);
+}
+
+/** \} */
 
 }  // namespace flipendo::object_select_selftest

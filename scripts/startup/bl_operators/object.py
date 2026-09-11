@@ -392,88 +392,8 @@ class JoinUVs(Operator):
         return {'FINISHED'}
 
 
-class MakeDupliFace(Operator):
-    """Convert objects into instanced faces"""
-    bl_idname = "object.make_dupli_face"
-    bl_label = "Make Instance Face"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    @staticmethod
-    def _main(context):
-        from mathutils import Vector
-        from collections import defaultdict
-
-        SCALE_FAC = 0.01
-        offset = 0.5 * SCALE_FAC
-        base_tri = (Vector((-offset, -offset, 0.0)),
-                    Vector((+offset, -offset, 0.0)),
-                    Vector((+offset, +offset, 0.0)),
-                    Vector((-offset, +offset, 0.0)),
-                    )
-
-        def matrix_to_quad(matrix):
-            # scale = matrix.median_scale
-            trans = matrix.to_translation()
-            rot = matrix.to_3x3()  # also contains scale
-
-            return [(rot @ b) + trans for b in base_tri]
-        linked = defaultdict(list)
-        for obj in context.selected_objects:
-            if obj.type == 'MESH':
-                linked[obj.data].append(obj)
-            elif obj.type == 'EMPTY' and obj.instance_type == 'COLLECTION' and obj.instance_collection:
-                linked[obj.instance_collection].append(obj)
-
-        for data, objects in linked.items():
-            face_verts = [
-                axis for obj in objects
-                for v in matrix_to_quad(obj.matrix_world)
-                for axis in v
-            ]
-            nbr_verts = len(face_verts) // 3
-            nbr_faces = nbr_verts // 4
-
-            faces = list(range(nbr_verts))
-
-            mesh = bpy.data.meshes.new(data.name + "_dupli")
-
-            mesh.vertices.add(nbr_verts)
-            mesh.loops.add(nbr_faces * 4)  # Safer than nbr_verts.
-            mesh.polygons.add(nbr_faces)
-
-            mesh.vertices.foreach_set("co", face_verts)
-            mesh.loops.foreach_set("vertex_index", faces)
-            mesh.polygons.foreach_set("loop_start", range(0, nbr_faces * 4, 4))
-            mesh.update()  # generates edge data
-
-            ob_new = bpy.data.objects.new(mesh.name, mesh)
-            context.collection.objects.link(ob_new)
-
-            if type(data) is bpy.types.Collection:
-                ob_inst = bpy.data.objects.new(data.name, None)
-                ob_inst.instance_type = 'COLLECTION'
-                ob_inst.instance_collection = data
-            else:
-                ob_inst = bpy.data.objects.new(data.name, data)
-            context.collection.objects.link(ob_inst)
-
-            ob_new.instance_type = 'FACES'
-            ob_inst.parent = ob_new
-            ob_new.use_instance_faces_scale = True
-            ob_new.instance_faces_scale = 1.0 / SCALE_FAC
-
-            ob_inst.select_set(True)
-            ob_new.select_set(True)
-
-            for obj in objects:
-                for collection in obj.users_collection:
-                    collection.objects.unlink(obj)
-
-    def execute(self, context):
-        self._main(context)
-        return {'FINISHED'}
-
-
+# `object.make_dupli_face` es C++ nativo desde 2026-09-11 (Flipendo carril C):
+# source/blender/editors/object/object_make_dupli_face.cc
 class IsolateTypeRender(Operator):
     """Hide unselected render objects of same type as active """ \
         """by setting the hide render flag"""
@@ -1006,7 +926,6 @@ classes = (
     LodByName,
     LodClearAll,
     LodGenerate,
-    MakeDupliFace,
     ShapeTransfer,
     SubdivisionSet,
     TransformsToDeltas,

@@ -54,6 +54,7 @@ const char *tracked_idnames[] = {
     "OBJECT_OT_select_pattern",
     "OBJECT_OT_select_camera",
     "OBJECT_OT_select_hierarchy",
+    "OBJECT_OT_make_dupli_face",
     "MESH_OT_faces_mirror_uv",
     "MESH_OT_select_next_item",
     "MESH_OT_select_prev_item",

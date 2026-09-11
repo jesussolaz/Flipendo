@@ -1,0 +1,37 @@
+# FL-DUPLIFACE-SELFTEST v1
+# ret=['FINISHED']
+case=0 op=object.make_dupli_face tres-datos-distintos
+  0 obj=Cube type=MESH sel=0 parent=- inst=NONE ifs=0 scale=1
+  1 obj=Cube.001 type=MESH sel=0 parent=- inst=NONE ifs=0 scale=1
+  2 obj=Cube.001_dupli type=MESH sel=1 parent=- inst=FACES ifs=1 scale=100
+  3 obj=Cube.002 type=MESH sel=0 parent=- inst=NONE ifs=0 scale=1
+  4 obj=Cube.002_dupli type=MESH sel=1 parent=- inst=FACES ifs=1 scale=100
+  5 obj=Cube.003 type=MESH sel=1 parent=Cube_dupli inst=NONE ifs=0 scale=1
+  6 obj=Cube.004 type=MESH sel=1 parent=Cube.001_dupli inst=NONE ifs=0 scale=1
+  7 obj=Cube.005 type=MESH sel=1 parent=Cube.002_dupli inst=NONE ifs=0 scale=1
+  8 obj=Cube_dupli type=MESH sel=1 parent=- inst=FACES ifs=1 scale=100
+  9 mesh=Cube verts=8 edges=12 faces=6 loops=24 users=2 sum=0
+  10 mesh=Cube.001 verts=8 edges=12 faces=6 loops=24 users=2 sum=0
+  11 mesh=Cube.001_dupli verts=4 edges=4 faces=1 loops=4 users=1 sum=56.0000003
+  12 mesh=Cube.002 verts=8 edges=12 faces=6 loops=24 users=2 sum=0
+  13 mesh=Cube.002_dupli verts=4 edges=4 faces=1 loops=4 users=1 sum=83.9999992
+  14 mesh=Cube_dupli verts=4 edges=4 faces=1 loops=4 users=1 sum=0
+# ret=['FINISHED']
+case=1 op=object.make_dupli_face malla-compartida
+  0 obj=Cube type=MESH sel=0 parent=- inst=NONE ifs=0 scale=1
+  1 obj=Cube.001 type=MESH sel=1 parent=Cube_dupli inst=NONE ifs=0 scale=1
+  2 obj=Cube_dupli type=MESH sel=1 parent=- inst=FACES ifs=1 scale=100
+  3 obj=Shared1 type=MESH sel=0 parent=- inst=NONE ifs=0 scale=1
+  4 obj=Shared2 type=MESH sel=0 parent=- inst=NONE ifs=0 scale=1
+  5 mesh=Cube verts=8 edges=12 faces=6 loops=24 users=4 sum=0
+  6 mesh=Cube_dupli verts=12 edges=12 faces=3 loops=12 users=1 sum=112.000001
+# ret=['FINISHED']
+case=2 op=object.make_dupli_face uno-solo
+  0 obj=Cube type=MESH sel=0 parent=- inst=NONE ifs=0 scale=1
+  1 obj=Cube.001 type=MESH sel=1 parent=Cube_dupli inst=NONE ifs=0 scale=1
+  2 obj=Cube_dupli type=MESH sel=1 parent=- inst=FACES ifs=1 scale=100
+  3 mesh=Cube verts=8 edges=12 faces=6 loops=24 users=2 sum=0
+  4 mesh=Cube_dupli verts=4 edges=4 faces=1 loops=4 users=1 sum=136.000001
+# ret=['FINISHED']
+case=3 op=object.make_dupli_face sin-candidatos
+  0 obj=Camera type=CAMERA sel=1 parent=- inst=NONE ifs=0 scale=1

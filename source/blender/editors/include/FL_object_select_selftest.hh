@@ -28,4 +28,9 @@ namespace flipendo::object_select_selftest {
 bool dump(bContext *C, const char *filepath);
 bool check(bContext *C, const char *baseline_path);
 
+/** Lo mismo para `object.make_dupli_face`. Linea base:
+ * `tests/flipendo/dupliface/baseline-python.txt`. */
+bool dump_dupli_face(bContext *C, const char *filepath);
+bool check_dupli_face(bContext *C, const char *baseline_path);
+
 }  // namespace flipendo::object_select_selftest

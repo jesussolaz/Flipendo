@@ -28,6 +28,7 @@ namespace blender::ed::object {
 
 void operatortypes_object()
 {
+  WM_operatortype_append(OBJECT_OT_make_dupli_face);
   WM_operatortype_append(OBJECT_OT_select_pattern);
   WM_operatortype_append(OBJECT_OT_select_camera);
   WM_operatortype_append(OBJECT_OT_select_hierarchy);
