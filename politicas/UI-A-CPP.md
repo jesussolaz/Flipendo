@@ -626,3 +626,67 @@ llamaban a `dump_mirror_uv()` y `check_mirror_uv()`, nombres inexistentes en
 `paint.vertex_color_dirt` y no son equivalentes. Las opciones se dejaron desactivadas
 con un `TODO(Carril C)` explicito hasta que exista el arnes especifico; conectarlas al
 test equivocado habria producido evidencia falsa.
+
+## D5: las líneas base, sobre un bundle limpio
+
+`cmake --install` **copia pero no borra**. El bundle instalado arrastraba **403 ficheros
+`.py` huérfanos**: 700 en `Blender.app` frente a 304 en el repo. Entre ellos, seis
+add-ons que la poda a Mac-only ya había retirado del árbol —`io_anim_bvh`,
+`io_curve_svg`, `io_mesh_uv_layout`, `io_scene_fbx`, `io_scene_gltf2` y `pose_library`—
+y que el arranque de fábrica **seguía activando**, porque el binario los encontraba.
+
+Las líneas base se habían congelado contra ese bundle rancio. Es decir: parte de lo que
+certificaban **no era capacidad del árbol actual**, sino restos de instalaciones
+anteriores. Un verificador que mide contra un bundle sucio certifica ficción.
+
+### Qué desaparece, y por qué
+
+Diez bloques, todos de los seis add-ons retirados — comprobado uno a uno buscando su
+clase en el bundle antes de borrarlo:
+
+| Bloque | Venía de |
+|---|---|
+| `DOPESHEET_PT_asset_panel`, `ASSETBROWSER_MT_asset`, `VIEW3D_MT_pose_modify`, `VIEW3D_AST_pose_library` | `pose_library` |
+| `BVH_PT_import_main`, `BVH_PT_import_transform`, `BVH_PT_import_animation`, `BVH_PT_export_transform`, `BVH_PT_export_animation` | `io_anim_bvh` |
+| `SCENE_UL_gltf2_filter_action` | `io_scene_gltf2` |
+
+Y con ellos, dos bloques `REGION` que solo pierden esas entradas de su lista
+(`DOPESHEET_EDITOR UI` y `FILE_BROWSER TOOL_PROPS`).
+
+**No es una regresión: es dejar de contar lo que ya no existe.**
+
+### La tercera diferencia, que no era de los add-ons
+
+`REGION PROPERTIES WINDOW` también salía distinta, y la causa es otra: el **mismo
+conjunto** de 748 paneles (ni uno de más ni de menos) en **otro orden**. Los paneles de
+Mundo —`WORLD_PT_context_world`, los siete `EEVEE_WORLD_PT_*`, `WORLD_PT_viewport_display`,
+`WORLD_PT_animation` y `WORLD_PT_custom_props`— saltaron de la posición ~664 a la ~3.
+
+Es el efecto de `order` documentado en D2, esta vez sobre la migración de otro carril
+(`3b52ebbe95b`, «Propiedades: la pestaña Mundo pasa a C++»): al registrarse en
+`ED_spacetypes_init()` en vez de al cargar los scripts, se adelantan. El bloque `REGION`
+lo cazó, que es exactamente para lo que se añadió.
+
+**Se comprobó antes de absorberla.** Regenerar una línea base «porque salía rojo» es la
+forma de convertir un verificador en un sello de goma; cada una de las trece diferencias
+tiene aquí su causa por escrito.
+
+### Cifras, ya sobre bundle limpio
+
+| | Antes (bundle rancio) | Ahora (limpio) |
+|---|---:|---:|
+| `.py` en el bundle | 700 (403 huérfanos) | **297 (0 huérfanos)** |
+| Registro | 2.123 bloques | **2.113** |
+| Dibujo | 2.012 bloques | **2.004** (1.095 dibujados, 909 no cubiertos) |
+
+Las dos comprobaciones: **0 distintos, 0 faltan, 0 sobran**. Los dos volcados,
+reproducibles byte a byte. Y sigue detectando: cambiada a mano una etiqueta de
+`space_image.py`, salieron sus 3 bloques como diferencia y el código de salida fue 1;
+deshecho, vuelve a 2.113/2.113.
+
+### La regla que queda
+
+**El verificador se mide sobre un bundle recién instalado**, no sobre el que lleva
+semanas acumulando. Antes de congelar una línea base: borrar el árbol de scripts del
+bundle, `nb install`, y comprobar que no quedan huérfanos
+(`comm -23 <bundle .py> <repo .py>` tiene que salir vacío).
