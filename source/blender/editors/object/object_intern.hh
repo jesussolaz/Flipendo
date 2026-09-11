@@ -216,6 +216,10 @@ void OBJECT_OT_light_linking_unlink_from_collection(wmOperatorType *ot);
 /* object_lod.c */
 void OBJECT_OT_lod_add(wmOperatorType *ot);
 void OBJECT_OT_lod_remove(wmOperatorType *ot);
+/* Transliterados de `bl_operators/object.py`; ver politicas/LOD-A-CPP.md. */
+void OBJECT_OT_lod_by_name(wmOperatorType *ot);
+void OBJECT_OT_lod_clear_all(wmOperatorType *ot);
+void OBJECT_OT_lod_generate(wmOperatorType *ot);
 
 /* object_camera.cc */
 

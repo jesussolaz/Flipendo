@@ -284,6 +284,9 @@ void operatortypes_object()
 
   WM_operatortype_append(OBJECT_OT_lod_add);
   WM_operatortype_append(OBJECT_OT_lod_remove);
+  WM_operatortype_append(OBJECT_OT_lod_by_name);
+  WM_operatortype_append(OBJECT_OT_lod_clear_all);
+  WM_operatortype_append(OBJECT_OT_lod_generate);
 
   WM_operatortype_append(TRANSFORM_OT_vertex_random);
 

@@ -1,0 +1,71 @@
+# FL-LOD-OPS v1
+case=0 by_name prefijo
+  0 status=FINISHED
+  1 obj=LOD0Mesh sel=0 act=1 loc=0,0,0 mods=
+  2 obj=LOD1Mesh sel=0 act=0 loc=0,0,0 mods=
+  3 obj=LOD2Mesh sel=1 act=0 loc=0,0,0 mods=
+  4 lod=0 obj=LOD0Mesh distance=0 hyst=10 flags=3
+  5 lod=1 obj=LOD1Mesh distance=25 hyst=10 flags=3
+  6 lod=2 obj=LOD2Mesh distance=50 hyst=10 flags=3
+case=1 by_name sufijo
+  0 status=FINISHED
+  1 obj=MeshLOD0 sel=0 act=1 loc=0,0,0 mods=
+  2 obj=MeshLOD1 sel=0 act=0 loc=0,0,0 mods=
+  3 obj=MeshLOD2 sel=1 act=0 loc=0,0,0 mods=
+  4 lod=0 obj=MeshLOD0 distance=0 hyst=10 flags=3
+  5 lod=1 obj=MeshLOD1 distance=25 hyst=10 flags=3
+  6 lod=2 obj=MeshLOD2 distance=50 hyst=10 flags=3
+case=2 by_name minusculas y hueco en el 2
+  0 status=FINISHED
+  1 obj=obj_lod0 sel=0 act=1 loc=0,0,0 mods=
+  2 obj=obj_lod1 sel=0 act=0 loc=0,0,0 mods=
+  3 obj=obj_lod3 sel=1 act=0 loc=0,0,0 mods=
+  4 lod=0 obj=obj_lod0 distance=0 hyst=10 flags=3
+  5 lod=1 obj=obj_lod1 distance=25 hyst=10 flags=3
+case=3 by_name sin lod0 en el nombre
+  0 status=CANCELLED
+  1 obj=Cubo sel=0 act=1 loc=0,0,0 mods=
+  2 obj=Cubo.001 sel=1 act=0 loc=0,0,0 mods=
+case=4 by_name dos veces seguidas
+  0 status=FINISHED
+  1 obj=LOD0Rep sel=0 act=1 loc=0,0,0 mods=
+  2 obj=LOD1Rep sel=0 act=0 loc=0,0,0 mods=
+  3 obj=LOD2Rep sel=1 act=0 loc=0,0,0 mods=
+  4 lod=0 obj=LOD0Rep distance=0 hyst=10 flags=3
+  5 lod=1 obj=LOD1Rep distance=25 hyst=10 flags=3
+  6 lod=2 obj=LOD2Rep distance=50 hyst=10 flags=3
+case=5 by_name con un solo nivel
+  0 status=FINISHED
+  1 obj=LOD0Solo sel=1 act=1 loc=0,0,0 mods=
+case=6 clear_all con niveles
+  0 status=FINISHED
+  1 obj=LOD0Clear sel=0 act=1 loc=0,0,0 mods=
+  2 obj=LOD1Clear sel=0 act=0 loc=0,0,0 mods=
+  3 obj=LOD2Clear sel=1 act=0 loc=0,0,0 mods=
+case=7 clear_all sin niveles
+  0 status=FINISHED
+  1 obj=Pelado sel=1 act=1 loc=0,0,0 mods=
+case=8 generate count=3 target=0.1
+  0 status=FINISHED
+  1 obj=Cube sel=1 act=1 loc=0,0,0 mods=
+  2 obj=Cubelod1 sel=0 act=0 loc=0,3,0 mods=lod_decimate:DECIMATE:0.550000012
+  3 obj=Cubelod2 sel=0 act=0 loc=0,6,0 mods=lod_decimate:DECIMATE:0.100000001
+  4 lod=0 obj=Cube distance=0 hyst=10 flags=3
+  5 lod=1 obj=Cubelod1 distance=25 hyst=10 flags=3
+  6 lod=2 obj=Cubelod2 distance=50 hyst=10 flags=3
+case=9 generate count=2 target=0.5 con prefijo
+  0 status=FINISHED
+  1 obj=LOD0Gen sel=1 act=1 loc=0,0,0 mods=
+  2 obj=LOD1Gen sel=0 act=0 loc=0,3,0 mods=lod_decimate:DECIMATE:0.5
+  3 lod=0 obj=LOD0Gen distance=0 hyst=10 flags=3
+  4 lod=1 obj=LOD1Gen distance=25 hyst=10 flags=3
+case=10 generate count=4 target=0.2 con sufijo
+  0 status=FINISHED
+  1 obj=Genlod0 sel=1 act=1 loc=0,0,0 mods=
+  2 obj=Genlod1 sel=0 act=0 loc=0,3,0 mods=lod_decimate:DECIMATE:0.733333349
+  3 obj=Genlod2 sel=0 act=0 loc=0,6,0 mods=lod_decimate:DECIMATE:0.466666669
+  4 obj=Genlod3 sel=0 act=0 loc=0,9,0 mods=lod_decimate:DECIMATE:0.200000003
+  5 lod=0 obj=Genlod0 distance=0 hyst=10 flags=3
+  6 lod=1 obj=Genlod1 distance=25 hyst=10 flags=3
+  7 lod=2 obj=Genlod2 distance=50 hyst=10 flags=3
+  8 lod=3 obj=Genlod3 distance=75 hyst=10 flags=3

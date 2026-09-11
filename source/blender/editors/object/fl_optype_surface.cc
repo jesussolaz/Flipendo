@@ -101,6 +101,15 @@ const char *preset_idnames[] = {
     "WM_OT_operator_presets_cleanup",
 };
 
+/* Los tres de niveles de detalle de `bl_operators/object.py` (carril OPS-3). Otra lista
+ * aparte por el mismo motivo: cada linea base se congela contra el binario que todavia
+ * tenia SU Python, y anadir un idname a una lista ya congelada la invalida. */
+const char *lod_idnames[] = {
+    "OBJECT_OT_lod_by_name",
+    "OBJECT_OT_lod_clear_all",
+    "OBJECT_OT_lod_generate",
+};
+
 /**
  * Las banderas de una propiedad, como las ve Python (`prop.is_hidden`, `is_skip_save`...).
  *
@@ -428,6 +437,23 @@ bool check_presets(bContext * /*C*/, const char *baseline_path)
                     baseline_path,
                     "FL-PRESET-OPTYPE-SURFACE v1",
                     Span<const char *>(preset_idnames, ARRAY_SIZE(preset_idnames)),
+                    true);
+}
+
+bool dump_lod(bContext * /*C*/, const char *filepath)
+{
+  return dump_list(filepath,
+                   "FL-LOD-OPTYPE-SURFACE v1",
+                   Span<const char *>(lod_idnames, ARRAY_SIZE(lod_idnames)),
+                   true);
+}
+
+bool check_lod(bContext * /*C*/, const char *baseline_path)
+{
+  return check_list("fl-check-lod-optypes",
+                    baseline_path,
+                    "FL-LOD-OPTYPE-SURFACE v1",
+                    Span<const char *>(lod_idnames, ARRAY_SIZE(lod_idnames)),
                     true);
 }
 

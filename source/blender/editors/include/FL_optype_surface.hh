@@ -49,4 +49,11 @@ bool check(bContext *C, const char *baseline_path);
 bool dump_presets(bContext *C, const char *filepath);
 bool check_presets(bContext *C, const char *baseline_path);
 
+/**
+ * Y lo mismo para los tres operadores de niveles de detalle de `bl_operators/object.py`.
+ * Linea base: `tests/flipendo/lod/optypes-python.txt`.
+ */
+bool dump_lod(bContext *C, const char *filepath);
+bool check_lod(bContext *C, const char *baseline_path);
+
 }  // namespace flipendo::optype_surface

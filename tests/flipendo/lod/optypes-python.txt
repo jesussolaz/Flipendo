@@ -1,0 +1,10 @@
+# FL-LOD-OPTYPE-SURFACE v1
+case=0 op=OBJECT_OT_lod_by_name
+  0 name=Setup Levels of Detail By Name desc=Add levels of detail to this object based on object names translation_context=Operator options=REGISTER|UNDO
+case=1 op=OBJECT_OT_lod_clear_all
+  0 name=Clear All Levels of Detail desc=Remove all levels of detail from this object translation_context=Operator options=REGISTER|UNDO
+case=2 op=OBJECT_OT_lod_generate
+  0 name=Generate Levels of Detail desc=Generate levels of detail using the decimate modifier translation_context=Operator options=REGISTER|UNDO
+  1 prop=count type=INT subtype=NONE array=0 name=Count desc= flags=ANIMATABLE default=3 min=-2147483648 max=2147483647 softmin=-2147483648 softmax=2147483647
+  2 prop=target type=FLOAT subtype=NONE array=0 name=Target Size desc= flags=ANIMATABLE default=0.100000001 min=0 max=1 softmin=0 softmax=1
+  3 prop=package type=BOOLEAN subtype=NONE array=0 name=Package into Group desc= flags=ANIMATABLE default=0
