@@ -602,8 +602,15 @@ modos de verdad, y en un parametro la grafia entra en el simbolo:
 
 Los tipos se recuperan dentro de `present()` con `reinterpret_cast` y una advertencia
 escrita: ahi el compilador no comprueba nada, y si GHOST cambiara el ORDEN de los
-argumentos esto seguiria compilando. Se revierte cuando caiga el ultimo `.mm` de GHOST,
-y le toca al carril de GHOST decidirlo porque el tipo es suyo.
+argumentos esto seguiria compilando.
+
+**ACTUALIZACION (mismo dia, tras cerrar Metal):** esa condicion YA SE CUMPLE. El carril
+de GHOST migro `GHOST_ContextCGL.cc` y `GHOST_WindowCocoa.cc`, y medido despues:
+**ningun `.mm` del arbol usa el callback**. El unico `.mm` que queda en GHOST
+(`GHOST_SystemCocoa.mm`) incluye la cabecera pero no toca el tipo (0 referencias); todos
+los usuarios son `.cc`. La frontera de enlazado ha desaparecido y el typedef puede
+volver a tipos reales, con lo que `present()` perderia sus cuatro `reinterpret_cast`.
+No se hace desde aqui porque el typedef vive en `intern/ghost`, que es de otro carril.
 
 ### El andamio `mtl_objc_compat.hh`
 
