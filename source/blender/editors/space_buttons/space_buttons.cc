@@ -1115,6 +1115,8 @@ void ED_spacetype_buttons()
   fl_properties_data_lattice_register(art);
   /* La pestana de datos del Metaball, antes `properties_data_metaball.py`. */
   fl_properties_data_metaball_register(art);
+  /* La pestana de datos del Altavoz, antes `properties_data_speaker.py`. */
+  fl_properties_data_speaker_register(art);
   fl_world_buttons_register(art);
   BLI_addhead(&st->regiontypes, art);
 

@@ -301,3 +301,58 @@ De los **3** bloques distintos del registro, **ninguno es de esta pestaña**:
   (`fl_node_ui.cc` sin commitear), que adelanta `NODE_PT_node_color_presets`,
   `NODE_PT_annotation` y `NODE_WORLD_PT_viewport_display`. Con el árbol limpio de anoche el
   registro daba 1 distinto, no 3; la diferencia son esos dos bloques ajenos.
+
+## Séptima unidad: el Altavoz, y las dos ramas de `muted`
+
+`scripts/startup/bl_ui/properties_data_speaker.py` (156 líneas, 6 paneles) pasa entera a
+`space_buttons/fl_properties_data_speaker.cc`.
+
+| Panel | Etiqueta | Banderas | `order` |
+|---|---|---|---:|
+| `DATA_PT_context_speaker` | (vacía) | `NO_HEADER` | 0 |
+| `DATA_PT_speaker` | `Sound` | — | 0 |
+| `DATA_PT_distance` | `Distance` | `DEFAULT_CLOSED` | 0 |
+| `DATA_PT_cone` | `Cone` | `DEFAULT_CLOSED` | 0 |
+| `DATA_PT_speaker_animation` | `Animation` | `DEFAULT_CLOSED` | 999 |
+| `DATA_PT_custom_props_speaker` | `Custom Properties` | `DEFAULT_CLOSED` | 1000 |
+
+Es la primera de esta familia con **`COMPAT_ENGINES`**: los seis paneles declaran el mismo
+conjunto (`BLENDER_RENDER`, `BLENDER_EEVEE_NEXT`, `BLENDER_WORKBENCH`), así que basta un
+`poll` que mire `scene->r.engine`, donde lo miraba el Python y donde ya lo mira
+`fl_game_buttons.cc`.
+
+### Las trampas
+
+1. **El `template_ID` va ANTES de `use_property_split`.** En `DATA_PT_speaker` el Python
+   dibuja el selector de sonido y *después* pone `layout.use_property_split = True`. Si en
+   C++ se pone la separación primero, el selector se dibuja partido y el volcado lo canta.
+   El orden de las llamadas es parte del dibujo, no un detalle de estilo.
+2. **`open="sound.open_mono"` es el operador de ABRIR, el tercero de la firma C++**
+   (`newop`, `openop`, `unlinkop`), no el segundo. Ponerlo de `newop` cambia el botón.
+3. **`active` no cae siempre en el mismo sitio.** En `DATA_PT_speaker` es
+   `col.active = not speaker.muted` (sobre la columna, para que el `Mute` de arriba siga
+   encendido); en `DATA_PT_distance` y `DATA_PT_cone` es `layout.active` (sobre la raíz del
+   panel). Son tres `uiLayoutSetActive` en tres niveles distintos y el volcado distingue
+   los tres.
+4. **`slider=True` es `UI_ITEM_R_SLIDER`**, en `volume`, `volume_min`, `volume_max` y
+   `cone_volume_outer` — y **no** en `attenuation`, `pitch` ni los dos ángulos del cono.
+
+### Verificado
+
+Medido sobre una copia del bundle recién instalado, sin huérfanos:
+
+| Volcado | Resultado |
+|---|---|
+| Registro (`baseline-python.txt`) | **2.113 bloques, 2.110 idénticos, 3 distintos, 0 faltan, 0 sobran** |
+| Diseño (`baseline-python-layout.txt`) | **2.004 bloques, 2.004 idénticos, 0 distintos, 0 faltan, 0 sobran** |
+| Diseño con un altavoz delante, `muted=False` | **148 líneas, 6 de 6 paneles dibujados: idéntico** |
+| Diseño con un altavoz delante, `muted=True` | **148 líneas, 6 de 6 paneles dibujados: idéntico** |
+
+Los 3 bloques distintos del registro son los mismos tres de la unidad anterior y ninguno es
+de esta pestaña: `REGION PROPERTIES WINDOW` (la deuda de orden global) y
+`REGION NODE_EDITOR UI` + `REGION PROPERTIES HEADER`, que vienen de la migración de
+`space_node.py` que otro carril tenía a medias en el árbol compartido.
+
+**Las dos escenas hacían falta**: entre `muted=False` y `muted=True` cambian 6 líneas del
+volcado, en 3 bloques. Medir solo el caso por defecto habría dejado sin probar los tres
+`uiLayoutSetActive`, que es justo donde estaba el riesgo.

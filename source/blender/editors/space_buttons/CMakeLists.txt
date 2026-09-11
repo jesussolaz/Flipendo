@@ -20,6 +20,7 @@ set(SRC
   fl_properties_collection.cc
   fl_properties_data_lattice.cc
   fl_properties_data_metaball.cc
+  fl_properties_data_speaker.cc
   fl_properties_data_empty.cc
   fl_properties_physics_geometry_nodes.cc
   fl_world_buttons.cc
