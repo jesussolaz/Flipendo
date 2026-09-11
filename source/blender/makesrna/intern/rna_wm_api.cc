@@ -7,7 +7,9 @@
  */
 
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
+#include <string>
 
 #include "RNA_define.hh"
 #include "RNA_enum_types.hh"
@@ -25,6 +27,13 @@
 #include "WM_types.hh"
 
 #include "rna_internal.hh" /* own include */
+
+/* Tamano del buffer de `WindowManager.tool_keymap_names`. El peor modo del catalogo
+ * (`VIEW_3D` en `EDIT_MESH`) son 38 nombres y 1.208 caracteres; esto deja tres veces de
+ * margen. Si algun dia no cupiera, se avisa por stderr en vez de recortar en silencio:
+ * perder la mitad del arbol del editor de keymaps sin que nada lo diga es justo el fallo
+ * callado que esta migracion intenta no cometer. */
+#define TOOL_KEYMAP_NAMES_MAX 4096
 
 /* confusing 2 enums mixed up here */
 const EnumPropertyItem rna_enum_window_cursor_items[] = {
@@ -90,6 +99,28 @@ static int rna_wm_tool_group_active_get(int space_type, const char *group)
 static void rna_wm_tool_group_active_set(int space_type, const char *group, int index)
 {
   flipendo::toolsystem::group_active_set(space_type, group, index);
+}
+
+static void rna_wm_tool_keymap_names(int space_type, const char *mode, char *result)
+{
+  std::string joined;
+  for (const blender::StringRefNull name :
+       flipendo::toolsystem::tool_keymap_names_for_mode(
+           space_type, (mode != nullptr && mode[0] != '\0') ? mode : nullptr))
+  {
+    if (!joined.empty()) {
+      joined += '\n';
+    }
+    joined += name;
+  }
+  if (joined.size() >= TOOL_KEYMAP_NAMES_MAX) {
+    fprintf(stderr,
+            "Herramientas: los nombres de keymap de un modo no caben en %d caracteres "
+            "(hacen falta %zu). El arbol del editor de keymaps saldra incompleto.\n",
+            TOOL_KEYMAP_NAMES_MAX,
+            joined.size());
+  }
+  BLI_strncpy(result, joined.c_str(), TOOL_KEYMAP_NAMES_MAX);
 }
 
 static bool rna_KeyMapItem_compare(wmKeyMapItem *k1, wmKeyMapItem *k2)
@@ -913,6 +944,20 @@ void RNA_api_wm(StructRNA *srna)
   RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
   parm = RNA_def_int(func, "index", 0, INT_MIN, INT_MAX, "Index", "", INT_MIN, INT_MAX);
   RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
+
+  func = RNA_def_function(srna, "tool_keymap_names", "rna_wm_tool_keymap_names");
+  RNA_def_function_flag(func, FUNC_NO_SELF);
+  RNA_def_function_ui_description(
+      func,
+      "Names of the key-maps of the tools of a space and mode, one per line (internal, "
+      "used by the key-map editor tree)");
+  parm = RNA_def_enum(func, "space_type", rna_enum_space_type_items, SPACE_EMPTY, "Space Type", "");
+  RNA_def_parameter_flags(parm, PropertyFlag(0), PARM_REQUIRED);
+  RNA_def_string(
+      func, "mode", nullptr, 0, "Mode", "Mode of the tools, empty for the ones common to the space");
+  parm = RNA_def_string(func, "result", nullptr, TOOL_KEYMAP_NAMES_MAX, "result", "");
+  RNA_def_parameter_flags(parm, PROP_THICK_WRAP, ParameterFlag(0));
+  RNA_def_function_output(func, parm);
 
   func = RNA_def_function(srna, "fileselect_add", "WM_event_add_fileselect");
   /* Note that a full description is located at:

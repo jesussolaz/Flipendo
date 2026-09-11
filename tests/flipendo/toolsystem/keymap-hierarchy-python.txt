@@ -1,0 +1,586 @@
+Window | EMPTY | WINDOW
+Screen | EMPTY | WINDOW
+  Screen Editing | EMPTY | WINDOW
+  Region Context Menu | EMPTY | WINDOW
+View2D | EMPTY | WINDOW
+View2D Buttons List | EMPTY | WINDOW
+User Interface | EMPTY | WINDOW
+3D View | VIEW_3D | WINDOW
+  Object Mode | EMPTY | WINDOW
+    3D View Tool: Tweak | VIEW_3D | WINDOW
+    3D View Tool: Tweak (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Box | VIEW_3D | WINDOW
+    3D View Tool: Select Box (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Circle | VIEW_3D | WINDOW
+    3D View Tool: Select Circle (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Move | VIEW_3D | WINDOW
+    3D View Tool: Move (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Rotate | VIEW_3D | WINDOW
+    3D View Tool: Rotate (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Scale | VIEW_3D | WINDOW
+    3D View Tool: Scale (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Transform | VIEW_3D | WINDOW
+    3D View Tool: Transform (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Measure | VIEW_3D | WINDOW
+    3D View Tool: Measure (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Object, Add Primitive | VIEW_3D | WINDOW
+    3D View Tool: Object, Add Primitive (fallback) | VIEW_3D | WINDOW
+  Mesh | EMPTY | WINDOW
+    3D View Tool: Tweak | VIEW_3D | WINDOW
+    3D View Tool: Tweak (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Box | VIEW_3D | WINDOW
+    3D View Tool: Select Box (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Circle | VIEW_3D | WINDOW
+    3D View Tool: Select Circle (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Move | VIEW_3D | WINDOW
+    3D View Tool: Move (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Rotate | VIEW_3D | WINDOW
+    3D View Tool: Rotate (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Scale | VIEW_3D | WINDOW
+    3D View Tool: Scale (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Transform | VIEW_3D | WINDOW
+    3D View Tool: Transform (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Measure | VIEW_3D | WINDOW
+    3D View Tool: Measure (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Object, Add Primitive | VIEW_3D | WINDOW
+    3D View Tool: Object, Add Primitive (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude Region | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude Region (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude Manifold | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude Manifold (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude Along Normals | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude Along Normals (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude Individual | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude Individual (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude to Cursor | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Extrude to Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Inset Faces | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Inset Faces (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Bevel | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Bevel (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Loop Cut | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Loop Cut (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Offset Edge Loop Cut | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Offset Edge Loop Cut (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Knife | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Knife (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Bisect | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Bisect (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Poly Build | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Poly Build (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Spin | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Spin (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Smooth | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Smooth (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Randomize | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Randomize (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Edge Slide | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Edge Slide (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Vertex Slide | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Vertex Slide (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Shrink/Fatten | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Shrink/Fatten (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Push/Pull | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Push/Pull (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Shear | VIEW_3D | WINDOW
+    3D View Tool: Shear (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, To Sphere | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, To Sphere (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Rip Region | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Rip Region (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Rip Edge | VIEW_3D | WINDOW
+    3D View Tool: Edit Mesh, Rip Edge (fallback) | VIEW_3D | WINDOW
+  Curve | EMPTY | WINDOW
+    3D View Tool: Tweak | VIEW_3D | WINDOW
+    3D View Tool: Tweak (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Box | VIEW_3D | WINDOW
+    3D View Tool: Select Box (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Circle | VIEW_3D | WINDOW
+    3D View Tool: Select Circle (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Move | VIEW_3D | WINDOW
+    3D View Tool: Move (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Rotate | VIEW_3D | WINDOW
+    3D View Tool: Rotate (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Scale | VIEW_3D | WINDOW
+    3D View Tool: Scale (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Transform | VIEW_3D | WINDOW
+    3D View Tool: Transform (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Measure | VIEW_3D | WINDOW
+    3D View Tool: Measure (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Draw | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Draw (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Curve Pen | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Curve Pen (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Extrude | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Extrude (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Extrude to Cursor | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Extrude to Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Radius | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Radius (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Tilt | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Tilt (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Shear | VIEW_3D | WINDOW
+    3D View Tool: Shear (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Randomize | VIEW_3D | WINDOW
+    3D View Tool: Edit Curve, Randomize (fallback) | VIEW_3D | WINDOW
+  Curves | EMPTY | WINDOW
+  Armature | EMPTY | WINDOW
+    3D View Tool: Tweak | VIEW_3D | WINDOW
+    3D View Tool: Tweak (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Box | VIEW_3D | WINDOW
+    3D View Tool: Select Box (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Circle | VIEW_3D | WINDOW
+    3D View Tool: Select Circle (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Move | VIEW_3D | WINDOW
+    3D View Tool: Move (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Rotate | VIEW_3D | WINDOW
+    3D View Tool: Rotate (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Scale | VIEW_3D | WINDOW
+    3D View Tool: Scale (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Transform | VIEW_3D | WINDOW
+    3D View Tool: Transform (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Measure | VIEW_3D | WINDOW
+    3D View Tool: Measure (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Roll | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Roll (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Bone Size | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Bone Size (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Bone Envelope | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Bone Envelope (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Extrude | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Extrude (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Extrude to Cursor | VIEW_3D | WINDOW
+    3D View Tool: Edit Armature, Extrude to Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Shear | VIEW_3D | WINDOW
+    3D View Tool: Shear (fallback) | VIEW_3D | WINDOW
+  Metaball | EMPTY | WINDOW
+    3D View Tool: Tweak | VIEW_3D | WINDOW
+    3D View Tool: Tweak (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Box | VIEW_3D | WINDOW
+    3D View Tool: Select Box (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Circle | VIEW_3D | WINDOW
+    3D View Tool: Select Circle (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Move | VIEW_3D | WINDOW
+    3D View Tool: Move (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Rotate | VIEW_3D | WINDOW
+    3D View Tool: Rotate (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Scale | VIEW_3D | WINDOW
+    3D View Tool: Scale (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Transform | VIEW_3D | WINDOW
+    3D View Tool: Transform (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Measure | VIEW_3D | WINDOW
+    3D View Tool: Measure (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Shear | VIEW_3D | WINDOW
+    3D View Tool: Shear (fallback) | VIEW_3D | WINDOW
+  Lattice | EMPTY | WINDOW
+    3D View Tool: Tweak | VIEW_3D | WINDOW
+    3D View Tool: Tweak (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Box | VIEW_3D | WINDOW
+    3D View Tool: Select Box (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Circle | VIEW_3D | WINDOW
+    3D View Tool: Select Circle (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Move | VIEW_3D | WINDOW
+    3D View Tool: Move (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Rotate | VIEW_3D | WINDOW
+    3D View Tool: Rotate (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Scale | VIEW_3D | WINDOW
+    3D View Tool: Scale (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Transform | VIEW_3D | WINDOW
+    3D View Tool: Transform (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Measure | VIEW_3D | WINDOW
+    3D View Tool: Measure (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Shear | VIEW_3D | WINDOW
+    3D View Tool: Shear (fallback) | VIEW_3D | WINDOW
+  Font | EMPTY | WINDOW
+    3D View Tool: Edit Text, Select Text | VIEW_3D | WINDOW
+    3D View Tool: Edit Text, Select Text (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Measure | VIEW_3D | WINDOW
+    3D View Tool: Measure (fallback) | VIEW_3D | WINDOW
+  Grease Pencil | EMPTY | WINDOW
+  Point Cloud | EMPTY | WINDOW
+  Pose | EMPTY | WINDOW
+    3D View Tool: Tweak | VIEW_3D | WINDOW
+    3D View Tool: Tweak (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Box | VIEW_3D | WINDOW
+    3D View Tool: Select Box (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Circle | VIEW_3D | WINDOW
+    3D View Tool: Select Circle (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Move | VIEW_3D | WINDOW
+    3D View Tool: Move (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Rotate | VIEW_3D | WINDOW
+    3D View Tool: Rotate (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Scale | VIEW_3D | WINDOW
+    3D View Tool: Scale (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Transform | VIEW_3D | WINDOW
+    3D View Tool: Transform (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Measure | VIEW_3D | WINDOW
+    3D View Tool: Measure (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Pose, Breakdowner | VIEW_3D | WINDOW
+    3D View Tool: Pose, Breakdowner (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Pose, Push | VIEW_3D | WINDOW
+    3D View Tool: Pose, Push (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Pose, Relax | VIEW_3D | WINDOW
+    3D View Tool: Pose, Relax (fallback) | VIEW_3D | WINDOW
+  Vertex Paint | EMPTY | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+  Weight Paint | EMPTY | WINDOW
+    3D View Tool: Paint Weight, Gradient | VIEW_3D | WINDOW
+    3D View Tool: Paint Weight, Gradient (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Paint Weight, Sample Weight | VIEW_3D | WINDOW
+    3D View Tool: Paint Weight, Sample Weight (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Paint Weight, Sample Vertex Group | VIEW_3D | WINDOW
+    3D View Tool: Paint Weight, Sample Vertex Group (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+  Paint Vertex Selection (Weight, Vertex) | EMPTY | WINDOW
+  Paint Face Mask (Weight, Vertex, Texture) | EMPTY | WINDOW
+  Image Paint | EMPTY | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+  Sculpt | EMPTY | WINDOW
+    3D View Tool: Sculpt, Box Mask | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Box Mask (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Lasso Mask | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Lasso Mask (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Mask | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Mask (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Polyline Mask | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Polyline Mask (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Box Hide | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Box Hide (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Lasso Hide | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Lasso Hide (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Hide | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Hide (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Polyline Hide | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Polyline Hide (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Box Face Set | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Box Face Set (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Lasso Face Set | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Lasso Face Set (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Face Set | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Face Set (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Polyline Face Set | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Polyline Face Set (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Box Trim | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Box Trim (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Lasso Trim | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Lasso Trim (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Trim | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Trim (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Polyline Trim | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Polyline Trim (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Project | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Line Project (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Mesh Filter | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Mesh Filter (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Cloth Filter | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Cloth Filter (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Color Filter | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Color Filter (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Face Set Edit | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Face Set Edit (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Mask by Color | VIEW_3D | WINDOW
+    3D View Tool: Sculpt, Mask by Color (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Move | VIEW_3D | WINDOW
+    3D View Tool: Move (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Rotate | VIEW_3D | WINDOW
+    3D View Tool: Rotate (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Scale | VIEW_3D | WINDOW
+    3D View Tool: Scale (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Transform | VIEW_3D | WINDOW
+    3D View Tool: Transform (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate | VIEW_3D | WINDOW
+    Generic Tool: Annotate (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line | VIEW_3D | WINDOW
+    Generic Tool: Annotate Line (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon | VIEW_3D | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser | VIEW_3D | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | VIEW_3D | WINDOW
+  Sculpt Curves | EMPTY | WINDOW
+  Particle | EMPTY | WINDOW
+    3D View Tool: Tweak | VIEW_3D | WINDOW
+    3D View Tool: Tweak (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Box | VIEW_3D | WINDOW
+    3D View Tool: Select Box (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Circle | VIEW_3D | WINDOW
+    3D View Tool: Select Circle (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso | VIEW_3D | WINDOW
+    3D View Tool: Select Lasso (fallback) | VIEW_3D | WINDOW
+    3D View Tool: Cursor | VIEW_3D | WINDOW
+    3D View Tool: Cursor (fallback) | VIEW_3D | WINDOW
+  Primitive Tool Modal Map | EMPTY | WINDOW
+  Knife Tool Modal Map | EMPTY | WINDOW
+  Custom Normals Modal Map | EMPTY | WINDOW
+  Bevel Modal Map | EMPTY | WINDOW
+  Paint Stroke Modal | EMPTY | WINDOW
+  Sculpt Expand Modal | EMPTY | WINDOW
+  Paint Curve | EMPTY | WINDOW
+  Curve Pen Modal Map | EMPTY | WINDOW
+  Object Non-modal | EMPTY | WINDOW
+  View3D Placement Modal | EMPTY | WINDOW
+  View3D Walk Modal | EMPTY | WINDOW
+  View3D Fly Modal | EMPTY | WINDOW
+  View3D Rotate Modal | EMPTY | WINDOW
+  View3D Move Modal | EMPTY | WINDOW
+  View3D Zoom Modal | EMPTY | WINDOW
+  View3D Dolly Modal | EMPTY | WINDOW
+  3D View Generic | VIEW_3D | WINDOW
+Graph Editor | GRAPH_EDITOR | WINDOW
+  Graph Editor Generic | GRAPH_EDITOR | WINDOW
+Dopesheet | DOPESHEET_EDITOR | WINDOW
+  Dopesheet Generic | DOPESHEET_EDITOR | WINDOW
+NLA Editor | NLA_EDITOR | WINDOW
+  NLA Tracks | NLA_EDITOR | WINDOW
+  NLA Generic | NLA_EDITOR | WINDOW
+Image | IMAGE_EDITOR | WINDOW
+  UV Editor | EMPTY | WINDOW
+    Image Editor Tool: Uv, Tweak | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Tweak (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Select Box | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Select Box (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Select Circle | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Select Circle (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Select Lasso | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Select Lasso (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Cursor | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Cursor (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Move | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Move (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Rotate | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Rotate (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Scale | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Scale (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Line | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Line (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Polygon | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Eraser | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Rip Region | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Rip Region (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Grab | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Grab (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Relax | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Relax (fallback) | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Pinch | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Uv, Pinch (fallback) | IMAGE_EDITOR | WINDOW
+  UV Sculpt | EMPTY | WINDOW
+  Image Paint | EMPTY | WINDOW
+    Generic Tool: Annotate | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Line | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Line (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Polygon | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Eraser | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | IMAGE_EDITOR | WINDOW
+  Image View | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Sample | IMAGE_EDITOR | WINDOW
+    Image Editor Tool: Sample (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Line | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Line (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Polygon | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Eraser | IMAGE_EDITOR | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | IMAGE_EDITOR | WINDOW
+  Image Generic | IMAGE_EDITOR | WINDOW
+Outliner | OUTLINER | WINDOW
+Node Editor | NODE_EDITOR | WINDOW
+  Node Generic | NODE_EDITOR | WINDOW
+  Node Tool: Tweak | NODE_EDITOR | WINDOW
+  Node Tool: Tweak (fallback) | NODE_EDITOR | WINDOW
+  Node Tool: Select Box | NODE_EDITOR | WINDOW
+  Node Tool: Select Box (fallback) | NODE_EDITOR | WINDOW
+  Node Tool: Select Lasso | NODE_EDITOR | WINDOW
+  Node Tool: Select Lasso (fallback) | NODE_EDITOR | WINDOW
+  Node Tool: Select Circle | NODE_EDITOR | WINDOW
+  Node Tool: Select Circle (fallback) | NODE_EDITOR | WINDOW
+Video Sequence Editor | SEQUENCE_EDITOR | WINDOW
+  Sequencer | SEQUENCE_EDITOR | WINDOW
+    Sequencer Tool: Select Box | SEQUENCE_EDITOR | WINDOW
+    Sequencer Tool: Select Box (fallback) | SEQUENCE_EDITOR | WINDOW
+    Sequencer Tool: Blade | SEQUENCE_EDITOR | WINDOW
+    Sequencer Tool: Blade (fallback) | SEQUENCE_EDITOR | WINDOW
+  Preview | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Tweak | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Tweak (fallback) | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Select Box | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Select Box (fallback) | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Cursor | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Cursor (fallback) | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Move | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Move (fallback) | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Rotate | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Rotate (fallback) | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Scale | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Scale (fallback) | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Sample | SEQUENCE_EDITOR | WINDOW
+    Preview Tool: Sample (fallback) | SEQUENCE_EDITOR | WINDOW
+    Generic Tool: Annotate | SEQUENCE_EDITOR | WINDOW
+    Generic Tool: Annotate (fallback) | SEQUENCE_EDITOR | WINDOW
+    Generic Tool: Annotate Line | SEQUENCE_EDITOR | WINDOW
+    Generic Tool: Annotate Line (fallback) | SEQUENCE_EDITOR | WINDOW
+    Generic Tool: Annotate Polygon | SEQUENCE_EDITOR | WINDOW
+    Generic Tool: Annotate Polygon (fallback) | SEQUENCE_EDITOR | WINDOW
+    Generic Tool: Annotate Eraser | SEQUENCE_EDITOR | WINDOW
+    Generic Tool: Annotate Eraser (fallback) | SEQUENCE_EDITOR | WINDOW
+File Browser | FILE_BROWSER | WINDOW
+  File Browser Main | FILE_BROWSER | WINDOW
+  File Browser Buttons | FILE_BROWSER | WINDOW
+Info | INFO | WINDOW
+Property Editor | PROPERTIES | WINDOW
+Text | TEXT_EDITOR | WINDOW
+  Text Generic | TEXT_EDITOR | WINDOW
+Console | CONSOLE | WINDOW
+Clip | CLIP_EDITOR | WINDOW
+  Clip Editor | CLIP_EDITOR | WINDOW
+  Clip Graph Editor | CLIP_EDITOR | WINDOW
+  Clip Dopesheet Editor | CLIP_EDITOR | WINDOW
+Grease Pencil | EMPTY | WINDOW
+  Grease Pencil Paint Mode | EMPTY | WINDOW
+  Grease Pencil Brush Stroke | EMPTY | WINDOW
+  Grease Pencil Edit Mode | EMPTY | WINDOW
+  Grease Pencil Sculpt Mode | EMPTY | WINDOW
+  Grease Pencil Weight Paint | EMPTY | WINDOW
+  Grease Pencil Vertex Paint | EMPTY | WINDOW
+  Grease Pencil Fill Tool | EMPTY | WINDOW
+Mask Editing | EMPTY | WINDOW
+Frames | EMPTY | WINDOW
+Markers | EMPTY | WINDOW
+Animation | EMPTY | WINDOW
+Animation Channels | EMPTY | WINDOW
+View3D Gesture Circle | EMPTY | WINDOW
+Gesture Straight Line | EMPTY | WINDOW
+Gesture Zoom Border | EMPTY | WINDOW
+Gesture Box | EMPTY | WINDOW
+Standard Modal Map | EMPTY | WINDOW
+Transform Modal Map | EMPTY | WINDOW
+Eyedropper Modal Map | EMPTY | WINDOW
+Eyedropper ColorRamp PointSampling Map | EMPTY | WINDOW
+Mesh Filter Modal Map | EMPTY | WINDOW
+Fill Tool Modal Map | EMPTY | WINDOW
+Generic Gizmo | EMPTY | WINDOW
+  Generic Gizmo Drag | EMPTY | WINDOW
+  Generic Gizmo Click Drag | EMPTY | WINDOW
+  Generic Gizmo Maybe Drag | EMPTY | WINDOW
+  Generic Gizmo Select | EMPTY | WINDOW
+  Generic Gizmo Tweak Modal Map | EMPTY | WINDOW
