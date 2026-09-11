@@ -329,6 +329,14 @@ bloques quedaron sin cubrir y por qué.
 
 ## Los doce que son paneles: por qué no se pueden migrar de uno en uno
 
+> **Corregido el 2026-09-11 a las 06:15.** Lo que sigue describe bien el mecanismo,
+> pero la conclusión que sacaba —«la unidad de migración es la región entera»— era
+> más dura de lo necesario, y uno de sus datos era falso. La versión buena está en
+> «La regla del prefijo», al final de este documento. Se deja el texto original
+> porque la medida del mecanismo sigue siendo correcta y es la que hay que entender
+> antes de leer la corrección.
+
+
 De los 133, **doce son `Panel`, no `Menu`**. El keymap los abre con
 `wm.call_panel`, que los busca en el registro global con `WM_paneltype_find()`,
 así que a primera vista bastaría con `flipendo::panels_register()`. No basta, y
@@ -369,13 +377,128 @@ Las dos salidas, y las dos hay que escribirlas antes de tomarlas:
 Mientras tanto los doce **están medidos y no tocados**. Migrarlos «porque son
 cortos» habría metido cinco diferencias de región en el parte de otro carril.
 
-## 119 de 133. Los catorce que quedan, y por qué cada uno
+## La regla del PREFIJO de región (medida el 2026-09-11, 06:15)
 
-| Qué | Cuántos | Por qué no está |
+La sección anterior mide bien el mecanismo: con `order` a cero en todos,
+`panel_insert_ordered()` añade al final entre iguales, así que **el orden de la lista
+de una región es el orden de alta**, y el C++ se da de alta en `ED_spacetypes_init()`,
+mucho antes de que carguen los scripts. De ahí concluía que había que migrar la región
+entera.
+
+No hace falta la región entera. Hace falta un **prefijo** de la región:
+
+> Si lo que se migra son los **N primeros** paneles de la lista, y se dan de alta en el
+> mismo orden relativo, quedan en las N primeras posiciones —que es donde ya estaban— y
+> el Python sigue añadiendo los suyos detrás. La lista sale **idéntica**.
+
+Lo que rompe el orden no es «migrar menos de la región»: es **migrar uno de en medio**.
+
+Medido, no razonado: con los cuatro primeros de `VIEW_3D WINDOW` en C++ y los otros
+siete todavía en Python, el volcado de registro devolvió la lista de la región
+**idéntica a la línea base**, con los cuatro migrados en las posiciones 1 a 4.
+
+### Por qué `order` no sirve para intercalar (y no hay que volver a intentarlo)
+
+El bucle de inserción recorre la lista **hacia atrás** desde el último y corta en el
+primero con `order <= pt->order`. Con todos los demás a `order = 0`:
+
+| `order` del panel nuevo | Dónde cae |
+|---|---|
+| `0` | detrás del último que ya hay — o sea, a la cabeza, porque el C++ llega antes |
+| `> 0` | al **final** de la región, detrás de todos los de `order = 0` |
+| `< 0` | a la cabeza de todo |
+
+No hay valor que lo deje en medio. `order` es una prioridad, no una posición: por eso
+la unidad es el prefijo y no el panel suelto.
+
+### Corrección de un dato de la tabla anterior
+
+La tabla decía que tres de los once paneles de `VIEW_3D WINDOW` eran de
+`space_view3d_toolbar.py` (carril A2) y que por eso no se podía cerrar la región sin
+pisar a otro carril. **Es falso.** Los tres `VIEW3D_PT_curves_sculpt_add_shape`,
+`_parameter_falloff` y `_grow_shrink_scaling` están en `space_view3d.py`. Lo que vive
+en `space_view3d_toolbar.py` es `VIEW3D_PT_curves_sculpt_symmetry` y
+`_symmetry_for_topbar`, que son **otros paneles y de otra región** (`TOPBAR HEADER`).
+Los once de `VIEW_3D WINDOW` salen los once de `space_view3d.py`.
+
+### Undécima y duodécima tanda: `VIEW_3D WINDOW` entera (2026-09-11)
+
+| Familia | Fichero C++ | Paneles | Commit |
+|---|---|---|---|
+| 28 · Contextuales de pintado y escultura (1-4) | `space_view3d/fl_view3d_panels_paint.cc` | 4 | `5a4e77847e0` |
+| 29 · Escultura de curvas y lápiz de cera (5-11) | `space_view3d/fl_view3d_panels_curves_gp.cc` | 7 | `fb58a65b3c4` |
+
+Con ellos se estrena `editors/include/FL_paint_common.hh`: los ayudantes de
+`UnifiedPaintPanel` (`prop_unified`, `prop_unified_color`, `prop_unified_color_picker`,
+`get_brush_mode`, `paint_settings`) y `brush_basic_grease_pencil_weight_settings`. Van
+en `editors/include/` porque es el mixin de interfaz más reutilizado del árbol y la
+decisión del jefe de proyecto de las 03:40 prohíbe escribirlo dos veces.
+
+**127 de 133.** La región `VIEW_3D WINDOW` queda entera en C++: ya no hay ni un
+`PanelType` de Python detrás.
+
+### El contrato de los fallos del Python, escrito de una vez
+
+El `draw()` de estos once empieza leyendo `context.tool_settings.<modo>.brush`. En la
+escena de fábrica no hay ningún modo de pintado iniciado, así que el Python lanza
+`AttributeError`/`TypeError` y **el dibujo se corta en esa línea**. La línea base tiene
+por eso los once bloques a medio dibujar (26 líneas y 2 botones entre los once).
+
+Eso **no** es el caso de `OUTLINER_MT_context_menu`, y la diferencia importa:
+
+| | `OUTLINER_MT_context_menu` | Los once paneles |
 |---|---|---|
-| Paneles | **12** | La unidad de migración es la región entera (apartado anterior) |
-| `POSE_MT_selection_sets_select` | 1 | `pose.selection_set_select` sigue siendo un operador de Python (`bl_operators/bone_selection_sets.py`) |
-| `OUTLINER_MT_context_menu` | 1 | Ver abajo: se intentó, se sacó, y el motivo merece estar escrito |
+| Qué corta el dibujo | una enumeración dinámica sin items **en el contexto del volcador** | que la escena no tiene los datos |
+| ¿Pasa cuando el usuario lo abre? | **No**: es un artefacto del arnés | **Sí**: es el comportamiento correcto |
+| Qué hacer | revertir y volver a congelar el bloque | transliterar el corte |
+
+Por eso aquí sí se reproduce el corte, y se reproduce **en su sitio**: `prop_unified`
+devuelve `nullptr` —y `prop_unified_color*`, `false`— en el punto exacto de la
+excepción, y quien la llama hace `return` ahí. Adelantar la comprobación del pincel al
+principio del `draw()` deja el panel vacío; es la misma trampa que ya costó dos menús
+en las tandas anteriores, y en paneles es más fácil caer porque la rama corta *parece*
+la correcta.
+
+### Cómo se verificó
+
+| | |
+|---|---|
+| Región `VIEW_3D WINDOW` | 11 paneles, **lista idéntica** a la línea base |
+| Registro (`--fl-check-ui`) | **2.113 bloques, 2.112 idénticos, 1 distinto, 0 faltan, 0 sobran** |
+| El único distinto | `REGION PROPERTIES WINDOW`, de otro carril: un panel suyo sí saltó a la cabeza de su región |
+| Registro de los once | **11/11 idénticos** byte a byte |
+| Dibujo (volcado completo, bloque a bloque) | **2.004 bloques, 0 distintos, 0 faltan, 0 sobran** |
+| Dibujo de los once | **11/11 idénticos**, 26 líneas, 2 botones |
+
+Lo que **no** queda verificado, dicho: esos 2 botones son todo lo que la escena de
+fábrica dibuja de los once. La rama llena pide una segunda línea base sobre un `.blend`
+con los modos de pintado, escultura de curvas y un lápiz de cera con capas.
+
+## 127 de 133. Los seis que quedan, y quién los bloquea
+
+Recuento hecho por cruce de conjuntos sobre el árbol y sobre el volcado de registro del
+binario recién instalado, no por lectura:
+
+- de los 133, **presentes en el registro: 133** (ninguno resuelve a `nullptr`);
+- de los 133, **sin clase de Python viva: 127**;
+- quedan **6**, y **ninguno** está bloqueado ya por el mecanismo de los paneles.
+
+| Qué queda | Dónde vive | Qué lo bloquea |
+|---|---|---|
+| `VIEW3D_PT_snapping` | `space_view3d.py` | Es el **37.º** de `VIEW_3D HEADER` (58 paneles). Su prefijo son 36 paneles y el **segundo** es `VIEW3D_PT_brush_asset_shelf_filter`, de `properties_paint_common.py` |
+| `TOPBAR_PT_name`, `TOPBAR_PT_name_marker`, `USERPREF_PT_ndof_settings` | `space_topbar.py`, `space_userpref.py` | Son el 5.º, 6.º y 7.º de `TOPBAR HEADER`. Su prefijo pasa por `IMAGE_PT_uv_sculpt_options` y `IMAGE_PT_uv_sculpt_curve`, de `space_image.py` |
+| `POSE_MT_selection_sets_select` | `properties_data_armature.py` | El menú C++ y la clase de Python no pueden convivir, y ese fichero no es de este carril. (El operador `pose.selection_set_select` sigue siendo de Python, pero eso **no** bloquea: el idname se resuelve al dibujar, como el resto de la «deuda con nombre y apellidos») |
+| `OUTLINER_MT_context_menu` | `space_outliner.py` | Su bloque de la línea base está contaminado; ver abajo |
+
+Los cinco primeros están bloqueados por **propiedad de ficheros**, no por el mecanismo:
+el día que `properties_paint_common.py`, `space_image.py` y `properties_data_armature.py`
+estén en el mismo carril que sus regiones, salen con la regla del prefijo y sin
+sorpresas. Los dos prefijos que hacen falta están medidos:
+
+| Región | Paneles del prefijo | Líneas de Python | Fichero que lo bloquea (posición) |
+|---|---|---|---|
+| `VIEW_3D HEADER` → `VIEW3D_PT_snapping` | 36 + él | ~1.400 | `properties_paint_common.py` (2.ª) |
+| `TOPBAR HEADER` → los tres | 4 + ellos | ~200 | `space_image.py` (2.ª y 3.ª) |
 
 ### `OUTLINER_MT_context_menu`: intentado, medido y retirado
 
