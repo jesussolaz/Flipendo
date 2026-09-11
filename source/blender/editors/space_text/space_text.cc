@@ -36,6 +36,7 @@
 #include "RNA_path.hh"
 
 #include "text_format.hh"
+#include "FL_text_menus.hh"
 #include "text_intern.hh" /* own include */
 
 /* ******************** default callbacks for text space ***************** */
@@ -481,6 +482,8 @@ void ED_spacetype_text()
   art->init = text_header_region_init;
   art->draw = text_header_region_draw;
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::text::text_menus_register();
 
   BKE_spacetype_register(std::move(st));
 

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../../makesrna
 
@@ -12,6 +13,7 @@ set(INC_SYS
 )
 
 set(SRC
+  fl_text_menus.cc
   space_text.cc
   text_autocomplete.cc
   text_draw.cc
@@ -27,6 +29,7 @@ set(SRC
   text_undo.cc
 
   text_format.hh
+  FL_text_menus.hh
   text_intern.hh
 )
 

@@ -89,23 +89,12 @@ class INFO_MT_area(Menu):
         layout.operator("screen.area_close")
 
 
-class INFO_MT_context_menu(Menu):
-    bl_label = "Info"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("info.report_copy", text="Copy")
-        layout.operator("info.report_delete", text="Delete")
-
-
 classes = (
     INFO_HT_header,
     INFO_MT_editor_menus,
     INFO_MT_area,
     INFO_MT_view,
     INFO_MT_info,
-    INFO_MT_context_menu,
 )
 
 if __name__ == "__main__":  # only for live edit.

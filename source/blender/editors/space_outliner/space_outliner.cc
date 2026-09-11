@@ -38,6 +38,7 @@
 
 #include "BLO_read_write.hh"
 
+#include "FL_outliner_menus.hh"
 #include "outliner_intern.hh"
 #include "tree/tree_display.hh"
 
@@ -699,6 +700,8 @@ void ED_spacetype_outliner()
   art->free = outliner_header_region_free;
   art->listener = outliner_header_region_listener;
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::outliner::outliner_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

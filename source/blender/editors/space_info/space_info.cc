@@ -29,6 +29,7 @@
 
 #include "BLO_read_write.hh"
 
+#include "FL_info_menus.hh"
 #include "info_intern.hh" /* own include */
 
 /* ******************** default callbacks for info space ***************** */
@@ -288,6 +289,8 @@ void ED_spacetype_info()
   art->draw = info_header_region_draw;
 
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::info::info_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

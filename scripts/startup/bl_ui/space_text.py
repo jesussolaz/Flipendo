@@ -446,38 +446,6 @@ class TEXT_MT_edit(Menu):
         layout.menu("TEXT_MT_edit_to3d")
 
 
-class TEXT_MT_context_menu(Menu):
-    bl_label = ""
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator_context = 'INVOKE_DEFAULT'
-
-        layout.operator("text.cut")
-        layout.operator("text.copy", icon='COPYDOWN')
-        layout.operator("text.paste", icon='PASTEDOWN')
-        layout.operator("text.duplicate_line")
-
-        layout.separator()
-
-        layout.operator("text.move_lines", text="Move Line(s) Up").direction = 'UP'
-        layout.operator("text.move_lines", text="Move Line(s) Down").direction = 'DOWN'
-
-        layout.separator()
-
-        layout.operator("text.indent")
-        layout.operator("text.unindent")
-
-        layout.separator()
-
-        layout.operator("text.comment_toggle")
-
-        layout.separator()
-
-        layout.operator("text.autocomplete")
-
-
 classes = (
     TEXT_HT_header,
     TEXT_HT_footer,
@@ -496,7 +464,6 @@ classes = (
     TEXT_MT_select,
     TEXT_MT_format,
     TEXT_MT_edit_to3d,
-    TEXT_MT_context_menu,
 )
 
 if __name__ == "__main__":  # only for live edit.

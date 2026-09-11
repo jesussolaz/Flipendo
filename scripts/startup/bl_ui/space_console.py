@@ -109,46 +109,12 @@ class CONSOLE_MT_console(Menu):
         layout.operator("console.autocomplete", text="Autocomplete")
 
 
-class CONSOLE_MT_context_menu(Menu):
-    bl_label = "Console"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        layout.operator("console.clear")
-        layout.operator("console.clear_line")
-        layout.operator("console.delete", text="Delete Previous Word").type = 'PREVIOUS_WORD'
-        layout.operator("console.delete", text="Delete Next Word").type = 'NEXT_WORD'
-
-        layout.separator()
-
-        layout.operator("console.copy_as_script", text="Copy as Script")
-        layout.operator("console.copy", text="Cut").delete = True
-        layout.operator("console.copy", text="Copy")
-        layout.operator("console.paste", text="Paste")
-
-        layout.separator()
-
-        layout.operator("console.indent")
-        layout.operator("console.unindent")
-
-        layout.separator()
-
-        layout.operator("console.history_cycle", text="Backward in History").reverse = True
-        layout.operator("console.history_cycle", text="Forward in History").reverse = False
-
-        layout.separator()
-
-        layout.operator("console.autocomplete", text="Autocomplete")
-
-
 classes = (
     CONSOLE_HT_header,
     CONSOLE_MT_editor_menus,
     CONSOLE_MT_view,
     CONSOLE_MT_language,
     CONSOLE_MT_console,
-    CONSOLE_MT_context_menu,
 )
 
 if __name__ == "__main__":  # only for live edit.

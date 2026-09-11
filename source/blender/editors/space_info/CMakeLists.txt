@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../../makesrna
 
@@ -14,6 +15,7 @@ set(INC_SYS
 )
 
 set(SRC
+  fl_info_menus.cc
   info_draw.cc
   info_ops.cc
   info_report.cc
@@ -21,6 +23,7 @@ set(SRC
   space_info.cc
   textview.cc
 
+  FL_info_menus.hh
   info_intern.hh
   textview.hh
 )

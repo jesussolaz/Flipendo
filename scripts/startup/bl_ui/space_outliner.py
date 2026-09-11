@@ -155,17 +155,6 @@ class OUTLINER_MT_context_menu_view(Menu):
         layout.operator("outliner.show_one_level", text="Hide One Level").open = False
 
 
-class OUTLINER_MT_view_pie(Menu):
-    bl_label = "View"
-
-    def draw(self, _context):
-        layout = self.layout
-
-        pie = layout.menu_pie()
-        pie.operator("outliner.show_hierarchy")
-        pie.operator("outliner.show_active", icon='ZOOM_SELECTED')
-
-
 class OUTLINER_MT_id_data(Menu):
     bl_label = "ID Data"
 
@@ -549,7 +538,6 @@ classes = (
     OUTLINER_MT_liboverride,
     OUTLINER_MT_context_menu,
     OUTLINER_MT_context_menu_view,
-    OUTLINER_MT_view_pie,
     OUTLINER_PT_filter,
 )
 

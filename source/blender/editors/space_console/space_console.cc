@@ -31,6 +31,7 @@
 
 #include "BLO_read_write.hh"
 
+#include "FL_console_menus.hh"
 #include "console_intern.hh" /* own include */
 
 /* ******************** default callbacks for console space ***************** */
@@ -381,6 +382,8 @@ void ED_spacetype_console()
   art->draw = console_header_region_draw;
 
   BLI_addhead(&st->regiontypes, art);
+
+  blender::ed::console::console_menus_register();
 
   BKE_spacetype_register(std::move(st));
 }

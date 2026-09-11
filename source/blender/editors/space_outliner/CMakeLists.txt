@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(INC
+  ../interface
   ../include
   ../../blenfont
   ../../makesrna
@@ -17,6 +18,7 @@ set(INC_SYS
 )
 
 set(SRC
+  fl_outliner_menus.cc
   outliner_collections.cc
   outliner_context.cc
   outliner_dragdrop.cc
@@ -83,6 +85,7 @@ set(SRC
   tree/tree_element_view_layer.cc
   tree/tree_iterator.cc
 
+  FL_outliner_menus.hh
   outliner_intern.hh
   tree/common.hh
   tree/tree_display.hh
