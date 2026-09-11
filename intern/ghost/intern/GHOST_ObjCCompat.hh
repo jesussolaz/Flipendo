@@ -107,8 +107,13 @@ class NSView;
 namespace MTL {
 class CommandQueue;
 class Device;
+class RenderPassDescriptor;
+class RenderPipelineState;
 class Texture;
 }  // namespace MTL
+namespace CA {
+class MetalDrawable;
+}  // namespace CA
 
 #endif
 

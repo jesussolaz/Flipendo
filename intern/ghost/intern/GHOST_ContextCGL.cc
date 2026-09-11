@@ -529,9 +529,14 @@ void GHOST_ContextCGL::metalSwapBuffers()
 
   assert(contextPresentCallback);
   assert(m_defaultFramebufferMetalTexture[current_swapchain_index].texture != nullptr);
+  /* El callback vuelve a estar TIPADO. Aqui se trabaja con `id` porque este fichero
+   * habla con Cocoa por el runtime, y se convierte a los tipos de metal-cpp al
+   * invocarlo: son el mismo puntero (`objc_object *`), y lo que se gana es que el
+   * compilador comprueba la firma del callback en los DOS lados. */
   (*contextPresentCallback)(
-      passDescriptor,
-      m_metalRenderPipeline,
-      reinterpret_cast<id>(m_defaultFramebufferMetalTexture[current_swapchain_index].texture),
-      drawable);
+      reinterpret_cast<MTL::RenderPassDescriptor *>(passDescriptor),
+      reinterpret_cast<MTL::RenderPipelineState *>(m_metalRenderPipeline),
+      reinterpret_cast<MTL::Texture *>(
+          m_defaultFramebufferMetalTexture[current_swapchain_index].texture),
+      reinterpret_cast<CA::MetalDrawable *>(drawable));
 }

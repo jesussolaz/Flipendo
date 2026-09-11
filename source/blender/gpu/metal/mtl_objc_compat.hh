@@ -5,13 +5,19 @@
 /** \file
  * \ingroup gpu
  *
- * Puente de migracion del backend Metal de Objective-C++ a C++ puro.
+ * Nombres de metal-cpp para el backend Metal.
  *
- * ANDAMIO TEMPORAL. Existe solo mientras queden ficheros `.mm` en este directorio.
- * Cuando el ultimo `.mm` de `gpu/metal` pase a `.cc`, la rama `__OBJC__` se borra y
- * las cabeceras se quedan con los tipos de metal-cpp a secas.
+ * ANDAMIO RETIRADO (2026-09-11). Este fichero nacio como puente de DOBLE MODO: cada
+ * tipo se declaraba de una forma para los `.mm` y de otra para los `.cc`, y asi se
+ * pudieron migrar los 20 ficheros de `gpu/metal` de uno en uno en vez de los veinte a
+ * la vez. Cumplida esa funcion —cero `.mm` en `gpu/metal` y cero en `intern/ghost`—
+ * **la rama `__OBJC__` se ha borrado**: eran 5 bloques y 55 lineas que ya no podia
+ * alcanzar ningun compilador. Lo que queda son los alias de metal-cpp a secas, que
+ * siguen siendo utiles porque las 24 cabeceras del backend estan escritas con ellos.
  *
- * EL PROBLEMA
+ * Se conserva a proposito la explicacion de abajo: es el registro de por que existio.
+ *
+ * EL PROBLEMA (historico)
  *
  * Las cabeceras de este backend declaran miembros con tipos Objective-C
  * (`id<MTLDevice>`, `MTLRenderPassDescriptor *`, `MTLPixelFormat`...). Un `.cc` no
@@ -62,48 +68,11 @@
 
 #pragma once
 
-#ifdef __OBJC__
-
-/* Traduccion Objective-C++: los tipos son los del SDK, como hasta ahora. */
-#  include <Metal/Metal.h>
-#  include <QuartzCore/QuartzCore.h>
-
-using MTLDevicePtr = id<MTLDevice>;
-using MTLCommandQueuePtr = id<MTLCommandQueue>;
-using MTLCommandBufferPtr = id<MTLCommandBuffer>;
-using MTLRenderCommandEncoderPtr = id<MTLRenderCommandEncoder>;
-using MTLBlitCommandEncoderPtr = id<MTLBlitCommandEncoder>;
-using MTLComputeCommandEncoderPtr = id<MTLComputeCommandEncoder>;
-using MTLComputePipelineStatePtr = id<MTLComputePipelineState>;
-using MTLRenderPipelineStatePtr = id<MTLRenderPipelineState>;
-using MTLDepthStencilStatePtr = id<MTLDepthStencilState>;
-using MTLSamplerStatePtr = id<MTLSamplerState>;
-using MTLLibraryPtr = id<MTLLibrary>;
-using MTLFunctionPtr = id<MTLFunction>;
-using MTLArgumentEncoderPtr = id<MTLArgumentEncoder>;
-using MTLEventPtr = id<MTLEvent>;
-using MTLSharedEventPtr = id<MTLSharedEvent>;
-using MTLCaptureScopePtr = id<MTLCaptureScope>;
-using MTLFencePtr = id<MTLFence>;
-using MTLHeapPtr = id<MTLHeap>;
-using MTLBufferPtr = id<MTLBuffer>;
-using MTLTexturePtr = id<MTLTexture>;
-using MTLDrawablePtr = id<MTLDrawable>;
-using CAMetalDrawablePtr = id<CAMetalDrawable>;
-/* CAMetalLayer es una CLASE de QuartzCore, no un protocolo: se escribe
- * `CAMetalLayer *` y no `id<CAMetalLayer>`. Confundirlo rompia los 19 .mm
- * a la vez con «type arguments cannot be applied to non-class type 'id'». */
-using CAMetalLayerPtr = CAMetalLayer *;
-
-/* Literal de cadena vacia de Objective-C (ver la nota en la rama C++). */
-#  define MTL_NSSTRING_EMPTY @""
-
-#else
 
 /* Traduccion C++ pura: los mismos tipos, via metal-cpp. */
-#  include <Foundation/Foundation.hpp>
-#  include <Metal/Metal.hpp>
-#  include <QuartzCore/QuartzCore.hpp>
+#include <Foundation/Foundation.hpp>
+#include <Metal/Metal.hpp>
+#include <QuartzCore/QuartzCore.hpp>
 
 using MTLDevicePtr = MTL::Device *;
 using MTLCommandQueuePtr = MTL::CommandQueue *;
@@ -141,7 +110,7 @@ using CAMetalLayerPtr = CA::MetalLayer *;
  * comportamiento observable vuelve a ser identico al del codigo original.
  *
  * La inicializacion del estatico local es segura entre hilos desde C++11. */
-#  define MTL_NSSTRING_EMPTY ::mtl_empty_string()
+#define MTL_NSSTRING_EMPTY ::mtl_empty_string()
 
 /* Alias de los nombres Objective-C a los de metal-cpp. GENERADO mecanicamente
  * cruzando lo que declara `extern/metal-cpp/Metal/ *.hpp` con los nombres que usa
@@ -1354,7 +1323,6 @@ using NSError = NS::Error;
 using NSArray = NS::Array;
 using NSAutoreleasePool = NS::AutoreleasePool;
 
-#endif /* __OBJC__ */
 
 /* Las cabeceras de este backend no solo declaran: tambien traen cuerpos de metodo
  * con envios de mensaje Objective-C (`[obj release]`). Para que el MISMO cuerpo
@@ -1367,11 +1335,7 @@ using NSAutoreleasePool = NS::AutoreleasePool;
 template<typename T> inline void mtl_release(T obj)
 {
   if (obj != nullptr) {
-#ifdef __OBJC__
-    [obj release];
-#else
     obj->release();
-#endif
   }
 }
 
@@ -1385,22 +1349,14 @@ template<typename T> inline void mtl_release(T obj)
  * (un fallo silencioso, no un cierre). */
 inline NSString *mtl_string(const char *text)
 {
-#ifdef __OBJC__
-  return [NSString stringWithUTF8String:text];
-#else
   return NS::String::string(text, NS::UTF8StringEncoding);
-#endif
 }
 
 /* Cadena vacia inmortal, equivalente a `@""`. Ver la nota de MTL_NSSTRING_EMPTY. */
 inline NSString *mtl_empty_string()
 {
   static NSString *empty = []() -> NSString * {
-#ifdef __OBJC__
-    return [@"" retain];
-#else
     return NS::String::string("", NS::UTF8StringEncoding)->retain();
-#endif
   }();
   return empty;
 }
@@ -1416,15 +1372,10 @@ inline NSString *mtl_empty_string()
  * `release()`. */
 class MTLAutoreleasePoolScope {
  public:
-#ifdef __OBJC__
-  MTLAutoreleasePoolScope() : pool_([[NSAutoreleasePool alloc] init]) {}
-  ~MTLAutoreleasePoolScope() { [pool_ drain]; }
-#else
   MTLAutoreleasePoolScope() : pool_(NS::AutoreleasePool::alloc()->init()) {}
   /* NS::AutoreleasePool se libera con release(), no con drain(): sin recoleccion de
    * basura (que Apple retiro hace anos) son lo mismo, y metal-cpp solo expone release(). */
   ~MTLAutoreleasePoolScope() { pool_->release(); }
-#endif
   MTLAutoreleasePoolScope(const MTLAutoreleasePoolScope &) = delete;
   MTLAutoreleasePoolScope &operator=(const MTLAutoreleasePoolScope &) = delete;
 

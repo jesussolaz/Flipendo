@@ -42,24 +42,32 @@ class GHOST_ContextCGL : public GHOST_Context {
    * Tipo del callback de presentacion. Lo registra el backend de Metal
    * (`blender::gpu::present`) y lo invoca `metalSwapBuffers()`.
    *
-   * Los cuatro parametros son `id` PELADO a proposito. Esta firma es la UNICA de
-   * GHOST_ContextCGL que cruza la frontera entre Objective-C++ y C++ puro (el que
-   * registra y el que invoca pueden estar en modos distintos), y en un parametro la
-   * grafia SI entra en el simbolo mangleado:
+   * HISTORIA, porque explica por que esto vuelve a estar tipado. Esta firma fue la
+   * UNICA de GHOST_ContextCGL que cruzaba la frontera entre Objective-C++ y C++ puro, y
+   * en un PARAMETRO la grafia entra en el simbolo mangleado:
    *
    *     id<MTLTexture>            ->  PU21objcproto10MTLTexture11objc_object
    *     MTL::Texture *            ->  PN3MTL7TextureE
    *     id                        ->  P11objc_object      (en los DOS modos)
    *
-   * Con cualquiera de las dos primeras, un `.mm` y un `.cc` compilarian los dos sin
-   * un solo error y el enlace fallaria con un simbolo indefinido. Con `id` no hay
-   * frontera. Se paga con perdida de tipado: cada lado recupera el tipo en su propia
-   * linea y el compilador no puede comprobarlo.
+   * Mientras uno de los dos lados fue `.mm`, cualquiera de las dos grafias tipadas
+   * compilaba en los dos sitios y NO ENLAZABA, asi que hubo que dejar los cuatro
+   * parametros en `id` pelado. Eso costaba cuatro `reinterpret_cast` en
+   * `blender::gpu::present`, que eran el unico sitio del backend grafico donde el
+   * compilador no comprobaba nada.
+   *
+   * Ya no hace falta: **ningun `.mm` lee esta cabecera** (los siete que la incluyen son
+   * `.cc`), asi que la frontera no existe y los tipos vuelven. Los cuatro casteos
+   * desaparecen y el compilador vuelve a comprobar la firma del callback.
+   *
+   * Los tipos se DECLARAN (en GHOST_ObjCCompat.hh), no se incluye metal-cpp: asi
+   * `bf_intern_ghost` no adquiere una dependencia de los simbolos de `NS::Private` que
+   * materializa `bf_gpu`.
    */
-  using GHOST_MetalPresentCallback = void (*)(id blit_descriptor,
-                                              id blit_pso,
-                                              id swapchain_texture,
-                                              id drawable);
+  using GHOST_MetalPresentCallback = void (*)(MTL::RenderPassDescriptor *blit_descriptor,
+                                              MTL::RenderPipelineState *blit_pso,
+                                              MTL::Texture *swapchain_texture,
+                                              CA::MetalDrawable *drawable);
 
  public:
   /**

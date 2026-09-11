@@ -1025,6 +1025,9 @@ class MTLContext : public Context {
  * en los dos casos el `.mm` y el `.cc` generarian simbolos distintos y no enlazaria.
  * `id` pelado es `objc_object *` en los dos modos. Tipo declarado en
  * GHOST_ContextCGL::GHOST_MetalPresentCallback; no cambiar uno sin el otro. */
-void present(id blit_descriptor, id blit_pso, id swapchain_texture, id drawable);
+void present(MTLRenderPassDescriptor *blit_descriptor,
+             MTLRenderPipelineStatePtr blit_pso,
+             MTLTexturePtr swapchain_texture,
+             CAMetalDrawablePtr drawable);
 
 }  // namespace blender::gpu

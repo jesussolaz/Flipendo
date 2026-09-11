@@ -2620,22 +2620,19 @@ MTLComputePipelineStatePtr MTLContextComputeUtils::get_buffer_clear_pso()
 /** \name Swap-chain management and Metal presentation.
  * \{ */
 
-void present(id blit_descriptor_id, id blit_pso_id, id swapchain_texture_id, id drawable_id)
+void present(MTLRenderPassDescriptor *blit_descriptor,
+             MTLRenderPipelineStatePtr blit_pso,
+             MTLTexturePtr swapchain_texture,
+             CAMetalDrawablePtr drawable)
 {
-  /* Los cuatro parametros llegan como `id` PELADO porque esta es la unica firma de
-   * GHOST_ContextCGL que cruza la frontera entre Objective-C++ y C++ puro, y en un
-   * parametro la grafia SI entra en el simbolo mangleado (`id<MTLTexture>` da
-   * `PU21objcproto10MTLTexture11objc_object` y `MTL::Texture *` da `PN3MTL7TextureE`).
-   * Ver la explicacion medida en intern/ghost/intern/GHOST_ObjCCompat.hh.
-   *
-   * El precio es que el tipo se recupera aqui a mano y el compilador no puede
-   * comprobarlo: si GHOST cambiara el orden de los argumentos, esto seguiria
-   * compilando. Es el unico sitio del backend donde eso pasa. */
-  MTLRenderPassDescriptor *blit_descriptor = reinterpret_cast<MTLRenderPassDescriptor *>(
-      blit_descriptor_id);
-  MTLRenderPipelineStatePtr blit_pso = reinterpret_cast<MTLRenderPipelineStatePtr>(blit_pso_id);
-  MTLTexturePtr swapchain_texture = reinterpret_cast<MTLTexturePtr>(swapchain_texture_id);
-  CAMetalDrawablePtr drawable = reinterpret_cast<CAMetalDrawablePtr>(drawable_id);
+  /* Los cuatro parametros vuelven a estar TIPADOS. Estuvieron en `id` pelado mientras
+   * uno de los dos lados de este callback era Objective-C++: en un parametro la grafia
+   * entra en el simbolo mangleado (`id<MTLTexture>` da
+   * `PU21objcproto10MTLTexture11objc_object` y `MTL::Texture *` da `PN3MTL7TextureE`),
+   * asi que las dos grafias tipadas compilaban y NO ENLAZABAN. Al quedarse
+   * `intern/ghost` sin un solo `.mm`, la frontera desaparecio y con ella los cuatro
+   * `reinterpret_cast` que habia aqui, que eran el unico sitio del backend grafico donde
+   * el compilador no comprobaba nada. */
 
   MTLContext *ctx = MTLContext::get();
   BLI_assert(ctx);
