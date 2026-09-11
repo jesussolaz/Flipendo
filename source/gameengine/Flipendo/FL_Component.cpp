@@ -8,6 +8,7 @@
 #include "CM_Message.hpp"
 #include "FL_RenderToTexture.hpp"
 #include "FL_UiCanvas.hpp"
+#include "FL_UiWidget.hpp"
 
 namespace flipendo {
 
@@ -89,6 +90,9 @@ void FL_ComponentManager::Tick(KX_Scene *scene, float dt)
    * Van en Tick y no en AttachScene porque cuentan frames. */
   FL_RttProbeTick(scene);
   FL_UiProbeTick();
+
+  /* Interfaz nativa: tickea los sistemas enganchados (raton y foco). */
+  FL_UiRunAll();
 
   EXP_ListValue<KX_GameObject> *objs = scene->GetObjectList();
   for (auto it = m_instances.begin(); it != m_instances.end();) {

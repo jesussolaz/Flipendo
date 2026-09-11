@@ -106,10 +106,12 @@ set(SRC
   ../Flipendo/FL_ArpgComponents.cpp
   ../Flipendo/FL_RenderToTexture.cpp
   ../Flipendo/FL_UiCanvas.cpp
+  ../Flipendo/FL_UiWidget.cpp
   ../Flipendo/FL_Component.hpp
   ../Flipendo/FL_ArpgCore.hpp
   ../Flipendo/FL_RenderToTexture.hpp
   ../Flipendo/FL_UiCanvas.hpp
+  ../Flipendo/FL_UiWidget.hpp
   KX_TimeCategoryLogger.cpp
   KX_TimeLogger.cpp
   KX_VehicleWrapper.cpp

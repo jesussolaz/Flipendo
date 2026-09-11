@@ -119,6 +119,11 @@ int FL_UiDrawerCount();
  * La llama `FL_ComponentManager::Tick` una vez por frame. */
 void FL_UiProbeTick();
 
+/** Con `FL_UI_DEMO=1`, monta un árbol de widgets de demostración y lo engancha al
+ * lienzo. Lo define `FL_UiWidget.cpp`, para que el lienzo no tenga que saber nada
+ * de widgets. No hace nada si la variable no está. */
+void FL_UiMaybeAddDemo();
+
 /** Pinta todo lo registrado. La llama el rasterizador una vez por frame, en el
  * mismo punto en el que se llamaba a los callbacks POST_DRAW de Python. */
 void FL_UiDrawAll(int width, int height);

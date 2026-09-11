@@ -182,42 +182,6 @@ DrawerRegistry &Registry()
   return registry;
 }
 
-/* Demostración mínima, para poder probar el lienzo sin tener aún widgets:
- * FL_UI_DEMO=1 pinta un marco con degradado, su borde y un texto. Es lo que
- * permite la primera prueba con evidencia de la interfaz nativa. */
-void MaybeAddDemoDrawer()
-{
-  static bool asked = false;
-  if (asked) {
-    return;
-  }
-  asked = true;
-  const char *v = std::getenv("FL_UI_DEMO");
-  if (!v || v[0] == '\0' || v[0] == '0') {
-    return;
-  }
-  FL_UiAddDrawer([](FL_UiCanvas &c) {
-    const FL_Rect panel(40.0f, 40.0f, 420.0f, 150.0f);
-    c.GradientRect(panel,
-                   FL_Color(0.05f, 0.08f, 0.14f, 0.92f),
-                   FL_Color(0.10f, 0.14f, 0.24f, 0.92f),
-                   FL_Color(0.04f, 0.06f, 0.10f, 0.92f),
-                   FL_Color(0.02f, 0.03f, 0.06f, 0.92f));
-    c.Border(panel, 2.0f, FL_Color(0.95f, 0.62f, 0.10f, 1.0f));
-    c.Text("FLIPENDO", panel.x + 18.0f, panel.y + 16.0f, 34, FL_Color(0.98f, 0.72f, 0.20f, 1.0f));
-    c.Text("interfaz de juego NATIVA, sin Python\nlienzo FL_UiCanvas",
-           panel.x + 18.0f,
-           panel.y + 62.0f,
-           18,
-           FL_Color(0.90f, 0.92f, 0.96f, 1.0f));
-    c.Rect(FL_Rect(panel.x + 18.0f, panel.y + 120.0f, 384.0f, 12.0f),
-           FL_Color(0.12f, 0.14f, 0.18f, 1.0f));
-    c.Rect(FL_Rect(panel.x + 18.0f, panel.y + 120.0f, 384.0f * 0.62f, 12.0f),
-           FL_Color(0.20f, 0.80f, 0.35f, 1.0f));
-  });
-  CM_Message("FL_UI_DEMO: dibujante de demostracion del lienzo nativo registrado");
-}
-
 }  // namespace
 
 int FL_UiAddDrawer(FL_UiDrawer drawer)
@@ -280,7 +244,7 @@ void FL_UiProbeTick()
 
 void FL_UiDrawAll(int width, int height)
 {
-  MaybeAddDemoDrawer();
+  FL_UiMaybeAddDemo();
 
   DrawerRegistry &reg = Registry();
   if (reg.drawers.empty() || width <= 0 || height <= 0) {
