@@ -3822,53 +3822,6 @@ class VIEW3D_MT_pose_showhide(ShowHideMenu, Menu):
     _operator_name = "pose"
 
 
-class BoneOptions:
-    def draw(self, context):
-        layout = self.layout
-
-        options = [
-            "show_wire",
-            "use_deform",
-            "use_envelope_multiply",
-            "use_inherit_rotation",
-        ]
-
-        if context.mode == 'EDIT_ARMATURE':
-            bone_props = bpy.types.EditBone.bl_rna.properties
-            data_path_iter = "selected_bones"
-            opt_suffix = ""
-            options.append("lock")
-        else:  # pose-mode
-            bone_props = bpy.types.Bone.bl_rna.properties
-            data_path_iter = "selected_pose_bones"
-            opt_suffix = "bone."
-
-        for opt in options:
-            props = layout.operator(
-                "wm.context_collection_boolean_set",
-                text=bone_props[opt].name,
-                text_ctxt=i18n_contexts.default,
-            )
-            props.data_path_iter = data_path_iter
-            props.data_path_item = opt_suffix + opt
-            props.type = self.type
-
-
-class VIEW3D_MT_bone_options_toggle(Menu, BoneOptions):
-    bl_label = "Toggle Bone Options"
-    type = 'TOGGLE'
-
-
-class VIEW3D_MT_bone_options_enable(Menu, BoneOptions):
-    bl_label = "Enable Bone Options"
-    type = 'ENABLE'
-
-
-class VIEW3D_MT_bone_options_disable(Menu, BoneOptions):
-    bl_label = "Disable Bone Options"
-    type = 'DISABLE'
-
-
 # ********** Edit Menus, suffix from ob.type **********
 
 
@@ -7792,9 +7745,6 @@ classes = (
     VIEW3D_MT_pose_constraints,
     VIEW3D_MT_pose_names,
     VIEW3D_MT_pose_showhide,
-    VIEW3D_MT_bone_options_toggle,
-    VIEW3D_MT_bone_options_enable,
-    VIEW3D_MT_bone_options_disable,
     VIEW3D_MT_edit_mesh_context_menu,
     VIEW3D_MT_edit_mesh_select_linked,
     VIEW3D_MT_edit_mesh_select_loops,

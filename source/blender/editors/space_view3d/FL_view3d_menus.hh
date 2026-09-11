@@ -50,4 +50,7 @@ void view3d_add_menus_register();
 /** Familia 8: `VIEW3D_MT_add`, el menu de Shift-A. */
 void view3d_add_root_menu_register();
 
+/** Familia 16: las tres de opciones de hueso (Shift-W, Ctrl-Shift-W, Alt-W). */
+void view3d_bone_menus_register();
+
 }  // namespace blender::ed::view3d
