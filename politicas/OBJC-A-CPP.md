@@ -256,6 +256,124 @@ falta MAS evidencia que en una migracion de interfaz, no menos. Lo hecho en el p
 Trampa del arnes: **macOS no trae `timeout`**. El primer intento de lanzar el Player
 dio rc=127 y parecia un fallo del binario; era el `timeout` inexistente.
 
+## 11. LA RESTRICCION QUE MANDA SOBRE TODAS: el mangling de C++
+
+Descubierto al enlazar la primera tanda, y **cambia el orden de migracion entero**.
+Lo anterior de este documento sigue valiendo, pero esta seccion manda sobre la §8.
+
+La §4 decia que `id<MTLDevice>` y `MTL::Device *` son el mismo puntero y que por eso
+un `.mm` y un `.cc` pueden discrepar en la grafia. **Eso es cierto para los datos y
+FALSO para las funciones.** El nombre mangleado de una funcion en C++ incluye los
+tipos de sus parametros, asi que:
+
+    declarada en la cabecera comun, definida en un .mm, llamada desde un .cc
+      -> el .mm exporta  _ZN...set_labelEP8NSString
+      -> el .cc  pide    _ZN...set_labelEPN2NS6StringE
+      -> dos simbolos distintos: NO ENLAZA
+
+Compila perfectamente en los dos lados y revienta en el enlazado. Cifras reales de la
+primera tanda: los 5 ficheros compilaron sin un solo error y el enlace fallo con
+**9 simbolos indefinidos** en 4 grupos:
+
+| Simbolo | Definido en | Llamado desde |
+|---|---|---|
+| `MTLShaderInterface::insert_argument_encoder` | mtl_shader_interface**.cc** | mtl_context.mm |
+| `MTLCommandBufferManager::encode_signal_event` / `encode_wait_for_event` | mtl_command_buffer.mm | mtl_state**.cc** |
+| `MTLBuffer::set_label(NSString*)` | mtl_memory.mm | mtl_index_buffer**.cc** |
+| `MTLShader::set_*_function_name`, `shader_source_from_msl`, `shader_compute_source_from_msl` | mtl_shader.mm | mtl_shader_generator**.cc** |
+
+### La regla que sale de aqui
+
+> **Un `.cc` solo puede llamar a funciones con tipos Metal en la firma si quien las
+> define tambien es `.cc`.** La migracion sigue el GRAFO DE LLAMADAS, no la densidad
+> de Objective-C.
+
+Es decir: la §8 ordenaba por coste de traduccion y **eso era necesario pero no
+suficiente**. Un fichero barato de traducir puede ser imposible de enlazar si depende
+de un fichero caro que sigue en `.mm`. Hay que mirar las dos cosas.
+
+### Las dos salidas cuando aparece un simbolo indefinido
+
+1. **Migrar tambien al que define** (lo correcto cuando se puede). `mtl_index_buffer`
+   necesita `mtl_memory`; `mtl_shader_generator` necesita `mtl_shader`. Van juntos o
+   no van.
+2. **Usar un tipo NEUTRAL en la firma**: `id` pelado es `objc_object *` en los DOS
+   modos, asi que mangla igual y cruza la frontera sin problema. Es lo que se hizo con
+   `MTLShaderInterface::insert_argument_encoder(int, id)`, que la llama
+   `mtl_context.mm` (bloqueado por GHOST y por tanto intocable a corto plazo). Se paga
+   con perdida de tipado: usar solo cuando el definidor no se puede migrar.
+
+Lo que **no** vale es cambiar la firma a `XxxPtr` y confiar: eso es justo lo que
+produjo los 9 simbolos indefinidos.
+
+## 12. Los tres ficheros que GHOST bloquea
+
+Medido compilando cada `.mm` como C++ (metrica objetiva, seccion 13): tres ficheros
+dan ~36.000 errores cada uno mientras el resto se queda por debajo de 360. No es que
+tengan mas Objective-C: es que **incluyen la capa Cocoa de GHOST**, que no es de este
+carril.
+
+| Fichero | Lineas | Que arrastra | ¿Se puede quitar? |
+|---|---:|---|---|
+| `mtl_backend.mm` | 614 | `<Cocoa/Cocoa.h>` | **Si**: solo usa NSString y NSProcessInfo, y metal-cpp cubre los dos (`NS::ProcessInfo`). Quitar la inclusion deberia bajarlo al rango normal. |
+| `mtl_command_buffer.mm` | 1.089 | `intern/GHOST_ContextCGL.hh` | Solo por la constante `GHOST_ContextCGL::max_command_buffer_count`. Hace falta una forma de leerla sin Cocoa. |
+| `mtl_context.mm` | 2.749 | `intern/GHOST_ContextCGL.hh` | **No**: hace `dynamic_cast<GHOST_ContextCGL *>`, necesita el tipo completo. Va con la fase de GHOST, no antes. |
+
+`mtl_context.mm` es ademas quien llama a `insert_argument_encoder`, asi que arrastra a
+`mtl_shader_interface` a usar firma neutral. **Es el tapon de la migracion**, y esta
+fuera de este carril por decision del encargo.
+
+## 13. La metrica buena: compilar el `.mm` como C++ y contar errores
+
+Las dos metricas anteriores (lineas, y envios `[ ]`) se quedaron cortas. La de envios
+**no ve los accesos a propiedad con punto**, que son sintaxis de Objective-C igual de
+real: `buffer.storageMode`, `descriptor.depthAttachment.texture = ...`. Medidos en el
+backend: ~128 accesos de ese tipo que la cuenta de 441 envios NO incluia. Caso
+flagrante: `mtl_framebuffer.mm` parecia tener **3 envios** y al compilarlo como C++
+da **136 errores**, casi todos cadenas de propiedades.
+
+La metrica objetiva es empirica: **copiar el `.mm` a `.cc` y contar los errores**.
+
+    clang++ -x c++ -ferror-limit=0 <flags reales del build> -fsyntax-only fichero.cc | grep -c error:
+
+| Fichero | Lineas | Errores como C++ | Estado |
+|---|---:|---:|---|
+| mtl_shader_log | 110 | 0 | **migrado** |
+| mtl_query | 129 | (piloto) | **migrado** |
+| mtl_uniform_buffer | 202 | 1 | **migrado** |
+| mtl_state | 715 | 2 | traducido; **bloqueado** por mtl_command_buffer |
+| mtl_shader_interface | 752 | 5 | **migrado** (firma neutral `id`) |
+| mtl_shader_generator | 3.413 | 6 | traducido; **bloqueado** por mtl_shader |
+| mtl_immediate | 348 | 8 | pendiente |
+| mtl_index_buffer | 566 | 12 | traducido; **bloqueado** por mtl_memory |
+| mtl_texture_util | 852 | 12 | pendiente |
+| mtl_batch | 930 | 29 | pendiente |
+| mtl_debug | 184 | 29 | pendiente |
+| mtl_memory | 1.121 | 32 | **desbloquea a mtl_index_buffer** |
+| mtl_storage_buffer | 526 | 33 | pendiente |
+| mtl_vertex_buffer | 363 | 33 | pendiente |
+| mtl_shader | 1.602 | 52 | **desbloquea a mtl_shader_generator** |
+| mtl_framebuffer | 2.007 | 136 | pendiente |
+| mtl_texture | 2.685 | 357 | pendiente |
+| mtl_backend | 614 | 35.734 | quitar `<Cocoa/Cocoa.h>` primero |
+| mtl_command_buffer | 1.089 | 35.851 | GHOST |
+| mtl_context | 2.749 | 36.019 | GHOST — el tapon |
+
+**Dato que reordena el trabajo:** `mtl_shader_generator.mm`, 3.413 lineas (el fichero
+mas grande del backend), da **6 errores**. Ya esta traducido y verificado como C++;
+solo espera a que `mtl_shader.mm` (52) lo desbloquee. Los dos juntos son 5.015 lineas.
+
+### Orden recomendado (revisado, con el grafo de llamadas)
+
+1. `mtl_memory` + `mtl_index_buffer` juntos (definidor + llamador).
+2. `mtl_shader` + `mtl_shader_generator` juntos. 5.015 lineas de una sentada.
+   Ojo: al migrar `mtl_shader` hay que resolver de verdad el `@""` de la trampa 5.
+3. Sueltos sin dependencias cruzadas: `mtl_immediate`, `mtl_texture_util`, `mtl_debug`,
+   `mtl_batch`, `mtl_storage_buffer`, `mtl_vertex_buffer`.
+4. `mtl_backend` tras quitarle `<Cocoa/Cocoa.h>`.
+5. `mtl_framebuffer` (136) y `mtl_texture` (357).
+6. `mtl_command_buffer` y `mtl_context`: **solo despues de la fase de GHOST**.
+
 ## 10. Cuando se borra el andamio
 
 `mtl_objc_compat.hh` es **temporal**. Cuando el ultimo `.mm` de `gpu/metal` pase a

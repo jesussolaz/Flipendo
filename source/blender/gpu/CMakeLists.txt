@@ -359,7 +359,7 @@ set(METAL_SRC
   metal/mtl_storage_buffer.mm
   metal/mtl_texture.mm
   metal/mtl_texture_util.mm
-  metal/mtl_uniform_buffer.mm
+  metal/mtl_uniform_buffer.cc
   metal/mtl_vertex_buffer.mm
 
   metal/mtl_backend.hh

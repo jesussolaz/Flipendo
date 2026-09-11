@@ -76,10 +76,12 @@ void MTLUniformBuf::update(const void *data)
     has_data_ = true;
 
 #ifndef NDEBUG
-    metal_buffer_->set_label([NSString stringWithFormat:@"Uniform Buffer %s", name_]);
+    char label[128];
+    SNPRINTF(label, "Uniform Buffer %s", name_);
+    metal_buffer_->set_label(mtl_string(label));
 #endif
     BLI_assert(metal_buffer_ != nullptr);
-    BLI_assert(metal_buffer_->get_metal_buffer() != nil);
+    BLI_assert(metal_buffer_->get_metal_buffer() != nullptr);
   }
   else {
     /* If data is not yet present, no buffer will be allocated and MTLContext will use an empty
@@ -183,14 +185,14 @@ void MTLUniformBuf::unbind()
   bound_ctx_ = nullptr;
 }
 
-id<MTLBuffer> MTLUniformBuf::get_metal_buffer()
+MTLBufferPtr MTLUniformBuf::get_metal_buffer()
 {
   BLI_assert(this);
   if (metal_buffer_ != nullptr && has_data_) {
     metal_buffer_->debug_ensure_used();
     return metal_buffer_->get_metal_buffer();
   }
-  return nil;
+  return nullptr;
 }
 
 size_t MTLUniformBuf::get_size()

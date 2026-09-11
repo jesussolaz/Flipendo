@@ -1373,3 +1373,20 @@ template<typename T> inline void mtl_release(T obj)
 #endif
   }
 }
+
+/* Crear una NSString desde texto C. Hace falta porque `MTLBuffer::set_label()` (en
+ * mtl_memory.hh) recibe `NSString *`, y un `.cc` no puede escribir el literal `@"..."`.
+ *
+ * OJO CON LA PROPIEDAD: las dos ramas devuelven un objeto AUTOLIBERADO, igual que
+ * hacia `[NSString stringWithFormat:]`. No se le manda `release`. En C++ puro eso
+ * exige que haya un NS::AutoreleasePool vivo en el hilo; en el motor lo hay durante
+ * el dibujado, pero si se llama fuera de uno, el objeto se filtra en vez de fallar
+ * (un fallo silencioso, no un cierre). */
+inline NSString *mtl_string(const char *text)
+{
+#ifdef __OBJC__
+  return [NSString stringWithUTF8String:text];
+#else
+  return NS::String::string(text, NS::UTF8StringEncoding);
+#endif
+}
