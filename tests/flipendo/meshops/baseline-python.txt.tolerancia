@@ -1,0 +1,53 @@
+# Tolerancia declarada para tests/flipendo/meshops/baseline-python.txt
+# Carril ARNES, 2026-09-11. La lee source/blender/editors/include/FL_selftest_compare.hh.
+#
+# QUE PASABA
+# ----------
+# `--fl-check-mesh-ops` fallaba 1 o 2 de cada 3 pasadas CON EL MISMO BINARIO Y LA MISMA
+# ESCENA, siempre en la misma linea (10866, caso `paint.vertex_color_dirt uvsphere
+# floatcolor point`, elemento 43):
+#
+#   linea base: 0.451389611 0.282118499 0.112847403
+#   a veces:    0.451384932 0.282115549 0.112846233
+#
+# MEDIDO (cinco pasadas del mismo binario, --background --factory-startup):
+#   --fl-selftest-mesh-ops: 3 pasadas identicas a la linea base, 2 con esa linea distinta.
+#   --fl-check-mesh-ops:    2 pasadas en verde, 3 en rojo.
+#   Diferencia: 1 linea de 13.146; 1 valor numerico de 13.112.
+#   Desviacion maxima absoluta 4,679e-6; relativa 1,037e-5.
+#
+# POR QUE NO ES UNA REGRESION
+# ---------------------------
+# `PAINT_OT_vertex_color_dirt` es aritmetica estrictamente secuencial (mesh_vertex_dirt.cc),
+# pero parte de `mesh->vert_normals()`, y el REGLAMENTO ya midio (leccion de las 03:50) que
+# el calculo de normales de vertice NO es determinista: acumula en paralelo y en coma
+# flotante. El valor salta entre dos resultados y solo dos.
+#
+# POR QUE TOLERANCIA Y NO REDONDEO DEL VOLCADO
+# --------------------------------------------
+# Redondear el volcado era la otra opcion del encargo, y se descarto midiendo:
+#  - A 5 decimales los dos valores SIGUEN siendo distintos (0,45138 contra 0,45139): no
+#    arregla nada.
+#  - A 4 decimales si coinciden (0,4514), pero eso tira cinco cifras significativas de los
+#    13.111 valores que SI se reproducen bit a bit. Justo las cifras que VERTEX-DIRT-A-CPP.md
+#    se paso la noche cuadrando (sRGB contra lineal, orden de las sumas en double, truncado a
+#    float en cada `+=`). Un comprobador que deja de mirar la quinta cifra deja de poder
+#    cazar una regresion en la quinta cifra.
+#  - Y redondear es una loteria: solo estabiliza si el valor inestable no cae cerca de un
+#    limite de redondeo. Una tolerancia no depende de donde caiga: 1,04e-5 < 2e-5 siempre.
+#
+# ELECCION: tolerancia 2e-5. El comparador normaliza por max(1, |a|, |b|), asi que para
+# valores por debajo de 1 —todos estos— es una tolerancia ABSOLUTA de 2e-5, 4,3 veces la
+# desviacion medida (4,679e-6), y varios ordenes de magnitud por debajo de lo que produce un
+# error real de algoritmo (multiplicar en sRGB en vez de en lineal mueve los valores ~0,1).
+#
+# Y TIENE DIENTES, medido moviendo a mano esa misma linea 10866 de la linea base:
+#   +0,000004 -> TOLERADA (4e-6 <= 2e-5), rc=0
+#   +0,00002  -> TOLERADA (2e-5 <= 2e-5), rc=0
+#   +0,0001   -> "linea 10866 distinta", rc=1   <- una regresion de verdad sigue saliendo roja
+#
+# La linea base se queda BYTE A BYTE como la capturo el Python: es la prueba, no se retoca.
+# Y el comparador dice en voz alta cada linea que tolera y con que desviacion, con lo que si
+# maniana son diez lineas toleradas en vez de una, se ve.
+
+tolerancia-relativa 2e-5
