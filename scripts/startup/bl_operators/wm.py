@@ -2078,8 +2078,6 @@ class WM_MT_region_toggle_pie(Menu):
 
 
 classes = (
-    WM_OT_properties_edit,
-    WM_OT_properties_edit_value,
     BatchRenameAction,
     WM_OT_batch_rename,
     WM_MT_splash_quick_setup,

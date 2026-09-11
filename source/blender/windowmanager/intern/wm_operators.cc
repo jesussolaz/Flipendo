@@ -4204,6 +4204,8 @@ void WM_OT_sysinfo(wmOperatorType *ot);
 void WM_OT_blenderplayer_start(wmOperatorType *ot);
 void WM_OT_operator_cheat_sheet(wmOperatorType *ot);
 void WM_OT_doc_view_manual(wmOperatorType *ot);
+void WM_OT_properties_edit(wmOperatorType *ot);
+void WM_OT_properties_edit_value(wmOperatorType *ot);
 
 void wm_operatortypes_register()
 {
@@ -4246,6 +4248,8 @@ void wm_operatortypes_register()
   WM_operatortype_append(WM_OT_blenderplayer_start);
   WM_operatortype_append(WM_OT_operator_cheat_sheet);
   WM_operatortype_append(WM_OT_doc_view_manual);
+  WM_operatortype_append(WM_OT_properties_edit);
+  WM_operatortype_append(WM_OT_properties_edit_value);
   WM_operatortype_append(WM_OT_window_close);
   WM_operatortype_append(WM_OT_window_new);
   WM_operatortype_append(WM_OT_window_new_main);
