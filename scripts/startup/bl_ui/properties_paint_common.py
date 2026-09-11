@@ -25,38 +25,14 @@ class BrushAssetShelf:
 
     @classmethod
     def has_tool_with_brush_type(cls, context, brush_type):
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        space_type = context.space_data.type
-
-        brush_type_items = bpy.types.Brush.bl_rna.properties[cls.tool_prop].enum_items
-
-        tool_helper_cls = ToolSelectPanelHelper._tool_class_from_space_type(space_type)
-        for item in ToolSelectPanelHelper._tools_flatten(
-                tool_helper_cls.tools_from_context(context, mode=context.mode),
-        ):
-            if item is None:
-                continue
-            if item.idname in {
-                    "builtin.arc",
-                    "builtin.curve",
-                    "builtin.line",
-                    "builtin.box",
-                    "builtin.circle",
-                    "builtin.polyline",
-            }:
-                continue
-            if item.options is None or ('USE_BRUSHES' not in item.options):
-                continue
-            if item.brush_type is not None:
-                if brush_type_items[item.brush_type].value == brush_type:
-                    return True
-
-        return False
+        # Consulta nativa sobre el catalogo en C++ (`FL_toolsystem.hpp`). Salta las seis
+        # herramientas de trazo y resuelve el numero de tipo de pincel con la
+        # enumeracion del modo, igual que hacia el recorrido en Python.
+        return context.workspace.tools.has_tool_with_brush_type(brush_type)
 
     @classmethod
     def brush_type_poll(cls, context, asset):
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
 
         if not tool:
             return True
@@ -98,8 +74,7 @@ class BrushAssetShelf:
     @classmethod
     def get_active_asset(cls):
         # Only show active highlight when using the brush tool.
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(bpy.context)
+        tool = bpy.context.workspace.tools.from_active_space()
         if not tool or not tool.use_brushes:
             return None
 
@@ -187,8 +162,7 @@ class UnifiedPaintPanel:
             # Particle brush settings currently completely do their own thing.
             return None
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
 
         if not tool:
             # If there is no active tool, then there can't be an active brush.

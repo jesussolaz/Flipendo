@@ -316,8 +316,7 @@ class VIEW3D_PT_tools_particlemode(Panel, View3DPaintPanel):
         layout.use_property_split = True
         layout.use_property_decorate = False  # No animation.
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool_context = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool_context = context.workspace.tools.from_active_space()
 
         if not tool_context:
             # If there is no active tool, then there can't be an active brush.
@@ -603,8 +602,7 @@ class VIEW3D_PT_slots_paint_canvas(SelectPaintSlotHelper, View3DPanel, Panel):
         if not context.preferences.experimental.use_sculpt_texture_paint:
             return False
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         if tool is None:
             return False
 
@@ -1592,8 +1590,7 @@ class VIEW3D_PT_tools_particlemode_options_display(View3DPanel, Panel):
 # Grease Pencil drawing brushes
 
 def tool_use_brush(context):
-    from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-    tool = ToolSelectPanelHelper.tool_active_from_context(context)
+    tool = context.workspace.tools.from_active_space()
     if tool and tool.use_brushes is False:
         return False
 
@@ -1934,8 +1931,7 @@ class VIEW3D_PT_tools_grease_pencil_brush_paint_falloff(GreasePencilBrushFalloff
         if brush is None:
             return False
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         if tool and tool.idname != "builtin_brush.Tint":
             return False
 
@@ -2262,8 +2258,7 @@ class VIEW3D_PT_tools_grease_pencil_brush_mixcolor(View3DPanel, Panel):
         if context.region.type == 'TOOL_HEADER':
             return False
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         if tool and tool.idname in {"builtin.cutter", "builtin.eyedropper", "builtin.interpolate"}:
             return False
 
@@ -2323,8 +2318,7 @@ class VIEW3D_PT_tools_grease_pencil_brush_mix_palette(View3DPanel, Panel):
         if ob is None or brush is None:
             return False
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         if tool and tool.idname in {"builtin.cutter", "builtin.eyedropper", "builtin.interpolate"}:
             return False
 
@@ -2364,8 +2358,7 @@ class VIEW3D_PT_tools_grease_pencil_brush_eraser(View3DPanel, Panel):
         if context.region.type == 'TOOL_HEADER':
             return False
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         return (tool and tool.idname == "builtin.brush")
 
     def draw(self, context):
@@ -2817,8 +2810,7 @@ class VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor(View3DPanel, Panel):
         if context.region.type == 'TOOL_HEADER':
             return False
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         if tool and tool.idname in {"builtin.cutter", "builtin.eyedropper", "builtin.interpolate"}:
             return False
 
@@ -2882,8 +2874,7 @@ class VIEW3D_PT_tools_grease_pencil_v3_brush_mix_palette(View3DPanel, Panel):
         if ob is None or brush is None:
             return False
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         if tool and tool.idname in {"builtin.cutter", "builtin.eyedropper", "builtin.interpolate"}:
             return False
 
@@ -2922,8 +2913,7 @@ class VIEW3D_PT_tools_grease_pencil_v3_brush_eraser(View3DPanel, Panel):
         if context.region.type == 'TOOL_HEADER':
             return False
 
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
-        tool = ToolSelectPanelHelper.tool_active_from_context(context)
+        tool = context.workspace.tools.from_active_space()
         return (tool and tool.idname == "builtin.brush")
 
     def draw(self, context):

@@ -16,9 +16,6 @@ from bl_ui.utils import PresetPanel
 from bl_ui.properties_grease_pencil_common import (
     AnnotationDataPanel,
 )
-from bl_ui.space_toolsystem_common import (
-    ToolActivePanelHelper,
-)
 from bl_ui.properties_material import (
     EEVEE_NEXT_MATERIAL_PT_settings,
     EEVEE_NEXT_MATERIAL_PT_settings_surface,
@@ -434,10 +431,21 @@ class NODE_MT_view_pie(Menu):
         pie.operator("node.view_selected", icon='ZOOM_SELECTED')
 
 
-class NODE_PT_active_tool(ToolActivePanelHelper, Panel):
+class NODE_PT_active_tool(Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = "Tool"
+    bl_label = "Active Tool"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        # La cabecera de la herramienta activa: dibujo nativo (C++, `FL_toolbar_ui.hh`).
+        layout.column().template_tool_header(
+            show_tool_icon_always=True,
+            space_type='NODE_EDITOR',
+        )
 
 
 class NODE_PT_material_slots(Panel):

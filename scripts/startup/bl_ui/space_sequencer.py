@@ -16,9 +16,6 @@ from bl_ui.properties_grease_pencil_common import (
     AnnotationDataPanel,
     AnnotationOnionSkin,
 )
-from bl_ui.space_toolsystem_common import (
-    ToolActivePanelHelper,
-)
 from bl_ui.utils import (
     PlayheadSnappingPanel,
 )
@@ -127,10 +124,21 @@ def draw_color_balance(layout, color_balance):
         split.template_color_picker(color_balance, "slope", value_slider=True, cubic=True)
 
 
-class SEQUENCER_PT_active_tool(ToolActivePanelHelper, Panel):
+class SEQUENCER_PT_active_tool(Panel):
     bl_space_type = 'SEQUENCE_EDITOR'
     bl_region_type = 'UI'
     bl_category = "Tool"
+    bl_label = "Active Tool"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        # La cabecera de la herramienta activa: dibujo nativo (C++, `FL_toolbar_ui.hh`).
+        layout.column().template_tool_header(
+            show_tool_icon_always=True,
+            space_type='SEQUENCE_EDITOR',
+        )
 
 
 class SEQUENCER_HT_tool_header(Header):
@@ -149,14 +157,13 @@ class SEQUENCER_HT_tool_header(Header):
 
         # Active Tool
         # -----------
-        from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
         # Most callers assign the `tool` & `tool_mode`, currently the result is not used.
         """
-        tool = ToolSelectPanelHelper.draw_active_tool_header(context, layout)
+        tool = layout.template_tool_header()
         tool_mode = context.mode if tool is None else tool.mode
         """
-        # Only draw the header.
-        ToolSelectPanelHelper.draw_active_tool_header(context, layout)
+        # Only draw the header. Dibujo nativo (C++, `FL_toolbar_ui.hh`).
+        layout.template_tool_header()
 
 
 class SEQUENCER_HT_header(Header):
