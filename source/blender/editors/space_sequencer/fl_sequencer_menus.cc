@@ -311,6 +311,195 @@ static void add_draw(const bContext *C, Menu *menu)
 
 /** \} */
 
+
+/* -------------------------------------------------------------------- */
+/** \name SEQUENCER_MT_context_menu
+ * \{ */
+
+/** `context.scene.sequence_editor.selected_retiming_keys`, con su getter. */
+static bool has_selected_retiming_keys(const bContext *C)
+{
+  Scene *scene = CTX_data_scene(C);
+  if (scene == nullptr || scene->ed == nullptr) {
+    return false;
+  }
+  PointerRNA scene_ptr = RNA_id_pointer_create(&scene->id);
+  PointerRNA ed = RNA_pointer_get(&scene_ptr, "sequence_editor");
+  return ed.data != nullptr && RNA_boolean_get(&ed, "selected_retiming_keys");
+}
+
+/** El conjunto de tipos de efecto que el Python lista a mano. */
+static bool strip_type_is_effect_with_submenu(const int type)
+{
+  return ELEM(type,
+              STRIP_TYPE_CROSS,
+              STRIP_TYPE_ADD,
+              STRIP_TYPE_SUB,
+              STRIP_TYPE_ALPHAOVER,
+              STRIP_TYPE_ALPHAUNDER,
+              STRIP_TYPE_GAMCROSS,
+              STRIP_TYPE_MUL,
+              STRIP_TYPE_WIPE,
+              STRIP_TYPE_GLOW,
+              STRIP_TYPE_TRANSFORM,
+              STRIP_TYPE_SPEED,
+              STRIP_TYPE_MULTICAM,
+              STRIP_TYPE_ADJUSTMENT,
+              STRIP_TYPE_GAUSSIAN_BLUR);
+}
+
+static void context_menu_draw_generic(const bContext *C, uiLayout *layout)
+{
+  uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+  PointerRNA props = layout->op("SEQUENCER_OT_split", IFACE_("Split"), ICON_NONE);
+  if (props.data) {
+    RNA_enum_set_identifier(nullptr, &props, "type", "SOFT");
+  }
+
+  layout->separator();
+
+  layout->op("SEQUENCER_OT_copy", IFACE_("Copy"), ICON_COPYDOWN);
+  layout->op("SEQUENCER_OT_paste", IFACE_("Paste"), ICON_PASTEDOWN);
+  layout->op("SEQUENCER_OT_duplicate_move", std::nullopt, ICON_NONE);
+  props = layout->op("WM_OT_call_panel", IFACE_("Rename..."), ICON_NONE);
+  if (props.data) {
+    RNA_string_set(&props, "name", "TOPBAR_PT_name");
+    RNA_boolean_set(&props, "keep_open", false);
+  }
+  layout->op("SEQUENCER_OT_delete", IFACE_("Delete"), ICON_NONE);
+
+  PointerRNA strip_ptr = CTX_data_pointer_get_type(C, "active_strip", &RNA_Strip);
+  const Strip *strip = static_cast<const Strip *>(strip_ptr.data);
+  if (strip != nullptr && strip->type == STRIP_TYPE_SCENE) {
+    props = layout->op("SEQUENCER_OT_delete", IFACE_("Delete Strip & Data"), ICON_NONE);
+    if (props.data) {
+      RNA_boolean_set(&props, "delete_data", true);
+    }
+    layout->op("SEQUENCER_OT_scene_frame_range_update", std::nullopt, ICON_NONE);
+  }
+
+  layout->separator();
+
+  layout->op("SEQUENCER_OT_slip", IFACE_("Slip Strip Contents"), ICON_NONE);
+  layout->op("SEQUENCER_OT_snap", std::nullopt, ICON_NONE);
+
+  layout->separator();
+
+  props = layout->op(
+      "SEQUENCER_OT_set_range_to_strips", IFACE_("Set Preview Range to Strips"), ICON_NONE);
+  if (props.data) {
+    RNA_boolean_set(&props, "preview", true);
+  }
+
+  layout->separator();
+
+  props = layout->op("SEQUENCER_OT_gap_remove", std::nullopt, ICON_NONE);
+  if (props.data) {
+    RNA_boolean_set(&props, "all", false);
+  }
+  layout->op("SEQUENCER_OT_gap_insert", std::nullopt, ICON_NONE);
+
+  layout->separator();
+
+  if (strip != nullptr) {
+    const int strip_type = strip->type;
+    int total = 0, nonsound = 0;
+    selected_strips_count(C, &total, &nonsound);
+
+    layout->separator();
+    uiItemMenuEnumO(
+        layout, C, "SEQUENCER_OT_strip_modifier_add", "type", IFACE_("Add Modifier"), ICON_NONE);
+    layout->op(
+        "SEQUENCER_OT_strip_modifier_copy", IFACE_("Copy Modifiers to Selection"), ICON_NONE);
+
+    if (total == 2) {
+      if (nonsound == 2) {
+        layout->separator();
+        uiLayout *col = &layout->column(false);
+        col->menu("SEQUENCER_MT_add_transitions", IFACE_("Add Transition"), ICON_NONE);
+      }
+      else if (nonsound == 0) {
+        layout->separator();
+        layout->op("SEQUENCER_OT_crossfade_sounds", IFACE_("Crossfade Sounds"), ICON_NONE);
+      }
+    }
+
+    if (total >= 1) {
+      uiLayout *col = &layout->column(false);
+      uiItemMenuEnumO(col, C, "SEQUENCER_OT_fades_add", "type", IFACE_("Fade"), ICON_NONE);
+      layout->op("SEQUENCER_OT_fades_clear", IFACE_("Clear Fade"), ICON_NONE);
+    }
+
+    if (strip_type_is_effect_with_submenu(strip_type)) {
+      layout->separator();
+      layout->menu("SEQUENCER_MT_strip_effect", std::nullopt, ICON_NONE);
+    }
+    else if (strip_type == STRIP_TYPE_MOVIE) {
+      layout->separator();
+      layout->menu("SEQUENCER_MT_strip_movie", std::nullopt, ICON_NONE);
+    }
+    else if (strip_type == STRIP_TYPE_IMAGE) {
+      layout->separator();
+      layout->op("SEQUENCER_OT_rendersize", std::nullopt, ICON_NONE);
+      layout->op("SEQUENCER_OT_images_separate", std::nullopt, ICON_NONE);
+    }
+    else if (strip_type == STRIP_TYPE_META) {
+      layout->separator();
+      layout->op("SEQUENCER_OT_meta_make", std::nullopt, ICON_NONE);
+      layout->op("SEQUENCER_OT_meta_separate", std::nullopt, ICON_NONE);
+      layout->op("SEQUENCER_OT_meta_toggle", IFACE_("Toggle Meta"), ICON_NONE);
+    }
+    if (strip_type != STRIP_TYPE_META) {
+      layout->separator();
+      layout->op("SEQUENCER_OT_meta_make", std::nullopt, ICON_NONE);
+      layout->op("SEQUENCER_OT_meta_toggle", IFACE_("Toggle Meta"), ICON_NONE);
+    }
+  }
+
+  layout->separator();
+  layout->menu("SEQUENCER_MT_color_tag_picker", std::nullopt, ICON_NONE);
+
+  layout->separator();
+  layout->menu("SEQUENCER_MT_strip_lock_mute", std::nullopt, ICON_NONE);
+
+  layout->separator();
+  props = layout->op("SEQUENCER_OT_connect", std::nullopt, ICON_LINKED);
+  if (props.data) {
+    RNA_boolean_set(&props, "toggle", true);
+  }
+  layout->op("SEQUENCER_OT_disconnect", std::nullopt, ICON_NONE);
+}
+
+static void context_menu_draw_retime(uiLayout *layout)
+{
+  uiLayoutSetOperatorContext(layout, WM_OP_INVOKE_REGION_WIN);
+
+  layout->op("SEQUENCER_OT_retiming_add_freeze_frame_slide", std::nullopt, ICON_NONE);
+  layout->op("SEQUENCER_OT_retiming_add_transition_slide", std::nullopt, ICON_NONE);
+  layout->separator();
+
+  layout->op("SEQUENCER_OT_retiming_segment_speed_set", std::nullopt, ICON_NONE);
+  layout->separator();
+
+  layout->op("SEQUENCER_OT_retiming_key_delete", IFACE_("Delete Retiming Keys"), ICON_NONE);
+}
+
+static void context_menu_draw(const bContext *C, Menu *menu)
+{
+  /* El `draw()` del Python elige entre dos menus distintos. Ojo: `draw_retime`
+   * comprueba OTRA VEZ `selected_retiming_keys` dentro, asi que la condicion
+   * aparece dos veces; aqui basta con una porque solo se llega con ella cierta. */
+  if (has_selected_retiming_keys(C)) {
+    context_menu_draw_retime(menu->layout);
+  }
+  else {
+    context_menu_draw_generic(C, menu->layout);
+  }
+}
+
+/** \} */
+
 static const flipendo::MenuDecl sequencer_menus[] = {
     {
         /*idname*/ "SEQUENCER_MT_add",
@@ -320,6 +509,13 @@ static const flipendo::MenuDecl sequencer_menus[] = {
         /*draw*/ add_draw,
         /*poll*/ nullptr,
         /*flag*/ int(MenuTypeFlag::SearchOnKeyPress),
+    },
+    {
+        /*idname*/ "SEQUENCER_MT_context_menu",
+        /*label*/ N_("Sequencer"),
+        /*description*/ nullptr,
+        /*translation_context*/ nullptr,
+        /*draw*/ context_menu_draw,
     },
     {
         /*idname*/ "SEQUENCER_MT_change",
