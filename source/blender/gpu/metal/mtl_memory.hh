@@ -16,13 +16,9 @@
 #include <set>
 #include <unordered_map>
 
-#include <Cocoa/Cocoa.h>
-#include <Metal/Metal.h>
-#include <QuartzCore/QuartzCore.h>
+/* Tipos de Metal: SDK en un `.mm`, metal-cpp en un `.cc`. Ver mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
 
-@class CAMetalLayer;
-@class MTLCommandQueue;
-@class MTLRenderPipelineState;
 
 /* Metal Memory Manager Overview. */
 /*
@@ -115,7 +111,7 @@ class MTLBuffer {
 
  private:
   /* Metal resource. */
-  id<MTLBuffer> metal_buffer_;
+  MTLBufferPtr metal_buffer_;
 
   /* Host-visible mapped-memory pointer. Behavior depends on buffer type:
    * - Shared buffers: pointer represents base address of #MTLBuffer whose data
@@ -131,7 +127,7 @@ class MTLBuffer {
 
   /* Allocation info. */
   MTLResourceOptions options_;
-  id<MTLDevice> device_;
+  MTLDevicePtr device_;
   uint64_t alignment_;
   uint64_t size_;
 
@@ -145,12 +141,12 @@ class MTLBuffer {
   std::atomic<bool> in_use_;
 
  public:
-  MTLBuffer(id<MTLDevice> device, uint64_t size, MTLResourceOptions options, uint alignment = 1);
-  MTLBuffer(id<MTLBuffer> external_buffer);
+  MTLBuffer(MTLDevicePtr device, uint64_t size, MTLResourceOptions options, uint alignment = 1);
+  MTLBuffer(MTLBufferPtr external_buffer);
   ~MTLBuffer();
 
   /* Fetch information about backing MTLBuffer. */
-  id<MTLBuffer> get_metal_buffer() const;
+  MTLBufferPtr get_metal_buffer() const;
   void *get_host_ptr() const;
   uint64_t get_size_used() const;
   uint64_t get_size() const;
@@ -189,7 +185,7 @@ class MTLBuffer {
 
 /* View into part of an MTLBuffer. */
 struct MTLBufferRange {
-  id<MTLBuffer> metal_buffer;
+  MTLBufferPtr metal_buffer;
   void *data;
   uint64_t buffer_offset;
   uint64_t size;
@@ -375,7 +371,7 @@ class MTLBufferPool {
 
   /* Metal resources. */
   bool initialized_ = false;
-  id<MTLDevice> device_ = nil;
+  MTLDevicePtr device_ = nullptr;
 
   /* The buffer selection aims to pick a buffer which meets the minimum size requirements.
    * To do this, we keep an ordered set of all available buffers. If the buffer is larger than the
@@ -423,7 +419,7 @@ class MTLBufferPool {
   MTLSafeFreeList *prev_free_buffer_list_ = nullptr;
 
  public:
-  void init(id<MTLDevice> device);
+  void init(MTLDevicePtr device);
   ~MTLBufferPool();
 
   gpu::MTLBuffer *allocate(uint64_t size, bool cpu_visible);

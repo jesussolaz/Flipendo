@@ -6,6 +6,13 @@
  * \ingroup gpu
  */
 #include "mtl_context.hh"
+
+/* GHOST_ContextCGL es Objective-C puro (Cocoa). Antes lo incluia mtl_context.hh y por
+ * tanto se colaba en los 22 ficheros que la incluyen, lo que impedia que ninguno
+ * pudiera ser `.cc`. La cabecera solo necesita saber que existe (guarda un puntero);
+ * el unico sitio que lo desreferencia es este fichero, asi que la inclusion vive aqui.
+ * Cuando se migre mtl_context.mm habra que resolver este acceso a GHOST sin Cocoa. */
+#include "intern/GHOST_ContextCGL.hh"
 #include "mtl_debug.hh"
 #include "mtl_framebuffer.hh"
 #include "mtl_immediate.hh"

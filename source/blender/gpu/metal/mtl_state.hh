@@ -93,7 +93,7 @@ class MTLFence : public Fence {
  private:
   /* Using an event in this instance, as this is global for the command stream, rather than being
    * inserted at the encoder level. This has the behavior to match the GL functionality. */
-  id<MTLEvent> mtl_event_ = nil;
+  MTLEventPtr mtl_event_ = nullptr;
   /* Events can be re-used multiple times. We can track a counter flagging the latest value
    * signalled. */
   uint64_t last_signalled_value_ = 0;

@@ -20,7 +20,8 @@
 #include "GPU_common_types.hh"
 #include "GPU_texture.hh"
 #include "gpu_texture_private.hh"
-#include <Metal/Metal.h>
+/* Tipos de Metal: SDK en un `.mm`, metal-cpp en un `.cc`. Ver mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
 #include <functional>
 
 namespace blender::gpu {
@@ -171,7 +172,7 @@ class MTLShaderInterface : public ShaderInterface {
    * Static size is based on common input permutation variations. */
   static const int ARGUMENT_ENCODERS_CACHE_SIZE = 3;
   struct ArgumentEncoderCacheEntry {
-    id<MTLArgumentEncoder> encoder;
+    MTLArgumentEncoderPtr encoder;
     int buffer_index;
   };
   ArgumentEncoderCacheEntry arg_encoders_[ARGUMENT_ENCODERS_CACHE_SIZE] = {};
@@ -307,7 +308,7 @@ class MTLShaderInterface : public ShaderInterface {
   }
 
   /* Argument buffer encoder management. */
-  id<MTLArgumentEncoder> find_argument_encoder(int buffer_index) const;
+  MTLArgumentEncoderPtr find_argument_encoder(int buffer_index) const;
 
   void insert_argument_encoder(int buffer_index, id encoder);
 

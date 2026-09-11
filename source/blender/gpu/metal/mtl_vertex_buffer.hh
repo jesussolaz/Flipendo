@@ -13,9 +13,8 @@
 
 #include "mtl_context.hh"
 
-#include <Cocoa/Cocoa.h>
-#include <Metal/Metal.h>
-#include <QuartzCore/QuartzCore.h>
+/* Tipos de Metal: SDK en un `.mm`, metal-cpp en un `.cc`. Ver mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
 
 namespace blender::gpu {
 
@@ -42,7 +41,7 @@ class MTLVertBuf : public VertBuf {
 
   /* Fetch Metal buffer and offset into allocation if necessary.
    * Access limited to friend classes. */
-  id<MTLBuffer> get_metal_buffer()
+  MTLBufferPtr get_metal_buffer()
   {
     BLI_assert(vbo_ != nullptr);
     vbo_->debug_ensure_used();

@@ -19,13 +19,9 @@
 #include <string>
 #include <thread>
 
-#include <Cocoa/Cocoa.h>
-#include <Metal/Metal.h>
-#include <QuartzCore/QuartzCore.h>
+/* Tipos de Metal: SDK en un `.mm`, metal-cpp en un `.cc`. Ver mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
 
-@class CAMetalLayer;
-@class MTLCommandQueue;
-@class MTLRenderPipelineState;
 
 struct GPUFrameBuffer;
 
@@ -183,7 +179,7 @@ class MTLTexture : public Texture {
   /* Where the textures data comes from. */
   enum {
     MTL_TEXTURE_MODE_DEFAULT,     /* Texture is self-initialized (Standard). */
-    MTL_TEXTURE_MODE_EXTERNAL,    /* Texture source from external id<MTLTexture> handle */
+    MTL_TEXTURE_MODE_EXTERNAL,    /* Texture source from external MTLTexturePtr handle */
     MTL_TEXTURE_MODE_VBO,         /* Texture source initialized from VBO */
     MTL_TEXTURE_MODE_TEXTURE_VIEW /* Texture is a view into an existing texture. */
   } resource_mode_;
@@ -193,7 +189,7 @@ class MTLTexture : public Texture {
    * resource state has been specified up-front. */
   bool is_baked_ = false;
   MTLTextureDescriptor *texture_descriptor_ = nullptr;
-  id<MTLTexture> texture_ = nil;
+  MTLTexturePtr texture_ = nullptr;
 
   /* Texture Storage. */
   size_t aligned_w_ = 0;
@@ -215,7 +211,7 @@ class MTLTexture : public Texture {
   uint blit_fb_mip_ = 0;
 
   /* Non-SRGB texture view, used for when a framebuffer is bound with SRGB disabled. */
-  id<MTLTexture> texture_no_srgb_ = nil;
+  MTLTexturePtr texture_no_srgb_ = nullptr;
 
   /* Texture view properties */
   /* In Metal, we use texture views to either limit mipmap ranges,
@@ -237,7 +233,7 @@ class MTLTexture : public Texture {
     TEXTURE_VIEW_SWIZZLE_DIRTY = (1 << 0),
     TEXTURE_VIEW_MIP_DIRTY = (1 << 1)
   };
-  id<MTLTexture> mip_swizzle_view_ = nil;
+  MTLTexturePtr mip_swizzle_view_ = nullptr;
   char tex_swizzle_mask_[4];
   MTLTextureSwizzleChannels mtl_swizzle_mask_;
   bool mip_range_dirty_ = false;
@@ -257,7 +253,7 @@ class MTLTexture : public Texture {
 
   /* VBO. */
   MTLVertBuf *vert_buffer_;
-  id<MTLBuffer> vert_buffer_mtl_;
+  MTLBufferPtr vert_buffer_mtl_;
 
   /* Whether the texture's properties or state has changed (e.g. mipmap range), and re-baking of
    * GPU resource is required. */
@@ -269,7 +265,7 @@ class MTLTexture : public Texture {
   MTLTexture(const char *name,
              eGPUTextureFormat format,
              eGPUTextureType type,
-             id<MTLTexture> metal_texture);
+             MTLTexturePtr metal_texture);
   ~MTLTexture() override;
 
   void update_sub(
@@ -309,12 +305,12 @@ class MTLTexture : public Texture {
             mtl_swizzle_mask_.alpha != MTLTextureSwizzleAlpha);
   }
 
-  id<MTLBuffer> get_vertex_buffer() const
+  MTLBufferPtr get_vertex_buffer() const
   {
     if (resource_mode_ == MTL_TEXTURE_MODE_VBO) {
       return vert_buffer_mtl_;
     }
-    return nil;
+    return nullptr;
   }
 
   MTLStorageBuf *get_storagebuf();
@@ -363,11 +359,11 @@ class MTLTexture : public Texture {
                      void *r_data);
   void bake_mip_swizzle_view();
 
-  id<MTLTexture> get_metal_handle();
-  id<MTLTexture> get_metal_handle_base();
-  id<MTLTexture> get_non_srgb_handle();
+  MTLTexturePtr get_metal_handle();
+  MTLTexturePtr get_metal_handle_base();
+  MTLTexturePtr get_non_srgb_handle();
   MTLSamplerState get_sampler_state();
-  void blit(id<MTLBlitCommandEncoder> blit_encoder,
+  void blit(MTLBlitCommandEncoderPtr blit_encoder,
             uint src_x_offset,
             uint src_y_offset,
             uint src_z_offset,
@@ -429,20 +425,20 @@ class MTLTexture : public Texture {
     uint unpack_row_length; /* Number of pixels between bytes in input data. */
   };
 
-  id<MTLComputePipelineState> texture_update_1d_get_kernel(
+  MTLComputePipelineStatePtr texture_update_1d_get_kernel(
       TextureUpdateRoutineSpecialisation specialization);
-  id<MTLComputePipelineState> texture_update_1d_array_get_kernel(
+  MTLComputePipelineStatePtr texture_update_1d_array_get_kernel(
       TextureUpdateRoutineSpecialisation specialization);
-  id<MTLComputePipelineState> texture_update_2d_get_kernel(
+  MTLComputePipelineStatePtr texture_update_2d_get_kernel(
       TextureUpdateRoutineSpecialisation specialization);
-  id<MTLComputePipelineState> texture_update_2d_array_get_kernel(
+  MTLComputePipelineStatePtr texture_update_2d_array_get_kernel(
       TextureUpdateRoutineSpecialisation specialization);
-  id<MTLComputePipelineState> texture_update_3d_get_kernel(
+  MTLComputePipelineStatePtr texture_update_3d_get_kernel(
       TextureUpdateRoutineSpecialisation specialization);
 
-  id<MTLComputePipelineState> mtl_texture_update_impl(
+  MTLComputePipelineStatePtr mtl_texture_update_impl(
       TextureUpdateRoutineSpecialisation specialization_params,
-      blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+      blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
           &specialization_cache,
       eGPUTextureType texture_type);
 
@@ -463,20 +459,20 @@ class MTLTexture : public Texture {
     int offset[3]; /* Width, Height, Slice on 2D Array tex. */
   };
 
-  id<MTLComputePipelineState> texture_read_1d_get_kernel(
+  MTLComputePipelineStatePtr texture_read_1d_get_kernel(
       TextureReadRoutineSpecialisation specialization);
-  id<MTLComputePipelineState> texture_read_1d_array_get_kernel(
+  MTLComputePipelineStatePtr texture_read_1d_array_get_kernel(
       TextureReadRoutineSpecialisation specialization);
-  id<MTLComputePipelineState> texture_read_2d_get_kernel(
+  MTLComputePipelineStatePtr texture_read_2d_get_kernel(
       TextureReadRoutineSpecialisation specialization);
-  id<MTLComputePipelineState> texture_read_2d_array_get_kernel(
+  MTLComputePipelineStatePtr texture_read_2d_array_get_kernel(
       TextureReadRoutineSpecialisation specialization);
-  id<MTLComputePipelineState> texture_read_3d_get_kernel(
+  MTLComputePipelineStatePtr texture_read_3d_get_kernel(
       TextureReadRoutineSpecialisation specialization);
 
-  id<MTLComputePipelineState> mtl_texture_read_impl(
+  MTLComputePipelineStatePtr mtl_texture_read_impl(
       TextureReadRoutineSpecialisation specialization_params,
-      blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+      blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
           &specialization_cache,
       eGPUTextureType texture_type);
 
@@ -488,7 +484,7 @@ class MTLTexture : public Texture {
 
 class MTLPixelBuffer : public PixelBuffer {
  private:
-  id<MTLBuffer> buffer_ = nil;
+  MTLBufferPtr buffer_ = nullptr;
 
  public:
   MTLPixelBuffer(size_t size);
@@ -499,7 +495,7 @@ class MTLPixelBuffer : public PixelBuffer {
   GPUPixelBufferNativeHandle get_native_handle() override;
   size_t get_size() override;
 
-  id<MTLBuffer> get_metal_buffer();
+  MTLBufferPtr get_metal_buffer();
 
   MEM_CXX_CLASS_ALLOC_FUNCS("MTLPixelBuffer")
 };
@@ -662,7 +658,7 @@ inline MTLTextureUsage mtl_usage_from_gpu(eGPUTextureUsage usage)
     mtl_usage = mtl_usage | MTLTextureUsagePixelFormatView;
   }
 #if defined(MAC_OS_VERSION_14_0)
-  if (@available(macOS 14.0, *)) {
+  if (__builtin_available(macOS 14.0, *)) {
     if (usage & GPU_TEXTURE_USAGE_ATOMIC) {
       mtl_usage = mtl_usage | MTLTextureUsageShaderAtomic;
     }

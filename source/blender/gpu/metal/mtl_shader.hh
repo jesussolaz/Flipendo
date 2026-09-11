@@ -15,8 +15,8 @@
 #include "GPU_shader.hh"
 #include "GPU_vertex_format.hh"
 
-#include <Metal/Metal.h>
-#include <QuartzCore/QuartzCore.h>
+/* Tipos de Metal: SDK en un `.mm`, metal-cpp en un `.cc`. Ver mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
 #include <functional>
 #include <unordered_map>
 
@@ -68,11 +68,11 @@ struct MTLBufferArgumentData {
 struct MTLRenderPipelineStateInstance {
   /* Function instances with specialization.
    * Required for argument encoder construction. */
-  id<MTLFunction> vert;
-  id<MTLFunction> frag;
+  MTLFunctionPtr vert;
+  MTLFunctionPtr frag;
 
   /* PSO handle. */
-  id<MTLRenderPipelineState> pso;
+  MTLRenderPipelineStatePtr pso;
 
   /** Derived information. */
   /* Unique index for PSO variant. */
@@ -130,16 +130,16 @@ struct MTLComputePipelineStateInstance {
 
   /* Function instances with specialization.
    * Required for argument encoder construction. */
-  id<MTLFunction> compute = nil;
+  MTLFunctionPtr compute = nullptr;
   /* PSO handle. */
-  id<MTLComputePipelineState> pso = nil;
+  MTLComputePipelineStatePtr pso = nullptr;
 };
 
 /* #MTLShaderBuilder source wrapper used during initial compilation. */
 struct MTLShaderBuilder {
-  NSString *msl_source_vert_ = @"";
-  NSString *msl_source_frag_ = @"";
-  NSString *msl_source_compute_ = @"";
+  NSString *msl_source_vert_ = MTL_NSSTRING_EMPTY;
+  NSString *msl_source_frag_ = MTL_NSSTRING_EMPTY;
+  NSString *msl_source_compute_ = MTL_NSSTRING_EMPTY;
 
   /* Generated GLSL source used during compilation. */
   std::string glsl_vertex_source_ = "";
@@ -173,19 +173,19 @@ class MTLShader : public Shader {
 
   /** Shader source code. */
   MTLShaderBuilder *shd_builder_ = nullptr;
-  NSString *vertex_function_name_ = @"";
-  NSString *fragment_function_name_ = @"";
-  NSString *compute_function_name_ = @"";
+  NSString *vertex_function_name_ = MTL_NSSTRING_EMPTY;
+  NSString *fragment_function_name_ = MTL_NSSTRING_EMPTY;
+  NSString *compute_function_name_ = MTL_NSSTRING_EMPTY;
 
   /** Compiled shader resources. */
-  id<MTLLibrary> shader_library_vert_ = nil;
-  id<MTLLibrary> shader_library_frag_ = nil;
-  id<MTLLibrary> shader_library_compute_ = nil;
+  MTLLibraryPtr shader_library_vert_ = nullptr;
+  MTLLibraryPtr shader_library_frag_ = nullptr;
+  MTLLibraryPtr shader_library_compute_ = nullptr;
   bool valid_ = false;
 
   /** Render pipeline state and PSO caching. */
   /* Metal API Descriptor used for creation of unique PSOs based on rendering state. */
-  MTLRenderPipelineDescriptor *pso_descriptor_ = nil;
+  MTLRenderPipelineDescriptor *pso_descriptor_ = nullptr;
   /* Metal backend struct containing all high-level pipeline state parameters
    * which contribute to instantiation of a unique PSO. */
   MTLRenderPipelineStateDescriptor current_pipeline_state_;
@@ -254,11 +254,11 @@ class MTLShader : public Shader {
   }
   bool has_compute_shader_lib()
   {
-    return (shader_library_compute_ != nil);
+    return (shader_library_compute_ != nullptr);
   }
   bool has_parent_shader()
   {
-    return (parent_shader_ != nil);
+    return (parent_shader_ != nullptr);
   }
   MTLRenderPipelineStateDescriptor &get_current_pipeline_state()
   {

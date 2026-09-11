@@ -16,7 +16,8 @@
 #include "gpu_framebuffer_private.hh"
 #include "mtl_texture.hh"
 
-#include <Metal/Metal.h>
+/* Tipos de Metal: SDK en un `.mm`, metal-cpp en un `.cc`. Ver mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
 
 namespace blender::gpu {
 

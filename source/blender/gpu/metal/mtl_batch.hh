@@ -91,9 +91,9 @@ class MTLBatch : public Batch {
   }
 
   /* Returns an initialized RenderComandEncoder for drawing if all is good.
-   * Otherwise, nil. */
-  id<MTLRenderCommandEncoder> bind();
-  void unbind(id<MTLRenderCommandEncoder> rec);
+   * Otherwise, nullptr. */
+  MTLRenderCommandEncoderPtr bind();
+  void unbind(MTLRenderCommandEncoderPtr rec);
 
   /* Convenience getters. */
   MTLIndexBuf *elem_() const
@@ -122,7 +122,7 @@ class MTLBatch : public Batch {
                              uint16_t &attr_mask,
                              bool instanced);
 
-  id<MTLBuffer> get_emulated_toplogy_buffer(GPUPrimType &in_out_prim_type, uint32_t &v_count);
+  MTLBufferPtr get_emulated_toplogy_buffer(GPUPrimType &in_out_prim_type, uint32_t &v_count);
 
   void prepare_vertex_descriptor_and_bindings(MTLVertBuf **buffers, int &num_buffers);
 

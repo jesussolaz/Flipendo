@@ -18,8 +18,15 @@
 #endif
 
 #include "intern/GHOST_Context.hh"
-#include "intern/GHOST_ContextCGL.hh"
 #include "intern/GHOST_Window.hh"
+
+/* `GHOST_ContextCGL` es una cabecera de Objective-C pura (`@class`, `MTLTexturePtr`,
+ * bloques). Aqui solo se guarda un PUNTERO a el (`ghost_context_`) y nunca se
+ * desreferencia dentro de esta cabecera, asi que basta con declararlo. Incluirla
+ * arrastraba <Cocoa/Cocoa.h> a los 22 ficheros que incluyen mtl_context.hh e impedia
+ * que ninguno de ellos pudiera ser un `.cc`. `intern/ghost` es de otra fase y no se
+ * toca: lo que cambia es solo quien la incluye. */
+class GHOST_ContextCGL;
 
 #include "mtl_backend.hh"
 #include "mtl_capabilities.hh"
@@ -30,15 +37,12 @@
 #include "mtl_shader_interface.hh"
 #include "mtl_texture.hh"
 
-#include <Cocoa/Cocoa.h>
-#include <Metal/Metal.h>
-#include <QuartzCore/QuartzCore.h>
+/* Tipos de Metal. En un `.mm` son los del SDK; en un `.cc`, los de metal-cpp.
+ * Ver la explicacion completa en mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
+
 #include <chrono>
 #include <mutex>
-
-@class CAMetalLayer;
-@class MTLCommandQueue;
-@class MTLRenderPipelineState;
 
 namespace blender::gpu {
 
@@ -82,19 +86,19 @@ struct BufferBindingCached {
   /* Whether the given binding slot uses byte data (Push Constant equivalent)
    * or an MTLBuffer. */
   bool is_bytes;
-  id<MTLBuffer> metal_buffer;
+  MTLBufferPtr metal_buffer;
   uint64_t offset;
 };
 
 /* Caching of CommandEncoder textures bindings. */
 struct TextureBindingCached {
-  id<MTLTexture> metal_texture;
+  MTLTexturePtr metal_texture;
 };
 
 /* Cached of CommandEncoder sampler states. */
 struct SamplerStateBindingCached {
   MTLSamplerState binding_state;
-  id<MTLSamplerState> sampler_state;
+  MTLSamplerStatePtr sampler_state;
   bool is_arg_buffer_binding;
 };
 
@@ -113,8 +117,8 @@ class MTLRenderPassState {
   MTLCommandBufferManager &cmd;
 
   MTLBoundShaderState last_bound_shader_state;
-  id<MTLRenderPipelineState> bound_pso = nil;
-  id<MTLDepthStencilState> bound_ds_state = nil;
+  MTLRenderPipelineStatePtr bound_pso = nullptr;
+  MTLDepthStencilStatePtr bound_ds_state = nullptr;
   uint last_used_stencil_ref_value = 0;
   MTLScissorRect last_scissor_rect;
 
@@ -129,8 +133,8 @@ class MTLRenderPassState {
   void reset_state();
 
   /* Texture Binding (RenderCommandEncoder). */
-  void bind_vertex_texture(id<MTLTexture> tex, uint slot);
-  void bind_fragment_texture(id<MTLTexture> tex, uint slot);
+  void bind_vertex_texture(MTLTexturePtr tex, uint slot);
+  void bind_fragment_texture(MTLTexturePtr tex, uint slot);
 
   /* Sampler Binding (RenderCommandEncoder). */
   void bind_vertex_sampler(MTLSamplerBinding &sampler_binding,
@@ -141,8 +145,8 @@ class MTLRenderPassState {
                              uint slot);
 
   /* Buffer binding (RenderCommandEncoder). */
-  void bind_vertex_buffer(id<MTLBuffer> buffer, uint64_t buffer_offset, uint index);
-  void bind_fragment_buffer(id<MTLBuffer> buffer, uint64_t buffer_offset, uint index);
+  void bind_vertex_buffer(MTLBufferPtr buffer, uint64_t buffer_offset, uint index);
+  void bind_fragment_buffer(MTLBufferPtr buffer, uint64_t buffer_offset, uint index);
   void bind_vertex_bytes(const void *bytes, uint64_t length, uint index);
   void bind_fragment_bytes(const void *bytes, uint64_t length, uint index);
 };
@@ -160,7 +164,7 @@ class MTLComputeState {
   MTLContext &ctx;
   MTLCommandBufferManager &cmd;
 
-  id<MTLComputePipelineState> bound_pso = nil;
+  MTLComputePipelineStatePtr bound_pso = nullptr;
   BufferBindingCached cached_compute_buffer_bindings[MTL_MAX_BUFFER_BINDINGS];
   TextureBindingCached cached_compute_texture_bindings[MTL_MAX_TEXTURE_SLOTS];
   SamplerStateBindingCached cached_compute_sampler_state_bindings[MTL_MAX_TEXTURE_SLOTS];
@@ -169,16 +173,16 @@ class MTLComputeState {
   void reset_state();
 
   /* PSO Binding. */
-  void bind_pso(id<MTLComputePipelineState> pso);
+  void bind_pso(MTLComputePipelineStatePtr pso);
 
   /* Texture Binding (ComputeCommandEncoder). */
-  void bind_compute_texture(id<MTLTexture> tex, uint slot);
+  void bind_compute_texture(MTLTexturePtr tex, uint slot);
   /* Sampler Binding (ComputeCommandEncoder). */
   void bind_compute_sampler(MTLSamplerBinding &sampler_binding,
                             bool use_argument_buffer_for_samplers,
                             uint slot);
   /* Buffer binding (ComputeCommandEncoder). */
-  void bind_compute_buffer(id<MTLBuffer> buffer, uint64_t buffer_offset, uint index);
+  void bind_compute_buffer(MTLBufferPtr buffer, uint64_t buffer_offset, uint index);
   void bind_compute_bytes(const void *bytes, uint64_t length, uint index);
 };
 
@@ -295,44 +299,44 @@ struct MTLContextTextureUtils {
   GPUShader *fullscreen_blit_shader = nullptr;
 
   /* Texture Read/Update routines */
-  blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_1d_read_compute_psos;
-  blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_1d_array_read_compute_psos;
-  blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_2d_read_compute_psos;
-  blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_2d_array_read_compute_psos;
-  blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_3d_read_compute_psos;
-  blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_cube_read_compute_psos;
-  blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_cube_array_read_compute_psos;
-  blender::Map<TextureReadRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureReadRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_buffer_read_compute_psos;
 
-  blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_1d_update_compute_psos;
-  blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_1d_array_update_compute_psos;
-  blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_2d_update_compute_psos;
-  blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_2d_array_update_compute_psos;
-  blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_3d_update_compute_psos;
-  blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_cube_update_compute_psos;
-  blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_cube_array_update_compute_psos;
-  blender::Map<TextureUpdateRoutineSpecialisation, id<MTLComputePipelineState>>
+  blender::Map<TextureUpdateRoutineSpecialisation, MTLComputePipelineStatePtr>
       texture_buffer_update_compute_psos;
 
-  template<typename T> void free_cached_pso_map(blender::Map<T, id<MTLComputePipelineState>> &map)
+  template<typename T> void free_cached_pso_map(blender::Map<T, MTLComputePipelineStatePtr> &map)
   {
-    for (typename blender::MutableMapItem<T, id<MTLComputePipelineState>> item : map.items()) {
-      [item.value release];
+    for (typename blender::MutableMapItem<T, MTLComputePipelineStatePtr> item : map.items()) {
+      mtl_release(item.value);
     }
     map.clear();
   }
@@ -377,15 +381,15 @@ struct MTLContextTextureUtils {
 
 class MTLContextComputeUtils {
  private:
-  id<MTLComputePipelineState> buffer_clear_pso_ = nil;
+  MTLComputePipelineStatePtr buffer_clear_pso_ = nullptr;
 
  public:
-  id<MTLComputePipelineState> get_buffer_clear_pso();
+  MTLComputePipelineStatePtr get_buffer_clear_pso();
   void cleanup()
   {
     if (buffer_clear_pso_) {
-      [buffer_clear_pso_ release];
-      buffer_clear_pso_ = nil;
+      mtl_release(buffer_clear_pso_);
+      buffer_clear_pso_ = nullptr;
     }
   }
 };
@@ -395,7 +399,7 @@ struct MTLSamplerArray {
   uint num_samplers;
   /* MTLSamplerState permutations between 0..256 - slightly more than a byte. */
   MTLSamplerState mtl_sampler_flags[MTL_MAX_TEXTURE_SLOTS];
-  id<MTLSamplerState> mtl_sampler[MTL_MAX_TEXTURE_SLOTS];
+  MTLSamplerStatePtr mtl_sampler[MTL_MAX_TEXTURE_SLOTS];
 
   bool operator==(const MTLSamplerArray &other) const
   {
@@ -555,8 +559,8 @@ class MTLCommandBufferManager {
   bool supports_render_ = false;
 
   /* CommandBuffer tracking. */
-  id<MTLCommandBuffer> active_command_buffer_ = nil;
-  id<MTLCommandBuffer> last_submitted_command_buffer_ = nil;
+  MTLCommandBufferPtr active_command_buffer_ = nullptr;
+  MTLCommandBufferPtr last_submitted_command_buffer_ = nullptr;
   volatile std::atomic<int> num_active_cmd_bufs = 0;
 
   /* Active MTLCommandEncoders. */
@@ -567,9 +571,9 @@ class MTLCommandBufferManager {
     MTL_COMPUTE_COMMAND_ENCODER = 3
   } active_command_encoder_type_ = MTL_NO_COMMAND_ENCODER;
 
-  id<MTLRenderCommandEncoder> active_render_command_encoder_ = nil;
-  id<MTLBlitCommandEncoder> active_blit_command_encoder_ = nil;
-  id<MTLComputeCommandEncoder> active_compute_command_encoder_ = nil;
+  MTLRenderCommandEncoderPtr active_render_command_encoder_ = nullptr;
+  MTLBlitCommandEncoderPtr active_blit_command_encoder_ = nullptr;
+  MTLComputeCommandEncoderPtr active_compute_command_encoder_ = nullptr;
 
   /* State associated with active RenderCommandEncoder. */
   MTLRenderPassState render_pass_state_;
@@ -605,9 +609,9 @@ class MTLCommandBufferManager {
   bool is_inside_render_pass();
   bool is_inside_blit();
   bool is_inside_compute();
-  id<MTLRenderCommandEncoder> get_active_render_command_encoder();
-  id<MTLBlitCommandEncoder> get_active_blit_command_encoder();
-  id<MTLComputeCommandEncoder> get_active_compute_command_encoder();
+  MTLRenderCommandEncoderPtr get_active_render_command_encoder();
+  MTLBlitCommandEncoderPtr get_active_blit_command_encoder();
+  MTLComputeCommandEncoderPtr get_active_compute_command_encoder();
   MTLFrameBuffer *get_active_framebuffer();
 
   /* RenderPassState for RenderCommandEncoder. */
@@ -634,18 +638,18 @@ class MTLCommandBufferManager {
   /* Encoder and Pass management. */
   /* End currently active MTLCommandEncoder. */
   bool end_active_command_encoder(bool retain_framebuffers = false);
-  id<MTLRenderCommandEncoder> ensure_begin_render_command_encoder(MTLFrameBuffer *ctx_framebuffer,
+  MTLRenderCommandEncoderPtr ensure_begin_render_command_encoder(MTLFrameBuffer *ctx_framebuffer,
                                                                   bool force_begin,
                                                                   bool *r_new_pass);
-  id<MTLBlitCommandEncoder> ensure_begin_blit_encoder();
-  id<MTLComputeCommandEncoder> ensure_begin_compute_encoder();
+  MTLBlitCommandEncoderPtr ensure_begin_blit_encoder();
+  MTLComputeCommandEncoderPtr ensure_begin_compute_encoder();
 
   /* Workload Synchronization. */
   bool insert_memory_barrier(eGPUBarrier barrier_bits,
                              eGPUStageBarrierBits before_stages,
                              eGPUStageBarrierBits after_stages);
-  void encode_signal_event(id<MTLEvent> event, uint64_t value);
-  void encode_wait_for_event(id<MTLEvent> event, uint64_t value);
+  void encode_signal_event(MTLEventPtr event, uint64_t value);
+  void encode_wait_for_event(MTLEventPtr event, uint64_t value);
   /* TODO(Metal): Support fences in command buffer class. */
 
   /* Debug. */
@@ -679,7 +683,7 @@ class MTLCommandBufferManager {
 
  private:
   /* Begin new command buffer. */
-  id<MTLCommandBuffer> ensure_begin();
+  MTLCommandBufferPtr ensure_begin();
 
   void register_encoder_counters();
 
@@ -709,12 +713,12 @@ class MTLContext : public Context {
   MTLContextGlobalShaderPipelineState pipeline_state;
 
   /* Metal API Resource Handles. */
-  id<MTLCommandQueue> queue = nil;
-  id<MTLDevice> device = nil;
+  MTLCommandQueuePtr queue = nullptr;
+  MTLDevicePtr device = nullptr;
 
 #ifndef NDEBUG
   /* Label for Context debug name assignment. */
-  NSString *label = nil;
+  NSString *label = nullptr;
 #endif
 
   /* Memory Management. */
@@ -731,11 +735,11 @@ class MTLContext : public Context {
   GHOST_ContextCGL *ghost_context_;
 
   /* Render Passes and Frame-buffers. */
-  id<MTLTexture> default_fbo_mtltexture_ = nil;
+  MTLTexturePtr default_fbo_mtltexture_ = nullptr;
   gpu::MTLTexture *default_fbo_gputexture_ = nullptr;
 
   /* Depth-stencil state cache. */
-  blender::Map<MTLContextDepthStencilState, id<MTLDepthStencilState>> depth_stencil_state_cache;
+  blender::Map<MTLContextDepthStencilState, MTLDepthStencilStatePtr> depth_stencil_state_cache;
 
   /* Compute and specialization caches. */
   MTLContextTextureUtils texture_utils_;
@@ -744,11 +748,11 @@ class MTLContext : public Context {
   /* Texture Samplers. */
   /* Cache of generated #MTLSamplerState objects based on permutations of the members of
    * `GPUSamplerState`. */
-  id<MTLSamplerState> sampler_state_cache_[GPU_SAMPLER_EXTEND_MODES_COUNT]
+  MTLSamplerStatePtr sampler_state_cache_[GPU_SAMPLER_EXTEND_MODES_COUNT]
                                           [GPU_SAMPLER_EXTEND_MODES_COUNT]
                                           [GPU_SAMPLER_FILTERING_TYPES_COUNT];
-  id<MTLSamplerState> custom_sampler_state_cache_[GPU_SAMPLER_CUSTOM_TYPES_COUNT];
-  id<MTLSamplerState> default_sampler_state_ = nil;
+  MTLSamplerStatePtr custom_sampler_state_cache_[GPU_SAMPLER_CUSTOM_TYPES_COUNT];
+  MTLSamplerStatePtr default_sampler_state_ = nullptr;
 
   /* When texture sampler count exceeds the resource bind limit, an
    * argument buffer is used to pass samplers to the shader.
@@ -768,8 +772,8 @@ class MTLContext : public Context {
 
   /* Null buffers for empty/uninitialized bindings.
    * Null attribute buffer follows default attribute format of OpenGL Backend. */
-  id<MTLBuffer> null_buffer_;           /* All zero's. */
-  id<MTLBuffer> null_attribute_buffer_; /* Value float4(0.0,0.0,0.0,1.0). */
+  MTLBufferPtr null_buffer_;           /* All zero's. */
+  MTLBufferPtr null_attribute_buffer_; /* Value float4(0.0,0.0,0.0,1.0). */
 
   /** Dummy Resources */
   /* Maximum of 32 texture types. Though most combinations invalid. */
@@ -842,7 +846,7 @@ class MTLContext : public Context {
   void framebuffer_restore();
 
   /* Ensure a render-pass using the Context frame-buffer (active_fb_) is in progress. */
-  id<MTLRenderCommandEncoder> ensure_begin_render_pass();
+  MTLRenderCommandEncoderPtr ensure_begin_render_pass();
 
   MTLFrameBuffer *get_current_framebuffer();
   MTLFrameBuffer *get_default_framebuffer();
@@ -853,8 +857,8 @@ class MTLContext : public Context {
   void texture_unbind(gpu::MTLTexture *mtl_texture, bool is_image);
   void texture_unbind_all(bool is_image);
   void sampler_state_cache_init();
-  id<MTLSamplerState> get_sampler_from_state(MTLSamplerState state);
-  id<MTLSamplerState> get_default_sampler_state();
+  MTLSamplerStatePtr get_sampler_from_state(MTLSamplerState state);
+  MTLSamplerStatePtr get_default_sampler_state();
 
   /* Active shader specialization constants state. */
   shader::SpecializationConstants constants_state;
@@ -880,22 +884,22 @@ class MTLContext : public Context {
    * `ensure_render_pipeline_state` will return false if the state is
    * invalid and cannot be applied. This should cancel a draw call. */
   bool ensure_render_pipeline_state(MTLPrimitiveType prim_type);
-  bool ensure_buffer_bindings(id<MTLRenderCommandEncoder> rec,
+  bool ensure_buffer_bindings(MTLRenderCommandEncoderPtr rec,
                               const MTLShaderInterface *shader_interface,
                               const MTLRenderPipelineStateInstance *pipeline_state_instance);
-  bool ensure_buffer_bindings(id<MTLComputeCommandEncoder> rec,
+  bool ensure_buffer_bindings(MTLComputeCommandEncoderPtr rec,
                               const MTLShaderInterface *shader_interface,
                               const MTLComputePipelineStateInstance *pipeline_state_instance);
-  void ensure_texture_bindings(id<MTLRenderCommandEncoder> rec,
+  void ensure_texture_bindings(MTLRenderCommandEncoderPtr rec,
                                MTLShaderInterface *shader_interface,
                                const MTLRenderPipelineStateInstance *pipeline_state_instance);
-  void ensure_texture_bindings(id<MTLComputeCommandEncoder> rec,
+  void ensure_texture_bindings(MTLComputeCommandEncoderPtr rec,
                                MTLShaderInterface *shader_interface,
                                const MTLComputePipelineStateInstance *pipeline_state_instance);
   void ensure_depth_stencil_state(MTLPrimitiveType prim_type);
 
-  id<MTLBuffer> get_null_buffer();
-  id<MTLBuffer> get_null_attribute_buffer();
+  MTLBufferPtr get_null_buffer();
+  MTLBufferPtr get_null_attribute_buffer();
   gpu::MTLTexture *get_dummy_texture(eGPUTextureType type, eGPUSamplerFormat sampler_format);
   void free_dummy_resources();
 
@@ -1014,8 +1018,8 @@ class MTLContext : public Context {
 
 /* GHOST Context callback and present. */
 void present(MTLRenderPassDescriptor *blit_descriptor,
-             id<MTLRenderPipelineState> blit_pso,
-             id<MTLTexture> swapchain_texture,
-             id<CAMetalDrawable> drawable);
+             MTLRenderPipelineStatePtr blit_pso,
+             MTLTexturePtr swapchain_texture,
+             CAMetalDrawablePtr drawable);
 
 }  // namespace blender::gpu

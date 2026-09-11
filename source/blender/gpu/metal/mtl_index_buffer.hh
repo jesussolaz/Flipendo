@@ -13,9 +13,8 @@
 
 #include "mtl_context.hh"
 
-#include <Cocoa/Cocoa.h>
-#include <Metal/Metal.h>
-#include <QuartzCore/QuartzCore.h>
+/* Tipos de Metal: SDK en un `.mm`, metal-cpp en un `.cc`. Ver mtl_objc_compat.hh. */
+#include "mtl_objc_compat.hh"
 
 namespace blender::gpu {
 
@@ -71,7 +70,7 @@ class MTLIndexBuf : public IndexBuf {
    *
    * This is also used to emulate unsupported topology types
    * such as triangle fan. */
-  id<MTLBuffer> get_index_buffer(GPUPrimType &in_out_primitive_type, uint &in_out_v_count);
+  MTLBufferPtr get_index_buffer(GPUPrimType &in_out_primitive_type, uint &in_out_v_count);
   void flag_can_optimize(bool can_optimize);
 
   static MTLIndexType gpu_index_type_to_metal(GPUIndexBufType type)

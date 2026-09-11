@@ -59,7 +59,7 @@ class MTLStorageBuf : public StorageBuf {
   GPUUsageType usage_;
 
   /* Synchronization event for host reads. */
-  id<MTLSharedEvent> gpu_write_fence_ = nil;
+  MTLSharedEventPtr gpu_write_fence_ = nullptr;
   uint64_t host_read_signal_value_ = 0;
 
  public:
@@ -85,7 +85,7 @@ class MTLStorageBuf : public StorageBuf {
 
   void init();
 
-  id<MTLBuffer> get_metal_buffer();
+  MTLBufferPtr get_metal_buffer();
   size_t get_size();
   const char *get_name()
   {
