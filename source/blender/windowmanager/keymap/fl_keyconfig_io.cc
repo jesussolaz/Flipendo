@@ -47,10 +47,6 @@
 #include "RNA_define.hh"
 #include "RNA_enum_types.hh"
 
-#ifdef WITH_PYTHON
-#  include "BPY_extern_run.hh"
-#endif
-
 #include "WM_api.hh"
 #include "WM_keymap.hh"
 #include "WM_types.hh"
@@ -1276,6 +1272,22 @@ bool read_legacy_python_text(const std::string &text,
           }
         }
       }
+      /* TRAMPA, y costo encontrarla: el escritor de Python pone la coma ANTES
+       * del parentesis que cierra el atajo, no despues:
+       *
+       *        {"properties":
+       *         [...],
+       *         },            <- coma del tercer elemento
+       *        ),             <- cierre del atajo
+       *
+       * Esperar `)` y luego `,` deja el cursor en la coma, el bucle vuelve a
+       * empezar y se encuentra un `)` donde esperaba un `(`. El sintoma era
+       * «linea 14: se esperaba una tupla de atajo» y el fallo estaba dos
+       * caracteres antes. Se consume coma opcional, cierre, y coma opcional. */
+      skip_ws(i);
+      if (i < text.size() && text[i] == ',') {
+        i++;
+      }
       skip_ws(i);
       if (i < text.size() && text[i] == ')') {
         i++;
@@ -1286,6 +1298,12 @@ bool read_legacy_python_text(const std::string &text,
       }
     }
 
+    /* Y lo mismo al cerrar el keymap: `],` `},` `),`, con la coma delante de
+     * cada cierre. */
+    skip_ws(i);
+    if (i < text.size() && text[i] == ',') {
+      i++;
+    }
     skip_ws(i);
     if (i < text.size() && text[i] == '}') {
       i++;
@@ -1349,30 +1367,14 @@ bool import_from_file(bContext *C,
   }
 
   const bool is_py = (filepath.size() > 3) && (filepath.compare(filepath.size() - 3, 3, ".py") == 0);
-  bool ok = is_py ? read_legacy_python_text(text, filepath.c_str(), kc, r_error) :
+  const bool ok = is_py ? read_legacy_python_text(text, filepath.c_str(), kc, r_error) :
                     read_fkeyconfig_text(text, filepath.c_str(), kc, r_error);
-  if (!ok && is_py) {
-    /* ULTIMO RECURSO, y solo para un `.py` que ya estuviera en el disco del
-     * usuario: el analizador nativo no lo entiende y mientras el interprete
-     * exista no se puede perder una configuracion guardada. Se ejecuta como
-     * antes. Es ruidoso a proposito, igual que el recurso equivalente de los
-     * cinco presets de FFmpeg. El editor NO vuelve a escribir ningun `.py`:
-     * esto es compatibilidad LEYENDO. */
-    printf("keyconfig: el lector nativo rechaza '%s' (%s).\n"
-           "keyconfig: se ejecuta como script, que es el ultimo recurso heredado.\n",
-           filepath.c_str(),
-           r_error.c_str());
-#ifdef WITH_PYTHON
-    WM_keyconfig_remove(wm, kc);
-    ok = BPY_run_filepath(C, filepath.c_str(), nullptr);
-    if (ok) {
-      r_error.clear();
-      return true;
-    }
-    r_error = "No pude leer '" + filepath + "' ni como datos ni como script";
-    return false;
-#endif
-  }
+  /* Aqui hubo un ultimo recurso al interprete mientras el analizador del `.py`
+   * heredado no estaba terminado. Ya no hace falta: un export completo de keymap
+   * en formato antiguo se lee de forma nativa y da el mismo resultado byte a
+   * byte (248 keymaps, 3.673 atajos, 6.680 lineas, 0 diferencias). Un fichero
+   * que el analizador rechace se dice con fichero, linea y motivo, y no se
+   * aplica a medias. */
   if (!ok) {
     WM_keyconfig_remove(wm, kc);
     return false;

@@ -174,34 +174,48 @@ Y el ciclo del usuario, de verdad, con el operador:
 
 ### La compatibilidad hacia atrás: **leyendo**, nunca escribiendo
 
-El editor **no vuelve a escribir ni un `.py`**. Lo que ya esté escrito se sigue
-leyendo, y ahí hay una deuda declarada:
+El editor **no vuelve a escribir ni un `.py`**, y lo que ya esté escrito se lee
+**de forma nativa, sin intérprete**.
 
-> El analizador nativo del `.py` heredado (`read_legacy_python_text`) **no está
-> terminado**: se atraganta con el tercer elemento de un atajo que lleva
-> propiedades (`{"properties": [...]}`), y da
-> `linea 14: se esperaba una tupla de atajo` sobre un fichero exportado por el
-> propio Blender. El fallo está localizado en el consumo de ese bloque y **no**
-> en la estructura general (los keymaps, los argumentos de evento y los atajos
-> sin propiedades se leen bien).
+```
+Blender --background --factory-startup \
+  --fl-check-keyconfig-io <informe> <keymap-exportado-por-el-Python.py>
 
-Mientras eso no esté cerrado, importar un `.py` heredado **no pierde nada**: el
-lector nativo rechaza el fichero **en voz alta**, con fichero, línea y el texto
-que no supo leer, y se cae al intérprete, exactamente igual que el último
-recurso de los cinco presets de FFmpeg (`PRESETS-A-DATOS.md`). Es ruidoso a
-propósito.
+keyconfig: 248 keymaps y 3674 atajos leidos del .py heredado
+keyconfig: el .py heredado, leido de forma nativa: 6680 lineas, 0 distintas
+keyconfig: ciclo exportar-importar-exportar: 6680 lineas, 0 distintas
+```
 
-Lo que eso significa, dicho claro: **la escritura de Python está cortada; la
-lectura del Python heredado todavía usa el intérprete para un caso.** Cuando el
-analizador esté terminado, ese `#ifdef WITH_PYTHON` se va y con él el último
-puente de esta familia.
+El fichero de prueba es un export **completo** hecho por el propio
+`keyconfig_export_as_data()` de Python (17.848 líneas, con atajos con
+propiedades). Leído de forma nativa y re-exportado a datos da **exactamente el
+mismo fichero** que el camino nativo: **248 keymaps, 3.673 atajos, 6.680 líneas,
+0 diferencias**. Mismos keymaps, mismos atajos, mismas propiedades.
+
+**La trampa que costó encontrarlo**, porque es de las que no se ven leyendo: el
+escritor de Python pone la coma **antes** del paréntesis que cierra el atajo, no
+después:
+
+```python
+     {"properties":
+      [...],
+      },            <- coma del tercer elemento
+     ),             <- cierre del atajo
+```
+
+Un analizador que espere `)` y luego `,` deja el cursor en la coma, vuelve al
+principio del bucle y se encuentra un `)` donde esperaba un `(`. El síntoma era
+«línea 14: se esperaba una tupla de atajo» y el fallo estaba dos caracteres
+antes. Lo mismo al cerrar un keymap: `],` `},` `),`, con la coma delante de cada
+cierre. Se consume coma opcional, cierre, coma opcional.
+
+**Ya no queda ningún último recurso al intérprete por este lado.** Hubo uno
+mientras el analizador no estaba terminado; se ha retirado. Un fichero que el
+analizador rechace se dice con fichero, línea y motivo, y no se aplica a medias.
 
 ### Lo que queda
 
-1. Terminar `read_legacy_python_text` (arriba).
-2. `--fl-check-keyconfig-io` acepta un segundo argumento con un `.py` heredado y
-   compara su lectura nativa contra la exportación nativa. Hoy ese modo sale en
-   rojo por lo mismo, y es justo el arnés que cerrará la deuda.
-3. `bl_keymap_utils/io.py` (308 líneas) sigue en el árbol: ya no lo usa el
-   editor para exportar, pero lo siguen leyendo `bl_ui/space_toolsystem_common.py`
-   y `bpy_extras/keyconfig_utils.py`. Cae con `bl_ui`.
+`bl_keymap_utils/io.py` (308 líneas) sigue en el árbol: ya no lo usa el editor
+para exportar ni para importar, pero lo siguen leyendo
+`bl_ui/space_toolsystem_common.py` y `bpy_extras/keyconfig_utils.py`. Cae con
+`bl_ui`.
