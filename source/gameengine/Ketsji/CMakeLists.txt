@@ -105,6 +105,7 @@ set(SRC
   ../Flipendo/FL_Component.cpp
   ../Flipendo/FL_GameDumpProbe.cpp
   ../Flipendo/FL_ArpgComponents.cpp
+  ../Flipendo/FL_AnimaComponents.cpp
   ../Flipendo/FL_RenderToTexture.cpp
   ../Flipendo/FL_TemplateComponents.cpp
   ../Flipendo/FL_UiCanvas.cpp

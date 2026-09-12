@@ -68,6 +68,8 @@ void FL_RegisterBuiltinComponents(FL_ComponentManager &mgr);
 void FL_RegisterRenderToTextureComponents(FL_ComponentManager &mgr);
 /* Definida en FL_TemplateComponents.cpp: las plantillas de ejemplo para el usuario. */
 void FL_RegisterTemplateComponents(FL_ComponentManager &mgr);
+/* Definida en FL_AnimaComponents.cpp: los componentes de escena de ÁNIMA ("Flotar", "Girar"). */
+void FL_RegisterAnimaComponents(FL_ComponentManager &mgr);
 
 struct FL_AutoRegister {
   FL_AutoRegister(const std::string &name, FL_ComponentManager::Factory f) {
