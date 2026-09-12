@@ -198,9 +198,24 @@ static int node_shader_gpu_hair_principled(GPUMaterial *mat,
                                            GPUNodeStack *in,
                                            GPUNodeStack *out)
 {
-  GPU_material_flag_set(mat, GPU_MATFLAG_DIFFUSE | GPU_MATFLAG_GLOSSY);
+  /* Flipendo (hair shading, phase 2). The node used to declare `DIFFUSE | GLOSSY` and then fall
+   * back to a flat diffuse closure, because EEVEE had no hair closure at all. It now emits three
+   * closures and needs one bin for each of them:
+   *   TRANSLUCENT -> bin 0 (TT, the light that crosses the fiber),
+   *   GLOSSY      -> bin 1 (R, the primary specular off the cuticle),
+   *   COAT        -> bin 2 (TRT, the tinted secondary reflection).
+   * The flags are only a way of asking `eevee_shader.cc` for the three closure slots; which
+   * closure lands in which bin is decided in `closure_eval(ClosureHair)`. */
+  GPU_material_flag_set(mat, GPU_MATFLAG_TRANSLUCENT | GPU_MATFLAG_GLOSSY | GPU_MATFLAG_COAT);
 
-  return GPU_stack_link(mat, node, "node_bsdf_hair_principled", in, out);
+  /* The parametrization is node storage, not a socket, so the shader cannot read it: pass it in
+   * as a constant. Without it the shader cannot tell melanin from direct absorption. */
+  const NodeShaderHairPrincipled *data = static_cast<NodeShaderHairPrincipled *>(node->storage);
+  float parametrization = float(data ? data->parametrization :
+                                      SHD_PRINCIPLED_HAIR_PIGMENT_CONCENTRATION);
+
+  return GPU_stack_link(
+      mat, node, "node_bsdf_hair_principled", in, out, GPU_constant(&parametrization));
 }
 
 }  // namespace blender::nodes::node_shader_bsdf_hair_principled_cc

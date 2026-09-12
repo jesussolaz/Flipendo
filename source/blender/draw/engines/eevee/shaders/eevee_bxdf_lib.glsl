@@ -36,6 +36,16 @@ struct ClosureLight {
   /* Output both shadowed and unshadowed for shadow denoising. */
   packed_float3 light_shadowed;
   packed_float3 light_unshadowed;
+  /* Flipendo (hair shading, phase 2).
+   * Hair lobes are NOT LTC fitted: they are evaluated analytically against the light center
+   * direction and only use the LTC to get the solid angle covered by the light. These fields
+   * are only read when `hair_lobe >= 0.0`, which is the tag for "this is a hair closure".
+   * Keeping them here instead of a separate struct avoids touching `ClosureLightStack`. */
+  packed_float3 hair_T;
+  float hair_roughness;
+  float hair_tilt;
+  /* < 0: not hair. 0: R lobe (primary, achromatic). 1: TRT lobe (secondary, tinted). */
+  float hair_lobe;
 };
 
 /* Represent an approximation of a bunch of rays from a BSDF. */

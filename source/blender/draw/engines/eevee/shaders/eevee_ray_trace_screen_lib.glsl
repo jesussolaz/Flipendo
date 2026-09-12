@@ -242,6 +242,7 @@ Ray raytrace_thickness_ray_amend(Ray ray, ClosureUndetermined cl, float3 V, floa
     case CLOSURE_NONE_ID:
     case CLOSURE_BSDF_DIFFUSE_ID:
     case CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID:
+    case CLOSURE_BSDF_HAIR_REFLECTION_ID:
     case CLOSURE_BSSRDF_BURLEY_ID:
       break;
   }

@@ -39,6 +39,7 @@ void transmission_thickness_amend_closure(inout ClosureUndetermined cl,
     case CLOSURE_BSDF_DIFFUSE_ID:
     case CLOSURE_BSDF_TRANSLUCENT_ID:
     case CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID:
+    case CLOSURE_BSDF_HAIR_REFLECTION_ID:
     case CLOSURE_BSSRDF_BURLEY_ID:
       break;
   }

@@ -322,6 +322,7 @@ set(GLSL_SRC
   engines/eevee/shaders/eevee_bxdf_lib.glsl
   engines/eevee/shaders/eevee_bxdf_microfacet_lib.glsl
   engines/eevee/shaders/eevee_bxdf_diffuse_lib.glsl
+  engines/eevee/shaders/eevee_bxdf_hair_lib.glsl
   engines/eevee/shaders/eevee_bxdf_sampling_lib.glsl
   engines/eevee/shaders/eevee_camera_lib.glsl
   engines/eevee/shaders/eevee_closure_lib.glsl

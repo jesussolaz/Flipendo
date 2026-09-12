@@ -1909,6 +1909,9 @@ enum GBufferMode : uint32_t {
   GBUF_REFLECTION_COLORLESS = 3u,
   /** Used for surfaces that have no lit closure and just encode a normal layer. */
   GBUF_UNLIT = 4u,
+  /** Flipendo: hair lobe (R or TRT). Same layout as GBUF_REFLECTION, but the normal slot holds
+   * the CURVE TANGENT and the second data word holds (width, tilt, -, lobe id). */
+  GBUF_HAIR = 5u,
 
   /**
    * Special bit that marks all closures with refraction.

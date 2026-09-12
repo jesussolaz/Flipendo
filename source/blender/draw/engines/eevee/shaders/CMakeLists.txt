@@ -162,6 +162,7 @@ set(SRC_GLSL_LIB
   eevee_attributes_volume_lib.glsl
   eevee_attributes_world_lib.glsl
   eevee_bxdf_diffuse_lib.glsl
+  eevee_bxdf_hair_lib.glsl
   eevee_bxdf_lib.glsl
   eevee_bxdf_microfacet_lib.glsl
   eevee_camera_lib.glsl

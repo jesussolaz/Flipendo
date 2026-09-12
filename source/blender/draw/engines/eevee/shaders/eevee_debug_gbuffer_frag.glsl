@@ -40,6 +40,7 @@ void main()
       case CLOSURE_BSDF_TRANSLUCENT_ID:
       case CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID:
       case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
+      case CLOSURE_BSDF_HAIR_REFLECTION_ID:
         eval_cost += 1.0f;
         break;
       case CLOSURE_BSSRDF_BURLEY_ID:

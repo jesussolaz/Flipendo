@@ -90,6 +90,11 @@ ClosureType closure_type_get(ClosureSubsurface cl)
   return CLOSURE_BSSRDF_BURLEY_ID;
 }
 
+ClosureType closure_type_get(ClosureHair cl)
+{
+  return CLOSURE_BSDF_HAIR_REFLECTION_ID;
+}
+
 /**
  * Returns true if the closure is to be selected based on the input weight.
  */
@@ -276,9 +281,46 @@ Closure closure_eval(ClosureVolumeAbsorption volume_absorption)
   return Closure(0);
 }
 
+/**
+ * Flipendo (hair shading, phase 2).
+ *
+ * The hair closure does NOT use `closure_base_copy`: it stores the curve TANGENT in the normal
+ * slot of `ClosureUndetermined` (an octahedral encoding does not care whether the unit vector it
+ * carries is a normal or a tangent) and keeps the width, the cuticle tilt and the lobe id in the
+ * data slot. Everything that needs a genuine normal rebuilds it from the tangent and the view
+ * vector with `bxdf_hair_normal()`.
+ *
+ * R and TRT go to two DIFFERENT bins on purpose: each one carries its own tint (R is achromatic,
+ * TRT is dyed by the pigment) and its own width, which a single bin could not hold. They land on
+ * the glossy and the coat slot, so a hair material asks for the same three bins a Principled
+ * material with a coat already asks for.
+ */
 Closure closure_eval(ClosureHair hair)
 {
-  /* TODO */
+  ClosureUndetermined cl;
+  cl.weight = hair.weight;
+  cl.color = hair.color;
+  cl.N = hair.T;
+  cl.type = CLOSURE_BSDF_HAIR_REFLECTION_ID;
+  cl.data.x = hair.roughness.x;
+  cl.data.y = hair.offset;
+  cl.data.z = hair.lobe;
+  cl.data.w = 0.0f;
+
+#if CLOSURE_BIN_COUNT > 2
+  if (hair.lobe > 0.5f) {
+    closure_select(g_closure_bins[2], g_closure_rand[2], cl);
+  }
+  else {
+    closure_select(g_closure_bins[1], g_closure_rand[1], cl);
+  }
+#elif CLOSURE_BIN_COUNT > 1
+  /* Not enough bins (the material mixes hair with something else): both lobes share one bin and
+   * get picked stochastically. Noisier, but never black. */
+  closure_select(g_closure_bins[1], g_closure_rand[1], cl);
+#else
+  closure_select(g_closure_bins[0], g_closure_rand[0], cl);
+#endif
   return Closure(0);
 }
 

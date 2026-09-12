@@ -150,7 +150,9 @@ enum ClosureType : uchar {
   // CLOSURE_BSDF_ASHIKHMIN_SHIRLEY_ID = 8u, /* TODO */
   // CLOSURE_BSDF_ASHIKHMIN_VELVET_ID = 9u,  /* TODO */
   // CLOSURE_BSDF_GLOSSY_TOON_ID = 10u,      /* TODO */
-  // CLOSURE_BSDF_HAIR_REFLECTION_ID = 11u,  /* TODO */
+  /* Flipendo: hair lobes (R and TRT) of the real-time Marschner approximation.
+   * The `N` slot of `ClosureUndetermined` holds the CURVE TANGENT, not a normal. */
+  CLOSURE_BSDF_HAIR_REFLECTION_ID = 11u,
 
   /* Transmission */
   CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID = 12u,
@@ -219,9 +221,14 @@ struct ClosureRefraction {
 struct ClosureHair {
   packed_float3 color;
   float weight;
+  /* Curve tangent in world space. This is what the lobe is built around. */
   packed_float3 T;
+  /* Cuticle tilt (radians). Shifts the longitudinal lobe away from the specular cone. */
   float offset;
+  /* x: longitudinal roughness (beta), y: unused for now (azimuthal roughness). */
   packed_float2 roughness;
+  /* Flipendo: which Marschner lobe this closure carries. 0 = R, 1 = TRT. */
+  float lobe;
 };
 
 struct ClosureVolumeScatter {

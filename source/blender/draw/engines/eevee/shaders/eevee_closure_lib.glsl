@@ -5,6 +5,7 @@
 #pragma once
 
 #include "eevee_bxdf_diffuse_lib.glsl"
+#include "eevee_bxdf_hair_lib.glsl"
 #include "eevee_bxdf_microfacet_lib.glsl"
 #include "gpu_shader_codegen_lib.glsl"
 
@@ -22,6 +23,8 @@ float closure_apparent_roughness_get(ClosureUndetermined cl)
     case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
       return bxdf_ggx_perceived_roughness_transmission(to_closure_refraction(cl).roughness,
                                                        to_closure_refraction(cl).ior);
+    case CLOSURE_BSDF_HAIR_REFLECTION_ID:
+      return bxdf_hair_perceived_roughness();
     case CLOSURE_NONE_ID:
       return 0.0f;
   }
@@ -48,6 +51,8 @@ float closure_evaluate_pdf(ClosureUndetermined cl, float3 L, float3 V, float thi
       float roughness_sq = square(cl_.roughness);
       return bxdf_ggx_eval_refraction(cl.N, L, V, roughness_sq, cl_.ior, thickness, true).pdf;
     }
+    case CLOSURE_BSDF_HAIR_REFLECTION_ID:
+      return bxdf_hair_eval(cl, L, V).pdf;
     case CLOSURE_NONE_ID:
       break;
   }
@@ -65,6 +70,7 @@ LightProbeRay bxdf_lightprobe_ray(ClosureUndetermined cl, float3 P, float3 V, fl
     case CLOSURE_BSSRDF_BURLEY_ID:
     case CLOSURE_BSDF_DIFFUSE_ID:
     case CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID:
+    case CLOSURE_BSDF_HAIR_REFLECTION_ID:
       break;
     case CLOSURE_NONE_ID:
       assert(0);
@@ -81,6 +87,8 @@ LightProbeRay bxdf_lightprobe_ray(ClosureUndetermined cl, float3 P, float3 V, fl
       return bxdf_ggx_lightprobe_reflection(to_closure_reflection(cl), V);
     case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
       return bxdf_ggx_lightprobe_transmission(to_closure_refraction(cl), V, thickness);
+    case CLOSURE_BSDF_HAIR_REFLECTION_ID:
+      return bxdf_hair_lightprobe(cl, V);
     case CLOSURE_NONE_ID:
       assert(0);
       break;
@@ -113,6 +121,7 @@ ClosureLight closure_light_new_ex(ClosureUndetermined cl,
       case CLOSURE_BSDF_TRANSLUCENT_ID:
       /* Defaults to avoid UB. */
       case CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID:
+      case CLOSURE_BSDF_HAIR_REFLECTION_ID:
       case CLOSURE_BSDF_DIFFUSE_ID:
       case CLOSURE_NONE_ID:
         cl_light = bxdf_translucent_light(cl, V, thickness);
@@ -125,6 +134,9 @@ ClosureLight closure_light_new_ex(ClosureUndetermined cl,
       case CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID:
         cl_light = bxdf_ggx_light_reflection(to_closure_reflection(cl), V);
         break;
+      case CLOSURE_BSDF_HAIR_REFLECTION_ID:
+        cl_light = bxdf_hair_light(cl, V);
+        break;
       case CLOSURE_BSSRDF_BURLEY_ID:
       case CLOSURE_BSDF_DIFFUSE_ID:
       /* Defaults to avoid UB. */
@@ -134,6 +146,15 @@ ClosureLight closure_light_new_ex(ClosureUndetermined cl,
         cl_light = bxdf_diffuse_light(cl);
         break;
     }
+  }
+  if (cl.type != CLOSURE_BSDF_HAIR_REFLECTION_ID || is_transmission) {
+    /* Flipendo: the tag `light_eval_single_closure` reads to pick the analytic hair branch.
+     * Set here, after the switch, so that every existing `bxdf_*_light()` keeps working
+     * without having to know the field exists. */
+    cl_light.hair_lobe = -1.0f;
+    cl_light.hair_T = float3(0.0f);
+    cl_light.hair_roughness = 0.0f;
+    cl_light.hair_tilt = 0.0f;
   }
   cl_light.light_shadowed = float3(0.0f);
   cl_light.light_unshadowed = float3(0.0f);

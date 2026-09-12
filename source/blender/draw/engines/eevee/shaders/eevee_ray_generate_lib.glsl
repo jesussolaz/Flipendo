@@ -37,6 +37,8 @@ BsdfSample ray_generate_direction(float2 noise, ClosureUndetermined cl, float3 V
     case CLOSURE_BSDF_TRANSLUCENT_ID:
     case CLOSURE_BSSRDF_BURLEY_ID:
     case CLOSURE_BSDF_DIFFUSE_ID:
+    /* Flipendo: hair is reported as fully rough, so it never reaches the tracing stage. */
+    case CLOSURE_BSDF_HAIR_REFLECTION_ID:
       break;
     case CLOSURE_NONE_ID:
       assert(0);
@@ -54,6 +56,10 @@ BsdfSample ray_generate_direction(float2 noise, ClosureUndetermined cl, float3 V
       break;
     case CLOSURE_BSSRDF_BURLEY_ID:
     case CLOSURE_BSDF_DIFFUSE_ID:
+    /* Flipendo: hair keeps the tangent in `cl.N`, so `tangent_to_world` is built around the
+     * strand. A cosine sample around it is meaningless but finite; in practice this path is
+     * never taken because `closure_apparent_roughness_get()` reports 1.0 for hair. */
+    case CLOSURE_BSDF_HAIR_REFLECTION_ID:
       samp = bxdf_diffuse_sample(random_point_on_cylinder);
       break;
     case CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID: {

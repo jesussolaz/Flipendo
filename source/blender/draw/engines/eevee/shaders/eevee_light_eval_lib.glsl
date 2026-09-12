@@ -19,6 +19,7 @@
 
 SHADER_LIBRARY_CREATE_INFO(eevee_light_data)
 
+#include "eevee_bxdf_hair_lib.glsl"
 #include "eevee_bxdf_lib.glsl"
 #include "eevee_closure_lib.glsl"
 #include "eevee_light_lib.glsl"
@@ -111,7 +112,25 @@ void light_eval_single_closure(LightData light,
   if (attenuation < 1e-30f) {
     return;
   }
-  float ltc_result = light_ltc(utility_tx, light, cl.N, V, lv, cl.ltc_mat);
+  float ltc_result;
+  if (cl.hair_lobe >= 0.0f) {
+    /* Flipendo, hair shading (phase 2): the Marschner lobes have no LTC fit, so they cannot be
+     * integrated over the light shape the way the GGX and cosine lobes are. Instead the LTC is
+     * used with a cosine lobe pointed AT the light, which makes it return the (cosine weighted)
+     * solid angle the light covers — the same trick `light_eval_single` already plays for
+     * `LIGHT_TRANSLUCENT_WITH_THICKNESS`. That solid angle then multiplies the hair BSDF
+     * evaluated at the centre direction of the light.
+     * Consequence, and it is a real limitation: a large area light softens the highlight only
+     * through its solid angle, it does not STRETCH it the way a true area integration would. */
+    constexpr float4 ltc_cosine_mat = float4(1.0f, 0.0f, 0.0f, 1.0f);
+    float coverage = light_ltc(utility_tx, light, lv.L, V, lv, ltc_cosine_mat);
+    /* `light_ltc` with a cosine lobe returns `solid_angle / M_PI`. Undo it: the hair BSDF
+     * already carries its own normalization. */
+    ltc_result = coverage * M_PI * bxdf_hair_light_eval(cl, lv.L, V);
+  }
+  else {
+    ltc_result = light_ltc(utility_tx, light, cl.N, V, lv, cl.ltc_mat);
+  }
   float3 out_radiance = light.color * ltc_result;
   float visibility = shadow * attenuation;
   cl.light_shadowed += visibility * out_radiance;

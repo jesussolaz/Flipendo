@@ -79,7 +79,11 @@ void main()
       closure_indirect_light = load_radiance_indirect(texel, layer_index);
     }
 
-    average_normal += cl.N * reduce_add(cl.color);
+    if (cl.type != CLOSURE_BSDF_HAIR_REFLECTION_ID) {
+      /* Flipendo: a hair closure keeps the curve TANGENT in `cl.N`, not a normal. Feeding it to
+       * the average would tilt the radiance feedback normal along the strands. */
+      average_normal += cl.N * reduce_add(cl.color);
+    }
 
     switch (cl.type) {
       case CLOSURE_BSDF_TRANSLUCENT_ID:
@@ -91,6 +95,8 @@ void main()
         break;
       case CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID:
       case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
+      /* Flipendo: the hair lobes are specular reflections, they belong in the glossy pass. */
+      case CLOSURE_BSDF_HAIR_REFLECTION_ID:
         specular_color += cl.color;
         specular_direct += closure_direct_light;
         specular_indirect += closure_indirect_light;

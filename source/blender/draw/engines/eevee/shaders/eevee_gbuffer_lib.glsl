@@ -102,6 +102,8 @@ ClosureType gbuffer_mode_to_closure_type(uint mode)
     case GBUF_REFLECTION_COLORLESS:
     case GBUF_REFLECTION:
       return ClosureType(CLOSURE_BSDF_MICROFACET_GGX_REFLECTION_ID);
+    case GBUF_HAIR:
+      return ClosureType(CLOSURE_BSDF_HAIR_REFLECTION_ID);
     case GBUF_REFRACTION_COLORLESS:
     case GBUF_REFRACTION:
       return ClosureType(CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID);
@@ -688,6 +690,47 @@ void gbuffer_closure_reflection_load(inout GBufferReader gbuf,
   gbuffer_register_closure(gbuf, cl, layer);
 }
 
+/* Flipendo: hair lobe. Same three words as a coloured reflection, but the meaning differs:
+ * the normal slot carries the curve TANGENT and the second data word carries the longitudinal
+ * width, the cuticle tilt and the lobe id. The gbuffer closure texture is `GPU_RGB10_A2`, i.e.
+ * UNORM, so the tilt (signed radians) is remapped to [0..1] and the lobe id rides the two bit
+ * alpha channel where 0 and 1 are exactly representable. */
+void gbuffer_closure_hair_pack(inout GBufferWriter gbuf, ClosureUndetermined cl)
+{
+  gbuffer_append_closure(gbuf, GBUF_HAIR);
+  gbuffer_append_data(gbuf, gbuffer_closure_color_pack(cl.color));
+  gbuffer_append_data(
+      gbuf,
+      float4(saturate(cl.data.x), saturate(cl.data.y * 0.5f + 0.5f), 0.0f, saturate(cl.data.z)));
+  gbuffer_append_normal(gbuf, cl.N);
+}
+void gbuffer_closure_hair_skip(inout GBufferReader gbuf)
+{
+  gbuffer_skip_closure(gbuf);
+  gbuffer_skip_data(gbuf);
+  gbuffer_skip_data(gbuf);
+  gbuffer_skip_normal(gbuf);
+}
+void gbuffer_closure_hair_load(inout GBufferReader gbuf,
+                               uchar layer,
+                               uchar bin_index,
+                               samplerGBufferClosure closure_tx,
+                               samplerGBufferNormal normal_tx)
+{
+  float4 data0 = gbuffer_pop_first_data(gbuf, closure_tx);
+  float4 data1 = gbuffer_pop_first_data(gbuf, closure_tx);
+
+  ClosureUndetermined cl = closure_new(CLOSURE_BSDF_HAIR_REFLECTION_ID);
+  cl.color = gbuffer_closure_color_unpack(data0);
+  cl.data.x = data1.x;
+  cl.data.y = data1.y * 2.0f - 1.0f;
+  cl.data.z = data1.w;
+  /* The curve tangent, not a normal. */
+  cl.N = gbuffer_normal_get(gbuf, bin_index, normal_tx);
+
+  gbuffer_register_closure(gbuf, cl, layer);
+}
+
 void gbuffer_closure_refraction_pack(inout GBufferWriter gbuf, ClosureUndetermined cl)
 {
   gbuffer_append_closure(gbuf, GBUF_REFRACTION);
@@ -879,6 +922,9 @@ GBufferWriter gbuffer_pack(GBufferData data_in, float3 Ng)
           gbuffer_closure_reflection_pack(gbuf, cl);
         }
         break;
+      case CLOSURE_BSDF_HAIR_REFLECTION_ID:
+        gbuffer_closure_hair_pack(gbuf, cl);
+        break;
       case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
         if (color_is_grayscale(cl.color)) {
           gbuffer_closure_refraction_colorless_pack(gbuf, cl);
@@ -1041,6 +1087,10 @@ GBufferReader gbuffer_read(samplerGBufferHeader header_tx,
         gbuffer_closure_reflection_load(gbuf, gbuf.closure_count, bin, closure_tx, normal_tx);
         gbuf.closure_count++;
         break;
+      case GBUF_HAIR:
+        gbuffer_closure_hair_load(gbuf, gbuf.closure_count, bin, closure_tx, normal_tx);
+        gbuf.closure_count++;
+        break;
       case GBUF_REFRACTION:
         gbuffer_closure_refraction_load(gbuf, gbuf.closure_count, bin, closure_tx, normal_tx);
         gbuf.closure_count++;
@@ -1109,6 +1159,9 @@ ClosureUndetermined gbuffer_read_bin(uint header,
       case GBUF_REFLECTION:
         gbuffer_closure_reflection_skip(gbuf);
         break;
+      case GBUF_HAIR:
+        gbuffer_closure_hair_skip(gbuf);
+        break;
       case GBUF_REFRACTION:
         gbuffer_closure_refraction_skip(gbuf);
         break;
@@ -1137,6 +1190,9 @@ ClosureUndetermined gbuffer_read_bin(uint header,
       break;
     case GBUF_REFLECTION:
       gbuffer_closure_reflection_load(gbuf, gbuf.closure_count, bin_index, closure_tx, normal_tx);
+      break;
+    case GBUF_HAIR:
+      gbuffer_closure_hair_load(gbuf, gbuf.closure_count, bin_index, closure_tx, normal_tx);
       break;
     case GBUF_REFRACTION:
       gbuffer_closure_refraction_load(gbuf, gbuf.closure_count, bin_index, closure_tx, normal_tx);
