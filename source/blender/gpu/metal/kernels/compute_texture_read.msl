@@ -86,7 +86,10 @@ template<typename T> T convert_type(int type)
 
 template<> uchar convert_type<uchar>(float val)
 {
-  return uchar(val * float(0xFF));
+  /* Flipendo: el buffer trasero de Metal es flotante y un pixel > 1,0 (disco solar,
+   * motas emisivas) se envolvia modulo 256 al leerlo como uchar: el sol salia verde
+   * y el reflejo a anillos. La pantalla estaba bien; la captura mentia. Se satura. */
+  return uchar(saturate(val) * float(0xFF));
 }
 
 template<> uint convert_type<uint>(float val)
