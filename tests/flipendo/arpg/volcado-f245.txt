@@ -1,0 +1,13 @@
+# FL_GAME_DUMP v2 escena=ArpgAnim frame=245
+OBJ nombre=Alonso tipoblender=MESH visible=1 pos=(0.00,13.62,-0.31)
+OBJ nombre=Alonso_Rig tipoblender=ARMATURE visible=1 pos=(0.00,13.62,-0.31) accion=Ataque3@7.3
+OBJ nombre=CamTestigo tipoblender=EMPTY visible=1 pos=(0.00,7.90,3.53)
+OBJ nombre=CuboFlota tipoblender=MESH visible=1 pos=(3.00,2.00,1.22)
+OBJ nombre=CuboGira tipoblender=MESH visible=1 pos=(-3.00,2.00,1.00)
+OBJ nombre=Enemigo tipoblender=MESH visible=1 pos=(-2.58,6.09,1.00)
+OBJ nombre=GameCamera tipoblender=CAMERA visible=1 pos=(0.00,6.96,3.87)
+OBJ nombre=GiroTestigo tipoblender=EMPTY visible=1 pos=(-2.34,2.00,0.25)
+OBJ nombre=Player tipoblender=EMPTY visible=1 pos=(0.00,13.62,0.71) combo=active:2 hp=100
+OBJ nombre=Suelo tipoblender=MESH visible=1 pos=(0.00,0.00,-0.50)
+OBJ nombre=Sun tipoblender=LAMP visible=1 pos=(4.00,-4.00,8.00)
+TOTAL objetos=11

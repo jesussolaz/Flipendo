@@ -632,7 +632,11 @@ class FL_ThirdPersonCamera : public FL_Component {
       scene->SetActiveCamera(self);
     }
     m_dist = GetFloatProp(m_owner, "fl_cam_dist", 7.0f);
-    m_height = GetFloatProp(m_owner, "fl_cam_altura", 2.6f);
+    /* Altura sobre el ORIGEN del Player (el centro de su cápsula, no los pies). La
+     * cámara se pone a `altura` + la elevación del pitch y mira a 0,7·altura. Con el
+     * 2,6 anterior la mira quedaba 1,1 m por encima de la cabeza y el personaje
+     * salía cortado por el borde inferior de la captura (medido, frame 60). */
+    m_height = GetFloatProp(m_owner, "fl_cam_altura", 1.0f);
     /* Elevación de la órbita en grados. La escena del charco la pide a -5° para que
      * el horizonte quede al 40 % del encuadre y el sol se refleje delante del
      * personaje; el defecto, 18°, es la vista clásica por encima del hombro. */
@@ -754,7 +758,7 @@ class FL_ThirdPersonCamera : public FL_Component {
   static constexpr float kPitchMin = -10.0f * (float)M_PI / 180.0f;
   static constexpr float kPitchMax = 60.0f * (float)M_PI / 180.0f;
 
-  float m_dist = 7.0f, m_height = 2.6f;
+  float m_dist = 7.0f, m_height = 1.0f;
   float m_yaw = 0.0f, m_pitch = 0.31416f;
   float m_yawTarget = 0.0f, m_pitchTarget = 0.31416f;
   float m_sens = 0.0025f;
