@@ -171,14 +171,32 @@ class RAS_ICanvas {
   void AddScreenshot(
       const std::string &path, int x, int y, int width, int height, ImageFormatData *format);
 
+  /** Flipendo: en que acabo un intento de captura. Son DOS fallos distintos y se
+   * distinguen a proposito, porque el primero que se supuso (`Unread`) resulto NO ser
+   * el que se da en la practica; medirlo por separado es lo que lo demostro. */
+  enum class ScreenshotResult {
+    /** Habia pixeles y el fichero se ha encolado para escribirse. */
+    Written,
+    /** La GPU no escribio ni un byte: el buffer sigue entero con el centinela. */
+    Unread,
+    /**
+     * La lectura funciono, pero el buffer trasero no tenia fotograma: **alfa 0 en
+     * todos los pixeles**. Una captura de verdad trae alfa 255 en todos (medido:
+     * 120.000 de 120.000 en una captura buena de 400x300), porque la textura de la
+     * ventana se limpia con alfa 1 y el render escribe opaco. Es lo que pasa cuando
+     * hay dos Blenderplayer a la vez: el que pierde la carrera lee un buffer en
+     * blanco, no un buffer sin leer.
+     */
+    NotComposited,
+  };
+
   /**
    * Saves screenshot data to a file. The actual compression and disk I/O is performed in
    * a separate thread.
    *
-   * Flipendo: devuelve false cuando la lectura de la GPU no escribio NADA (el buffer
-   * sigue entero con RAS_Rasterizer::SCREENSHOT_UNREAD_BYTE). En ese caso no se escribe
-   * ningun fichero y no se toca `screenshot.format`, que sigue siendo del llamante para
-   * poder reintentar. \see FlushScreenshots.
+   * Flipendo: si no devuelve `Written` no se escribe ningun fichero y no se toca
+   * `screenshot.format`, que sigue siendo del llamante para poder reintentar.
+   * \see FlushScreenshots.
    */
-  bool SaveScreeshot(const Screenshot &screenshot);
+  ScreenshotResult SaveScreeshot(const Screenshot &screenshot);
 };

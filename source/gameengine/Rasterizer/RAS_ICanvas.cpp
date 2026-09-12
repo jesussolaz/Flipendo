@@ -139,25 +139,32 @@ void RAS_ICanvas::FlushScreenshots()
   std::vector<Screenshot> retry;
 
   for (Screenshot &screenshot : m_screenshots) {
-    if (SaveScreeshot(screenshot)) {
+    const ScreenshotResult result = SaveScreeshot(screenshot);
+    if (result == ScreenshotResult::Written) {
       continue;
     }
+    /* Los dos fallos se nombran distinto a proposito: el de arriba es «la GPU no
+     * escribio»; el de abajo es «la GPU escribio un buffer sin fotograma». Confundirlos
+     * fue el error de diagnostico que costo una build entera. */
+    const char *motivo = (result == ScreenshotResult::Unread) ?
+                             "la lectura del buffer trasero no escribio ni un byte" :
+                             "el buffer trasero no tenia fotograma (alfa 0 en todos los "
+                             "pixeles; una captura de verdad trae alfa 255)";
     screenshot.attempts--;
     if (screenshot.attempts > 0) {
       /* Se dice en voz alta: sin esto no hay forma de saber si una captura salio a la
        * primera o se salvo por el reintento, y esa diferencia es justo lo que hay que
        * medir para saber si el reintento sirve de algo. */
-      CM_Warning("la captura '" << screenshot.path
-                                << "' no leyo ni un pixel; se reintenta en el fotograma "
-                                   "siguiente (quedan "
+      CM_Warning("la captura '" << screenshot.path << "' no vale: " << motivo
+                                << "; se reintenta en el fotograma siguiente (quedan "
                                 << screenshot.attempts << " intentos).");
       retry.push_back(screenshot);
       continue;
     }
     CM_Error("ARNES: la captura '"
              << screenshot.path << "' se descarta tras " << SCREENSHOT_ATTEMPTS
-             << " intentos: la lectura del buffer trasero no devolvio ni un pixel. "
-                "Causa conocida en macOS/Metal: hay OTRO Blenderplayer abierto a la vez. "
+             << " intentos: " << motivo
+             << ". Causa conocida en macOS/Metal: hay OTRO Blenderplayer abierto a la vez. "
                 "Captura de uno en uno; no se escribe ningun fichero.");
     /* El formato era del llamante mientras quedaban intentos; aqui ya no lo es. */
     MEM_freeN(screenshot.format);
@@ -201,13 +208,14 @@ void save_screenshot_thread_func(TaskPool *__restrict (pool),
   MEM_freeN(task->im_format);
 }
 
-bool RAS_ICanvas::SaveScreeshot(const Screenshot &screenshot)
+RAS_ICanvas::ScreenshotResult RAS_ICanvas::SaveScreeshot(const Screenshot &screenshot)
 {
   unsigned int *pixels = m_rasterizer->MakeScreenshot(
       screenshot.x, screenshot.y, screenshot.width, screenshot.height);
   if (!pixels) {
     CM_Error("cannot allocate pixels array");
-    return true; /* No hay nada que reintentar: fallo de memoria, no de lectura. */
+    /* No hay nada que reintentar: fallo de memoria, no de lectura. */
+    return ScreenshotResult::Written;
   }
 
   /* Flipendo: cuantos bytes siguen siendo el centinela, es decir, cuantos NO escribio
@@ -223,7 +231,30 @@ bool RAS_ICanvas::SaveScreeshot(const Screenshot &screenshot)
   }
   if (unread == bytes) {
     free(pixels);
-    return false;
+    return ScreenshotResult::Unread;
+  }
+
+  /* Flipendo, y esta es LA guarda que caza el fallo de verdad: el alfa. Se supuso que
+   * la lectura volvia sin escribir, y el centinela de arriba demostro que NO: cuando
+   * hay dos Blenderplayer a la vez, `GPU_framebuffer_read_color()` escribe los cuatro
+   * canales enteros... a cero. Lo que devuelve no es «nada», es un buffer trasero SIN
+   * FOTOGRAMA.
+   *
+   * Lo que lo distingue de una captura buena es el alfa: medido sobre una captura
+   * correcta de 400x300, los 120.000 pixeles traen alfa 255, porque la textura de la
+   * ventana se limpia con alfa 1 y el render escribe opaco. Un buffer sin componer trae
+   * alfa 0 en todos.
+   *
+   * Ojo con lo que esto implica: una escena que de verdad no dibuje NADA tambien cae
+   * aqui. Es lo que se quiere — «no se dibujo nada» no es una captura —, y ademas se
+   * dice en voz alta, asi que no se confunde con un acierto silencioso. */
+  size_t opaque = 0;
+  for (size_t i = 3; i < bytes; i += 4) {
+    opaque += (raw[i] != 0) ? 1 : 0;
+  }
+  if (opaque == 0) {
+    free(pixels);
+    return ScreenshotResult::NotComposited;
   }
   /* El umbral no es cosmetico: una captura de verdad trae por azar ~1 de cada 256
    * bytes con el valor 0xCD (unos 1.900 de 480.000 en 400x300), asi que avisar con
@@ -253,5 +284,5 @@ bool RAS_ICanvas::SaveScreeshot(const Screenshot &screenshot)
                      task,
                      true,  // free task data
                      NULL);
-  return true;
+  return ScreenshotResult::Written;
 }
