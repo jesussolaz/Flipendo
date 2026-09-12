@@ -1,6 +1,7 @@
-# El pelo, a C++ — plan de las cuatro fases y lo medido en la primera
+# El pelo, a C++ — plan de las cuatro fases, y lo medido en las dos primeras
 
 > Carril PELO, 2026-09-12. Qué había, qué se midió, qué se arregló, qué queda.
+> Fase 1 (que el pelo llegue al juego): §1-§5. Fase 2 (el sombreado): §6.
 
 ## 0. Lo que Jesús quiere
 
@@ -11,8 +12,8 @@ cuatro, y hasta que no está la primera las otras tres no se pueden ni probar.
 | Fase | Qué es | Estado |
 |---|---|---|
 | 1 | Que el pelo **llegue al juego**: que el objeto exista para el motor | **hecha** (este documento) |
-| 2 | **Modelo de sombreado** de pelo (reflejo primario y secundario, transmisión, tinte) | sin empezar |
-| 3 | **Simulación de guías** en *compute* + interpolación de los cabellos en GPU | sin empezar, diseño fijado (§6) |
+| 2 | **Modelo de sombreado** de pelo (reflejo primario y secundario, transmisión, tinte) | **hecha** (§6) |
+| 3 | **Simulación de guías** en *compute* + interpolación de los cabellos en GPU | sin empezar, diseño fijado (§7) |
 | 4 | **Autosombreado** y **niveles de detalle** | sin empezar |
 
 ---
@@ -228,7 +229,215 @@ dejar pasar recortando a la menor. No se recorta: se falla y se dice.
 
 ---
 
-## 6. Fase 3: guías explícitas e interpolación en GPU (decisión de Jesús, 2026-09-12)
+## 6. Fase 2 — el sombreado: qué se implementó, dónde se aproxima y qué no cubre
+
+> Carril PELO-2, 2026-09-12. Capturas y cifras: `informes/PELO-2.md` e `informes/pelo-2/`.
+
+### 6.1 El punto de partida, con cita
+
+EEVEE **no tenía sombreado de pelo**. No es una opinión: está escrito por los propios
+desarrolladores de Blender en `source/blender/gpu/shaders/material/gpu_shader_material_hair.glsl`,
+dentro de un `#if 0`:
+
+> NOTE(fclem): This is the way it should be. But we don't have proper implementation
+> of the hair closure yet. For now fall back to a simpler diffuse surface so that we
+> have at least a color feedback.
+
+Los **dos** nodos de pelo (`Hair BSDF` y `Principled Hair BSDF`) caían en el mismo
+`#else`: un `ClosureDiffuse` con el color del zócalo. Y
+`closure_eval(ClosureHair)` en `eevee_nodetree_lib.glsl` era literalmente
+`/* TODO */ return Closure(0);`. Una melena se pintaba como **superficie mate**: sin
+banda de brillo recorriendo el mechón, sin luz atravesándolo por detrás, sin el
+segundo reflejo teñido. Eso es exactamente lo que hace que el pelo en tiempo real
+parezca plástico.
+
+### 6.2 El modelo: Marschner de campo lejano, en tres cierres
+
+| Bin | Cierre | Lóbulo | Qué es |
+|---|---|---|---|
+| 0 | `ClosureTranslucent` | **TT** | la luz que **atraviesa** la fibra. Teñida por una travesía del pigmento |
+| 1 | `CLOSURE_BSDF_HAIR_REFLECTION_ID` | **R** | reflejo primario en la cutícula. **Acromático** (nunca entra en la fibra) |
+| 2 | `CLOSURE_BSDF_HAIR_REFLECTION_ID` | **TRT** | segundo reflejo. **Teñido**, más ancho, desplazado al otro lado |
+
+- **Longitudinal `M_p`**: gaussiana de **área unidad** sobre el ángulo `theta_h`,
+  desplazada por la inclinación de la cutícula (`-alpha` para R, `+3·alpha/2` para
+  TRT). Que los desplazamientos tengan **signos opuestos** es lo que separa los dos
+  brillos en vez de superponerlos: es el rasgo que se reconoce como «pelo».
+  Al ser normalizada, subir la rugosidad **baja el pico** en vez de añadir energía, y
+  eso es comprobable (§6.5).
+- **Azimutal `N_p`**: las formas cerradas baratas de la literatura de tiempo real
+  desde Marschner 2003, en vez de resolver el cilindro de Bravais:
+  `N_R = 0.25·cos(phi/2)` (ancha — la que hace que el brillo **recorra** el mechón y
+  no sea un punto) y `N_TRT = exp(17·cos(phi) − 16.78)` (estrecha, hacia el
+  observador: el destello de color).
+- **Fresnel** de queratina (n = 1,55) con el denominador `1/cos²(theta_d)` de
+  Marschner. Pesos `F` para R y `(1−F)²·F` para TRT.
+- **Pigmento**: melanina/feomelanina y `sigma_a_from_reflectance` **copiados de
+  Cycles** (`intern/cycles/kernel/closure/bsdf_hair_principled.h`), para que el mismo
+  material signifique el mismo pelo en los dos motores. Transmitancia de una travesía
+  `A = exp(−2·sigma_a)`; tinte de TT = `A`, tinte de TRT = `A³`.
+- **Variación por mechón** (`Random Color`, `Random Roughness`), con las fórmulas de
+  Cycles: sin ella todos los cabellos tienen el mismo color, y eso se ve.
+
+El código: `source/blender/draw/engines/eevee/shaders/eevee_bxdf_hair_lib.glsl` (los
+lóbulos) y `gpu_shader_material_hair.glsl` (el nodo, el pigmento y el reparto en
+cierres). Las dos cabeceras llevan escritas sus aproximaciones.
+
+### 6.3 Las tres decisiones de arquitectura, y su precio
+
+**1. El cierre de pelo guarda el TANGENTE en la ranura de la normal.**
+El gbuffer codifica ahí un vector unidad en octaedro y le da igual si es una normal o
+una tangente. Gracias a eso el modo nuevo `GBUF_HAIR` reusa **el reparto exacto** de
+`GBUF_REFLECTION` (color + una palabra de datos + una normal) y no hace falta ni una
+capa nueva de textura. Donde hace falta una normal de verdad —atenuación por
+encaramiento, sesgo de sombra, sondas— se reconstruye con `bxdf_hair_normal(T, V)`,
+que es la normal del cilindro que mira al observador.
+*Precio*: la textura de cierres es `GPU_RGB10_A2`, o sea **UNORM**. La inclinación
+(con signo) va remapeada a [0,1] y el identificador de lóbulo va en los **dos bits**
+del alfa, donde 0 y 1 sí son exactos.
+
+**2. R y TRT en bins SEPARADOS.**
+Un solo bin no puede llevar dos tintes (R es blanco, TRT lleva el pigmento) ni dos
+anchuras. Caen en la ranura *glossy* y en la de *coat*, así que un material de pelo
+pide los **mismos tres bins** que un Principled con barniz. Por eso el nodo declara
+`GPU_MATFLAG_TRANSLUCENT | GLOSSY | COAT` en vez del viejo `DIFFUSE | GLOSSY`.
+
+**3. TT va por el cierre translúcido que ya existía.**
+Ese cierre ya trae puesta toda la maquinaria de «la luz viene de detrás»: su bin de
+gbuffer, su término de sombra y su pasada `light_eval_transmission`. Reimplementarla
+para un lóbulo habría sido duplicarla.
+*Precio, dicho*: TT sale como **coseno ancho** en vez del cono estrecho hacia adelante
+del modelo real. A cambio hace también de sustituto de la dispersión múltiple entre
+mechones, que es lo único que impide que el pelo oscuro sea una silueta negra.
+
+### 6.4 La trampa gorda: los lóbulos de pelo NO tienen ajuste LTC
+
+Toda la iluminación de EEVEE pasa por `light_ltc()`, que integra el BSDF sobre la
+forma de la luz con una matriz de **cosenos transformados linealmente**. Para el pelo
+no existe esa matriz, y ajustarla es un trabajo aparte.
+
+En vez de inventarla, `light_eval_single_closure` usa el LTC con un **coseno apuntado
+a la luz** —que devuelve el ángulo sólido que cubre— y lo multiplica por el BSDF
+evaluado en la dirección del centro de la luz. Es **el mismo truco** que
+`light_eval_single` ya jugaba para `LIGHT_TRANSLUCENT_WITH_THICKNESS`.
+
+> **Consecuencia real**: una luz de área grande suaviza el brillo por su ángulo sólido,
+> pero **no lo estira** como haría una integral de área de verdad. Quien monte una
+> escena con un panel grande verá el brillo más pequeño de lo que debería.
+
+### 6.5 Cómo se verificó, y por qué aquí NO vale «reproducir byte a byte»
+
+En este repo casi todo se verifica reproduciendo lo que hacía el Python. **Aquí no hay
+nada que reproducir**: la capacidad no existía. Así que la verificación cambia de forma,
+y tiene que ser igual de dura.
+
+**El truco que hace posible el A/B con un solo binario**: el modo `PLANO` de
+`--fl-make-hair-shading-scene` monta un `Diffuse BSDF` con **exactamente** el color por
+defecto del zócalo `Color` del nodo de pelo, que es lo que el `#else` metía en su
+`ClosureDiffuse`. No es «un material parecido»: es la reproducción del camino viejo. Sin
+eso habría hecho falta reconstruir el binario anterior para cada medida.
+
+**El suelo de ruido cambia respecto a la fase 1, y es una buena noticia.** La fase 1
+midió **14,43 %** de píxeles distintos entre dos ejecuciones idénticas — pero eso era
+el **visor** del Player, que acumula muestras en el tiempo. Un **render por lotes** con
+muestras fijas (64) es **determinista**: tres ejecuciones del mismo binario sobre la
+misma escena dan **0 píxeles distintos de 480.000 = 0,000 %**. (Los md5 de los PNG sí
+cambian, por metadatos; los píxeles no.) Con suelo cero, cualquier diferencia es señal.
+
+| Medida | Cifra |
+|---|---|
+| Suelo de ruido (3 ejecuciones) | **0 / 480.000 = 0,000 %** |
+| A/B luz frontal (90°) | **164.187 = 34,206 %**, delta medio 31,13, máx 138 |
+| A/B a contraluz (270°) | **158.792 = 33,082 %**, delta medio 36,95, máx 255 |
+
+**Transmisión** (el punto 3 del encargo), luz detrás de la cabeza:
+
+| | luminancia media | máx | píxeles negros |
+|---|---:|---:|---:|
+| ANTES (difuso) | 0,000323 | 0,004472 | **91,76 %** |
+| DESPUÉS (Marschner) | **0,027525** | 1,000000 | 61,35 % |
+
+El fotograma de antes es **negro** (máximo 0,0045 = un paso de 8 bits). El de ahora es
+**85 veces más luminoso** de media. Capturas `03-` y `04-` de `informes/pelo-2/`.
+
+**Energía contra rugosidad** (misma luz, misma escena):
+
+| rugosidad | máx | media | píxeles brillantes |
+|---:|---:|---:|---:|
+| 0,05 | 0,7011 | 0,07158 | 5.517 |
+| 0,30 | 0,5719 | 0,07439 | 8.631 |
+| 0,60 | 0,4026 | 0,07709 | 19.469 |
+| 1,00 | 0,2858 | 0,07622 | 52.974 |
+
+El pico **baja un 59 %** mientras el conjunto brillante crece ×9,6 y la media se mueve
+un 6,5 %: el lóbulo **reparte** la misma energía, no la crea. Cero píxeles saturados.
+
+**Cordura numérica**: en EXR de coma flotante —que es donde el NaN sobrevive, porque en
+un PNG de 8 bits ya se ha convertido en un número cualquiera— **nan = 0, negativos = 0**
+en las tres escenas medidas.
+
+**Banda contra mancha, y aquí va la lectura honesta.** Al girar la luz se mueven **los
+dos** centroides, el del pelo y el del control difuso (el difuso **más**, porque lo que
+barre es el hemisferio iluminado entero). Decir «se mueve, luego hay lóbulo» habría sido
+firmar un verde falso. Lo que de verdad los separa son otras dos cifras:
+
+- **Concentración**: al mismo umbral el pelo enciende 2.623–8.631 píxeles (0,5–1,8 % del
+  cuadro) y el difuso 17.944–115.288 (3,7–24 %). Siete a trece veces más disperso.
+- **Pico**: el máximo del difuso es **prácticamente constante** en todos los ángulos
+  (0,1647–0,1725: puro albedo por coseno), mientras el del pelo va de 0,57 a 1,00 según
+  la geometría del lóbulo. En radiancia lineal (EXR) el pico del pelo es 0,3043 contra
+  0,0308 del difuso: **×9,9**.
+
+**Las dos tuberías.** El mismo sombreado se compila **dos veces**: la diferida lo guarda
+en el gbuffer y lo ilumina en otra pasada; la de adelante lo ilumina en el propio
+fragmento. Probar solo una habría dejado a la mitad de los usuarios con un fallo de
+compilación que nadie midió. Medido: media 0,074385 contra 0,074926 (0,7 %), pico 0,5719
+contra 0,5649 (1,2 %), 0 NaN en las dos. El 17,77 % de píxeles distintos con delta medio
+3,02 es la cuantización del gbuffer — y de paso demuestra que **el tangente sobrevive al
+ida y vuelta** por la codificación en octaedro.
+
+### 6.6 Lo que NO cubre este sombreado
+
+1. **Sin campo cercano**: los destellos azimutales de una fibra suelta no se resuelven.
+2. **Sin dispersión múltiple entre mechones**; el lóbulo translúcido hace de apaño.
+3. **Sin sección elíptica**: `Aspect Ratio` y el modelo **Huang** se ignoran.
+4. **`Coat` y `Radial Roughness`** solo entran por el pigmento, no como lóbulo propio.
+5. **Sin trazado de rayos en pantalla** para el pelo: se declara rugosidad aparente 1,0
+   **a propósito** para que el módulo de rayos lo salte y caiga en las sondas.
+6. **Sin ajuste LTC** (§6.4): las luces de área no estiran el brillo.
+7. **Una singularidad medida y dejada a la vista**: a contraluz quedan **13 píxeles de
+   480.000 (0,003 %)** con radiancia 78,98 en el EXR. Es la singularidad
+   `1/cos²(theta_d)` del modelo de campo lejano cuando la luz cae casi **a lo largo** del
+   mechón. Está acotada por `BXDF_HAIR_MAX_EVAL` (que nunca llegó al tope) y en 8 bits
+   son 39 píxeles saturados (0,01 %). Se deja medida y sin tocar: retocar el recorte sin
+   volver a medir el modelo entero sería cambiarlo a ciegas.
+
+### 6.7 El arnés que queda para las fases 3 y 4
+
+```
+--fl-make-hair-shading-scene <fichero> <PELO|PLANO> [grados] [rugosidad] [ADELANTE]
+--fl-stats-png <imagen> [cuantil]
+```
+
+La escena de sombreado **no tiene física**, tiene el **mundo negro** y **una sola luz de
+sol** cuya dirección es un argumento (90 = de frente, 0 = cenital, 270 = a contraluz).
+`--fl-stats-png` da luminancia media/mínima/máxima, cuántos píxeles son NaN, negativos,
+negros o saturados, y el centroide del brillo; lee **OpenEXR**, que es donde el NaN se
+puede contar de verdad.
+
+**Trampa nueva, y va a doler en la fase 3**: si la vista 3D guardada en el `.blend` no
+está en modo **RENDERIZADO**, el editor y el Player dibujan con **Workbench** y **no
+pasan por EEVEE**. La escena se ve perfectamente y no prueba ni una línea del sombreado.
+Es la hermana de la trampa 2 del §4 (el `.blend` manda sobre la cámara). El generador
+fuerza `v3d->shading.type = OB_RENDER` en todas las vistas.
+
+**Arnés probado al revés** (`politicas/ARNES-A-PRUEBA.md`), diez condiciones: sin
+argumentos, sin modo, con un modo inventado, sobre un fichero que no existe y con dos
+imágenes de tamaños distintos → **rc=1** las cinco; los cinco casos buenos → rc=0.
+
+---
+
+## 7. Fase 3: guías explícitas e interpolación en GPU (decisión de Jesús, 2026-09-12)
 
 **Decidido antes de empezar la fase, para que no se replantee desde cero cuando toque.**
 
@@ -258,13 +467,12 @@ monta encima de las guías si algún día hace falta, sin tirar nada de lo anter
 
 ---
 
-## 7. Por dónde seguir
+## 8. Por dónde seguir
 
-1. **Fase 2, sombreado.** El camino de EEVEE para curvas ya está enchufado en el
-   Player: existen `eevee_geom_curves_vert.glsl` y `eevee_attributes_curves_lib.glsl`,
-   y el Player dibuja por `DRW_shgroup_*`. Lo que falta es el modelo (reflejo primario
-   y secundario, transmisión) y poder pedirlo desde el material.
-2. **Fase 3**, con el diseño del §6. Necesita un objeto de juego propio para el pelo
+1. ~~**Fase 2, sombreado.**~~ **Hecha**: §6. Lo que queda de ella está en §6.6, y lo
+   más goloso es el **ajuste LTC** de los lóbulos, para que una luz de área estire el
+   brillo en vez de solo suavizarlo.
+2. **Fase 3**, con el diseño del §7. Necesita un objeto de juego propio para el pelo
    —una clase C++ derivada de `KX_GameObject`, no un `KX_EmptyObject`— donde vivan las
    guías, el estado de la simulación y el enganche al *compute*. El `case` del §2 es
    el sitio exacto donde se cambiará esa línea.
