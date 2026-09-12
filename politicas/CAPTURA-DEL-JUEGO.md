@@ -53,8 +53,14 @@ con el motivo») aplicada al sitio donde se fabrica la evidencia. Cómo se cierr
 | Byte centinela `0xCD` con el que se rellena el destino **antes** de leer | `RAS_Rasterizer::SCREENSHOT_UNREAD_BYTE` |
 | Relleno antes de la lectura | `RAS_OpenGLRasterizer::MakeScreenshot()` |
 | Guarda «no se leyó nada» → no se escribe fichero | `RAS_ICanvas::SaveScreeshot()`, devuelve `false` |
-| Reintento acotado (8 fotogramas) y error final con `ARNES:` | `RAS_ICanvas::FlushScreenshots()` |
+| Reintento acotado (8 fotogramas), con aviso en cada uno, y error final con `ARNES:` | `RAS_ICanvas::FlushScreenshots()` |
+| Capturas que se quedan en la cola al cerrar el juego → `ARNES:` | `~RAS_ICanvas()` |
 | Gancho para probar la guarda al revés | `FL_SHOT_FORCE_EMPTY=1` |
+
+La última fila cierra la trampa que `politicas/UI-JUEGO-NATIVA.md` §11 tenía escrita desde
+hace dos noches: «pedirla y salir en el mismo tic la deja sin escribir **mientras el log
+dice que se ha capturado**». Estaba documentada, pero el código seguía callándose porque
+`~RAS_ICanvas()` vaciaba la cola sin mirarla.
 
 Por qué un centinela y no «comprobar si está todo a cero»: una pantalla **negra de
 verdad** también es todo ceros en RGB, y hay escenas que la tienen. Lo que distingue
@@ -116,6 +122,12 @@ Las cuatro condiciones que hacen que el número signifique algo:
   es que **el motor no pueda mentir**: o hay captura, o hay rojo. Que dos Players a la
   vez puedan capturar los dos sigue sin estar resuelto, y la regla operativa es no
   hacerlo.
+- **No se sabe si el reintento de 8 fotogramas salva el caso de los dos Players**, y no se
+  va a dar por bueno sin medirlo: repetido el experimento con los binarios arreglados, el
+  fallo no se reprodujo ninguna de las 6 veces, pero esos binarios pintaban un fotograma
+  negro (trabajo de GPU casi nulo) por un estorbo de otro carril, mientras que las 6
+  repeticiones que sí fallaron 5 veces pintaban un fotograma real de EEVEE. Hay que
+  repetirlo cuando el árbol vuelva a renderizar. Detalle en `informes/CAPTURA-NOPY.md` §4.
 - **`--fl-compare-png` debería rechazar también una imagen uniforme** («no pudo
   comparar»). Es fichero del carril PELO (`source/blender/editors/flipendo/fl_image_compare.cc`)
   y no se toca desde aquí: queda dicho para su dueño.
