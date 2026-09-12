@@ -18,21 +18,29 @@ el motor escribía un PNG válido, entero a cero, y decía por el log que había
 
 ## 2. Lo que de verdad pasa
 
-`RAS_OpenGLRasterizer::MakeScreenshot()` pedía medio mega con `malloc()` y se lo pasaba
-a `GPU_framebuffer_read_color()` sobre el buffer trasero de la ventana. Dos hechos que
-se juntan mal:
+`RAS_OpenGLRasterizer::MakeScreenshot()` pide el buffer con `malloc()` y se lo pasa a
+`GPU_framebuffer_read_color()` sobre el buffer trasero de la ventana.
 
-1. **Un `malloc()` grande llega del sistema con las páginas a cero.** No es basura: es
-   un negro perfecto, con alfa 0.
-2. **La lectura puede volver sin escribir ni un byte, y sin decirlo.** En el camino de
-   Metal, `MTLFrameBuffer::read()` (caso `GPU_COLOR_BIT`) hace `return` sin `else` si el
-   framebuffer no tiene adjunto en la ranura, y `gpu::MTLTexture::read_internal()` hace
-   `return` si la textura no está *baked*; el aviso va con `MTL_LOG_WARNING`, que sólo
-   se imprime con `--debug-gpu`.
+**La lectura funciona y escribe los cuatro canales… a cero.** Lo que devuelve no es
+«nada»: es un **buffer trasero sin fotograma**. Lo que lo distingue de una captura buena
+es el **alfa**, y es exacto: medido sobre una captura correcta de 400x300, los **120.000
+píxeles traen alfa 255** (la textura de la ventana se limpia con alfa 1 y el render
+escribe opaco); el buffer sin componer trae **alfa 0 en todos**.
 
 Resultado: una captura PNG de 400x300 RGBA, válida, con los cuatro canales a cero. Al
 mirarla se ve **blanca** —porque el alfa es 0 y el visor pinta transparente sobre
 blanco—, y de ahí el diagnóstico equivocado de «sale en blanco».
+
+**La hipótesis que se cayó, porque la lección vale más que el arreglo.** La primera
+explicación fue otra y encajaba con el síntoma hasta el último detalle: un `malloc()`
+grande llega del sistema con las **páginas a cero** (no con basura), y en Metal la lectura
+**puede** volver sin escribir un byte y sin decirlo —`MTLFrameBuffer::read()`, caso
+`GPU_COLOR_BIT`, tiene un `if (has_attachment_at_slot(slot))` **sin `else`**, y
+`gpu::MTLTexture::read_internal()` hace `return` si la textura no está *baked*, avisando
+sólo con `--debug-gpu`—. Se metió un byte centinela para probarlo… y el centinela
+**desmintió la hipótesis**: el fallo se reprodujo 3 de 3 veces sin que la guarda saltara
+ni una vez. Una guarda que distingue dos explicaciones vale aunque la que dispare no sea
+la que esperabas; sin ella, «`malloc()` da ceros» habría quedado escrito como causa.
 
 **El disparador medido**: tener **dos Blenderplayer abiertos a la vez**. Con uno solo la
 captura sale siempre; con dos, en 5 de 6 intentos **uno de los dos** (no siempre el
@@ -50,9 +58,11 @@ con el motivo») aplicada al sitio donde se fabrica la evidencia. Cómo se cierr
 
 | Pieza | Dónde |
 |---|---|
+| **Guarda del alfa**: alfa 0 en todos los píxeles → `NotComposited`, sin fichero | `RAS_ICanvas::SaveScreeshot()` |
 | Byte centinela `0xCD` con el que se rellena el destino **antes** de leer | `RAS_Rasterizer::SCREENSHOT_UNREAD_BYTE` |
 | Relleno antes de la lectura | `RAS_OpenGLRasterizer::MakeScreenshot()` |
-| Guarda «no se leyó nada» → no se escribe fichero | `RAS_ICanvas::SaveScreeshot()`, devuelve `false` |
+| Guarda «no se leyó nada» → `Unread`, sin fichero | `RAS_ICanvas::SaveScreeshot()` |
+| Los dos fallos con nombre propio, para medirlos por separado | `RAS_ICanvas::ScreenshotResult` |
 | Reintento acotado (8 fotogramas), con aviso en cada uno, y error final con `ARNES:` | `RAS_ICanvas::FlushScreenshots()` |
 | Capturas que se quedan en la cola al cerrar el juego → `ARNES:` | `~RAS_ICanvas()` |
 | Gancho para probar la guarda al revés | `FL_SHOT_FORCE_EMPTY=1` |
