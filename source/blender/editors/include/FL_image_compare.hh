@@ -26,6 +26,18 @@ namespace flipendo::image_compare {
  */
 bool compare(const char *path_a, const char *path_b, int threshold);
 
+/**
+ * Informa por `stdout` de la ESTADISTICA de una imagen: luminancia media, minima y
+ * maxima, cuantos pixeles son NaN, negativos, negros o saturados, y el centroide de
+ * los pixeles por encima de `bright_quantile` veces el maximo.
+ *
+ * Es la evidencia de cordura fisica de un modelo de sombreado: que no salgan NaN ni
+ * negros, que la energia no suba al subir la rugosidad, y que al girar la luz el
+ * centroide del brillo se MUEVA. Lee tambien OpenEXR, que es donde el NaN se puede
+ * contar de verdad (en un PNG de 8 bits ya se ha perdido).
+ */
+bool stats(const char *path, float bright_quantile);
+
 }  // namespace flipendo::image_compare
 
 #endif /* __FL_IMAGE_COMPARE_HH__ */

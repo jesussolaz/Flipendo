@@ -66,6 +66,27 @@ bool make_scene(bContext *C, const char *filepath, bool pegada);
  */
 bool dump_hair(bContext *C, const char *filepath);
 
+/**
+ * Construye la ESCENA DEL SOMBREADO (fase 2) y la guarda en `filepath`.
+ *
+ * La diferencia con `make_scene()` no es cosmetica: aqui no hay fisica, el mundo es
+ * negro, hay una sola luz de sol cuya direccion se pasa en grados, y el material de
+ * la melena se elige. Con `flat = true` el material es un `Diffuse BSDF` con el
+ * color por defecto del nodo de pelo, que es EXACTAMENTE lo que el EEVEE anterior
+ * pintaba (el `#else` de `gpu_shader_material_hair.glsl`): sirve de ANTES en la
+ * comparacion A/B sin tener que reconstruir el binario viejo. Con `flat = false` se
+ * monta el `Principled Hair BSDF`, que es el camino nuevo.
+ *
+ * `light_deg` es la rotacion en X del sol: 90 = de frente, 0 = cenital,
+ * 270 = a contraluz. `roughness` va al zocalo `Roughness` del nodo de pelo.
+ */
+bool make_shading_scene(bContext *C,
+                        const char *filepath,
+                        bool flat,
+                        float light_deg,
+                        float roughness,
+                        bool forward);
+
 }  // namespace flipendo::hair_scene
 
 #endif /* __FL_HAIR_SCENE_HH__ */

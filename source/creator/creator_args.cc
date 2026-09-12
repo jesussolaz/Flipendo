@@ -2999,6 +2999,39 @@ static int arg_handle_fl_make_hair_scene(int argc, const char **argv, void *data
   return flipendo::harness::arg_missing(C, argv[0], "la ruta del .blend de salida");
 }
 
+static const char arg_handle_fl_make_hair_shading_scene_doc[] =
+    "<filepath> <PELO|PLANO> [grados] [rugosidad] [ADELANTE]\n"
+    "\tConstruye la ESCENA DEL SOMBREADO de pelo (fase 2) y la guarda en <filepath>.\n"
+    "\tCabeza + melena de 500 mechones, SIN fisica, mundo NEGRO y una sola luz de sol\n"
+    "\tcuya direccion es <grados> (90 = de frente, 0 = cenital, 270 = a contraluz).\n"
+    "\tCon PELO el material es el `Principled Hair BSDF` (el camino nuevo); con PLANO\n"
+    "\tes un `Diffuse BSDF` con el color por defecto del nodo de pelo, que es lo que\n"
+    "\tEEVEE pintaba ANTES de este carril. Asi el A/B se mide con UN solo binario.\n"
+    "\tCon ADELANTE el material pasa por la tuberia de adelante en vez de la diferida:\n"
+    "\tson dos compilaciones distintas del mismo sombreado y hay que probar las dos.\n"
+    "\tVale en --background.";
+static int arg_handle_fl_make_hair_shading_scene(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 2) {
+    const bool flat = STREQ(argv[2], "PLANO");
+    if (!flat && !STREQ(argv[2], "PELO")) {
+      fprintf(stderr, "%s: el modo tiene que ser PELO o PLANO, no '%s'.\n", argv[0], argv[2]);
+      WM_exit(C, EXIT_FAILURE);
+      return 2;
+    }
+    const float light_deg = (argc > 3) ? float(atof(argv[3])) : 90.0f;
+    const float roughness = (argc > 4) ? float(atof(argv[4])) : 0.3f;
+    const bool forward = (argc > 5) && STREQ(argv[5], "ADELANTE");
+    const bool ok = flipendo::hair_scene::make_shading_scene(
+        C, argv[1], flat, light_deg, roughness, forward);
+    WM_exit(C,
+            flipendo::harness::dump_written(argv[0], argv[1], ok) ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (argc > 5) ? 5 : ((argc > 4) ? 4 : ((argc > 3) ? 3 : 2));
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "la ruta del .blend y el modo (PELO|PLANO)");
+}
+
 static const char arg_handle_fl_dump_hair_doc[] =
     "<salida>\n"
     "\tVuelca el estado observable del pelo de la escena cargada: cada objeto Curves con\n"
@@ -3036,6 +3069,27 @@ static int arg_handle_fl_compare_png(int argc, const char **argv, void *data)
     return (argc > 3) ? 3 : 2;
   }
   return flipendo::harness::arg_missing(C, argv[0], "las dos capturas a comparar");
+}
+
+static const char arg_handle_fl_stats_png_doc[] =
+    "<imagen> [cuantil]\n"
+    "\tInforma de la ESTADISTICA de una imagen: luminancia media, minima y maxima,\n"
+    "\tcuantos pixeles son NaN, negativos, negros o saturados, y el CENTROIDE de los\n"
+    "\tpixeles por encima de <cuantil> veces el maximo (por defecto 0.5).\n"
+    "\tEs la evidencia de cordura fisica de un modelo de sombreado: que no salgan NaN,\n"
+    "\tque la energia no suba al subir la rugosidad, y que al girar la luz el brillo se\n"
+    "\tmueva. Lee tambien OpenEXR, que es donde el NaN se puede contar de verdad.\n"
+    "\tVale en --background.";
+static int arg_handle_fl_stats_png(int argc, const char **argv, void *data)
+{
+  bContext *C = static_cast<bContext *>(data);
+  if (argc > 1) {
+    const float quantile = (argc > 2) ? float(atof(argv[2])) : 0.5f;
+    const bool ok = flipendo::image_compare::stats(argv[1], quantile);
+    WM_exit(C, ok ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (argc > 2) ? 2 : 1;
+  }
+  return flipendo::harness::arg_missing(C, argv[0], "la imagen que medir");
 }
 
 static const char arg_handle_fl_ui_scene_doc[] =
@@ -4245,8 +4299,14 @@ void main_args_setup(bContext *C, bArgs *ba, bool all, SYS_SystemHandle *syshand
   BLI_args_add(ba, nullptr, "--fl-ui-scene", CB(arg_handle_fl_ui_scene), C);
   BLI_args_add(ba, nullptr, "--fl-make-ui-scene", CB(arg_handle_fl_make_ui_scene), C);
   BLI_args_add(ba, nullptr, "--fl-make-hair-scene", CB(arg_handle_fl_make_hair_scene), C);
+  BLI_args_add(ba,
+               nullptr,
+               "--fl-make-hair-shading-scene",
+               CB(arg_handle_fl_make_hair_shading_scene),
+               C);
   BLI_args_add(ba, nullptr, "--fl-dump-hair", CB(arg_handle_fl_dump_hair), C);
   BLI_args_add(ba, nullptr, "--fl-compare-png", CB(arg_handle_fl_compare_png), C);
+  BLI_args_add(ba, nullptr, "--fl-stats-png", CB(arg_handle_fl_stats_png), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui", CB(arg_handle_fl_dump_ui), C);
   BLI_args_add(ba, nullptr, "--fl-dump-ui-layout", CB(arg_handle_fl_dump_ui_layout), C);
   BLI_args_add(ba, nullptr, "--fl-check-ui", CB(arg_handle_fl_check_ui), C);

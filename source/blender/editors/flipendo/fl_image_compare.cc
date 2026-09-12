@@ -146,4 +146,162 @@ bool compare(const char *path_a, const char *path_b, const int threshold)
   return true;
 }
 
+
+/* -------------------------------------------------------------------- */
+/** \name Estadisticas de una imagen (fase 2 del pelo)
+ *
+ * Comparar dos capturas dice CUANTO cambio. No dice si lo que salio tiene sentido
+ * fisico, y esa es justo la pregunta de un modelo de sombreado nuevo:
+ *
+ * - **¿Hay NaN o valores negativos?** En un PNG de 8 bits ya no se ve: el NaN se ha
+ *   convertido en un numero cualquiera al guardar. Por eso esta funcion lee tambien
+ *   imagenes en coma flotante (OpenEXR), donde el NaN y el negativo SI se pueden
+ *   contar. Es la unica forma honesta de firmar «no salen NaN».
+ * - **¿Se dispara la energia?** La luminancia media de la imagen, con la misma
+ *   escena y la misma luz, tiene que BAJAR o quedarse igual cuando sube la
+ *   rugosidad: un lobulo normalizado reparte la misma energia en mas angulo. Si
+ *   sube, el modelo esta creando luz.
+ * - **¿Donde esta el brillo?** El centroide de los pixeles mas luminosos, en
+ *   coordenadas de imagen. Al girar la luz alrededor del mechon ese centroide tiene
+ *   que MOVERSE; si no se mueve, no hay lobulo, hay una constante.
+ *
+ * Sale con fallo si el fichero no se puede leer: «no pude medir» nunca puede dar 0.
+ * \{ */
+
+bool stats(const char *path, const float bright_quantile)
+{
+  /* Se pide coma flotante Y bytes: para un EXR llega el float y se pueden contar
+   * NaN de verdad; para un PNG llega el byte y el float lo sintetiza imbuf. */
+  ImBuf *im = IMB_load_image_from_filepath(path, IB_byte_data | IB_float_data);
+  if (im == nullptr) {
+    fprintf(stderr, "fl-stats-png: no se pudo leer '%s'.\n", path);
+    return false;
+  }
+  const int64_t pixels = int64_t(im->x) * int64_t(im->y);
+  if (pixels == 0) {
+    fprintf(stderr, "fl-stats-png: '%s' no tiene pixeles.\n", path);
+    IMB_freeImBuf(im);
+    return false;
+  }
+
+  const float *fp = im->float_buffer.data;
+  const uint8_t *bp = im->byte_buffer.data;
+  if (fp == nullptr && bp == nullptr) {
+    fprintf(stderr, "fl-stats-png: '%s' no trae datos legibles.\n", path);
+    IMB_freeImBuf(im);
+    return false;
+  }
+  const bool has_float = (fp != nullptr);
+
+  int64_t nan_count = 0;
+  int64_t negative_count = 0;
+  int64_t black_count = 0;
+  int64_t saturated_count = 0;
+  double sum_luma = 0.0;
+  float max_luma = 0.0f;
+  float min_luma = 1e30f;
+
+  /* Luminancia Rec.709. */
+  auto luma_of = [&](const int64_t i, float rgb[3]) {
+    if (has_float) {
+      rgb[0] = fp[i * 4 + 0];
+      rgb[1] = fp[i * 4 + 1];
+      rgb[2] = fp[i * 4 + 2];
+    }
+    else {
+      rgb[0] = float(bp[i * 4 + 0]) / 255.0f;
+      rgb[1] = float(bp[i * 4 + 1]) / 255.0f;
+      rgb[2] = float(bp[i * 4 + 2]) / 255.0f;
+    }
+    return 0.2126f * rgb[0] + 0.7152f * rgb[1] + 0.0722f * rgb[2];
+  };
+
+  for (int64_t i = 0; i < pixels; i++) {
+    float rgb[3];
+    const float luma = luma_of(i, rgb);
+    bool is_nan = false;
+    for (int c = 0; c < 3; c++) {
+      if (std::isnan(rgb[c]) || std::isinf(rgb[c])) {
+        is_nan = true;
+      }
+      else if (rgb[c] < 0.0f) {
+        negative_count++;
+      }
+    }
+    if (is_nan) {
+      nan_count++;
+      continue;
+    }
+    if (luma <= 0.0f) {
+      black_count++;
+    }
+    if (rgb[0] >= 1.0f && rgb[1] >= 1.0f && rgb[2] >= 1.0f) {
+      saturated_count++;
+    }
+    sum_luma += double(luma);
+    max_luma = std::max(max_luma, luma);
+    min_luma = std::min(min_luma, luma);
+  }
+  if (min_luma > 1e29f) {
+    min_luma = 0.0f;
+  }
+  const double mean_luma = sum_luma / double(pixels);
+
+  /* El centroide del BRILLO: solo los pixeles por encima de `bright_quantile` veces
+   * el maximo cuentan. Con el umbral alto se sigue el nucleo del lobulo y no la
+   * silueta entera del objeto, que no se mueve al girar la luz. */
+  const float bright_threshold = max_luma * bright_quantile;
+  double weight = 0.0;
+  double cx = 0.0;
+  double cy = 0.0;
+  int64_t bright_count = 0;
+  for (int64_t i = 0; i < pixels; i++) {
+    float rgb[3];
+    const float luma = luma_of(i, rgb);
+    if (std::isnan(luma) || luma < bright_threshold || luma <= 0.0f) {
+      continue;
+    }
+    const double x = double(i % int64_t(im->x));
+    /* imbuf guarda de abajo a arriba; se informa en coordenadas de imagen normales. */
+    const double y = double(int64_t(im->y) - 1 - (i / int64_t(im->x)));
+    cx += x * double(luma);
+    cy += y * double(luma);
+    weight += double(luma);
+    bright_count++;
+  }
+  if (weight > 0.0) {
+    cx /= weight;
+    cy /= weight;
+  }
+
+  printf("FL_IMG_STATS %s\n", path);
+  printf("  tamano=%dx%d pixeles=%lld float=%d\n",
+         im->x,
+         im->y,
+         (long long)pixels,
+         has_float ? 1 : 0);
+  printf("  luminancia media=%.6f min=%.6f max=%.6f\n",
+         mean_luma,
+         double(min_luma),
+         double(max_luma));
+  printf("  nan=%lld negativos=%lld negros=%lld (%.2f%%) saturados=%lld (%.2f%%)\n",
+         (long long)nan_count,
+         (long long)negative_count,
+         (long long)black_count,
+         100.0 * double(black_count) / double(pixels),
+         (long long)saturated_count,
+         100.0 * double(saturated_count) / double(pixels));
+  printf("  brillo umbral=%.6f (%.2f del maximo) pixeles=%lld centroide=(%.2f,%.2f)\n",
+         double(bright_threshold),
+         double(bright_quantile),
+         (long long)bright_count,
+         cx,
+         cy);
+
+  IMB_freeImBuf(im);
+  return true;
+}
+
+/** \} */
+
 }  // namespace flipendo::image_compare
